@@ -1,0 +1,1 @@
+@msbuild dddlib.msbuild /t:Build;Test;Package

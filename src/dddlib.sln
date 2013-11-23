@@ -1,0 +1,93 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{C23F7A97-EAAF-433E-8FCA-4893C049BA88}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\packages.config = .nuget\packages.config
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{62CB4EBC-B7D7-4919-850D-4BDA4B3B4EAA}"
+	ProjectSection(SolutionItems) = preProject
+		build.bat = build.bat
+		CommonAssemblyInfo.cs = CommonAssemblyInfo.cs
+		dddlib.dictionary = dddlib.dictionary
+		dddlib.msbuild = dddlib.msbuild
+		dddlib.nuspec = dddlib.nuspec
+		dddlib.ruleset = dddlib.ruleset
+		dddlib.snk = dddlib.snk
+		nuget.config = nuget.config
+		Settings.StyleCop = Settings.StyleCop
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib", "dddlib\dddlib.csproj", "{57610450-0379-472E-B40C-18B11295EEFA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Persistence", "dddlib.Persistence\dddlib.Persistence.csproj", "{E14158AF-6742-4705-81F4-455184C1A2EC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Persistence.XEventStore", "dddlib.Persistence.XEventStore\dddlib.Persistence.XEventStore.csproj", "{69928F04-1160-4C1B-A877-0D708D9B2F67}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Persistence.NEventStore", "dddlib.Persistence.NEventStore\dddlib.Persistence.NEventStore.csproj", "{1C8201BB-513B-4918-A612-377571609B52}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{9D6B0961-943F-456B-B2FF-10650BD237F3}"
+	ProjectSection(SolutionItems) = preProject
+		tests\Settings.StyleCop = tests\Settings.StyleCop
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Tests", "tests\dddlib.Tests\dddlib.Tests.csproj", "{2B75C09F-7812-4F56-B108-FCCE494F64A5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Persistence.Tests", "tests\dddlib.Persistence.Tests\dddlib.Persistence.Tests.csproj", "{BD32F68E-218E-4C9B-99E8-E048C47E44E7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Persistence.NEventStore.Tests", "tests\dddlib.Persistence.NEventStore.Tests\dddlib.Persistence.NEventStore.Tests.csproj", "{77017D3D-3F2F-496E-AC8F-51F8BF2389ED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Persistence.XEventStore.Tests", "tests\dddlib.Persistence.XEventStore.Tests\dddlib.Persistence.XEventStore.Tests.csproj", "{60263053-C73F-46E7-9FEB-6D028A9B9280}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{57610450-0379-472E-B40C-18B11295EEFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57610450-0379-472E-B40C-18B11295EEFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57610450-0379-472E-B40C-18B11295EEFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57610450-0379-472E-B40C-18B11295EEFA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E14158AF-6742-4705-81F4-455184C1A2EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E14158AF-6742-4705-81F4-455184C1A2EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E14158AF-6742-4705-81F4-455184C1A2EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E14158AF-6742-4705-81F4-455184C1A2EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{69928F04-1160-4C1B-A877-0D708D9B2F67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69928F04-1160-4C1B-A877-0D708D9B2F67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69928F04-1160-4C1B-A877-0D708D9B2F67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69928F04-1160-4C1B-A877-0D708D9B2F67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C8201BB-513B-4918-A612-377571609B52}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C8201BB-513B-4918-A612-377571609B52}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C8201BB-513B-4918-A612-377571609B52}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C8201BB-513B-4918-A612-377571609B52}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B75C09F-7812-4F56-B108-FCCE494F64A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B75C09F-7812-4F56-B108-FCCE494F64A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B75C09F-7812-4F56-B108-FCCE494F64A5}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B75C09F-7812-4F56-B108-FCCE494F64A5}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{BD32F68E-218E-4C9B-99E8-E048C47E44E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD32F68E-218E-4C9B-99E8-E048C47E44E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD32F68E-218E-4C9B-99E8-E048C47E44E7}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD32F68E-218E-4C9B-99E8-E048C47E44E7}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{77017D3D-3F2F-496E-AC8F-51F8BF2389ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77017D3D-3F2F-496E-AC8F-51F8BF2389ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77017D3D-3F2F-496E-AC8F-51F8BF2389ED}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{77017D3D-3F2F-496E-AC8F-51F8BF2389ED}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{60263053-C73F-46E7-9FEB-6D028A9B9280}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60263053-C73F-46E7-9FEB-6D028A9B9280}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60263053-C73F-46E7-9FEB-6D028A9B9280}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{60263053-C73F-46E7-9FEB-6D028A9B9280}.Release|Any CPU.Build.0 = Debug|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2B75C09F-7812-4F56-B108-FCCE494F64A5} = {9D6B0961-943F-456B-B2FF-10650BD237F3}
+		{BD32F68E-218E-4C9B-99E8-E048C47E44E7} = {9D6B0961-943F-456B-B2FF-10650BD237F3}
+		{77017D3D-3F2F-496E-AC8F-51F8BF2389ED} = {9D6B0961-943F-456B-B2FF-10650BD237F3}
+		{60263053-C73F-46E7-9FEB-6D028A9B9280} = {9D6B0961-943F-456B-B2FF-10650BD237F3}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,11 @@
+[Bb]uild/
+[Bb]in/
+[Oo]bj/
+[Tt]est[Rr]esults
+*.suo
+*.user
+*.sln.cache
+*.sln.docstates
+StyleCop.Cache
+_ReSharper*
+Thumbs.db
