@@ -11,7 +11,7 @@ namespace dddlib.Tests.Support
         {
         }
 
-        protected override object CreateMemento()
+        protected override object GetState()
         {
             return new CarMemento
             {
@@ -19,7 +19,7 @@ namespace dddlib.Tests.Support
             };
         }
 
-        protected override void LoadStateFromMemento(object memento)
+        protected override void SetState(object memento)
         {
             var car = memento as CarMemento;
             if (car == null)

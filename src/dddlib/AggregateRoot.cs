@@ -12,35 +12,91 @@ namespace dddlib
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Linq;
     using System.Reflection;
+    using System.Reflection.Emit;
 
     /// <summary>
     /// Represents an aggregate root.
     /// </summary>
-    public abstract class AggregateRoot : Entity
+    public abstract class AggregateRoot : Entity, IAggregateRoot
     {
-        private Dictionary<Type, Action<object>> handlers = new Dictionary<Type, Action<object>>();
-        private List<object> changes = new List<object>();
+        private Dictionary<Type, Action<AggregateRoot, object>> handlers = new Dictionary<Type, Action<AggregateRoot, object>>();
+        private List<object> events = new List<object>();
 
-        private bool exists;
+        private string state;
+        private bool isDestroyed;
 
-        internal string State { get; private set; }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AggregateRoot"/> class.
+        /// </summary>
+        protected AggregateRoot()
+        {
+            var handlerMethods = new[] { this.GetType() }
+                .Traverse(type => type.BaseType == typeof(AggregateRoot) ? null : new[] { type.BaseType })
+                .SelectMany(type => type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic))
+                .Where(method => method.Name == "Apply" && method.GetParameters().Count() == 1)
+                .Select(methodInfo => 
+                    new
+                    {
+                        Info = methodInfo,
+                        ParameterType = methodInfo.GetParameters().First().ParameterType,
+                    })
+                .ToArray();
 
-        internal void Initialize(object memento, IEnumerable<object> events, string state)
+            var invalidHandlerMethodTypes = handlerMethods
+                .Where(method => !method.ParameterType.IsClass)
+                .ToArray();
+
+            var duplicateHandlerMethodTypes = handlerMethods
+                .GroupBy(method => method.ParameterType)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key)
+                .ToArray();
+
+            if (duplicateHandlerMethodTypes.Any())
+            {
+                throw new InvalidOperationException();
+            }
+
+            foreach (var handlerMethod in handlerMethods.Except(invalidHandlerMethodTypes))
+            {
+                var dynamicMethod = new DynamicMethod(
+                    string.Empty, 
+                    typeof(void), 
+                    new[] { typeof(AggregateRoot), typeof(object) }, 
+                    this.GetType().Module, 
+                    true);
+
+                var il = dynamicMethod.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);                   // load this
+                il.Emit(OpCodes.Ldarg_1);                   // load event
+                il.Emit(OpCodes.Call, handlerMethod.Info);  // call apply method
+                il.Emit(OpCodes.Ret);                       // return
+
+                var handler = dynamicMethod.CreateDelegate(typeof(Action<AggregateRoot, object>)) as Action<AggregateRoot, object>;
+
+                this.handlers.Add(handlerMethod.ParameterType, handler);
+            }
+        }
+
+        string IAggregateRoot.State
+        {
+            get { return this.state; }
+        }
+
+        void IAggregateRoot.Initialize(object memento, IEnumerable<object> events, string state)
         {
             Guard.Against.Null(() => events);
 
             // NOTE (Cameron): We have to initialize everything here because this gets called following FormatterServices.GetUninitializedObject().
-            this.handlers = new Dictionary<Type, Action<object>>();
-            this.changes = new List<object>();
-            this.exists = true;
-
-            this.DynamicWireUpHandlers();
+            this.handlers = new Dictionary<Type, Action<AggregateRoot, object>>();
+            this.events = new List<object>();
 
             if (memento != null)
             {
-                this.LoadStateFromMemento(memento);
+                this.SetState(memento);
             }
 
             foreach (var @event in events)
@@ -48,125 +104,95 @@ namespace dddlib
                 this.ApplyChange(@event, false);
             }
 
-            this.State = state;
+            this.state = state;
         }
 
-        ////internal IEnumerable<object> GetUncommittedChanges()
-        ////{
-        ////    return this.changes;
-        ////}
+        object IAggregateRoot.GetMemento()
+        {
+            return this.GetState();
+        }
 
-        ////internal void MarkChangesAsCommitted(string state)
-        ////{
-        ////    this.state = state;
-        ////    this.changes.Clear();
-        ////}
+        IEnumerable<object> IAggregateRoot.GetUncommittedEvents()
+        {
+            return this.events;
+        }
+
+        void IAggregateRoot.CommitEvents(string state)
+        {
+            this.events.Clear();
+            this.state = state;
+        }
 
         /// <summary>
-        /// Creates a memento representing the state of the aggregate root.
+        /// Gets a memento representing the state of the aggregate root.
         /// </summary>
-        /// <returns>The memento representing the state of the aggregate root.</returns>
+        /// <returns>A memento representing the state of the aggregate root.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Inappropriate.")]
-        protected internal virtual object CreateMemento()
+        protected virtual object GetState()
         {
-            return null;
+            throw new NotImplementedException(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "The aggregate root of type '{0}' has not been configured to create a memento representing its state.",
+                    this.GetType().Name));
         }
 
         /// <summary>
-        /// Loads the state from a memento of the aggregate root.
+        /// Sets the state of the aggregate root from the specified memento.
         /// </summary>
-        /// <param name="memento">The memento of the aggregate root.</param>
-        protected internal virtual void LoadStateFromMemento(object memento)
+        /// <param name="memento">A memento representing the state of the aggregate root.</param>
+        protected virtual void SetState(object memento)
         {
+            throw new NotImplementedException(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "The aggregate root of type '{0}' has not been configured to apply a memento representing its state.",
+                    this.GetType().Name));
+        }
+
+        /// <summary>
+        /// Destroys this instance of the aggregate root by terminating its identity.
+        /// </summary>
+        protected void Destroy()
+        {
+            this.isDestroyed = true;
         }
 
         /// <summary>
         /// Applies the specified change to the aggregate root.
         /// </summary>
-        /// <param name="event">The change as an event.</param>
-        /// <exception cref="dddlib.BusinessException">Thrown if the aggregate root no longer exists.</exception>
-        protected internal void ApplyChange(object @event)
+        /// <param name="event">The change represented as an event.</param>
+        protected void ApplyChange(object @event)
         {
-            if (!this.exists)
+            if (this.isDestroyed)
             {
-                throw new BusinessException("Unable to apply the specified change as the aggregate root no longer exists.");
+                // TODO (Cameron): Use the natural key and type.
+                throw new BusinessException("Unable to apply the specified change as this instance of the aggregate root no longer exists.");
             }
 
             this.ApplyChange(@event, true);
         }
 
+        // LINK (Cameron): http://www.sapiensworks.com/blog/post/2012/04/19/Invoking-A-Private-Method-On-A-Subclass.aspx
         private void ApplyChange(object @event, bool isNew)
         {
-            // TODO (Cameron): Fix.
-            if (@event.GetType().Name.Contains("DeleteEvent"))
+            Guard.Against.Null(() => @event);
+
+            if (!@event.GetType().IsClass)
             {
-                this.exists = false;
+                return;
             }
 
-            if (this.handlers.ContainsKey(@event.GetType()))
+            Action<AggregateRoot, object> handler;
+            if (this.handlers.TryGetValue(@event.GetType(), out handler))
             {
-                this.handlers[@event.GetType()].Invoke(@event);
+                handler.Invoke(this, @event);
             }
 
             if (isNew)
             {
-                this.changes.Add(@event);
+                this.events.Add(@event);
             }
         }
-
-        private void DynamicWireUpHandlers()
-        {
-            // NOTE (Cameron): We need to traverse the type hierarchy because the handler methods have private scope.
-            var typeHierarchy = new[] { this.GetType() }
-                .Traverse(type => type.BaseType == typeof(AggregateRoot) ? null : new[] { type.BaseType });
-
-            // TODO (Cameron): Cache per type.
-            foreach (var type in typeHierarchy)
-            {
-                var handlerMethods = type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
-                    .Where(method => method.Name == "Apply");
-
-                foreach (var method in handlerMethods)
-                {
-                    var parameters = method.GetParameters();
-                    if (parameters.Count() == 1)
-                    {
-                        var delegateType = typeof(Action<>).MakeGenericType(parameters.First().ParameterType);
-                        var methodDelegate = Delegate.CreateDelegate(delegateType, this, method);
-                        var registerMethod = typeof(AggregateRoot)
-                            .GetMethod("RegisterLocalHandler", BindingFlags.Instance | BindingFlags.NonPublic)
-                            .MakeGenericMethod(parameters.First().ParameterType);
-
-                        registerMethod.Invoke(this, new[] { methodDelegate });
-                    }
-                }
-            }
-        }
-
-        ////private void RegisterLocalHandler<T>(Action<T> handler) where T : class
-        ////{
-        ////    this.handlers.Add(typeof(T), DelegateAdjuster.CastArgument<Event, T>(message => handler(message)));
-        ////}
-
-        ////public static class DelegateAdjuster
-        ////{
-        ////    public static Action<TBase> CastArgument<TBase, TDerived>(Expression<Action<TDerived>> source)
-        ////        where TDerived : TBase
-        ////    {
-        ////        if (typeof(TDerived) == typeof(TBase))
-        ////        {
-        ////            return (Action<TBase>)((Delegate)source.Compile());
-        ////        }
-
-        ////        var sourceParameter = Expression.Parameter(typeof(TBase), "source");
-        ////        var result = Expression.Lambda<Action<TBase>>(
-        ////            Expression.Invoke(
-        ////                source,
-        ////                Expression.Convert(sourceParameter, typeof(TDerived))),
-        ////            sourceParameter);
-
-        ////        return result.Compile();
-        ////    }
-        ////}
     }
 }
