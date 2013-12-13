@@ -24,12 +24,19 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <CodeAnalysisRuleSet>..\..\dddlib.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>..\..\dddlib.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
+    <None Include="..\..\dddlib.snk">
+      <Link>Properties\dddlib.snk</Link>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <Compile Include="AggregateRootTests.cs" />
     <Compile Include="EntityTests.cs" />
@@ -65,6 +72,10 @@
     <ProjectReference Include="..\..\dddlib\dddlib.csproj">
       <Project>{57610450-0379-472e-b40c-18b11295eefa}</Project>
       <Name>dddlib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\dddlib.Tests.Support\dddlib.Tests.Support.csproj">
+      <Project>{6777cb50-8686-4a93-a492-01862e07342c}</Project>
+      <Name>dddlib.Tests.Support</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

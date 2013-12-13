@@ -5,9 +5,15 @@
 namespace dddlib.Tests
 {
     using System;
+    using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Runtime.Serialization;
+    using dddlib.Tests.Support.Events;
+    using dddlib.Tests.Support.Model;
     using FluentAssertions;
     using Xunit;
 
+    [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1124:DoNotUseRegions", Justification = "It's OK here.")]
     public class AggregateRootTests
     {
         [Fact]
@@ -16,6 +22,8 @@ namespace dddlib.Tests
             // act
             new EmptyAggregate();
         }
+
+        #region Handler Apply Method(s)
 
         [Fact]
         public void CanApplyHandledChangeToAggregate()
@@ -111,69 +119,53 @@ namespace dddlib.Tests
             action.ShouldThrow<InvalidOperationException>();
         }
 
+        #endregion
+
+        #region Check Instantiation
+
+        //// TODO: reconstitute
+        //// check apply still works
+        //// check read only private member variable instantiation
+        //// check base constructor instantiation
+
+        #endregion
+
         [Fact]
         public void CanDestroy()
         {
+            // arrange
+            var aggregate = new LifecycleAggregate();
+
+            // act
+            aggregate.DoSomething(); // NOTE (Cameron) Proves we can do before we destroy.
+            aggregate.EndLifecycle();
+            Action action = () => aggregate.DoSomething();
+
+            // assert
+            action.ShouldThrow<BusinessException>();
         }
 
-        private class EmptyAggregate : AggregateRoot
+        [Fact]
+        public void CanReconstitute()
         {
+            // arrange
+            var memento = (object)null;
+            var events = new[] { new SomethingHappened() };
+            
+            // act
+            var aggregate = Reconstitute<PersistedAggregate>(memento, events);
+            aggregate.MakeSomethingHappen();
+
+            // assert
+            aggregate.ThingsThatHappened.Should().HaveCount(2);
         }
 
-        private class ChangeableAggregate : AggregateRoot
+        private static T Reconstitute<T>(object memento, IEnumerable<object> events)
+            where T : AggregateRoot
         {
-            public object Change { get; protected set; }
-
-            public void ApplyEvent(object change)
-            {
-                this.ApplyChange(change);
-            }
-
-            private void Apply(SomethingHappened @event)
-            {
-                this.Change = @event;
-            }
-
-            private void Apply(SomethingElseHappened @event, int count)
-            {
-                this.Change = @event;
-            }
-        }
-
-        private class BrokenAggregate : ChangeableAggregate
-        {
-            private void Apply(SomethingHappened @event)
-            {
-            }
-        }
-
-        private class BadAggregate : ChangeableAggregate
-        {
-            private void Apply(int @event)
-            {
-                this.Change = @event;
-            }
-
-            private void Apply(int? @event)
-            {
-                this.Change = @event;
-            }
-        }
-
-        private class SomethingHappened
-        {
-        }
-
-        private class SomethingElseHappened
-        {
-        }
-
-        private class SomethingWierdHappened : SomethingHappened
-        {
-        }
-
-        private class SomethingNeverHappened
-        {
+            var aggregate = Activator.CreateInstance(typeof(T), true) as IAggregateRoot;
+            aggregate.Initialize(memento, events, "state");
+            return (T)aggregate;
         }
     }
 }

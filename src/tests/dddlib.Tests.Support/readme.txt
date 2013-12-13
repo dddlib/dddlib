@@ -1,0 +1,1 @@
+﻿It's a little odd but this project needs a reference to xunit if it is to build.

@@ -42,6 +42,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Persistence.NEventSt
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Persistence.XEventStore.Tests", "tests\dddlib.Persistence.XEventStore.Tests\dddlib.Persistence.XEventStore.Tests.csproj", "{60263053-C73F-46E7-9FEB-6D028A9B9280}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Tests.Support", "tests\dddlib.Tests.Support\dddlib.Tests.Support.csproj", "{6777CB50-8686-4A93-A492-01862E07342C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -80,6 +82,10 @@ Global
 		{60263053-C73F-46E7-9FEB-6D028A9B9280}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{60263053-C73F-46E7-9FEB-6D028A9B9280}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{60263053-C73F-46E7-9FEB-6D028A9B9280}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{6777CB50-8686-4A93-A492-01862E07342C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6777CB50-8686-4A93-A492-01862E07342C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6777CB50-8686-4A93-A492-01862E07342C}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{6777CB50-8686-4A93-A492-01862E07342C}.Release|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -89,5 +95,6 @@ Global
 		{BD32F68E-218E-4C9B-99E8-E048C47E44E7} = {9D6B0961-943F-456B-B2FF-10650BD237F3}
 		{77017D3D-3F2F-496E-AC8F-51F8BF2389ED} = {9D6B0961-943F-456B-B2FF-10650BD237F3}
 		{60263053-C73F-46E7-9FEB-6D028A9B9280} = {9D6B0961-943F-456B-B2FF-10650BD237F3}
+		{6777CB50-8686-4A93-A492-01862E07342C} = {9D6B0961-943F-456B-B2FF-10650BD237F3}
 	EndGlobalSection
 EndGlobal

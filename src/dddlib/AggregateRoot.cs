@@ -60,6 +60,7 @@ namespace dddlib
                 throw new InvalidOperationException();
             }
 
+            // TODO (Cameron): Explore if this can be done external to this class.
             foreach (var handlerMethod in handlerMethods.Except(invalidHandlerMethodTypes))
             {
                 var dynamicMethod = new DynamicMethod(
@@ -89,10 +90,6 @@ namespace dddlib
         void IAggregateRoot.Initialize(object memento, IEnumerable<object> events, string state)
         {
             Guard.Against.Null(() => events);
-
-            // NOTE (Cameron): We have to initialize everything here because this gets called following FormatterServices.GetUninitializedObject().
-            this.handlers = new Dictionary<Type, Action<AggregateRoot, object>>();
-            this.events = new List<object>();
 
             if (memento != null)
             {
