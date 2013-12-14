@@ -23,6 +23,7 @@
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <CodeAnalysisRuleSet>..\..\dddlib.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -40,7 +41,6 @@
   <ItemGroup>
     <Compile Include="AggregateRootTests.cs" />
     <Compile Include="EntityTests.cs" />
-    <Compile Include="Guard.cs" />
     <Compile Include="Support\Car.cs" />
     <Compile Include="Support\Vehicle.cs" />
     <Compile Include="Support\VehicleRegistered.cs" />
