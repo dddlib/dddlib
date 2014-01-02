@@ -4,7 +4,7 @@
 
     public class LifecycleAggregate : AggregateRoot
     {
-        public void EndLifecycle()
+        public void Destroy()
         {
             this.ApplyChange(new LifecycleEnded());
         }
@@ -16,7 +16,7 @@
 
         private void Apply(LifecycleEnded @event)
         {
-            this.Destroy();
+            this.EndLifecycle();
         }
     }
 }

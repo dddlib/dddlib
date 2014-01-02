@@ -40,7 +40,9 @@
   <ItemGroup />
   <ItemGroup>
     <Compile Include="AggregateRootTests.cs" />
+    <Compile Include="BusinessExceptionTests.cs" />
     <Compile Include="EntityTests.cs" />
+    <Compile Include="NaturalKeyTests.cs" />
     <Compile Include="Support\Car.cs" />
     <Compile Include="Support\Vehicle.cs" />
     <Compile Include="Support\VehicleRegistered.cs" />

@@ -148,9 +148,9 @@ namespace dddlib
         }
 
         /// <summary>
-        /// Destroys this instance of the aggregate root by terminating its identity.
+        /// Ends the lifecycle of this instance of the aggregate root.
         /// </summary>
-        protected void Destroy()
+        protected void EndLifecycle()
         {
             this.isDestroyed = true;
         }
@@ -161,9 +161,13 @@ namespace dddlib
         /// <param name="event">The change represented as an event.</param>
         protected void ApplyChange(object @event)
         {
+            Guard.Against.Null(() => @event);
+
             if (this.isDestroyed)
             {
                 // TODO (Cameron): Use the natural key and type.
+                // maybe: Unable to change Bob because a Person with that name no longer exists.
+                // or: cannot change the aggregate of type Person with the identity Bob as this aggregates lifecycle has ended.
                 throw new BusinessException("Unable to apply the specified change as this instance of the aggregate root no longer exists.");
             }
 

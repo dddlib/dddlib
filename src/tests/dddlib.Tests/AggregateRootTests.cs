@@ -131,14 +131,14 @@ namespace dddlib.Tests
         #endregion
 
         [Fact]
-        public void CanDestroy()
+        public void CanEndLifecycle()
         {
             // arrange
             var aggregate = new LifecycleAggregate();
 
             // act
-            aggregate.DoSomething(); // NOTE (Cameron) Proves we can do before we destroy.
-            aggregate.EndLifecycle();
+            aggregate.DoSomething(); // NOTE (Cameron): Proves we can do before we destroy.
+            aggregate.Destroy();
             Action action = () => aggregate.DoSomething();
 
             // assert
