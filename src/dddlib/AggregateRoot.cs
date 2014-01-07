@@ -11,9 +11,11 @@ namespace dddlib
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
+    using System.Linq.Expressions;
     using System.Reflection;
     using System.Reflection.Emit;
 
@@ -33,10 +35,14 @@ namespace dddlib
         /// </summary>
         protected AggregateRoot()
         {
+            Expression<Action<AggregateRoot>> applyExpression = aggregate => aggregate.Apply(default(object));
+            var applyMethodName = ((MethodCallExpression)((LambdaExpression)applyExpression).Body).Method.Name;
             var handlerMethods = new[] { this.GetType() }
                 .Traverse(type => type.BaseType == typeof(AggregateRoot) ? null : new[] { type.BaseType })
                 .SelectMany(type => type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic))
-                .Where(method => method.Name == "Apply" && method.GetParameters().Count() == 1)
+                .Where(method => method.Name.Equals(applyMethodName, StringComparison.OrdinalIgnoreCase))
+                .Where(method => method.GetParameters().Count() == 1)
+                .Where(method => method.DeclaringType != typeof(AggregateRoot))
                 .Select(methodInfo => 
                     new
                     {
@@ -47,6 +53,7 @@ namespace dddlib
 
             var invalidHandlerMethodTypes = handlerMethods
                 .Where(method => !method.ParameterType.IsClass)
+                ////.Where(method => method.ParameterType.IsDefined(typeof(AggregateRoot), false))
                 .ToArray();
 
             var duplicateHandlerMethodTypes = handlerMethods
@@ -172,6 +179,15 @@ namespace dddlib
             }
 
             this.ApplyChange(@event, true);
+        }
+
+        /// <summary>
+        /// Applies the specified event.
+        /// </summary>
+        /// <param name="event">The event.</param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected virtual void Apply(dynamic @event)
+        {
         }
 
         // LINK (Cameron): http://www.sapiensworks.com/blog/post/2012/04/19/Invoking-A-Private-Method-On-A-Subclass.aspx
