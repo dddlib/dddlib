@@ -153,19 +153,12 @@ namespace dddlib.Tests
             var events = new[] { new SomethingHappened() };
             
             // act
-            var aggregate = Reconstitute<PersistedAggregate>(memento, events);
+            var aggregate = Activator.CreateInstance(typeof(PersistedAggregate), true) as PersistedAggregate;
+            ((IAggregateRoot)aggregate).Initialize(memento, events, "state");
             aggregate.MakeSomethingHappen();
 
             // assert
             aggregate.ThingsThatHappened.Should().HaveCount(2);
-        }
-
-        private static T Reconstitute<T>(object memento, IEnumerable<object> events)
-            where T : AggregateRoot
-        {
-            var aggregate = Activator.CreateInstance(typeof(T), true) as IAggregateRoot;
-            aggregate.Initialize(memento, events, "state");
-            return (T)aggregate;
         }
     }
 }

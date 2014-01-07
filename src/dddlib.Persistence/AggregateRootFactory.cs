@@ -28,6 +28,7 @@ namespace dddlib.Persistence
         public T Reconstitute<T>(object memento, IEnumerable<object> events, string state) 
             where T : AggregateRoot
         {
+            // TODO (Cameron): Make this more performant. Consider using some type of IL instantiation.
             var aggregate = Activator.CreateInstance(typeof(T), true) as IAggregateRoot;
             aggregate.Initialize(memento, events, state);
             return (T)aggregate;
