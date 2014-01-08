@@ -4,7 +4,7 @@
 
     public class ChangeableAggregate : AggregateRoot
     {
-        public object Change { get; protected set; }
+        public object Change { get; private set; }
 
         public void ApplyEvent(object change)
         {

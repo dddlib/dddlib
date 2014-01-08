@@ -2,14 +2,16 @@
 {
     public class BadAggregate : ChangeableAggregate
     {
+        public object BadChange { get; private set; }
+
         private void Apply(int @event)
         {
-            this.Change = @event;
+            this.BadChange = @event;
         }
 
         private void Apply(int? @event)
         {
-            this.Change = @event;
+            this.BadChange = @event;
         }
     }
 }

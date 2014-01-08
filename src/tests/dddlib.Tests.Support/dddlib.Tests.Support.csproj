@@ -29,7 +29,7 @@
     <AssemblyOriginatorKeyFile>Properties\dddlib.Support.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Model\OverriddenAggregate.cs" />
+    <Compile Include="Model\OverridingAggregate.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Events\LifecycleEnded.cs" />
     <Compile Include="Events\SomethingElseHappened.cs" />
@@ -37,7 +37,7 @@
     <Compile Include="Events\SomethingNeverHappened.cs" />
     <Compile Include="Events\SomethingWierdHappened.cs" />
     <Compile Include="Model\BadAggregate.cs" />
-    <Compile Include="Model\BrokenAggregate.cs" />
+    <Compile Include="Model\MoreChangeableAggregate.cs" />
     <Compile Include="Model\ChangeableAggregater.cs" />
     <Compile Include="Model\EmptyAggregate.cs" />
     <Compile Include="Model\LigfecycleAggregate.cs" />

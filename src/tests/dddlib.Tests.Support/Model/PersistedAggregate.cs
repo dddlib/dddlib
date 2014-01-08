@@ -8,7 +8,7 @@
         private readonly List<object> thingsThatHappened = new List<object>();
 
         // TODO (Cameron): Consider a solution that uses internals to build - reverse using InternalsVisibleTo.
-        internal PersistedAggregate()
+        protected PersistedAggregate()
         {
             this.thingsThatHappened = new List<object>();
         }

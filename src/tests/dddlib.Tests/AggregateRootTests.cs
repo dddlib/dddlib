@@ -92,7 +92,7 @@ namespace dddlib.Tests
             aggregate.ApplyEvent(@event);
 
             // assert
-            aggregate.Change.Should().BeNull();
+            aggregate.BadChange.Should().BeNull();
         }
 
         [Fact]
@@ -106,17 +106,36 @@ namespace dddlib.Tests
             aggregate.ApplyEvent(@event);
 
             // assert
-            aggregate.Change.Should().BeNull();
+            aggregate.BadChange.Should().BeNull();
         }
 
         [Fact]
-        public void CannotApplyMultipleHandledChangeToAggregate()
+        public void CanApplyMultipleHandledChangeToAggregate()
         {
             // arrange
-            Action action = () => new BrokenAggregate();
+            var aggregate = new MoreChangeableAggregate();
+            var @event = new SomethingHappened();
+
+            // act
+            aggregate.ApplyEvent(@event);
 
             // assert
-            action.ShouldThrow<InvalidOperationException>();
+            aggregate.Change.Should().Be(@event);
+            aggregate.OtherChange.Should().Be(@event);
+        }
+
+        [Fact]
+        public void CannotHandleChangeFromBaseAggregate()
+        {
+            // arrange
+            var aggregate = new OverridingAggregate();
+            var @event = new SomethingWierdHappened();
+
+            // act
+            aggregate.ApplyEvent(@event);
+
+            // assert
+            aggregate.Change.Should().BeNull();
         }
 
         #endregion

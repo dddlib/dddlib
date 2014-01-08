@@ -24,7 +24,9 @@ namespace dddlib
     /// </summary>
     public abstract class AggregateRoot : Entity, IAggregateRoot
     {
-        private Dictionary<Type, Action<AggregateRoot, object>> handlers = new Dictionary<Type, Action<AggregateRoot, object>>();
+        private static readonly string ApplyMethodName = GetApplyMethodName();
+
+        private Dictionary<Type, List<Action<AggregateRoot, object>>> handlers = new Dictionary<Type, List<Action<AggregateRoot, object>>>();
         private List<object> events = new List<object>();
 
         private string state;
@@ -35,12 +37,10 @@ namespace dddlib
         /// </summary>
         protected AggregateRoot()
         {
-            Expression<Action<AggregateRoot>> applyExpression = aggregate => aggregate.Apply(default(object));
-            var applyMethodName = ((MethodCallExpression)((LambdaExpression)applyExpression).Body).Method.Name;
             var handlerMethods = new[] { this.GetType() }
                 .Traverse(type => type.BaseType == typeof(AggregateRoot) ? null : new[] { type.BaseType })
                 .SelectMany(type => type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic))
-                .Where(method => method.Name.Equals(applyMethodName, StringComparison.OrdinalIgnoreCase))
+                .Where(method => method.Name.Equals(ApplyMethodName, StringComparison.OrdinalIgnoreCase))
                 .Where(method => method.GetParameters().Count() == 1)
                 .Where(method => method.DeclaringType != typeof(AggregateRoot))
                 .Select(methodInfo => 
@@ -53,19 +53,18 @@ namespace dddlib
 
             var invalidHandlerMethodTypes = handlerMethods
                 .Where(method => !method.ParameterType.IsClass)
-                ////.Where(method => method.ParameterType.IsDefined(typeof(AggregateRoot), false))
                 .ToArray();
 
-            var duplicateHandlerMethodTypes = handlerMethods
-                .GroupBy(method => method.ParameterType)
-                .Where(group => group.Count() > 1)
-                .Select(group => group.Key)
-                .ToArray();
+            ////var duplicateHandlerMethodTypes = handlerMethods
+            ////    .GroupBy(method => method.ParameterType)
+            ////    .Where(group => group.Count() > 1)
+            ////    .Select(group => group.Key)
+            ////    .ToArray();
 
-            if (duplicateHandlerMethodTypes.Any())
-            {
-                throw new InvalidOperationException();
-            }
+            ////if (duplicateHandlerMethodTypes.Any())
+            ////{
+            ////    throw new InvalidOperationException();
+            ////}
 
             // TODO (Cameron): Explore if this can be done external to this class.
             foreach (var handlerMethod in handlerMethods.Except(invalidHandlerMethodTypes))
@@ -85,7 +84,14 @@ namespace dddlib
 
                 var handler = dynamicMethod.CreateDelegate(typeof(Action<AggregateRoot, object>)) as Action<AggregateRoot, object>;
 
-                this.handlers.Add(handlerMethod.ParameterType, handler);
+                var handlerList = default(List<Action<AggregateRoot, object>>);
+                if (!this.handlers.TryGetValue(handlerMethod.ParameterType, out handlerList))
+                {
+                    handlerList = new List<Action<AggregateRoot, object>>();
+                    this.handlers.Add(handlerMethod.ParameterType, handlerList);
+                }
+
+                handlerList.Add(handler);
             }
         }
 
@@ -181,12 +187,17 @@ namespace dddlib
             this.ApplyChange(@event, true);
         }
 
-        /// <summary>
-        /// Applies the specified event.
-        /// </summary>
-        /// <param name="event">The event.</param>
+        private static string GetApplyMethodName()
+        {
+            Expression<Action<AggregateRoot>> expression = aggregate => aggregate.Apply(default(object));
+            var lambda = (LambdaExpression)expression;
+            var methodCall = (MethodCallExpression)lambda.Body;
+            return methodCall.Method.Name;
+        }
+
+        // TODO (Cameron): Decide whether to pursue as a protected virtual method.
         [EditorBrowsable(EditorBrowsableState.Never)]
-        protected virtual void Apply(dynamic @event)
+        private void Apply(object @event)
         {
         }
 
@@ -200,10 +211,13 @@ namespace dddlib
                 return;
             }
 
-            Action<AggregateRoot, object> handler;
-            if (this.handlers.TryGetValue(@event.GetType(), out handler))
+            var handlerList = default(List<Action<AggregateRoot, object>>); 
+            if (this.handlers.TryGetValue(@event.GetType(), out handlerList))
             {
-                handler.Invoke(this, @event);
+                foreach (var handler in handlerList)
+                {
+                    handler.Invoke(this, @event);
+                }
             }
 
             if (isNew)
