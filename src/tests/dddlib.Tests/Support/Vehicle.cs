@@ -22,7 +22,7 @@ namespace dddlib.Tests.Support
                 });
         }
 
-        [NaturalKey]
+        [NaturalKeyAttribute]
         public string Registration { get; protected set; }
 
         public void Scrap()

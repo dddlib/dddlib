@@ -1,4 +1,4 @@
-﻿// <copyright file="NaturalKey.cs" company="dddlib contributors">
+﻿// <copyright file="NaturalKeyAttribute.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -17,7 +17,7 @@ namespace dddlib
     /// </summary>
     [SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes", Justification = "I will not.")]
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-    public class NaturalKey : Attribute
+    public class NaturalKeyAttribute : Attribute
     {
     }
 }
