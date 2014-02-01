@@ -20,10 +20,10 @@
 
         public void MakeSomethingHappen()
         {
-            this.ApplyChange(new SomethingHappened());
+            this.Apply(new SomethingHappened());
         }
 
-        private void Apply(SomethingHappened @event)
+        private void Handle(SomethingHappened @event)
         {
             this.thingsThatHappened.Add(@event);
         }

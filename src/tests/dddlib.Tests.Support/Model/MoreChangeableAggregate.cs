@@ -6,7 +6,7 @@
     {
         public object OtherChange { get; private set; }
 
-        private void Apply(SomethingHappened @event)
+        private void Handle(SomethingHappened @event)
         {
             this.OtherChange = @event;
         }

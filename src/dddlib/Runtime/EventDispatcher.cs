@@ -94,13 +94,13 @@ namespace dddlib.Runtime
 
         private static string GetApplyMethodName()
         {
-            Expression<Action<EventDispatcher>> expression = aggregate => aggregate.Apply(default(object));
+            Expression<Action<EventDispatcher>> expression = aggregate => aggregate.Handle(default(object));
             var lambda = (LambdaExpression)expression;
             var methodCall = (MethodCallExpression)lambda.Body;
             return methodCall.Method.Name;
         }
 
-        private void Apply(object @event)
+        private void Handle(object @event)
         {
         }
     }

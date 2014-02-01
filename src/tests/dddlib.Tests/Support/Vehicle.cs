@@ -15,7 +15,7 @@ namespace dddlib.Tests.Support
                 throw new BusinessException("Cannot create a vehicle registered in Jersey (CI) without a J-plate.");
             }
 
-            this.ApplyChange(
+            this.Apply(
                 new VehicleRegistered
                 {
                     Registration = registration,
@@ -31,14 +31,14 @@ namespace dddlib.Tests.Support
 
         public void Scrap()
         {
-            this.ApplyChange(
+            this.Apply(
                 new VehicleScrapped
                 {
                     Registration = this.Registration,
                 });
         }
 
-        private void Apply(VehicleRegistered carRegistered)
+        private void Handle(VehicleRegistered carRegistered)
         {
             this.Registration = carRegistered.Registration;
         }

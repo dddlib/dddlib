@@ -8,15 +8,15 @@
 
         public void ApplyEvent(object change)
         {
-            this.ApplyChange(change);
+            this.Apply(change);
         }
 
-        private void Apply(SomethingHappened @event)
+        private void Handle(SomethingHappened @event)
         {
             this.Change = @event;
         }
 
-        private void Apply(SomethingElseHappened @event, int count)
+        private void Handle(SomethingElseHappened @event, int count)
         {
             this.Change = @event;
         }

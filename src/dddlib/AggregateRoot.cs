@@ -105,10 +105,10 @@ namespace dddlib
         }
 
         /// <summary>
-        /// Applies the specified change to the aggregate root.
+        /// Applies the specified event to the aggregate root.
         /// </summary>
-        /// <param name="event">The change represented as an event.</param>
-        protected void ApplyChange(object @event)
+        /// <param name="event">The event to apply.</param>
+        protected void Apply(object @event)
         {
             Guard.Against.Null(() => @event);
 

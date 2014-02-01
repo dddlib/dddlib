@@ -6,15 +6,15 @@
     {
         public void Destroy()
         {
-            this.ApplyChange(new LifecycleEnded());
+            this.Apply(new LifecycleEnded());
         }
 
         public void DoSomething()
         {
-            this.ApplyChange(new SomethingHappened());
+            this.Apply(new SomethingHappened());
         }
 
-        private void Apply(LifecycleEnded @event)
+        private void Handle(LifecycleEnded @event)
         {
             this.EndLifecycle();
         }

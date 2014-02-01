@@ -4,12 +4,12 @@
     {
         public object BadChange { get; private set; }
 
-        private void Apply(int @event)
+        private void Handle(int @event)
         {
             this.BadChange = @event;
         }
 
-        private void Apply(int? @event)
+        private void Handle(int? @event)
         {
             this.BadChange = @event;
         }
