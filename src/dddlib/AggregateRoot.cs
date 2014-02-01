@@ -2,32 +2,23 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-[module: System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "StyleCop.CSharp.NamingRules",
-    "SA1300:ElementMustBeginWithUpperCaseLetter",
-    Justification = "Noted.")]
-
 namespace dddlib
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
-    using System.Linq;
-    using System.Linq.Expressions;
-    using System.Reflection;
-    using System.Reflection.Emit;
+    using dddlib.Runtime;
 
     /// <summary>
     /// Represents an aggregate root.
     /// </summary>
     public abstract class AggregateRoot : Entity, IAggregateRoot
     {
-        private static readonly string ApplyMethodName = GetApplyMethodName();
+        private static readonly object SyncLock = new object();
 
-        private Dictionary<Type, List<Action<AggregateRoot, object>>> handlers = new Dictionary<Type, List<Action<AggregateRoot, object>>>();
-        private List<object> events = new List<object>();
+        private readonly List<object> events = new List<object>();
+        private readonly IEventDispatcher dispatcher;
 
         private string state;
         private bool isDestroyed;
@@ -37,62 +28,7 @@ namespace dddlib
         /// </summary>
         protected AggregateRoot()
         {
-            var handlerMethods = new[] { this.GetType() }
-                .Traverse(type => type.BaseType == typeof(AggregateRoot) ? null : new[] { type.BaseType })
-                .SelectMany(type => type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic))
-                .Where(method => method.Name.Equals(ApplyMethodName, StringComparison.OrdinalIgnoreCase))
-                .Where(method => method.GetParameters().Count() == 1)
-                .Where(method => method.DeclaringType != typeof(AggregateRoot))
-                .Select(methodInfo => 
-                    new
-                    {
-                        Info = methodInfo,
-                        ParameterType = methodInfo.GetParameters().First().ParameterType,
-                    })
-                .ToArray();
-
-            var invalidHandlerMethodTypes = handlerMethods
-                .Where(method => !method.ParameterType.IsClass)
-                .ToArray();
-
-            ////var duplicateHandlerMethodTypes = handlerMethods
-            ////    .GroupBy(method => method.ParameterType)
-            ////    .Where(group => group.Count() > 1)
-            ////    .Select(group => group.Key)
-            ////    .ToArray();
-
-            ////if (duplicateHandlerMethodTypes.Any())
-            ////{
-            ////    throw new InvalidOperationException();
-            ////}
-
-            // TODO (Cameron): Explore if this can be done external to this class.
-            foreach (var handlerMethod in handlerMethods.Except(invalidHandlerMethodTypes))
-            {
-                var dynamicMethod = new DynamicMethod(
-                    string.Empty, 
-                    typeof(void), 
-                    new[] { typeof(AggregateRoot), typeof(object) }, 
-                    this.GetType().Module, 
-                    true);
-
-                var il = dynamicMethod.GetILGenerator();
-                il.Emit(OpCodes.Ldarg_0);                   // load this
-                il.Emit(OpCodes.Ldarg_1);                   // load event
-                il.Emit(OpCodes.Call, handlerMethod.Info);  // call apply method
-                il.Emit(OpCodes.Ret);                       // return
-
-                var handler = dynamicMethod.CreateDelegate(typeof(Action<AggregateRoot, object>)) as Action<AggregateRoot, object>;
-
-                var handlerList = default(List<Action<AggregateRoot, object>>);
-                if (!this.handlers.TryGetValue(handlerMethod.ParameterType, out handlerList))
-                {
-                    handlerList = new List<Action<AggregateRoot, object>>();
-                    this.handlers.Add(handlerMethod.ParameterType, handlerList);
-                }
-
-                handlerList.Add(handler);
-            }
+            this.dispatcher = Application.Current.GetDispatcher(this.GetType());
         }
 
         string IAggregateRoot.State
@@ -187,20 +123,6 @@ namespace dddlib
             this.ApplyChange(@event, true);
         }
 
-        private static string GetApplyMethodName()
-        {
-            Expression<Action<AggregateRoot>> expression = aggregate => aggregate.Apply(default(object));
-            var lambda = (LambdaExpression)expression;
-            var methodCall = (MethodCallExpression)lambda.Body;
-            return methodCall.Method.Name;
-        }
-
-        // TODO (Cameron): Decide whether to pursue as a protected virtual method.
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        private void Apply(object @event)
-        {
-        }
-
         // LINK (Cameron): http://www.sapiensworks.com/blog/post/2012/04/19/Invoking-A-Private-Method-On-A-Subclass.aspx
         private void ApplyChange(object @event, bool isNew)
         {
@@ -211,14 +133,7 @@ namespace dddlib
                 return;
             }
 
-            var handlerList = default(List<Action<AggregateRoot, object>>); 
-            if (this.handlers.TryGetValue(@event.GetType(), out handlerList))
-            {
-                foreach (var handler in handlerList)
-                {
-                    handler.Invoke(this, @event);
-                }
-            }
+            this.dispatcher.Dispatch(this, @event);
 
             if (isNew)
             {

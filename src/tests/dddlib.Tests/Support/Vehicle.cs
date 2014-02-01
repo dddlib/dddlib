@@ -22,6 +22,10 @@ namespace dddlib.Tests.Support
                 });
         }
 
+        protected Vehicle()
+        {
+        }
+
         [NaturalKeyAttribute]
         public string Registration { get; protected set; }
 

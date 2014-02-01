@@ -2,11 +2,6 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-[module: System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "StyleCop.CSharp.NamingRules", 
-    "SA1300:ElementMustBeginWithUpperCaseLetter", 
-    Justification = "Noted.")]
-
 namespace dddlib
 {
     using System;

@@ -4,6 +4,9 @@
     <BooleanProperty Name="WriteCache">False</BooleanProperty>
     <BooleanProperty Name="AutoCheckForUpdate">False</BooleanProperty>
     <BooleanProperty Name="ViolationsAsErrors">True</BooleanProperty>
+    <CollectionProperty Name="RecognizedWords">
+      <Value>bootstrapper</Value>
+    </CollectionProperty>
   </GlobalSettings>
   <Parsers>
     <Parser ParserId="StyleCop.CSharp.CsParser">
@@ -61,6 +64,13 @@
       <AnalyzerSettings />
     </Analyzer>
     <Analyzer AnalyzerId="StyleCop.CSharp.NamingRules">
+      <Rules>
+        <Rule Name="ElementMustBeginWithUpperCaseLetter">
+          <RuleSettings>
+            <BooleanProperty Name="Enabled">False</BooleanProperty>
+          </RuleSettings>
+        </Rule>
+      </Rules>
       <AnalyzerSettings>
         <CollectionProperty Name="Hungarian">
           <Value>is</Value>

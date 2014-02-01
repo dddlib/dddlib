@@ -11,6 +11,10 @@ namespace dddlib.Tests.Support
         {
         }
 
+        protected internal Car()
+        {
+        }
+
         protected override object GetState()
         {
             return new CarMemento
