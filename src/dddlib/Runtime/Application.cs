@@ -16,6 +16,7 @@ namespace dddlib.Runtime
         private static readonly object SyncLock = new object();
 
         private readonly Dictionary<Type, IEventDispatcher> dispatchers = new Dictionary<Type, IEventDispatcher>();
+        private readonly Dictionary<Type, IEqualityComparer<object>> equalityComparers = new Dictionary<Type, IEqualityComparer<object>>();
         private readonly Dictionary<Type, Func<object>> factories = new Dictionary<Type, Func<object>>();
         private readonly List<Assembly> assemblies = new List<Assembly>();
 
@@ -52,6 +53,51 @@ namespace dddlib.Runtime
             }
 
             return dispatcher;
+        }
+
+        public IEqualityComparer<object> GetEqualityComparer(Type entityType)
+        {
+            var equalityComparer = default(IEqualityComparer<object>);
+            if (!this.equalityComparers.TryGetValue(entityType, out equalityComparer))
+            {
+                lock (SyncLock)
+                {
+                    if (this.equalityComparers.TryGetValue(entityType, out equalityComparer))
+                    {
+                        return equalityComparer;
+                    }
+
+                    if (!this.assemblies.Contains(entityType.Assembly))
+                    {
+                        this.Bootstrap(entityType.Assembly);
+                        this.assemblies.Add(entityType.Assembly);
+                    }
+
+                    var naturalKey = entityType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
+                        .SelectMany(member => member.GetCustomAttributes(typeof(NaturalKeyAttribute), false))
+                        .OfType<NaturalKeyAttribute>()
+                        .SingleOrDefault();
+
+                    if (naturalKey == null)
+                    {
+                        ////throw new RuntimeException(
+                        ////    string.Format(
+                        ////        CultureInfo.InvariantCulture,
+                        ////        "The entity of type '{0}' does not have a natural key defined.",
+                        ////        entityType.Name));
+                        return EqualityComparer<object>.Default;
+                    }
+
+                    // TODO (Cameron): Ensure equality comparer instantiation is safe. ie. error-handled correctly.
+                    equalityComparer = naturalKey.EqualityComparer == null
+                        ? EqualityComparer<object>.Default
+                        : (IEqualityComparer<object>)Activator.CreateInstance(naturalKey.EqualityComparer);
+
+                    this.equalityComparers.Add(entityType, equalityComparer);
+                }
+            }
+
+            return equalityComparer;
         }
 
         void IApplication.RegisterFactory<T>(Func<T> aggregateFactory)

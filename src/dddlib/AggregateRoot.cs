@@ -15,8 +15,6 @@ namespace dddlib
     /// </summary>
     public abstract class AggregateRoot : Entity, IAggregateRoot
     {
-        private static readonly object SyncLock = new object();
-
         private readonly List<object> events = new List<object>();
         private readonly IEventDispatcher dispatcher;
 

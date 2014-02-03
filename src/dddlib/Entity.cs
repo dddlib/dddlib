@@ -9,20 +9,21 @@ namespace dddlib
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
+    using dddlib.Runtime;
 
     /// <summary>
     /// Represents an entity.
     /// </summary>
     public abstract class Entity
     {
-        private readonly IEqualityComparer<object> equalityComparer;
+        private IEqualityComparer<object> equalityComparer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Entity"/> class.
         /// </summary>
         protected Entity()
         {
-            this.equalityComparer = this.GetEqualityComparer();
+            this.equalityComparer = Application.Current.GetEqualityComparer(this.GetType());
         }
 
         [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible anywhere.")]
@@ -93,23 +94,6 @@ namespace dddlib
                 .Single(member => member.GetCustomAttributes(typeof(NaturalKeyAttribute), false).Any());
 
             return naturalKeyMember.GetValue(this);
-        }
-
-        private IEqualityComparer<object> GetEqualityComparer()
-        {
-            var naturalKey = this.GetType().GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
-                .SelectMany(member => member.GetCustomAttributes(typeof(NaturalKeyAttribute), false))
-                .Single();
-
-            var naturalKeyAttr = naturalKey as NaturalKeyAttribute;
-
-            IEqualityComparer<object> comp = EqualityComparer<object>.Default;
-            if (naturalKeyAttr.EqualityComparer != null)
-            {
-                comp = (IEqualityComparer<object>)Activator.CreateInstance(naturalKeyAttr.EqualityComparer);
-            }
-
-            return comp;
         }
     }
 }

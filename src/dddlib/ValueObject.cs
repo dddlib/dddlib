@@ -143,18 +143,22 @@ namespace dddlib
             return value;
         }
 
-        // TODO (Cameron): Tidy up for logging.
+        // TODO (Cameron): Add trace level logging, maybe?
         private class EqualityComparer : IEqualityComparer<object>
         {
             public new bool Equals(object x, object y)
             {
-                Trace.Write(string.Format(CultureInfo.InvariantCulture, "Comparing '{0}' with '{1}'... ", x, y));
+                if (object.ReferenceEquals(x, y))
+                {
+                    return true;
+                }
 
-                var isEqual = x == y;
+                if (object.ReferenceEquals(x, null) && object.ReferenceEquals(y, null))
+                {
+                    return true;
+                }
 
-                Trace.WriteLine(string.Format(CultureInfo.InvariantCulture, "{0}.", isEqual));
-
-                return isEqual;
+                return object.ReferenceEquals(x, null) ? y.Equals(x) : x.Equals(y);
             }
 
             public virtual int GetHashCode(object obj)
