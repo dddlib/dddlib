@@ -10,8 +10,7 @@ namespace dddlib.Tests.Support
     {
         public void Bootstrap(IApplication application)
         {
-            // application.Log();
-            application.AddFactory(() => new Car());
+            application.RegisterFactory(() => new Car());
         }
     }
 }

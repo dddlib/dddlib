@@ -6,15 +6,17 @@ namespace dddlib.Runtime
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using System.Reflection;
 
-    internal sealed class Application
+    internal sealed class Application : IApplication
     {
         private static readonly Lazy<Application> Instance = new Lazy<Application>(() => new Application(), true);
         private static readonly object SyncLock = new object();
 
         private readonly Dictionary<Type, IEventDispatcher> dispatchers = new Dictionary<Type, IEventDispatcher>();
+        private readonly Dictionary<Type, Func<object>> factories = new Dictionary<Type, Func<object>>();
         private readonly List<Assembly> assemblies = new List<Assembly>();
 
         internal Application()
@@ -52,15 +54,44 @@ namespace dddlib.Runtime
             return dispatcher;
         }
 
-        // LINK (Cameron): http://stackoverflow.com/questions/1268397/how-to-find-all-the-types-in-an-assembly-that-inherit-from-a-specific-type-c-sha
-        private static IEnumerable<Type> FindDerivedTypes(Assembly assembly, Type baseType)
+        void IApplication.RegisterFactory<T>(Func<T> aggregateFactory)
         {
-            return assembly.GetTypes().Where(t => t != baseType && baseType.IsAssignableFrom(t));
+            Guard.Against.Null(() => aggregateFactory);
+
+            if (this.factories.ContainsKey(typeof(T)))
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "The application already has a factory registered for the aggregate root of type '{0}'.",
+                        typeof(T).Name));
+            }
+
+            this.factories.Add(typeof(T), aggregateFactory);
         }
 
         private void Bootstrap(Assembly assembly)
         {
-            var bootstrappers = FindDerivedTypes(assembly, typeof(IBootstrapper));
+            var bootstrapperTypes = assembly.GetTypes().Where(type => typeof(IBootstrapper).IsAssignableFrom(type));
+            if (!bootstrapperTypes.Any())
+            {
+                return;
+            }
+
+            if (bootstrapperTypes.Count() > 1)
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "The assembly '{0}' has more than one bootstrapper defined.",
+                        this.GetType().Assembly.GetName().Name));
+            }
+
+            foreach (var bootstrapperType in bootstrapperTypes)
+            {
+                var bootstrapper = Activator.CreateInstance(bootstrapperType) as IBootstrapper;
+                bootstrapper.Bootstrap(this);
+            }
         }
     }
 }

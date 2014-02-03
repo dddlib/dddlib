@@ -6,6 +6,7 @@ namespace dddlib
 {
     using System.Collections.Generic;
 
+    // TODO (Cameron): Remove this?
     internal interface IAggregateRoot
     {
         string State { get; }

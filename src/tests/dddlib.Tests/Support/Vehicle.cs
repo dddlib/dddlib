@@ -26,8 +26,8 @@ namespace dddlib.Tests.Support
         {
         }
 
-        [NaturalKeyAttribute]
-        public string Registration { get; protected set; }
+        [NaturalKey(typeof(System.StringComparer))]
+        public virtual string Registration { get; protected set; }
 
         public void Scrap()
         {

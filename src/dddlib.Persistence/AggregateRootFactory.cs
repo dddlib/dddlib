@@ -33,5 +33,8 @@ namespace dddlib.Persistence
             aggregate.Initialize(memento, events, state);
             return (T)aggregate;
         }
+
+        // IMPORTANT (Cameron): If we save a car, which is a vehicle to the vehicle repo and the natural key is inherited, what happens?
+        // I think each repo needs to ensure it's saving the correct type.
     }
 }

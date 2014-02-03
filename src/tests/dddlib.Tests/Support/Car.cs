@@ -4,6 +4,8 @@
 
 namespace dddlib.Tests.Support
 {
+    using System.Collections.Generic;
+
     public class Car : Vehicle
     {
         public Car(string registration)
@@ -13,6 +15,12 @@ namespace dddlib.Tests.Support
 
         protected internal Car()
         {
+        }
+
+        [NaturalKey(typeof(Comp))]
+        public override string Registration
+        {
+            get { return base.Registration; }
         }
 
         protected override object GetState()
@@ -37,6 +45,19 @@ namespace dddlib.Tests.Support
         private class CarMemento
         {
             public string Registration { get; set; }
+        }
+
+        private class Comp : IEqualityComparer<string>
+        {
+            public bool Equals(string x, string y)
+            {
+                return true;
+            }
+
+            public int GetHashCode(string obj)
+            {
+                return 1;
+            }
         }
     }
 }

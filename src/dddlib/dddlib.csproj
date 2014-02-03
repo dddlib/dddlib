@@ -61,6 +61,7 @@
     <Compile Include="Runtime\IApplication.cs" />
     <Compile Include="Runtime\IBootstrapper.cs" />
     <Compile Include="Runtime\IEventDispatcher.cs" />
+    <Compile Include="Runtime\RuntimeException.cs" />
     <Compile Include="ValueObject.cs" />
   </ItemGroup>
   <ItemGroup>

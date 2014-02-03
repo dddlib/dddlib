@@ -76,7 +76,7 @@ namespace dddlib
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Inappropriate.")]
         protected virtual object GetState()
         {
-            throw new NotImplementedException(
+            throw new RuntimeException(
                 string.Format(
                     CultureInfo.InvariantCulture,
                     "The aggregate root of type '{0}' has not been configured to create a memento representing its state.",
@@ -89,7 +89,7 @@ namespace dddlib
         /// <param name="memento">A memento representing the state of the aggregate root.</param>
         protected virtual void SetState(object memento)
         {
-            throw new NotImplementedException(
+            throw new RuntimeException(
                 string.Format(
                     CultureInfo.InvariantCulture,
                     "The aggregate root of type '{0}' has not been configured to apply a memento representing its state.",

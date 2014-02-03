@@ -10,6 +10,7 @@ namespace dddlib
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
+    using dddlib.Runtime;
 
     /// <summary>
     /// Represents a value object.
@@ -34,7 +35,9 @@ namespace dddlib
         /// <summary>
         /// Initializes a new instance of the <see cref="ValueObject{T}"/> class.
         /// </summary>
-        /// <param name="equalityComparer">The equality comparer to use for value equality.</param>
+        /// <param name="equalityComparer">
+        /// The comparer to use for equality comparison of each of the items that together comprise the value of this object.
+        /// </param>
         protected ValueObject(IEqualityComparer<object> equalityComparer)
         {
             Guard.Against.Null(() => equalityComparer);
@@ -114,7 +117,7 @@ namespace dddlib
             var thisValue = this.GetValueAndValidate();
             var otherValue = other.GetValueAndValidate();
 
-            return otherValue.SequenceEqual(thisValue);
+            return otherValue.SequenceEqual(thisValue, this.equalityComparer);
         }
 
         /// <summary>
@@ -130,7 +133,7 @@ namespace dddlib
             var value = this.GetValue();
             if (value == null)
             {
-                throw new InvalidOperationException(
+                throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture,
                         "Unable to calculate value equality for '{0}' as the overridden 'GetValue' method implementation is returning null.",
@@ -140,18 +143,10 @@ namespace dddlib
             return value;
         }
 
-        /// <summary>
-        /// Represents the default <see cref="ValueObject{T}"/> equality comparer for the items that together comprise the value of an object.
-        /// </summary>
-        protected class EqualityComparer : IEqualityComparer<object>
+        // TODO (Cameron): Tidy up for logging.
+        private class EqualityComparer : IEqualityComparer<object>
         {
-            /// <summary>
-            /// Determines whether the specified objects are equal to each other.
-            /// </summary>
-            /// <param name="x">The first object to compare.</param>
-            /// <param name="y">The second object to compare.</param>
-            /// <returns>Returns <c>true</c> if the first object is equal to the second object; otherwise, <c>false</c>.</returns>
-            public virtual new bool Equals(object x, object y)
+            public new bool Equals(object x, object y)
             {
                 Trace.Write(string.Format(CultureInfo.InvariantCulture, "Comparing '{0}' with '{1}'... ", x, y));
 
@@ -162,11 +157,6 @@ namespace dddlib
                 return isEqual;
             }
 
-            /// <summary>
-            /// Returns a hash code for the specified object.
-            /// </summary>
-            /// <param name="obj">The object.</param>
-            /// <returns>A hash code for the specified object, suitable for use in hashing algorithms and data structures like a hash table.</returns>
             public virtual int GetHashCode(object obj)
             {
                 return obj == null ? 0 : obj.GetHashCode();

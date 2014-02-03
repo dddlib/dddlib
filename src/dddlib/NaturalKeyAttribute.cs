@@ -14,5 +14,35 @@ namespace dddlib
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     public class NaturalKeyAttribute : Attribute
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NaturalKeyAttribute"/> class.
+        /// </summary>
+        public NaturalKeyAttribute()
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NaturalKeyAttribute"/> class.
+        /// </summary>
+        /// <param name="equalityComparer">The equality comparer.</param>
+        public NaturalKeyAttribute(Type equalityComparer)
+        {
+            this.EqualityComparer = equalityComparer;
+        }
+
+        /// <summary>
+        /// Gets or sets the equality comparer for the natural key of the entity.
+        /// </summary>
+        /// <value>The equality comparer for the natural key of the entity.</value>
+        public Type EqualityComparer { get; set; }
+
+        /// <summary>
+        /// When overridden in a derived class, indicates whether the value of this instance is the default value for the derived class.
+        /// </summary>
+        /// <returns>Returns <c>true</c> if this instance is the default attribute for the class; otherwise, <c>false</c>.</returns>
+        public override bool IsDefaultAttribute()
+        {
+            return this.EqualityComparer == null;
+        }
     }
 }
