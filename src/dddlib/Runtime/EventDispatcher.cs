@@ -11,6 +11,7 @@ namespace dddlib.Runtime
     using System.Reflection;
     using System.Reflection.Emit;
 
+    // TODO (Cameron): Make public and allow to be configured?
     internal sealed class EventDispatcher : IEventDispatcher
     {
         private static readonly string ApplyMethodName = GetApplyMethodName();

@@ -1,4 +1,4 @@
-﻿// <copyright file="IApplication.cs" company="dddlib contributors">
+﻿// <copyright file="IDomain.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -9,9 +9,9 @@ namespace dddlib.Runtime
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
-    /// Exposes the public members of the application.
+    /// Exposes the public members of the domain.
     /// </summary>
-    public interface IApplication
+    public interface IDomain
     {
         /// <summary>
         /// Registers the specified factory for the aggregate with the application.

@@ -10,7 +10,7 @@ namespace dddlib.Runtime
     using System.Linq;
     using System.Reflection;
 
-    internal sealed class Application : IApplication
+    internal sealed class Application : IDomain
     {
         private static readonly Lazy<Application> Instance = new Lazy<Application>(() => new Application(), true);
         private static readonly object SyncLock = new object();
@@ -100,7 +100,7 @@ namespace dddlib.Runtime
             return equalityComparer;
         }
 
-        void IApplication.RegisterFactory<T>(Func<T> aggregateFactory)
+        void IDomain.RegisterFactory<T>(Func<T> aggregateFactory)
         {
             Guard.Against.Null(() => aggregateFactory);
 

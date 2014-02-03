@@ -58,7 +58,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Runtime\Application.cs" />
     <Compile Include="Runtime\EventDispatcher.cs" />
-    <Compile Include="Runtime\IApplication.cs" />
+    <Compile Include="Runtime\IDomain.cs" />
     <Compile Include="Runtime\IBootstrapper.cs" />
     <Compile Include="Runtime\IEventDispatcher.cs" />
     <Compile Include="Runtime\RuntimeException.cs" />
