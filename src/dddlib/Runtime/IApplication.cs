@@ -1,4 +1,4 @@
-﻿// <copyright file="IDomain.cs" company="dddlib contributors">
+﻿// <copyright file="IApplication.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -9,16 +9,15 @@ namespace dddlib.Runtime
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
-    /// Exposes the public members of the domain.
+    /// Exposes the public members of the application.
     /// </summary>
-    public interface IDomain
+    public interface IApplication
     {
         /// <summary>
-        /// Registers the specified factory for creating an uninitialized instance of an aggregate of the specified type.
+        /// Sets the event dispatcher factory to use for all aggregate roots in the assembly containing the implementation.
         /// </summary>
-        /// <typeparam name="T">The type of aggregate.</typeparam>
-        /// <param name="aggregateFactory">The factory for the aggregate.</param>
-        void RegisterFactory<T>(Func<T> aggregateFactory) where T : AggregateRoot;
+        /// <param name="eventDispatcherFactory">The event dispatcher factory.</param>
+        void SetEventDispatcherFactory(Func<Type, IEventDispatcher> eventDispatcherFactory);
 
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Not my call.")]
         [SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", MessageId = "GetType", Justification = "This is it.")]

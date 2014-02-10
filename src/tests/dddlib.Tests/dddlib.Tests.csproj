@@ -43,6 +43,8 @@
     <Compile Include="BusinessExceptionTests.cs" />
     <Compile Include="EntityTests.cs" />
     <Compile Include="NaturalKeyAttributeTests.cs" />
+    <Compile Include="Runtime\ApplicationTests.cs" />
+    <Compile Include="Runtime\DomainTests.cs" />
     <Compile Include="Support\Bootstrapper.cs" />
     <Compile Include="Support\Car.cs" />
     <Compile Include="Support\Vehicle.cs" />

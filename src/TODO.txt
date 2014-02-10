@@ -1,0 +1,23 @@
+--Application to be disposable
+--Ambient application to be singleton instance
+--Ability to specify current appilcation in using block
+Application constructor to take bootsrapper dependency & possibly domain?
+Ability to bootstrap application and domain:
+application.SetEventDispatcher()
+
+
+Default event dispatcher to be public and overridable.
+and to take method name as parameter?
+
+Functionality:
+Can change name of aggregate apply method
+Can change whole invocation process -> EventDispatcher (more func args required)?
+
+DDDLIB_STRICT compiler symbol
+NaturalKey attribute required for reconstitution on AggregateRoot
+Optional NaturalKey required for each entity
+Default ValueObject should be best-effort deep value equality (overridable)
+
+
+Application
+Domain

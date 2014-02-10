@@ -8,6 +8,10 @@ namespace dddlib.Tests.Support
 
     internal class Bootstrapper : IBootstrapper
     {
+        public void Bootstrap(IApplication application)
+        {
+        }
+
         public void Bootstrap(IDomain domain)
         {
             domain.RegisterFactory(() => new Car());

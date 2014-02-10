@@ -10,6 +10,12 @@ namespace dddlib.Runtime
     public interface IBootstrapper
     {
         /// <summary>
+        /// Bootstraps the specified application.
+        /// </summary>
+        /// <param name="application">The application.</param>
+        void Bootstrap(IApplication application);
+
+        /// <summary>
         /// Bootstraps the specified domain.
         /// </summary>
         /// <param name="domain">The domain.</param>

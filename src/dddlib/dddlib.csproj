@@ -57,11 +57,18 @@
     <Compile Include="NaturalKeyAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Runtime\Application.cs" />
-    <Compile Include="Runtime\EventDispatcher.cs" />
+    <Compile Include="Runtime\Analyzer\AssemblyDescriptor.cs" />
+    <Compile Include="Runtime\Analyzer\AssemblyAnalyzer.cs" />
+    <Compile Include="Runtime\DefaultEventDispatcher.cs" />
+    <Compile Include="Runtime\Analyzer\Descriptor.cs" />
+    <Compile Include="Runtime\Domain.cs" />
+    <Compile Include="Runtime\IApplication.cs" />
     <Compile Include="Runtime\IDomain.cs" />
     <Compile Include="Runtime\IBootstrapper.cs" />
     <Compile Include="Runtime\IEventDispatcher.cs" />
     <Compile Include="Runtime\RuntimeException.cs" />
+    <Compile Include="Runtime\Analyzer\TypeAnalyzer.cs" />
+    <Compile Include="Runtime\Analyzer\TypeDescriptor.cs" />
     <Compile Include="ValueObject.cs" />
   </ItemGroup>
   <ItemGroup>

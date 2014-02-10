@@ -1,4 +1,4 @@
-﻿// <copyright file="EventDispatcher.cs" company="dddlib contributors">
+﻿// <copyright file="DefaultEventDispatcher.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -12,13 +12,13 @@ namespace dddlib.Runtime
     using System.Reflection.Emit;
 
     // TODO (Cameron): Make public and allow to be configured?
-    internal sealed class EventDispatcher : IEventDispatcher
+    internal sealed class DefaultEventDispatcher : IEventDispatcher
     {
         private static readonly string ApplyMethodName = GetApplyMethodName();
 
         private readonly Dictionary<Type, List<Action<AggregateRoot, object>>> handlers;
 
-        public EventDispatcher(Type aggregateType)
+        public DefaultEventDispatcher(Type aggregateType)
         {
             Guard.Against.Null(() => aggregateType);
 
@@ -95,7 +95,7 @@ namespace dddlib.Runtime
 
         private static string GetApplyMethodName()
         {
-            Expression<Action<EventDispatcher>> expression = aggregate => aggregate.Handle(default(object));
+            Expression<Action<DefaultEventDispatcher>> expression = aggregate => aggregate.Handle(default(object));
             var lambda = (LambdaExpression)expression;
             var methodCall = (MethodCallExpression)lambda.Body;
             return methodCall.Method.Name;

@@ -6,137 +6,76 @@ namespace dddlib.Runtime
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.Linq;
     using System.Reflection;
 
-    internal sealed class Application : IDomain
+    /// <summary>
+    /// Represents an application.
+    /// </summary>
+    public sealed class Application : IDisposable
     {
-        private static readonly Lazy<Application> Instance = new Lazy<Application>(() => new Application(), true);
+        private static readonly Lazy<Application> DefaultApplication = new Lazy<Application>(() => new Application(), true);
+        private static readonly List<Application> Applications = new List<Application>();
         private static readonly object SyncLock = new object();
 
-        private readonly Dictionary<Type, IEventDispatcher> dispatchers = new Dictionary<Type, IEventDispatcher>();
-        private readonly Dictionary<Type, IEqualityComparer<object>> equalityComparers = new Dictionary<Type, IEqualityComparer<object>>();
-        private readonly Dictionary<Type, Func<object>> factories = new Dictionary<Type, Func<object>>();
-        private readonly List<Assembly> assemblies = new List<Assembly>();
+        private readonly Dictionary<Assembly, Func<Type, IEventDispatcher>> eventDispatcherFactories = new Dictionary<Assembly, Func<Type, IEventDispatcher>>();
+        private readonly Dictionary<Type, IEventDispatcher> eventDispatchers = new Dictionary<Type, IEventDispatcher>();
+        private readonly Domain domain = new Domain();
 
-        internal Application()
+        private bool isDisposed = false;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Application"/> class.
+        /// </summary>
+        public Application()
         {
+            lock (SyncLock)
+            {
+                Applications.Add(this);
+            }
         }
 
+        /// <summary>
+        /// Gets the ambient application instance.
+        /// </summary>
+        /// <value>The ambient application instance.</value>
         public static Application Current
         {
-            get { return Instance.Value; }
-        }
-
-        public IEventDispatcher GetDispatcher(Type aggregateType)
-        {
-            var dispatcher = default(IEventDispatcher);
-            if (!this.dispatchers.TryGetValue(aggregateType, out dispatcher))
+            get 
             {
                 lock (SyncLock)
                 {
-                    if (this.dispatchers.TryGetValue(aggregateType, out dispatcher))
-                    {
-                        return dispatcher;
-                    }
-
-                    if (!this.assemblies.Contains(aggregateType.Assembly))
-                    {
-                        this.Bootstrap(aggregateType.Assembly);
-                        this.assemblies.Add(aggregateType.Assembly);
-                    }
-
-                    dispatcher = new EventDispatcher(aggregateType);
-                    this.dispatchers.Add(aggregateType, dispatcher);
+                    // LINK (Cameron): http://stackoverflow.com/questions/1043039/does-listt-guarantee-insertion-order
+                    return Applications.Any() ? Applications.Last() : DefaultApplication.Value;
                 }
             }
-
-            return dispatcher;
         }
 
-        public IEqualityComparer<object> GetEqualityComparer(Type entityType)
+        // NOTE (Cameron): I decided not to implement a check to see if the object is disposed.
+        // LINK (Cameron): http://stackoverflow.com/questions/18069521/should-objectdisposedexception-be-thrown-from-a-property-get
+        internal Domain Domain
         {
-            var equalityComparer = default(IEqualityComparer<object>);
-            if (!this.equalityComparers.TryGetValue(entityType, out equalityComparer))
-            {
-                lock (SyncLock)
-                {
-                    if (this.equalityComparers.TryGetValue(entityType, out equalityComparer))
-                    {
-                        return equalityComparer;
-                    }
-
-                    if (!this.assemblies.Contains(entityType.Assembly))
-                    {
-                        this.Bootstrap(entityType.Assembly);
-                        this.assemblies.Add(entityType.Assembly);
-                    }
-
-                    var naturalKey = entityType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
-                        .SelectMany(member => member.GetCustomAttributes(typeof(NaturalKeyAttribute), false))
-                        .OfType<NaturalKeyAttribute>()
-                        .SingleOrDefault();
-
-                    if (naturalKey == null)
-                    {
-                        ////throw new RuntimeException(
-                        ////    string.Format(
-                        ////        CultureInfo.InvariantCulture,
-                        ////        "The entity of type '{0}' does not have a natural key defined.",
-                        ////        entityType.Name));
-                        return EqualityComparer<object>.Default;
-                    }
-
-                    // TODO (Cameron): Ensure equality comparer instantiation is safe. ie. error-handled correctly.
-                    equalityComparer = naturalKey.EqualityComparer == null
-                        ? EqualityComparer<object>.Default
-                        : (IEqualityComparer<object>)Activator.CreateInstance(naturalKey.EqualityComparer);
-
-                    this.equalityComparers.Add(entityType, equalityComparer);
-                }
-            }
-
-            return equalityComparer;
+            get { return this.domain; }
         }
 
-        void IDomain.RegisterFactory<T>(Func<T> aggregateFactory)
+        void IDisposable.Dispose()
         {
-            Guard.Against.Null(() => aggregateFactory);
-
-            if (this.factories.ContainsKey(typeof(T)))
+            if (object.ReferenceEquals(this, DefaultApplication.Value))
             {
-                throw new RuntimeException(
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "The application already has a factory registered for the aggregate root of type '{0}'.",
-                        typeof(T).Name));
-            }
-
-            this.factories.Add(typeof(T), aggregateFactory);
-        }
-
-        private void Bootstrap(Assembly assembly)
-        {
-            var bootstrapperTypes = assembly.GetTypes().Where(type => typeof(IBootstrapper).IsAssignableFrom(type));
-            if (!bootstrapperTypes.Any())
-            {
+                // NOTE (Cameron): We cannot allow the ambient application to be disposed.
                 return;
             }
 
-            if (bootstrapperTypes.Count() > 1)
+            lock (SyncLock)
             {
-                throw new RuntimeException(
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "The assembly '{0}' has more than one bootstrapper defined.",
-                        this.GetType().Assembly.GetName().Name));
-            }
+                if (this.isDisposed)
+                {
+                    return;
+                }
 
-            foreach (var bootstrapperType in bootstrapperTypes)
-            {
-                var bootstrapper = Activator.CreateInstance(bootstrapperType) as IBootstrapper;
-                bootstrapper.Bootstrap(this);
+                Applications.Remove(this);
+
+                this.isDisposed = true;
             }
         }
     }
