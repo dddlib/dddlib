@@ -10,7 +10,7 @@ namespace dddlib.Runtime.Analyzer
     /// <summary>
     /// Describes an assembly.
     /// </summary>
-    public class AssemblyDescriptor : Descriptor
+    public class AssemblyDescriptor : Descriptor // Entity
     {
         internal AssemblyDescriptor()
         {

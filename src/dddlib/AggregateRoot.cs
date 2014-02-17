@@ -26,7 +26,7 @@ namespace dddlib
         /// </summary>
         protected AggregateRoot()
         {
-            this.dispatcher = Application.Current.Domain[this.GetType()].EventDispatcher;
+            this.dispatcher = Application.Current.GetEventDispatcher(this.GetType());
         }
 
         string IAggregateRoot.State

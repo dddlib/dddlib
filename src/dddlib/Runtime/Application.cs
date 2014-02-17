@@ -20,7 +20,7 @@ namespace dddlib.Runtime
 
         private readonly Dictionary<Assembly, Func<Type, IEventDispatcher>> eventDispatcherFactories = new Dictionary<Assembly, Func<Type, IEventDispatcher>>();
         private readonly Dictionary<Type, IEventDispatcher> eventDispatchers = new Dictionary<Type, IEventDispatcher>();
-        private readonly Domain domain = new Domain();
+        private readonly Lazy<Domain> domain = new Lazy<Domain>(() => new Domain(), true);
 
         private bool isDisposed = false;
 
@@ -55,7 +55,7 @@ namespace dddlib.Runtime
         // LINK (Cameron): http://stackoverflow.com/questions/18069521/should-objectdisposedexception-be-thrown-from-a-property-get
         internal Domain Domain
         {
-            get { return this.domain; }
+            get { return this.domain.Value; }
         }
 
         void IDisposable.Dispose()
@@ -77,6 +77,26 @@ namespace dddlib.Runtime
 
                 this.isDisposed = true;
             }
+        }
+
+        internal IEventDispatcher GetEventDispatcher(Type type)
+        {
+            if (type == typeof(Domain))
+            {
+                return new DefaultEventDispatcher(type);
+            }
+
+            return this.domain.Value[type].EventDispatcher;
+        }
+
+        internal IEqualityComparer<object> GetEqualityComparer(Type type)
+        {
+            if (type == typeof(Domain))
+            {
+                return EqualityComparer<object>.Default;
+            }
+
+            return this.domain.Value[type].EqualityComparer;
         }
     }
 }

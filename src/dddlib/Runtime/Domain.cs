@@ -13,7 +13,7 @@ namespace dddlib.Runtime
     /// <summary>
     /// Represents a domain.
     /// </summary>
-    public class Domain
+    public class Domain : AggregateRoot
     {
         private readonly Dictionary<Assembly, AssemblyDescriptor> assemblyDescriptors = new Dictionary<Assembly, AssemblyDescriptor>();
         private readonly Dictionary<Type, TypeDescriptor> typeDescriptors = new Dictionary<Type, TypeDescriptor>();

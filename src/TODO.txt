@@ -19,5 +19,36 @@ Optional NaturalKey required for each entity
 Default ValueObject should be best-effort deep value equality (overridable)
 
 
-Application
-Domain
+
+===== NEW! ====
+Domain is concerned with validation
+Domain is an aggregate root
+Domain should have AggregateRoot, Entity and ValueObject entity types
+Domain should be valid or invalid
+
+Application should use domain for validation
+Application should enable bootstrapping of Domain services
+Application wire-up of any domain implementation should use Domain
+
+Domain consists of:
+Domain : AggregateRoot
+AggregateRoot : Entity
+Entity : Entity
+ValueObject : Entity
+ValidationRule/Result : ValueObject
+IValidationService (service)
+
+None of the domain should ever be exposed by the application
+Bootstrapping is an application concern
+Wire-up is an application concern
+Wire-up should continue to be performant
+
+
+Domain styles:
+DefaultEventDispatcher - takes method name as argument
+MementoEventDispatcher - takes method name as argument
+MicrobusEventDispatcher - takes nested event dispatcher as argument
+
+Event-based
+Record events for persistence - requires factories
+Do not record events for persistence - factories not required

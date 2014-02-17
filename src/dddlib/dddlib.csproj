@@ -66,6 +66,11 @@
     <Compile Include="Runtime\IDomain.cs" />
     <Compile Include="Runtime\IBootstrapper.cs" />
     <Compile Include="Runtime\IEventDispatcher.cs" />
+    <Compile Include="Runtime\Model\AggregateRoot.cs" />
+    <Compile Include="Runtime\Model\Domain.cs" />
+    <Compile Include="Runtime\Model\Entity.cs" />
+    <Compile Include="Runtime\Model\Issue.cs" />
+    <Compile Include="Runtime\Model\ValueObject.cs" />
     <Compile Include="Runtime\RuntimeException.cs" />
     <Compile Include="Runtime\Analyzer\TypeAnalyzer.cs" />
     <Compile Include="Runtime\Analyzer\TypeDescriptor.cs" />
@@ -80,6 +85,7 @@
     </None>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

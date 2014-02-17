@@ -10,7 +10,7 @@ namespace dddlib.Runtime.Analyzer
     /// <summary>
     /// Describes a type.
     /// </summary>
-    public class TypeDescriptor : Descriptor
+    public class TypeDescriptor : Descriptor // Entity
     {
         internal TypeDescriptor()
         {

@@ -23,7 +23,7 @@ namespace dddlib
         /// </summary>
         protected Entity()
         {
-            this.equalityComparer = Application.Current.Domain[this.GetType()].EqualityComparer;
+            this.equalityComparer = Application.Current.GetEqualityComparer(this.GetType());
         }
 
         [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible anywhere.")]

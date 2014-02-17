@@ -4,7 +4,15 @@
 
 namespace dddlib.Tests.Runtime
 {
+    using dddlib.Runtime;
+    using Xunit;
+
     public class DomainTests
     {
+        [Fact]
+        public void Do()
+        {
+            var domain = new Domain();
+        }
     }
 }

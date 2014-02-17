@@ -37,7 +37,9 @@
     </None>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Runtime\Model\" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="AggregateRootTests.cs" />
     <Compile Include="BusinessExceptionTests.cs" />
