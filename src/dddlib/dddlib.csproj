@@ -68,6 +68,7 @@
     <Compile Include="Runtime\IEventDispatcher.cs" />
     <Compile Include="Runtime\IEventDispatcherFactory.cs" />
     <Compile Include="Runtime\RuntimeException.cs" />
+    <Compile Include="Runtime\RuntimeMode.cs" />
     <Compile Include="Runtime\TypeAnalyzer.cs" />
     <Compile Include="Runtime\TypeDescriptor.cs" />
     <Compile Include="ValueObject.cs" />

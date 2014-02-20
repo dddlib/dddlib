@@ -14,7 +14,7 @@ namespace dddlib.Tests.Support
 
         public void Bootstrap(IDomain domain)
         {
-            domain.RegisterFactory(() => new Car());
+            domain.RegisterUninitializedAggregateRootFactory(() => new Car());
         }
     }
 }

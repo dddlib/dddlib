@@ -11,6 +11,8 @@ namespace dddlib.Runtime
     {
         public IEventDispatcherFactory EventDispatcherFactory { get; internal set; }
 
+        public RuntimeMode RuntimeMode { get; internal set; }
+
         public IEnumerable<KeyValuePair<Type, Func<object>>> AggregateRootFactories { get; internal set; }
     }
 }

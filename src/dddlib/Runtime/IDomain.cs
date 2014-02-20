@@ -14,11 +14,17 @@ namespace dddlib.Runtime
     public interface IDomain
     {
         /// <summary>
+        /// Sets the runtime mode for the domain model contained within this assembly.
+        /// </summary>
+        /// <param name="mode">The runtime mode.</param>
+        void SetRuntimeMode(RuntimeMode mode);
+
+        /// <summary>
         /// Registers the specified factory for creating an uninitialized instance of an aggregate of the specified type.
         /// </summary>
         /// <typeparam name="T">The type of aggregate.</typeparam>
         /// <param name="aggregateFactory">The factory for the aggregate.</param>
-        void RegisterFactory<T>(Func<T> aggregateFactory) where T : AggregateRoot;
+        void RegisterUninitializedAggregateRootFactory<T>(Func<T> aggregateFactory) where T : AggregateRoot;
 
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Not my call.")]
         [SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", MessageId = "GetType", Justification = "This is it.")]

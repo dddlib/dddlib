@@ -15,6 +15,7 @@ namespace dddlib.Runtime
         public AssemblyDescriptor GetDescriptor(Assembly assembly)
         {
             var descriptor = new AssemblyDescriptor();
+            descriptor.RuntimeMode = RuntimeMode.EventSourcing;
             descriptor.EventDispatcherFactory = new DefaultEventDispatcherFactory();
             descriptor.AggregateRootFactories = new Dictionary<Type, Func<object>>();
 
@@ -83,7 +84,18 @@ namespace dddlib.Runtime
                 this.descriptor.EventDispatcherFactory = eventDispatcherFactory;
             }
 
-            public void RegisterFactory<T>(Func<T> aggregateFactory) where T : AggregateRoot
+            public void SetRuntimeMode(RuntimeMode mode)
+            {
+                if (mode == default(RuntimeMode))
+                {
+                    // NOTE (Cameron): Unset enumeration.
+                    throw new ArgumentException("Value of enumeration cannot be unset.", "mode");
+                }
+
+                this.descriptor.RuntimeMode = mode;
+            }
+
+            public void RegisterUninitializedAggregateRootFactory<T>(Func<T> aggregateFactory) where T : AggregateRoot
             {
                 Guard.Against.Null(() => aggregateFactory);
 
@@ -92,7 +104,7 @@ namespace dddlib.Runtime
                     throw new RuntimeException(
                         string.Format(
                             CultureInfo.InvariantCulture,
-                            "The application already has a factory registered for the aggregate root of type '{0}'.", 
+                            "The domain already has a factory registered for the aggregate root of type '{0}'.", 
                             typeof(T).Name));
                 }
 

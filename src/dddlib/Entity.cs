@@ -13,6 +13,7 @@ namespace dddlib
     /// <summary>
     /// Represents an entity.
     /// </summary>
+    //// TODO (Cameron): Ensure that an entity can be created without a natural key.
     public abstract class Entity
     {
         private IEqualityComparer<object> equalityComparer;

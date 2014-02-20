@@ -37,7 +37,11 @@
     </None>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="RuntimeMode\EventSourcingWithoutPersistence\" />
+    <Folder Include="RuntimeMode\EventSourcing\" />
+    <Folder Include="RuntimeMode\Plain\" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="AggregateRootTests.cs" />
     <Compile Include="BusinessExceptionTests.cs" />
