@@ -11,13 +11,20 @@ namespace dddlib.Runtime
     using System.Reflection;
     using System.Reflection.Emit;
 
-    // TODO (Cameron): Make public and allow to be configured?
-    internal sealed class DefaultEventDispatcher : IEventDispatcher
+    /// <summary>
+    /// Represents the default event dispatcher.
+    /// </summary>
+    //// TODO (Cameron): Make public and allow to be configured?
+    public sealed class DefaultEventDispatcher : IEventDispatcher
     {
         private static readonly string ApplyMethodName = GetApplyMethodName();
 
         private readonly Dictionary<Type, List<Action<AggregateRoot, object>>> handlers;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DefaultEventDispatcher"/> class.
+        /// </summary>
+        /// <param name="aggregateType">Type of the aggregate.</param>
         public DefaultEventDispatcher(Type aggregateType)
         {
             Guard.Against.Null(() => aggregateType);
@@ -25,6 +32,11 @@ namespace dddlib.Runtime
             this.handlers = GetHandlers(aggregateType);
         }
 
+        /// <summary>
+        /// Dispatches the specified event against the specified aggregate.
+        /// </summary>
+        /// <param name="aggregate">The aggregate.</param>
+        /// <param name="event">The event.</param>
         public void Dispatch(AggregateRoot aggregate, object @event)
         {
             var handlerList = default(List<Action<AggregateRoot, object>>);

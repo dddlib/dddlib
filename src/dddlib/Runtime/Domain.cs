@@ -8,25 +8,22 @@ namespace dddlib.Runtime
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
-    using dddlib.Runtime.Analyzer;
 
-    /// <summary>
-    /// Represents a domain.
-    /// </summary>
-    public class Domain : AggregateRoot
+    internal class Domain
     {
         private readonly Dictionary<Assembly, AssemblyDescriptor> assemblyDescriptors = new Dictionary<Assembly, AssemblyDescriptor>();
         private readonly Dictionary<Type, TypeDescriptor> typeDescriptors = new Dictionary<Type, TypeDescriptor>();
 
-        /// <summary>
-        /// Gets the <see cref="AssemblyDescriptor"/> for the specified assembly.
-        /// </summary>
-        /// <value>The <see cref="AssemblyDescriptor"/>.</value>
-        /// <param name="assembly">The assembly.</param>
-        /// <returns>The assembly descriptor.</returns>
+        private readonly bool treatAllRuntimeIssuesAsFatal;
+
+        public Domain(bool treatAllRuntimeIssuesAsFatal)
+        {
+            this.treatAllRuntimeIssuesAsFatal = treatAllRuntimeIssuesAsFatal;
+        }
+
         public AssemblyDescriptor this[Assembly assembly]
         {
-            get 
+            get
             {
                 var assemblyDescriptor = default(AssemblyDescriptor);
                 if (this.assemblyDescriptors.TryGetValue(assembly, out assemblyDescriptor))
@@ -48,16 +45,9 @@ namespace dddlib.Runtime
             }
         }
 
-        /// <summary>
-        /// Gets the <see cref="TypeDescriptor"/> for the specified type.
-        /// </summary>
-        /// <value>The <see cref="TypeDescriptor"/>.</value>
-        /// <param name="type">The type.</param>
-        /// <returns>The type descriptor.</returns>
-        [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1632:DocumentationTextMustMeetMinimumCharacterLength", Justification = "Not here.")]
         public TypeDescriptor this[Type type]
         {
-            get 
+            get
             {
                 var typeDescriptor = default(TypeDescriptor);
                 if (this.typeDescriptors.TryGetValue(type, out typeDescriptor))

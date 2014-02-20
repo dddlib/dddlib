@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Runtime.Analyzer
+namespace dddlib.Runtime
 {
     using System;
     using System.Collections.Generic;
@@ -25,7 +25,7 @@ namespace dddlib.Runtime.Analyzer
             if (typeof(AggregateRoot).IsAssignableFrom(type))
             {
                 descriptor.IsAggregateRoot = true;
-                descriptor.EventDispatcher = this.assemblyDescriptor.EventDispatcherFactory.Invoke(type);
+                descriptor.EventDispatcher = this.assemblyDescriptor.EventDispatcherFactory.CreateEventDispatcher(type);
             }
 
             if (typeof(Entity).IsAssignableFrom(type))

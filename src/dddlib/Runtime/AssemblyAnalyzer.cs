@@ -2,19 +2,19 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Runtime.Analyzer
+namespace dddlib.Runtime
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
 
-    internal class AssemblyAnalyzer // service
+    internal class AssemblyAnalyzer
     {
         public AssemblyDescriptor GetDescriptor(Assembly assembly)
         {
             var descriptor = new AssemblyDescriptor();
-            descriptor.EventDispatcherFactory = type => new DefaultEventDispatcher(type);
+            descriptor.EventDispatcherFactory = new DefaultEventDispatcherFactory();
             descriptor.AggregateRootFactories = new Dictionary<Type, Func<object>>();
 
             var bootstrapperTypes = assembly.GetTypes().Where(type => typeof(IBootstrapper).IsAssignableFrom(type));
@@ -63,7 +63,7 @@ namespace dddlib.Runtime.Analyzer
                 this.descriptor = descriptor;
             }
 
-            public void SetEventDispatcherFactory(Func<Type, IEventDispatcher> eventDispatcherFactory)
+            public void SetEventDispatcherFactory(IEventDispatcherFactory eventDispatcherFactory)
             {
                 this.descriptor.EventDispatcherFactory = eventDispatcherFactory;
             }

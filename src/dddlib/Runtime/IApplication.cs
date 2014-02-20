@@ -17,7 +17,7 @@ namespace dddlib.Runtime
         /// Sets the event dispatcher factory to use for all aggregate roots in the assembly containing the implementation.
         /// </summary>
         /// <param name="eventDispatcherFactory">The event dispatcher factory.</param>
-        void SetEventDispatcherFactory(Func<Type, IEventDispatcher> eventDispatcherFactory);
+        void SetEventDispatcherFactory(IEventDispatcherFactory eventDispatcherFactory);
 
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Not my call.")]
         [SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", MessageId = "GetType", Justification = "This is it.")]
