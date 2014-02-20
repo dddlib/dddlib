@@ -4,7 +4,6 @@
 
 namespace dddlib
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
@@ -23,7 +22,7 @@ namespace dddlib
         /// </summary>
         protected Entity()
         {
-            this.equalityComparer = Application.Current.GetEqualityComparer(this.GetType());
+            this.equalityComparer = Application.Current.Runtime[this.GetType()].EqualityComparer;
         }
 
         [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible anywhere.")]

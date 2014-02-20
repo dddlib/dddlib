@@ -13,6 +13,12 @@
             this.thingsThatHappened = new List<object>();
         }
 
+        [NaturalKey]
+        public string NaturalKey
+        {
+            get { return string.Empty; }
+        }
+
         public object[] ThingsThatHappened
         {
             get { return this.thingsThatHappened.ToArray(); }

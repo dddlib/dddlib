@@ -1,4 +1,4 @@
-﻿// <copyright file="Domain.cs" company="dddlib contributors">
+﻿// <copyright file="Runtime.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -9,14 +9,14 @@ namespace dddlib.Runtime
     using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
 
-    internal class Domain
+    internal class Runtime
     {
         private readonly Dictionary<Assembly, AssemblyDescriptor> assemblyDescriptors = new Dictionary<Assembly, AssemblyDescriptor>();
         private readonly Dictionary<Type, TypeDescriptor> typeDescriptors = new Dictionary<Type, TypeDescriptor>();
 
         private readonly bool treatAllRuntimeIssuesAsFatal;
 
-        public Domain(bool treatAllRuntimeIssuesAsFatal)
+        public Runtime(bool treatAllRuntimeIssuesAsFatal)
         {
             this.treatAllRuntimeIssuesAsFatal = treatAllRuntimeIssuesAsFatal;
         }

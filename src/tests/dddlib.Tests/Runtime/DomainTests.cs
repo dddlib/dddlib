@@ -12,7 +12,7 @@ namespace dddlib.Tests.Runtime
         [Fact]
         public void Do()
         {
-            var domain = new Domain(false);
+            var domain = new Runtime(false);
         }
     }
 }

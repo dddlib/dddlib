@@ -4,6 +4,12 @@
 
     public class LifecycleAggregate : AggregateRoot
     {
+        [NaturalKey]
+        public string NaturalKey
+        {
+            get { return string.Empty; }
+        }
+
         public void Destroy()
         {
             this.Apply(new LifecycleEnded());

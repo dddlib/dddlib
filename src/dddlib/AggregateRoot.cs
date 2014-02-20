@@ -4,7 +4,6 @@
 
 namespace dddlib
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
@@ -16,7 +15,7 @@ namespace dddlib
     public abstract class AggregateRoot : Entity, IAggregateRoot
     {
         private readonly List<object> events = new List<object>();
-        private readonly IEventDispatcher dispatcher;
+        private readonly IEventDispatcher eventDispatcher;
 
         private string state;
         private bool isDestroyed;
@@ -26,7 +25,7 @@ namespace dddlib
         /// </summary>
         protected AggregateRoot()
         {
-            this.dispatcher = Application.Current.GetEventDispatcher(this.GetType());
+            this.eventDispatcher = Application.Current.Runtime[this.GetType()].EventDispatcher;
         }
 
         string IAggregateRoot.State
@@ -131,7 +130,7 @@ namespace dddlib
                 return;
             }
 
-            this.dispatcher.Dispatch(this, @event);
+            this.eventDispatcher.Dispatch(this, @event);
 
             if (isNew)
             {

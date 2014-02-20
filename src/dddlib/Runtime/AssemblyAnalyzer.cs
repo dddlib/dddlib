@@ -6,6 +6,7 @@ namespace dddlib.Runtime
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using System.Reflection;
 
@@ -26,7 +27,11 @@ namespace dddlib.Runtime
 
             if (bootstrapperTypes.Count() > 1)
             {
-                descriptor.Add("The assembly '{0}' has more than one bootstrapper defined.", assembly.GetName().Name);
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture, 
+                        "The assembly '{0}' has more than one bootstrapper defined.", 
+                        assembly.GetName().Name));
             }
 
             var bootstrapperType = bootstrapperTypes.First();
@@ -37,7 +42,12 @@ namespace dddlib.Runtime
             }
             catch (Exception ex)
             {
-                descriptor.Add(ex, "The bootstrapper of type '{0}' threw an exception during instantiation.", bootstrapperType.Name);
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "The bootstrapper of type '{0}' threw an exception during instantiation.",
+                        bootstrapperType.Name),
+                    ex);
             }
 
             var configuration = new Configuration(descriptor);
@@ -48,7 +58,12 @@ namespace dddlib.Runtime
             }
             catch (Exception ex)
             {
-                descriptor.Add(ex, "The bootstrapper of type '{0}' threw an exception during instantiation.", bootstrapperType.Name);
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "The bootstrapper of type '{0}' threw an exception during invocation.",
+                        bootstrapperType.Name),
+                    ex);
             }
 
             return descriptor;
@@ -74,8 +89,11 @@ namespace dddlib.Runtime
 
                 if (this.descriptor.AggregateRootFactories.Any(kvp => kvp.Key == typeof(T)))
                 {
-                    this.descriptor.Add("The application already has a factory registered for the aggregate root of type '{0}'.", typeof(T).Name);
-                    return;
+                    throw new RuntimeException(
+                        string.Format(
+                            CultureInfo.InvariantCulture,
+                            "The application already has a factory registered for the aggregate root of type '{0}'.", 
+                            typeof(T).Name));
                 }
 
                 // TODO (Cameron): Some expression voodoo to fix the double enclosing.

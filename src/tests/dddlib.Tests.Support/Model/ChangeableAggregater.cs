@@ -4,6 +4,12 @@
 
     public class ChangeableAggregate : AggregateRoot
     {
+        [NaturalKey]
+        public string NaturalKey
+        {
+            get { return string.Empty; }
+        }
+
         public object Change { get; private set; }
 
         public void ApplyEvent(object change)

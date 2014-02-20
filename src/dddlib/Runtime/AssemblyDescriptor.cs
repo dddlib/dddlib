@@ -7,12 +7,8 @@ namespace dddlib.Runtime
     using System;
     using System.Collections.Generic;
 
-    internal class AssemblyDescriptor : Descriptor // Entity
+    internal class AssemblyDescriptor
     {
-        internal AssemblyDescriptor()
-        {
-        }
-
         public IEventDispatcherFactory EventDispatcherFactory { get; internal set; }
 
         public IEnumerable<KeyValuePair<Type, Func<object>>> AggregateRootFactories { get; internal set; }

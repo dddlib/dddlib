@@ -61,8 +61,7 @@
     <Compile Include="Runtime\AssemblyDescriptor.cs" />
     <Compile Include="Runtime\AssemblyAnalyzer.cs" />
     <Compile Include="Runtime\DefaultEventDispatcher.cs" />
-    <Compile Include="Runtime\Descriptor.cs" />
-    <Compile Include="Runtime\Domain.cs" />
+    <Compile Include="Runtime\Runtime.cs" />
     <Compile Include="Runtime\IApplication.cs" />
     <Compile Include="Runtime\IDomain.cs" />
     <Compile Include="Runtime\IBootstrapper.cs" />

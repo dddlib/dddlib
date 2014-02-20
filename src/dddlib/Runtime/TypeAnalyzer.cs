@@ -6,9 +6,11 @@ namespace dddlib.Runtime
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using System.Reflection;
 
+    // TODO (Cameron): Test that the Natural key is from the most recent subclass of entity.
     internal class TypeAnalyzer
     {
         private readonly AssemblyDescriptor assemblyDescriptor;
@@ -24,28 +26,50 @@ namespace dddlib.Runtime
 
             if (typeof(AggregateRoot).IsAssignableFrom(type))
             {
-                descriptor.IsAggregateRoot = true;
-                descriptor.EventDispatcher = this.assemblyDescriptor.EventDispatcherFactory.CreateEventDispatcher(type);
+                try
+                {
+                    descriptor.EventDispatcher = this.assemblyDescriptor.EventDispatcherFactory.CreateEventDispatcher(type);
+                }
+                catch (Exception ex)
+                {
+                    throw new RuntimeException(
+                        string.Format(
+                            CultureInfo.InvariantCulture, 
+                            "The event dispatcher factory of type '{0}' threw an exception during invocation.", 
+                            type.Name),
+                        ex);
+                }
             }
 
             if (typeof(Entity).IsAssignableFrom(type))
             {
-                var naturalKey = type.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
-                    .SelectMany(member => member.GetCustomAttributes(typeof(NaturalKeyAttribute), false))
+                var naturalKey = default(NaturalKeyAttribute);
+                foreach (var subType in new[] { type }.Traverse(t => t.BaseType == typeof(Entity) ? null : new[] { t.BaseType }))
+                {
+                    naturalKey = subType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
+                    .SelectMany(member => member.GetCustomAttributes(typeof(NaturalKeyAttribute), true))
                     .OfType<NaturalKeyAttribute>()
                     .SingleOrDefault();
 
+                    if (naturalKey != null)
+                    {
+                        break;
+                    }
+                }
+
                 if (naturalKey == null)
                 {
-                    descriptor.Add("The entity of type '{0}' does not have a natural key defined.", type.Name);
-                    
-                    descriptor.IsEntity = true;
-                    descriptor.EqualityComparer = EqualityComparer<object>.Default;
-
-                    return descriptor;
+                    throw new RuntimeException(
+                        string.Format(CultureInfo.InvariantCulture, "The entity of type '{0}' does not have a natural key defined.", type.Name));
                 }
 
                 var equalityComparerType = naturalKey.EqualityComparer;
+                if (equalityComparerType == null)
+                {
+                    descriptor.EqualityComparer = EqualityComparer<object>.Default;
+                    return descriptor;
+                }
+
                 var equalityComparer = default(IEqualityComparer<object>);
                 try
                 {
@@ -53,12 +77,16 @@ namespace dddlib.Runtime
                 }
                 catch (Exception ex)
                 {
-                    descriptor.Add(ex, "The equality comparer of type '{0}' threw an exception during instantiation.", equalityComparerType.Name);
+                    throw new RuntimeException(
+                        string.Format(
+                            CultureInfo.InvariantCulture,
+                            "The equality comparer of type '{0}' threw an exception during instantiation.",
+                            type.Name),
+                        ex);
                 }
 
                 // TODO (Cameron): Ensure equality comparer instantiation is safe. ie. error-handled correctly.
-                descriptor.IsEntity = true;
-                descriptor.EqualityComparer = equalityComparer ?? EqualityComparer<object>.Default;
+                descriptor.EqualityComparer = equalityComparer;
             }
 
             return descriptor;

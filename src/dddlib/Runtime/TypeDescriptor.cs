@@ -7,18 +7,8 @@ namespace dddlib.Runtime
     using System;
     using System.Collections.Generic;
 
-    internal class TypeDescriptor : Descriptor
+    internal class TypeDescriptor
     {
-        internal TypeDescriptor()
-        {
-        }
-
-        public bool IsAggregateRoot { get; internal set; }
-
-        public bool IsEntity { get; internal set; }
-
-        public bool IsValueObject { get; internal set; }
-
         public IEventDispatcher EventDispatcher { get; internal set; }
 
         public IEqualityComparer<object> EqualityComparer { get; internal set; }
