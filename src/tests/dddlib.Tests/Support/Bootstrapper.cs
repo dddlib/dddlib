@@ -8,13 +8,9 @@ namespace dddlib.Tests.Support
 
     internal class Bootstrapper : IBootstrapper
     {
-        public void Bootstrap(IApplication application)
+        public void Bootstrap(IConfiguration assembly)
         {
-        }
-
-        public void Bootstrap(IDomain domain)
-        {
-            domain.RegisterUninitializedAggregateRootFactory(() => new Car());
+            throw new System.NotImplementedException();
         }
     }
 }

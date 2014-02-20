@@ -13,11 +13,11 @@ namespace dddlib.Runtime
     // TODO (Cameron): Test that the Natural key is from the most recent subclass of entity.
     internal class TypeAnalyzer
     {
-        private readonly AssemblyDescriptor assemblyDescriptor;
+        private readonly Configuration configuration;
 
-        public TypeAnalyzer(AssemblyDescriptor assemblyDescriptor)
+        public TypeAnalyzer(Configuration configuration)
         {
-            this.assemblyDescriptor = assemblyDescriptor;
+            this.configuration = configuration;
         }
 
         public TypeDescriptor GetDescriptor(Type type)
@@ -28,7 +28,7 @@ namespace dddlib.Runtime
             {
                 try
                 {
-                    descriptor.EventDispatcher = this.assemblyDescriptor.EventDispatcherFactory.CreateEventDispatcher(type);
+                    descriptor.EventDispatcher = this.configuration.EventDispatcherFactory.CreateEventDispatcher(type);
                 }
                 catch (Exception ex)
                 {
