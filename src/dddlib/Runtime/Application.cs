@@ -20,7 +20,7 @@ namespace dddlib.Runtime
 
         private readonly Dictionary<Assembly, Func<Type, IEventDispatcher>> eventDispatcherFactories = new Dictionary<Assembly, Func<Type, IEventDispatcher>>();
         private readonly Dictionary<Type, IEventDispatcher> eventDispatchers = new Dictionary<Type, IEventDispatcher>();
-        private readonly Lazy<Runtime> runtime = new Lazy<Runtime>(() => new Runtime(false), true);
+        private readonly Lazy<Runtime> runtime = new Lazy<Runtime>(() => new Runtime(), true);
 
         private bool isDisposed = false;
 

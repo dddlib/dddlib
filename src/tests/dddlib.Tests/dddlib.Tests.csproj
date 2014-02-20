@@ -40,13 +40,16 @@
   <ItemGroup>
     <Folder Include="RuntimeMode\EventSourcingWithoutPersistence\" />
     <Folder Include="RuntimeMode\EventSourcing\" />
-    <Folder Include="RuntimeMode\Plain\" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AggregateRootTests.cs" />
     <Compile Include="BusinessExceptionTests.cs" />
     <Compile Include="EntityTests.cs" />
     <Compile Include="NaturalKeyAttributeTests.cs" />
+    <Compile Include="RuntimeMode\PlainTests.cs" />
+    <Compile Include="RuntimeMode\Plain\Car.cs" />
+    <Compile Include="RuntimeMode\Plain\Registration.cs" />
+    <Compile Include="RuntimeMode\Plain\Wheel.cs" />
     <Compile Include="Runtime\ApplicationTests.cs" />
     <Compile Include="Runtime\DomainTests.cs" />
     <Compile Include="Support\Bootstrapper.cs" />

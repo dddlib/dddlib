@@ -9,10 +9,10 @@ namespace dddlib.Tests.Runtime
 
     public class DomainTests
     {
-        [Fact]
-        public void Do()
-        {
-            var domain = new Runtime(false);
-        }
+        ////[Fact]
+        ////public void Do()
+        ////{
+        ////    var domain = new Runtime();
+        ////}
     }
 }

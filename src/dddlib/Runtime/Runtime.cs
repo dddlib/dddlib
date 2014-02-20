@@ -14,13 +14,6 @@ namespace dddlib.Runtime
         private readonly Dictionary<Assembly, AssemblyDescriptor> assemblyDescriptors = new Dictionary<Assembly, AssemblyDescriptor>();
         private readonly Dictionary<Type, TypeDescriptor> typeDescriptors = new Dictionary<Type, TypeDescriptor>();
 
-        private readonly bool treatAllRuntimeIssuesAsFatal;
-
-        public Runtime(bool treatAllRuntimeIssuesAsFatal)
-        {
-            this.treatAllRuntimeIssuesAsFatal = treatAllRuntimeIssuesAsFatal;
-        }
-
         public AssemblyDescriptor this[Assembly assembly]
         {
             get
