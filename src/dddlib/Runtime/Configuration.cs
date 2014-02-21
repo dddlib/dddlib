@@ -10,12 +10,12 @@ namespace dddlib.Runtime
 
     internal class Configuration : IConfiguration
     {
-        private static readonly IEventDispatcherFactory DefaultEventDispatcherFactory = new DefaultEventDispatcherFactory();
+        private static readonly Func<Type, IEventDispatcher> DefaultEventDispatcherFactory = type => new DefaultEventDispatcher(type);
 
         private readonly Dictionary<Type, Func<object>> aggregateRootFactories = new Dictionary<Type, Func<object>>();
 
         private RuntimeMode runtimeMode;
-        private IEventDispatcherFactory eventDispatcherFactory;
+        private Func<Type, IEventDispatcher> eventDispatcherFactory;
 
         public Configuration()
         {
@@ -29,7 +29,7 @@ namespace dddlib.Runtime
             get { return this.runtimeMode; }
         }
 
-        public IEventDispatcherFactory EventDispatcherFactory
+        public Func<Type, IEventDispatcher> EventDispatcherFactory
         {
             get { return this.eventDispatcherFactory; }
         }
@@ -39,7 +39,7 @@ namespace dddlib.Runtime
             return this.aggregateRootFactories.TryGetValue(type, out factory);
         }
 
-        public void SetEventDispatcherFactory(IEventDispatcherFactory factory)
+        public void SetEventDispatcherFactory(Func<Type, IEventDispatcher> factory)
         {
             Guard.Against.Null(() => factory);
 

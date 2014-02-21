@@ -28,7 +28,7 @@ namespace dddlib.Runtime
             {
                 try
                 {
-                    descriptor.EventDispatcher = this.configuration.EventDispatcherFactory.CreateEventDispatcher(type);
+                    descriptor.EventDispatcher = this.configuration.EventDispatcherFactory(type);
                 }
                 catch (Exception ex)
                 {

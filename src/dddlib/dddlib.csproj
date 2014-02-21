@@ -50,7 +50,6 @@
     </Compile>
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="BusinessException.cs" />
-    <Compile Include="Runtime\DefaultEventDispatcherFactory.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="Runtime\EnumerableExtensions.cs" />
     <Compile Include="Guard.cs" />
@@ -65,7 +64,6 @@
     <Compile Include="Runtime\IConfiguration.cs" />
     <Compile Include="Runtime\IBootstrapper.cs" />
     <Compile Include="Runtime\IEventDispatcher.cs" />
-    <Compile Include="Runtime\IEventDispatcherFactory.cs" />
     <Compile Include="Runtime\RuntimeException.cs" />
     <Compile Include="Runtime\RuntimeMode.cs" />
     <Compile Include="Runtime\TypeAnalyzer.cs" />

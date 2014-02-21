@@ -11,8 +11,6 @@ namespace dddlib.Runtime
 
     internal class ConfigurationProvider
     {
-        private static readonly IEventDispatcherFactory EventDispatcherFactory = new DefaultEventDispatcherFactory();
-
         public Configuration GetConfiguration(Assembly assembly)
         {
             var configuration = new Configuration();
