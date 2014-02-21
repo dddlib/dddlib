@@ -8,9 +8,23 @@ namespace dddlib.Runtime
     using System.Globalization;
     using System.Linq;
 
-    // TODO (Cameron): Make public and overridable.
-    internal class DefaultConfigurationProvider : IConfigurationProvider
+    /*  TODO (Cameron): 
+        Rename TypeConfigurationProvider.
+        Make method virtual.
+        Change exceptions to point to inner exceptions.
+        Cache the results per assembly. eg. only make the bootstrapping calls once per assembly.
+        Change exception arguments to type, not type.Name.  */
+
+    /// <summary>
+    /// Represents the default configuration provider.
+    /// </summary>
+    public class DefaultConfigurationProvider : IConfigurationProvider
     {
+        /// <summary>
+        /// Gets the configuration.
+        /// </summary>
+        /// <param name="type">The type to get the configuration for.</param>
+        /// <returns>The configuration.</returns>
         public Configuration GetConfiguration(Type type)
         {
             Guard.Against.Null(() => type);
@@ -33,6 +47,15 @@ namespace dddlib.Runtime
             }
 
             var bootstrapperType = bootstrapperTypes.First();
+            if (bootstrapperType.GetConstructor(Type.EmptyTypes) == null)
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "The bootstrapper of type '{0}' cannot be instantiated as it does not have a default constructor.",
+                        bootstrapperType));
+            }
+
             var bootstrapper = default(IBootstrapper);
             try
             {
@@ -57,8 +80,8 @@ namespace dddlib.Runtime
                 throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        "The bootstrapper of type '{0}' threw an exception during invocation.",
-                        bootstrapperType.Name),
+                        "The bootstrapper of type '{0}' threw an exception during invocation.\r\nSee inner exception for details.",
+                        bootstrapperType),
                     ex);
             }
 

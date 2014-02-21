@@ -9,12 +9,23 @@ namespace dddlib.Tests.RuntimeMode
 
     public class PlainTests
     {
-        [Fact(Skip = "Not working yet.")]
+        [Fact(Skip = "Doesn't work yet.")]
         public void Do()
         {
-            var assemblyDescriptor = new Configuration();
-            var typeAnalyzer = new TypeAnalyzer(assemblyDescriptor);
-            var typeDescriptor = typeAnalyzer.GetDescriptor(typeof(Plain.Car));
+            var configuration = new Configuration();
+            configuration.SetEventDispatcherFactory(type => new DefaultEventDispatcher(type));
+
+            using (new Application())
+            {
+                var aggregate = new TestAggregate();
+            }
+
+            ////var typeAnalyzer = new TypeAnalyzer(configuration);
+            ////var typeDescriptor = typeAnalyzer.GetDescriptor(typeof(Plain.Car));
+        }
+
+        private class TestAggregate : AggregateRoot
+        {
         }
     }
 }

@@ -11,10 +11,17 @@ namespace dddlib.Runtime
     using System.Reflection;
     using System.Reflection.Emit;
 
+    /*  TODO (Cameron): 
+        Unseal and make methods virtual.
+        Any exceptions? - possibly of type RuntimeException (consider).
+        Consider what to do with multiple base classes with different dispatchers.
+        Add ability to configure method name.
+        Duplicate for application against momento.
+        Change to operate on any type, not just AggregateRoot.  */
+
     /// <summary>
     /// Represents the default event dispatcher.
     /// </summary>
-    //// TODO (Cameron): Make public and allow to be configured?
     public sealed class DefaultEventDispatcher : IEventDispatcher
     {
         private static readonly string ApplyMethodName = GetApplyMethodName();
@@ -87,6 +94,7 @@ namespace dddlib.Runtime
             return handlers;
         }
 
+        // LINK (Cameron): http://www.sapiensworks.com/blog/post/2012/04/19/Invoking-A-Private-Method-On-A-Subclass.aspx
         private static Action<AggregateRoot, object> CreateHandlerDelegate(Type declaringType, MethodInfo methodInfo)
         {
             var dynamicMethod = new DynamicMethod(

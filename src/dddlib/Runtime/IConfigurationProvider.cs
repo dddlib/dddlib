@@ -6,6 +6,9 @@ namespace dddlib.Runtime
 {
     using System;
 
+    /*  TODO (Cameron): 
+        Rename ITypeConfigurationProvider.  */
+
     /// <summary>
     /// Exposes the public members of the configuration provider.
     /// </summary>

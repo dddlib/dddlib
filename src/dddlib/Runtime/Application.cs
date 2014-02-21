@@ -4,6 +4,10 @@
 
 namespace dddlib.Runtime
 {
+    /*  TODO (Cameron): 
+        Consider folding Runtime into Application.
+        Apply 'is disposed' check when runtime is moved in.  */
+
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -18,17 +22,24 @@ namespace dddlib.Runtime
         private static readonly List<Application> Applications = new List<Application>();
         private static readonly object SyncLock = new object();
 
-        private readonly Dictionary<Assembly, Func<Type, IEventDispatcher>> eventDispatcherFactories = new Dictionary<Assembly, Func<Type, IEventDispatcher>>();
-        private readonly Dictionary<Type, IEventDispatcher> eventDispatchers = new Dictionary<Type, IEventDispatcher>();
-        private readonly Lazy<Runtime> runtime = new Lazy<Runtime>(() => new Runtime(type => new DefaultConfigurationProvider()), true);
-
         private bool isDisposed = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Application"/> class.
         /// </summary>
         public Application()
+            : this(type => new DefaultConfigurationProvider())
         {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Application"/> class.
+        /// </summary>
+        /// <param name="configurationProviderFactory">The configuration provider factory.</param>
+        public Application(Func<Type, IConfigurationProvider> configurationProviderFactory)
+        {
+            this.Runtime = new Runtime(type => configurationProviderFactory(type));
+
             lock (SyncLock)
             {
                 Applications.Add(this);
@@ -51,10 +62,7 @@ namespace dddlib.Runtime
             }
         }
 
-        internal Runtime Runtime
-        {
-            get { return this.runtime.Value; }
-        }
+        internal Runtime Runtime { get; private set; }
 
         void IDisposable.Dispose()
         {

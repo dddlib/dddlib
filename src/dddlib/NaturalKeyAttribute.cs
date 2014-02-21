@@ -10,9 +10,9 @@ namespace dddlib
     /// <summary>
     /// Represents the attribute used to identify a natural key on an aggregate root.
     /// </summary>
-    [SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes", Justification = "I will not.")]
+    //// LINK (Cameron): http://alabaxblog.info/2009/07/why-sealed-attributes/
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-    public class NaturalKeyAttribute : Attribute
+    public sealed class NaturalKeyAttribute : Attribute
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="NaturalKeyAttribute"/> class.

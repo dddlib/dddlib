@@ -4,13 +4,15 @@
 
 namespace dddlib
 {
+    /*  TODO (Cameron): 
+        Add additional properties, eg. UserId, HelpContext? etc.  */
+
     using System;
     using System.Runtime.Serialization;
 
     /// <summary>
     /// Represents a business exception.
     /// </summary>
-    //// TODO (Cameron): Add additional properties, eg. UserId, HelpContext? etc.
     [Serializable]
     public class BusinessException : Exception
     {

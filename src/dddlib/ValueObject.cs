@@ -4,6 +4,10 @@
 
 namespace dddlib
 {
+    /*  TODO (Cameron): 
+        Fix exceptions (as before).
+        Add expression equality based on public property values.  */
+
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;

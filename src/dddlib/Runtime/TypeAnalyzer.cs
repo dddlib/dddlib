@@ -4,6 +4,11 @@
 
 namespace dddlib.Runtime
 {
+    /*  TODO (Cameron): 
+        This is it. This is where the magic happens. Fix last. Test first?
+        Consider seperate calls, maybe seperate classes? GetEntity, GetValueObject etc.
+        Fix exceptions (see previous).  */
+
     using System;
     using System.Collections.Generic;
     using System.Globalization;

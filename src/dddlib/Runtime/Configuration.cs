@@ -8,6 +8,15 @@ namespace dddlib.Runtime
     using System.Collections.Generic;
     using System.Globalization;
 
+    /*  TODO (Cameron): 
+        Rename TypeConfiguration.
+        Make method virtual.
+        Change exceptions from RuntimeException exceptions.
+        Change exception arguments to type, not type.Name.
+        See note at bottom.
+        Consider getting config from other sources eg. attributes? (Maybe not?)
+        Need to validate configuration eg. cannot have an event dispatcher factory and run in Plain mode - decide all rules and where to validate.  */
+
     /// <summary>
     /// Represents the configuration.
     /// </summary>
@@ -59,14 +68,22 @@ namespace dddlib.Runtime
             return this.aggregateRootFactories.TryGetValue(type, out factory);
         }
 
-        void IConfiguration.SetEventDispatcherFactory(Func<Type, IEventDispatcher> factory)
+        /// <summary>
+        /// Sets the event dispatcher factory.
+        /// </summary>
+        /// <param name="factory">The factory.</param>
+        public void SetEventDispatcherFactory(Func<Type, IEventDispatcher> factory)
         {
             Guard.Against.Null(() => factory);
 
             this.eventDispatcherFactory = factory;
         }
 
-        void IConfiguration.SetRuntimeMode(RuntimeMode mode)
+        /// <summary>
+        /// Sets the runtime mode for the domain model contained within this assembly.
+        /// </summary>
+        /// <param name="mode">The runtime mode.</param>
+        public void SetRuntimeMode(RuntimeMode mode)
         {
             if (mode == default(RuntimeMode))
             {
@@ -77,7 +94,12 @@ namespace dddlib.Runtime
             this.runtimeMode = mode;
         }
 
-        void IConfiguration.RegisterAggregateRootFactory<T>(Func<T> factory)
+        /// <summary>
+        /// Registers the specified factory for creating an uninitialized instance of an aggregate of the specified type.
+        /// </summary>
+        /// <typeparam name="T">The type of aggregate root.</typeparam>
+        /// <param name="factory">The factory for the aggregate root.</param>
+        public void RegisterAggregateRootFactory<T>(Func<T> factory) where T : AggregateRoot
         {
             Guard.Against.Null(() => factory);
 

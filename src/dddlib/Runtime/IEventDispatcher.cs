@@ -4,6 +4,9 @@
 
 namespace dddlib.Runtime
 {
+    /*  TODO (Cameron): 
+        Change to work on any type.  */
+
     /// <summary>
     /// Exposes the public members of the event dispatcher.
     /// </summary>

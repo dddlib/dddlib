@@ -4,6 +4,12 @@
 
 namespace dddlib
 {
+    /*  TODO (Cameron): 
+        Enable ES without persistence mode.
+        Fix exception types (as before).
+        Remove IAggregateRoot.
+        More will be required once persistence layer is fleshed out.  */
+
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
@@ -44,7 +50,7 @@ namespace dddlib
 
             foreach (var @event in events)
             {
-                this.ApplyChange(@event, false);
+                this.Apply(@event, isNew: false);
             }
 
             this.state = state;
@@ -117,11 +123,10 @@ namespace dddlib
                 throw new BusinessException("Unable to apply the specified change as this instance of the aggregate root no longer exists.");
             }
 
-            this.ApplyChange(@event, true);
+            this.Apply(@event, isNew: true);
         }
 
-        // LINK (Cameron): http://www.sapiensworks.com/blog/post/2012/04/19/Invoking-A-Private-Method-On-A-Subclass.aspx
-        private void ApplyChange(object @event, bool isNew)
+        private void Apply(object @event, bool isNew)
         {
             Guard.Against.Null(() => @event);
 

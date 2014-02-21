@@ -4,6 +4,11 @@
 
 namespace dddlib.Runtime
 {
+    /*  TODO (Cameron): 
+        Consider not using an indexer. => maybe GetEntityInfo, GetAggregateInfo, GetValueObjectInfo to include type check?
+        Wrap calls that may fail in a try...catch block.
+        Consider folding into Application.  */
+
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -15,9 +20,9 @@ namespace dddlib.Runtime
 
         private readonly Dictionary<Type, TypeDescriptor> typeDescriptors = new Dictionary<Type, TypeDescriptor>();
 
-        private readonly Func<Type, DefaultConfigurationProvider> configurationProviderFactory;
+        private readonly Func<Type, IConfigurationProvider> configurationProviderFactory;
 
-        public Runtime(Func<Type, DefaultConfigurationProvider> configurationProviderFactory)
+        public Runtime(Func<Type, IConfigurationProvider> configurationProviderFactory)
         {
             Guard.Against.Null(() => configurationProviderFactory);
 
@@ -34,7 +39,6 @@ namespace dddlib.Runtime
                     return typeDescriptor;
                 }
 
-                // NOTE (Cameron): This early check stops an assembly configuration being provided for an assembly with an invalid type.
                 if (ValidTypes.Any(validType => type.IsAssignableFrom(validType)))
                 {
                     throw new ArgumentException("Invalid runtime type specified.", "type");

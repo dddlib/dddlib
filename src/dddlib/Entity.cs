@@ -88,6 +88,7 @@ namespace dddlib
             return this.equalityComparer.Equals(thisValue, otherValue);
         }
 
+        // TODO (Cameron): Mess.
         private object GetNaturalKey()
         {
             var naturalKeyMember = this.GetType().GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
