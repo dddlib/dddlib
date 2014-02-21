@@ -13,7 +13,6 @@ namespace dddlib.Runtime
     {
         private static readonly Type[] ValidTypes = new[] { typeof(AggregateRoot), typeof(Entity), typeof(ValueObject<>) };
 
-        /////private readonly Dictionary<Assembly, Configuration> typeConfigurations = new Dictionary<Assembly, Configuration>();
         private readonly Dictionary<Type, TypeDescriptor> typeDescriptors = new Dictionary<Type, TypeDescriptor>();
 
         private readonly Func<Type, DefaultConfigurationProvider> configurationProviderFactory;
@@ -57,29 +56,5 @@ namespace dddlib.Runtime
                 }
             }
         }
-
-        ////private Configuration this[Assembly assembly]
-        ////{
-        ////    get
-        ////    {
-        ////        var assemblyConfiguration = default(Configuration);
-        ////        if (this.typeConfigurations.TryGetValue(assembly, out assemblyConfiguration))
-        ////        {
-        ////            return assemblyConfiguration;
-        ////        }
-
-        ////        lock (this.typeConfigurations)
-        ////        {
-        ////            if (this.typeConfigurations.TryGetValue(assembly, out assemblyConfiguration))
-        ////            {
-        ////                return assemblyConfiguration;
-        ////            }
-
-        ////            this.typeConfigurations.Add(assembly, assemblyConfiguration = new ConfigurationProvider().GetConfiguration(assembly));
-
-        ////            return assemblyConfiguration;
-        ////        }
-        ////    }
-        ////}
     }
 }
