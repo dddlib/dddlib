@@ -7,15 +7,16 @@ namespace dddlib.Runtime
     using System;
     using System.Globalization;
     using System.Linq;
-    using System.Reflection;
 
     internal class ConfigurationProvider
     {
-        public Configuration GetConfiguration(Assembly assembly)
+        public Configuration GetConfiguration(Type type)
         {
+            Guard.Against.Null(() => type);
+
             var configuration = new Configuration();
 
-            var bootstrapperTypes = assembly.GetTypes().Where(type => typeof(IBootstrapper).IsAssignableFrom(type));
+            var bootstrapperTypes = type.Assembly.GetTypes().Where(assemblyType => typeof(IBootstrapper).IsAssignableFrom(assemblyType));
             if (!bootstrapperTypes.Any())
             {
                 return configuration;
@@ -27,7 +28,7 @@ namespace dddlib.Runtime
                     string.Format(
                         CultureInfo.InvariantCulture, 
                         "The assembly '{0}' has more than one bootstrapper defined.", 
-                        assembly.GetName().Name));
+                        type.Assembly.GetName().Name));
             }
 
             var bootstrapperType = bootstrapperTypes.First();

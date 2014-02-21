@@ -13,31 +13,16 @@ namespace dddlib.Runtime
     {
         private static readonly Type[] ValidTypes = new[] { typeof(AggregateRoot), typeof(Entity), typeof(ValueObject<>) };
 
-        private readonly Dictionary<Assembly, Configuration> assemblyConfigurations = new Dictionary<Assembly, Configuration>();
+        /////private readonly Dictionary<Assembly, Configuration> typeConfigurations = new Dictionary<Assembly, Configuration>();
         private readonly Dictionary<Type, TypeDescriptor> typeDescriptors = new Dictionary<Type, TypeDescriptor>();
 
-        public Configuration this[Assembly assembly]
+        private readonly Func<Type, ConfigurationProvider> configurationProviderFactory;
+
+        public Runtime(Func<Type, ConfigurationProvider> configurationProviderFactory)
         {
-            get
-            {
-                var assemblyConfiguration = default(Configuration);
-                if (this.assemblyConfigurations.TryGetValue(assembly, out assemblyConfiguration))
-                {
-                    return assemblyConfiguration;
-                }
+            Guard.Against.Null(() => configurationProviderFactory);
 
-                lock (this.assemblyConfigurations)
-                {
-                    if (this.assemblyConfigurations.TryGetValue(assembly, out assemblyConfiguration))
-                    {
-                        return assemblyConfiguration;
-                    }
-
-                    this.assemblyConfigurations.Add(assembly, assemblyConfiguration = new ConfigurationProvider().GetConfiguration(assembly));
-
-                    return assemblyConfiguration;
-                }
-            }
+            this.configurationProviderFactory = configurationProviderFactory;
         }
 
         public TypeDescriptor this[Type type]
@@ -63,11 +48,38 @@ namespace dddlib.Runtime
                         return typeDescriptor;
                     }
 
-                    this.typeDescriptors.Add(type, typeDescriptor = new TypeAnalyzer(this[type.Assembly]).GetDescriptor(type));
+                    var configurationProvider = this.configurationProviderFactory(type);
+                    var configuration = configurationProvider.GetConfiguration(type);
+
+                    this.typeDescriptors.Add(type, typeDescriptor = new TypeAnalyzer(configuration).GetDescriptor(type));
 
                     return typeDescriptor;
                 }
             }
         }
+
+        ////private Configuration this[Assembly assembly]
+        ////{
+        ////    get
+        ////    {
+        ////        var assemblyConfiguration = default(Configuration);
+        ////        if (this.typeConfigurations.TryGetValue(assembly, out assemblyConfiguration))
+        ////        {
+        ////            return assemblyConfiguration;
+        ////        }
+
+        ////        lock (this.typeConfigurations)
+        ////        {
+        ////            if (this.typeConfigurations.TryGetValue(assembly, out assemblyConfiguration))
+        ////            {
+        ////                return assemblyConfiguration;
+        ////            }
+
+        ////            this.typeConfigurations.Add(assembly, assemblyConfiguration = new ConfigurationProvider().GetConfiguration(assembly));
+
+        ////            return assemblyConfiguration;
+        ////        }
+        ////    }
+        ////}
     }
 }
