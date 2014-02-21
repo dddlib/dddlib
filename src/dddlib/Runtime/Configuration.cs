@@ -8,7 +8,10 @@ namespace dddlib.Runtime
     using System.Collections.Generic;
     using System.Globalization;
 
-    internal class Configuration : IConfiguration
+    /// <summary>
+    /// Represents the configuration.
+    /// </summary>
+    public class Configuration : IConfiguration
     {
         private static readonly Func<Type, IEventDispatcher> DefaultEventDispatcherFactory = type => new DefaultEventDispatcher(type);
 
@@ -17,6 +20,9 @@ namespace dddlib.Runtime
         private RuntimeMode runtimeMode;
         private Func<Type, IEventDispatcher> eventDispatcherFactory;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Configuration"/> class.
+        /// </summary>
         public Configuration()
         {
             // NOTE (Cameron): Default(s).
@@ -24,29 +30,43 @@ namespace dddlib.Runtime
             this.eventDispatcherFactory = DefaultEventDispatcherFactory;
         }
 
+        /// <summary>
+        /// Gets the runtime mode.
+        /// </summary>
+        /// <value>The runtime mode.</value>
         public RuntimeMode RuntimeMode
         {
             get { return this.runtimeMode; }
         }
 
+        /// <summary>
+        /// Gets the event dispatcher factory.
+        /// </summary>
+        /// <value>The event dispatcher factory.</value>
         public Func<Type, IEventDispatcher> EventDispatcherFactory
         {
             get { return this.eventDispatcherFactory; }
         }
 
+        /// <summary>
+        /// Tries the get aggregate root factory.
+        /// </summary>
+        /// <param name="type">The type of aggregate root.</param>
+        /// <param name="factory">The factory.</param>
+        /// <returns>Returns <c>true</c> if the aggregate root factory has been returned; otherwise <c>false</c>.</returns>
         public bool TryGetAggregateRootFactory(Type type, out Func<object> factory)
         {
             return this.aggregateRootFactories.TryGetValue(type, out factory);
         }
 
-        public void SetEventDispatcherFactory(Func<Type, IEventDispatcher> factory)
+        void IConfiguration.SetEventDispatcherFactory(Func<Type, IEventDispatcher> factory)
         {
             Guard.Against.Null(() => factory);
 
             this.eventDispatcherFactory = factory;
         }
 
-        public void SetRuntimeMode(RuntimeMode mode)
+        void IConfiguration.SetRuntimeMode(RuntimeMode mode)
         {
             if (mode == default(RuntimeMode))
             {
@@ -57,7 +77,7 @@ namespace dddlib.Runtime
             this.runtimeMode = mode;
         }
 
-        public void RegisterAggregateRootFactory<T>(Func<T> factory) where T : AggregateRoot
+        void IConfiguration.RegisterAggregateRootFactory<T>(Func<T> factory)
         {
             Guard.Against.Null(() => factory);
 

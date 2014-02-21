@@ -16,9 +16,9 @@ namespace dddlib.Runtime
         /////private readonly Dictionary<Assembly, Configuration> typeConfigurations = new Dictionary<Assembly, Configuration>();
         private readonly Dictionary<Type, TypeDescriptor> typeDescriptors = new Dictionary<Type, TypeDescriptor>();
 
-        private readonly Func<Type, ConfigurationProvider> configurationProviderFactory;
+        private readonly Func<Type, DefaultConfigurationProvider> configurationProviderFactory;
 
-        public Runtime(Func<Type, ConfigurationProvider> configurationProviderFactory)
+        public Runtime(Func<Type, DefaultConfigurationProvider> configurationProviderFactory)
         {
             Guard.Against.Null(() => configurationProviderFactory);
 

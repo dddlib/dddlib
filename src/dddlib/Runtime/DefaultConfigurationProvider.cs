@@ -1,4 +1,4 @@
-﻿// <copyright file="ConfigurationProvider.cs" company="dddlib contributors">
+﻿// <copyright file="DefaultConfigurationProvider.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -8,7 +8,8 @@ namespace dddlib.Runtime
     using System.Globalization;
     using System.Linq;
 
-    internal class ConfigurationProvider
+    // TODO (Cameron): Make public and overridable.
+    internal class DefaultConfigurationProvider : IConfigurationProvider
     {
         public Configuration GetConfiguration(Type type)
         {

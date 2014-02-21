@@ -58,8 +58,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Runtime\Application.cs" />
     <Compile Include="Runtime\Configuration.cs" />
-    <Compile Include="Runtime\ConfigurationProvider.cs" />
+    <Compile Include="Runtime\DefaultConfigurationProvider.cs" />
     <Compile Include="Runtime\DefaultEventDispatcher.cs" />
+    <Compile Include="Runtime\IConfigurationProvider.cs" />
     <Compile Include="Runtime\Runtime.cs" />
     <Compile Include="Runtime\IConfiguration.cs" />
     <Compile Include="Runtime\IBootstrapper.cs" />
