@@ -5,15 +5,11 @@
 namespace dddlib.Runtime
 {
     /*  TODO (Cameron): 
-        Consider not using an indexer. => maybe GetEntityInfo, GetAggregateInfo, GetValueObjectInfo to include type check?
-        Wrap calls that may fail in a try...catch block.
-        Consider folding into Application.
-        Consider using Guard clause.  */
+        Consider folding into Application.  */
 
     using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Reflection;
+    using System.Globalization;
 
     internal class Runtime
     {
@@ -65,10 +61,34 @@ namespace dddlib.Runtime
                     return typeDescriptor;
                 }
 
-                var configurationProvider = this.configurationProviderFactory(type);
-                var configuration = configurationProvider.GetConfiguration(type);
+                var typeConfigurationProvider = default(ITypeConfigurationProvider);
+                try
+                {
+                    typeConfigurationProvider = this.configurationProviderFactory(type);
+                }
+                catch (Exception ex)
+                {
+                    throw new RuntimeException(
+                        "The type configuration provider factory threw an exception during invocation.\r\nSee inner exception for details.",
+                        ex);
+                }
 
-                this.typeDescriptors.Add(type, typeDescriptor = new TypeAnalyzer(configuration).GetDescriptor(type));
+                var typeConfiguration = default(TypeConfiguration);
+                try
+                {
+                    typeConfiguration = typeConfigurationProvider.GetConfiguration(type);
+                }
+                catch (Exception ex)
+                {
+                    throw new RuntimeException(
+                        string.Format(
+                            CultureInfo.InvariantCulture,
+                            "The type configuration provider of type '{0}' threw an exception during invocation.\r\nSee inner exception for details.",
+                            typeConfigurationProvider.GetType()),
+                        ex);
+                }
+
+                this.typeDescriptors.Add(type, typeDescriptor = new TypeAnalyzer().GetDescriptor(type, typeConfiguration));
 
                 return typeDescriptor;
             }
