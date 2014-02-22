@@ -28,7 +28,7 @@ namespace dddlib.Runtime
         /// Initializes a new instance of the <see cref="Application"/> class.
         /// </summary>
         public Application()
-            : this(type => new DefaultConfigurationProvider())
+            : this(type => new DefaultTypeConfigurationProvider())
         {
         }
 
@@ -36,7 +36,7 @@ namespace dddlib.Runtime
         /// Initializes a new instance of the <see cref="Application"/> class.
         /// </summary>
         /// <param name="configurationProviderFactory">The configuration provider factory.</param>
-        public Application(Func<Type, IConfigurationProvider> configurationProviderFactory)
+        public Application(Func<Type, ITypeConfigurationProvider> configurationProviderFactory)
         {
             this.Runtime = new Runtime(type => configurationProviderFactory(type));
 

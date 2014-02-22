@@ -7,7 +7,8 @@ namespace dddlib.Runtime
     /*  TODO (Cameron): 
         Consider not using an indexer. => maybe GetEntityInfo, GetAggregateInfo, GetValueObjectInfo to include type check?
         Wrap calls that may fail in a try...catch block.
-        Consider folding into Application.  */
+        Consider folding into Application.
+        Consider using Guard clause.  */
 
     using System;
     using System.Collections.Generic;
@@ -16,48 +17,60 @@ namespace dddlib.Runtime
 
     internal class Runtime
     {
-        private static readonly Type[] ValidTypes = new[] { typeof(AggregateRoot), typeof(Entity), typeof(ValueObject<>) };
-
         private readonly Dictionary<Type, TypeDescriptor> typeDescriptors = new Dictionary<Type, TypeDescriptor>();
 
-        private readonly Func<Type, IConfigurationProvider> configurationProviderFactory;
+        private readonly Func<Type, ITypeConfigurationProvider> configurationProviderFactory;
 
-        public Runtime(Func<Type, IConfigurationProvider> configurationProviderFactory)
+        public Runtime(Func<Type, ITypeConfigurationProvider> configurationProviderFactory)
         {
             Guard.Against.Null(() => configurationProviderFactory);
 
             this.configurationProviderFactory = configurationProviderFactory;
         }
 
-        public TypeDescriptor this[Type type]
+        public TypeDescriptor GetAggregateRootDescriptor(Type type)
         {
-            get
+            return this.GetDescriptor(type, typeof(AggregateRoot));
+        }
+
+        public TypeDescriptor GetEntityDescriptor(Type type)
+        {
+            return this.GetDescriptor(type, typeof(Entity));
+        }
+
+        public TypeDescriptor GetValueObjectDescriptor(Type type)
+        {
+            return this.GetDescriptor(type, typeof(ValueObject<>));
+        }
+
+        private TypeDescriptor GetDescriptor(Type type, Type descriptorType)
+        {
+            Guard.Against.Null(() => type);
+
+            if (!descriptorType.IsAssignableFrom(type))
             {
-                var typeDescriptor = default(TypeDescriptor);
+                throw new ArgumentException("Invalid runtime type specified.", "type");
+            }
+
+            var typeDescriptor = default(TypeDescriptor);
+            if (this.typeDescriptors.TryGetValue(type, out typeDescriptor))
+            {
+                return typeDescriptor;
+            }
+
+            lock (this.typeDescriptors)
+            {
                 if (this.typeDescriptors.TryGetValue(type, out typeDescriptor))
                 {
                     return typeDescriptor;
                 }
 
-                if (ValidTypes.Any(validType => type.IsAssignableFrom(validType)))
-                {
-                    throw new ArgumentException("Invalid runtime type specified.", "type");
-                }
+                var configurationProvider = this.configurationProviderFactory(type);
+                var configuration = configurationProvider.GetConfiguration(type);
 
-                lock (this.typeDescriptors)
-                {
-                    if (this.typeDescriptors.TryGetValue(type, out typeDescriptor))
-                    {
-                        return typeDescriptor;
-                    }
+                this.typeDescriptors.Add(type, typeDescriptor = new TypeAnalyzer(configuration).GetDescriptor(type));
 
-                    var configurationProvider = this.configurationProviderFactory(type);
-                    var configuration = configurationProvider.GetConfiguration(type);
-
-                    this.typeDescriptors.Add(type, typeDescriptor = new TypeAnalyzer(configuration).GetDescriptor(type));
-
-                    return typeDescriptor;
-                }
+                return typeDescriptor;
             }
         }
     }

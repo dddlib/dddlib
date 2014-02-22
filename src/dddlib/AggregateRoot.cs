@@ -31,7 +31,7 @@ namespace dddlib
         /// </summary>
         protected AggregateRoot()
         {
-            this.eventDispatcher = Application.Current.Runtime[this.GetType()].EventDispatcher;
+            this.eventDispatcher = Application.Current.Runtime.GetAggregateRootDescriptor(this.GetType()).EventDispatcher;
         }
 
         string IAggregateRoot.State

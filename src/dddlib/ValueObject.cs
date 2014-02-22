@@ -6,7 +6,8 @@ namespace dddlib
 {
     /*  TODO (Cameron): 
         Fix exceptions (as before).
-        Add expression equality based on public property values.  */
+        Add expression equality based on public property values.
+        Think about how this should work with the TypeDescriptors.  */
 
     using System;
     using System.Collections.Generic;

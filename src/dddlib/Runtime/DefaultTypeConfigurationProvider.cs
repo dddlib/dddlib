@@ -1,4 +1,4 @@
-﻿// <copyright file="DefaultConfigurationProvider.cs" company="dddlib contributors">
+﻿// <copyright file="DefaultTypeConfigurationProvider.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -8,28 +8,27 @@ namespace dddlib.Runtime
     using System.Globalization;
     using System.Linq;
 
-    /*  TODO (Cameron): 
-        Rename TypeConfigurationProvider.
+    /*  TODO (Cameron):
         Make method virtual.
         Change exceptions to point to inner exceptions.
         Cache the results per assembly. eg. only make the bootstrapping calls once per assembly.
         Change exception arguments to type, not type.Name.  */
 
     /// <summary>
-    /// Represents the default configuration provider.
+    /// Represents the default type configuration provider.
     /// </summary>
-    public class DefaultConfigurationProvider : IConfigurationProvider
+    public class DefaultTypeConfigurationProvider : ITypeConfigurationProvider
     {
         /// <summary>
         /// Gets the configuration.
         /// </summary>
         /// <param name="type">The type to get the configuration for.</param>
         /// <returns>The configuration.</returns>
-        public Configuration GetConfiguration(Type type)
+        public TypeConfiguration GetConfiguration(Type type)
         {
             Guard.Against.Null(() => type);
 
-            var configuration = new Configuration();
+            var configuration = new TypeConfiguration();
 
             var bootstrapperTypes = type.Assembly.GetTypes().Where(assemblyType => typeof(IBootstrapper).IsAssignableFrom(assemblyType));
             if (!bootstrapperTypes.Any())

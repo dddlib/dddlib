@@ -57,10 +57,10 @@
     <Compile Include="NaturalKeyAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Runtime\Application.cs" />
-    <Compile Include="Runtime\Configuration.cs" />
-    <Compile Include="Runtime\DefaultConfigurationProvider.cs" />
+    <Compile Include="Runtime\TypeConfiguration.cs" />
+    <Compile Include="Runtime\DefaultTypeConfigurationProvider.cs" />
     <Compile Include="Runtime\DefaultEventDispatcher.cs" />
-    <Compile Include="Runtime\IConfigurationProvider.cs" />
+    <Compile Include="Runtime\ITypeConfigurationProvider.cs" />
     <Compile Include="Runtime\Runtime.cs" />
     <Compile Include="Runtime\IConfiguration.cs" />
     <Compile Include="Runtime\IBootstrapper.cs" />

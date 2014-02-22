@@ -9,8 +9,13 @@
 
 namespace dddlib.Persistence
 {
+    /*  TODO (Cameron): 
+        Consider a different (non-ES) repository - maybe just many overloads?
+        Cache factory per aggregate.  */
+
     using System;
     using System.Collections.Generic;
+    using dddlib.Runtime;
 
     /// <summary>
     /// A factory that provides the ability to reconstitute an aggregate root.
@@ -29,7 +34,7 @@ namespace dddlib.Persistence
             where T : AggregateRoot
         {
             // TODO (Cameron): Make this more performant. Consider using some type of IL instantiation.
-            var aggregate = Activator.CreateInstance(typeof(T), true) as IAggregateRoot;
+            var aggregate = Application.Current.Runtime.GetAggregateRootDescriptor(typeof(T)).Factory() as IAggregateRoot;
             aggregate.Initialize(memento, events, state);
             return (T)aggregate;
         }

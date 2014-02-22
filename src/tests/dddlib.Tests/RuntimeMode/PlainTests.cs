@@ -12,7 +12,7 @@ namespace dddlib.Tests.RuntimeMode
         [Fact(Skip = "Doesn't work yet.")]
         public void Do()
         {
-            var configuration = new Configuration();
+            var configuration = new TypeConfiguration();
             configuration.SetEventDispatcherFactory(type => new DefaultEventDispatcher(type));
 
             using (new Application())

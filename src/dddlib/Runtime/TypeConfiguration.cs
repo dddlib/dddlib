@@ -1,4 +1,4 @@
-﻿// <copyright file="Configuration.cs" company="dddlib contributors">
+﻿// <copyright file="TypeConfiguration.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -9,18 +9,16 @@ namespace dddlib.Runtime
     using System.Globalization;
 
     /*  TODO (Cameron): 
-        Rename TypeConfiguration.
         Make method virtual.
         Change exceptions from RuntimeException exceptions.
-        Change exception arguments to type, not type.Name.
         See note at bottom.
         Consider getting config from other sources eg. attributes? (Maybe not?)
         Need to validate configuration eg. cannot have an event dispatcher factory and run in Plain mode - decide all rules and where to validate.  */
 
     /// <summary>
-    /// Represents the configuration.
+    /// Represents the type configuration.
     /// </summary>
-    public class Configuration : IConfiguration
+    public class TypeConfiguration : IConfiguration
     {
         private static readonly Func<Type, IEventDispatcher> DefaultEventDispatcherFactory = type => new DefaultEventDispatcher(type);
 
@@ -30,9 +28,9 @@ namespace dddlib.Runtime
         private Func<Type, IEventDispatcher> eventDispatcherFactory;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Configuration"/> class.
+        /// Initializes a new instance of the <see cref="TypeConfiguration"/> class.
         /// </summary>
-        public Configuration()
+        public TypeConfiguration()
         {
             // NOTE (Cameron): Default(s).
             this.runtimeMode = RuntimeMode.EventSourcing;
@@ -109,7 +107,7 @@ namespace dddlib.Runtime
                     string.Format(
                         CultureInfo.InvariantCulture,
                         "Cannot register more than one aggregate root factory for the type '{0}'.",
-                        typeof(T).Name));
+                        typeof(T)));
             }
 
             // TODO (Cameron): Some expression voodoo to fix the double enclosing.
