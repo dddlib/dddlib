@@ -7,6 +7,7 @@ namespace dddlib.Runtime
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
 
     /*  TODO (Cameron): 
         Change exceptions from RuntimeException exceptions... MAYBE NOT?
@@ -82,10 +83,10 @@ namespace dddlib.Runtime
         /// <param name="mode">The runtime mode.</param>
         public void SetRuntimeMode(RuntimeMode mode)
         {
-            if (mode == default(RuntimeMode))
+            if (!Enum.GetValues(typeof(RuntimeMode)).Cast<RuntimeMode>().Contains(mode))
             {
                 // NOTE (Cameron): Unset enumeration.
-                throw new ArgumentException("Value of enumeration cannot be unset.", "mode");
+                throw new ArgumentException("Enumeration value is invalid.", "mode");
             }
 
             this.runtimeMode = mode;

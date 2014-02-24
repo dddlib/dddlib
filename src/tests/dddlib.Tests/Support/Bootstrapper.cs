@@ -8,9 +8,8 @@ namespace dddlib.Tests.Support
 
     internal class Bootstrapper : IBootstrapper
     {
-        public void Bootstrap(IConfiguration assembly)
+        public void Bootstrap(IConfiguration config)
         {
-            throw new System.NotImplementedException();
         }
     }
 }
