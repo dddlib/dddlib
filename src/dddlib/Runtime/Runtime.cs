@@ -5,7 +5,8 @@
 namespace dddlib.Runtime
 {
     /*  TODO (Cameron): 
-        Consider folding into Application.  */
+        Consider folding into Application.
+        Consider renaming and moving the SafeInvoke wrapper for the try...catch blocks into a separate class for reuse elsewhere.  */
 
     using System;
     using System.Collections.Generic;
@@ -39,6 +40,23 @@ namespace dddlib.Runtime
             return this.GetDescriptor(type, typeof(ValueObject<>));
         }
 
+        private static T SafeInvoke<T>(Func<T> thing, string errorMessgae, params object[] errorMessgaeArguments)
+        {
+            try
+            {
+                return thing();
+            }
+            catch (Exception ex)
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        string.Concat(errorMessgae, "\r\nSee inner exception for details."),
+                        errorMessgaeArguments),
+                    ex);
+            }
+        }
+
         private TypeDescriptor GetDescriptor(Type type, Type descriptorType)
         {
             Guard.Against.Null(() => type);
@@ -61,32 +79,14 @@ namespace dddlib.Runtime
                     return typeDescriptor;
                 }
 
-                var typeConfigurationProvider = default(ITypeConfigurationProvider);
-                try
-                {
-                    typeConfigurationProvider = this.configurationProviderFactory(type);
-                }
-                catch (Exception ex)
-                {
-                    throw new RuntimeException(
-                        "The type configuration provider factory threw an exception during invocation.\r\nSee inner exception for details.",
-                        ex);
-                }
+                var typeConfigurationProvider = SafeInvoke(
+                    () => this.configurationProviderFactory(type), 
+                    "The type configuration provider factory threw an exception during invocation.");
 
-                var typeConfiguration = default(TypeConfiguration);
-                try
-                {
-                    typeConfiguration = typeConfigurationProvider.GetConfiguration(type);
-                }
-                catch (Exception ex)
-                {
-                    throw new RuntimeException(
-                        string.Format(
-                            CultureInfo.InvariantCulture,
-                            "The type configuration provider of type '{0}' threw an exception during invocation.\r\nSee inner exception for details.",
-                            typeConfigurationProvider.GetType()),
-                        ex);
-                }
+                var typeConfiguration = SafeInvoke(
+                    () => typeConfigurationProvider.GetConfiguration(type),
+                    "The type configuration provider of type '{0}' threw an exception during invocation.", 
+                    typeConfigurationProvider.GetType());
 
                 this.typeDescriptors.Add(type, typeDescriptor = new TypeAnalyzer().GetDescriptor(type, typeConfiguration));
 

@@ -9,8 +9,7 @@ namespace dddlib.Runtime
     using System.Globalization;
 
     /*  TODO (Cameron): 
-        Make method virtual.
-        Change exceptions from RuntimeException exceptions.
+        Change exceptions from RuntimeException exceptions... MAYBE NOT?
         See note at bottom.
         Consider getting config from other sources eg. attributes? (Maybe not?)
         Need to validate configuration eg. cannot have an event dispatcher factory and run in Plain mode - decide all rules and where to validate.  */
@@ -18,7 +17,7 @@ namespace dddlib.Runtime
     /// <summary>
     /// Represents the type configuration.
     /// </summary>
-    public class TypeConfiguration : IConfiguration
+    public sealed class TypeConfiguration : IConfiguration
     {
         private static readonly Func<Type, IEventDispatcher> DefaultEventDispatcherFactory = type => new DefaultEventDispatcher(type);
 
