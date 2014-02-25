@@ -10,25 +10,23 @@ namespace dddlib.Runtime
     public enum RuntimeMode
     {
         /// <summary>
-        /// The undefined runtime mode.
+        /// The event sourcing runtime mode.
+        /// When this mode is specified then the <see cref="dddlib.AggregateRoot"/> type will respect event dispatching.
+        /// This is the default mode.
         /// </summary>
-        Undefined = 0,
+        EventSourcing = 0,
+
+        /// <summary>
+        /// The event sourcing runtime mode without persistence.
+        /// This is the same as the <see cref="dddlib.RuntimeMode.EventSourcing"/> runtime mode except that events will not be stored on the 
+        /// aggregate root for persistence.
+        /// </summary>
+        EventSourcingWithoutPersistence = 1,
 
         /// <summary>
         /// The plain runtime mode.
+        /// In this mode event dispatching will not occur and consequently events will not be stored on the aggregate root for persistence.
         /// </summary>
-        Plain = 1,
-
-        /// <summary>
-        /// The event sourcing runtime mode.
-        /// </summary>
-        EventSourcing = 2,
-
-        /// <summary>
-        /// The event sourcing without persistence runtime mode.
-        /// This is the same as the <see cref="RuntimeMode.EventSourcing"/> runtime mode except that events will not be stored on the aggregate root
-        /// for persistence.
-        /// </summary>
-        EventSourcingWithoutPersistence = 3,
+        Plain = 2,
     }
 }

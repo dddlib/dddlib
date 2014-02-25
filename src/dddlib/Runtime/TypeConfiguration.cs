@@ -33,7 +33,7 @@ namespace dddlib.Runtime
         public TypeConfiguration()
         {
             // NOTE (Cameron): Default(s).
-            this.runtimeMode = RuntimeMode.EventSourcing;
+            this.runtimeMode = default(RuntimeMode);
             this.eventDispatcherFactory = DefaultEventDispatcherFactory;
         }
 
