@@ -34,7 +34,7 @@ namespace dddlib.Persistence
             where T : AggregateRoot
         {
             // TODO (Cameron): Make this more performant. Consider using some type of IL instantiation.
-            var aggregate = Application.Current.Runtime.GetAggregateRootDescriptor(typeof(T)).Factory() as IAggregateRoot;
+            var aggregate = Application.Current.GetAggregateRootDescriptor(typeof(T)).Factory() as IAggregateRoot;
             aggregate.Initialize(memento, events, state);
             return (T)aggregate;
         }
