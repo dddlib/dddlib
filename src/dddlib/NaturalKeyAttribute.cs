@@ -15,22 +15,6 @@ namespace dddlib
     public sealed class NaturalKeyAttribute : Attribute
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="NaturalKeyAttribute"/> class.
-        /// </summary>
-        public NaturalKeyAttribute()
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="NaturalKeyAttribute"/> class.
-        /// </summary>
-        /// <param name="equalityComparer">The equality comparer.</param>
-        public NaturalKeyAttribute(Type equalityComparer)
-        {
-            this.EqualityComparer = equalityComparer;
-        }
-
-        /// <summary>
         /// Gets or sets the equality comparer for the natural key of the entity.
         /// </summary>
         /// <value>The equality comparer for the natural key of the entity.</value>

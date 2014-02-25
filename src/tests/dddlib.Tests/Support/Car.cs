@@ -17,7 +17,7 @@ namespace dddlib.Tests.Support
         {
         }
 
-        [NaturalKey(typeof(Comp))]
+        [NaturalKey(EqualityComparer = typeof(Comp))]
         public override string Registration
         {
             get { return base.Registration; }

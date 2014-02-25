@@ -64,7 +64,10 @@ namespace dddlib.Runtime
 
         internal Runtime Runtime { get; private set; }
 
-        void IDisposable.Dispose()
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
         {
             if (object.ReferenceEquals(this, DefaultApplication.Value))
             {

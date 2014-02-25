@@ -26,7 +26,7 @@ namespace dddlib.Tests.Support
         {
         }
 
-        [NaturalKey(typeof(System.StringComparer))]
+        [NaturalKey(EqualityComparer = typeof(System.StringComparer))]
         public virtual string Registration { get; protected set; }
 
         public void Scrap()

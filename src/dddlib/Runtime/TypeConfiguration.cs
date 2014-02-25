@@ -69,18 +69,19 @@ namespace dddlib.Runtime
         /// <summary>
         /// Sets the event dispatcher factory.
         /// </summary>
-        /// <param name="factory">The factory.</param>
-        public void SetEventDispatcherFactory(Func<Type, IEventDispatcher> factory)
+        /// <param name="eventDispatcherFactory">The event dispatcher factory.</param>
+        public void SetEventDispatcherFactory(Func<Type, IEventDispatcher> eventDispatcherFactory)
         {
-            Guard.Against.Null(() => factory);
+            Guard.Against.Null(() => eventDispatcherFactory);
 
-            this.eventDispatcherFactory = factory;
+            this.eventDispatcherFactory = eventDispatcherFactory;
         }
 
         /// <summary>
         /// Sets the runtime mode for the domain model contained within this assembly.
         /// </summary>
         /// <param name="mode">The runtime mode.</param>
+        //// LINK (Cameron): http://blogs.msdn.com/b/brada/archive/2003/11/29/50903.aspx
         public void SetRuntimeMode(RuntimeMode mode)
         {
             if (!Enum.GetValues(typeof(RuntimeMode)).Cast<RuntimeMode>().Contains(mode))

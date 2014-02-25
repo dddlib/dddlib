@@ -6,6 +6,7 @@ namespace dddlib.Runtime
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -46,6 +47,8 @@ namespace dddlib.Runtime
         /// <param name="event">The event.</param>
         public void Dispatch(AggregateRoot aggregate, object @event)
         {
+            Guard.Against.Null(() => @event);
+
             var handlerList = default(List<Action<AggregateRoot, object>>);
             if (this.handlers.TryGetValue(@event.GetType(), out handlerList))
             {
@@ -113,6 +116,7 @@ namespace dddlib.Runtime
             return dynamicMethod.CreateDelegate(typeof(Action<AggregateRoot, object>)) as Action<AggregateRoot, object>;
         }
 
+        // LINK (Cameron): http://blog.functionalfun.net/2009/10/getting-methodinfo-of-generic-method.html
         private static string GetApplyMethodName()
         {
             Expression<Action<DefaultEventDispatcher>> expression = aggregate => aggregate.Handle(default(object));
@@ -121,6 +125,8 @@ namespace dddlib.Runtime
             return methodCall.Method.Name;
         }
 
+        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "By design.")]
+        [SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "event", Justification = "Also, by design.")]
         private void Handle(object @event)
         {
         }

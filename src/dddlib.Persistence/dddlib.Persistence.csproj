@@ -53,6 +53,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <CodeAnalysisDictionary Include="..\dddlib.dictionary">
+      <Link>Properties\dddlib.dictionary</Link>
+    </CodeAnalysisDictionary>
     <None Include="..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>

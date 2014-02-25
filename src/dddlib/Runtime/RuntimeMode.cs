@@ -10,6 +10,11 @@ namespace dddlib.Runtime
     public enum RuntimeMode
     {
         /// <summary>
+        /// The undefined runtime mode.
+        /// </summary>
+        Undefined = 0,
+
+        /// <summary>
         /// The plain runtime mode.
         /// </summary>
         Plain = 1,
@@ -24,6 +29,6 @@ namespace dddlib.Runtime
         /// This is the same as the <see cref="RuntimeMode.EventSourcing"/> runtime mode except that events will not be stored on the aggregate root
         /// for persistence.
         /// </summary>
-        EventSourcingWithoutPersistence = 4,
+        EventSourcingWithoutPersistence = 3,
     }
 }
