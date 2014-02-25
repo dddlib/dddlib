@@ -4,15 +4,10 @@
 
 namespace dddlib.Runtime
 {
-    /*  TODO (Cameron): 
-        Consider folding Runtime into Application.
-        Apply 'is disposed' check when runtime is moved in.  */
-
     using System;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
-    using System.Reflection;
 
     /// <summary>
     /// Represents an application.
@@ -110,6 +105,11 @@ namespace dddlib.Runtime
         private TypeDescriptor GetDescriptor(Type type, Type descriptorType)
         {
             Guard.Against.Null(() => type);
+
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
 
             if (!descriptorType.IsAssignableFrom(type))
             {
