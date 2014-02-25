@@ -4,9 +4,6 @@
 
 namespace dddlib.Runtime
 {
-    /*  TODO (Cameron): 
-        Change to work on any type.  */
-
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
@@ -15,11 +12,11 @@ namespace dddlib.Runtime
     public interface IEventDispatcher
     {
         /// <summary>
-        /// Dispatches the specified event against the specified aggregate.
+        /// Dispatches the specified event against the specified target.
         /// </summary>
-        /// <param name="aggregate">The aggregate.</param>
+        /// <param name="target">The target.</param>
         /// <param name="event">The event.</param>
         [SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", MessageId = "event", Justification = "It is an event.")]
-        void Dispatch(AggregateRoot aggregate, object @event);
+        void Dispatch(object target, object @event);
     }
 }

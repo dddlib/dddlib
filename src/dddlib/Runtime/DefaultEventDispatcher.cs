@@ -27,7 +27,7 @@ namespace dddlib.Runtime
     {
         private static readonly string ApplyMethodName = GetApplyMethodName();
 
-        private readonly Dictionary<Type, List<Action<AggregateRoot, object>>> handlers;
+        private readonly Dictionary<Type, List<Action<object, object>>> handlers;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultEventDispatcher"/> class.
@@ -41,25 +41,25 @@ namespace dddlib.Runtime
         }
 
         /// <summary>
-        /// Dispatches the specified event against the specified aggregate.
+        /// Dispatches the specified event against the specified target.
         /// </summary>
-        /// <param name="aggregate">The aggregate.</param>
+        /// <param name="target">The target.</param>
         /// <param name="event">The event.</param>
-        public void Dispatch(AggregateRoot aggregate, object @event)
+        public void Dispatch(object target, object @event)
         {
             Guard.Against.Null(() => @event);
 
-            var handlerList = default(List<Action<AggregateRoot, object>>);
+            var handlerList = default(List<Action<object, object>>);
             if (this.handlers.TryGetValue(@event.GetType(), out handlerList))
             {
                 foreach (var handler in handlerList)
                 {
-                    handler.Invoke(aggregate, @event);
+                    handler.Invoke(target, @event);
                 }
             }
         }
 
-        private static Dictionary<Type, List<Action<AggregateRoot, object>>> GetHandlers(Type aggregateRootType)
+        private static Dictionary<Type, List<Action<object, object>>> GetHandlers(Type aggregateRootType)
         {
             var handlerMethods = new[] { aggregateRootType }
                 .Traverse(type => type.BaseType == typeof(AggregateRoot) ? null : new[] { type.BaseType })
@@ -79,15 +79,15 @@ namespace dddlib.Runtime
                 .Where(method => !method.ParameterType.IsClass)
                 .ToArray();
 
-            var handlers = new Dictionary<Type, List<Action<AggregateRoot, object>>>();
+            var handlers = new Dictionary<Type, List<Action<object, object>>>();
 
             foreach (var handlerMethod in handlerMethods.Except(invalidHandlerMethodTypes))
             {
                 var handler = CreateHandlerDelegate(aggregateRootType, handlerMethod.Info);
-                var handlerList = default(List<Action<AggregateRoot, object>>);
+                var handlerList = default(List<Action<object, object>>);
                 if (!handlers.TryGetValue(handlerMethod.ParameterType, out handlerList))
                 {
-                    handlerList = new List<Action<AggregateRoot, object>>();
+                    handlerList = new List<Action<object, object>>();
                     handlers.Add(handlerMethod.ParameterType, handlerList);
                 }
 
@@ -98,12 +98,12 @@ namespace dddlib.Runtime
         }
 
         // LINK (Cameron): http://www.sapiensworks.com/blog/post/2012/04/19/Invoking-A-Private-Method-On-A-Subclass.aspx
-        private static Action<AggregateRoot, object> CreateHandlerDelegate(Type declaringType, MethodInfo methodInfo)
+        private static Action<object, object> CreateHandlerDelegate(Type declaringType, MethodInfo methodInfo)
         {
             var dynamicMethod = new DynamicMethod(
                 string.Empty,
                 typeof(void),
-                new[] { typeof(AggregateRoot), typeof(object) },
+                new[] { typeof(object), typeof(object) },
                 declaringType.Module,
                 true);
 
@@ -113,7 +113,7 @@ namespace dddlib.Runtime
             il.Emit(OpCodes.Call, methodInfo); // call apply method
             il.Emit(OpCodes.Ret);              // return
 
-            return dynamicMethod.CreateDelegate(typeof(Action<AggregateRoot, object>)) as Action<AggregateRoot, object>;
+            return dynamicMethod.CreateDelegate(typeof(Action<object, object>)) as Action<object, object>;
         }
 
         // LINK (Cameron): http://blog.functionalfun.net/2009/10/getting-methodinfo-of-generic-method.html
