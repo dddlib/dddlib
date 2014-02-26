@@ -18,8 +18,8 @@ namespace dddlib.Runtime
         /// <summary>
         /// Sets the event dispatcher factory to use for all aggregate roots in the assembly containing the implementation.
         /// </summary>
-        /// <param name="eventDispatcherFactory">The event dispatcher factory.</param>
-        void SetEventDispatcherFactory(Func<Type, IEventDispatcher> eventDispatcherFactory);
+        /// <param name="factory">The event dispatcher factory.</param>
+        void SetEventDispatcherFactory(Func<Type, IEventDispatcher> factory);
 
         /// <summary>
         /// Sets the runtime mode for the domain model contained within this assembly.

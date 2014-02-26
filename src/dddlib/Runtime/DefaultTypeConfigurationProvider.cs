@@ -6,6 +6,7 @@ namespace dddlib.Runtime
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
     using System.Reflection;
@@ -19,7 +20,8 @@ namespace dddlib.Runtime
     /// </summary>
     public class DefaultTypeConfigurationProvider : ITypeConfigurationProvider
     {
-        private readonly Dictionary<Assembly, TypeConfiguration> typeConfigurations = new Dictionary<Assembly, TypeConfiguration>();
+        private readonly Dictionary<Assembly, AssemblyConfiguration> assemblyConfigurations = new Dictionary<Assembly, AssemblyConfiguration>();
+        private readonly Dictionary<Type, TypeConfiguration> typeConfigurations = new Dictionary<Type, TypeConfiguration>();
 
         /// <summary>
         /// Gets the configuration.
@@ -31,24 +33,56 @@ namespace dddlib.Runtime
             Guard.Against.Null(() => type);
 
             var typeConfiguration = default(TypeConfiguration);
-            if (this.typeConfigurations.TryGetValue(type.Assembly, out typeConfiguration))
+            if (this.typeConfigurations.TryGetValue(type, out typeConfiguration))
             {
                 return typeConfiguration;
             }
 
-            this.typeConfigurations.Add(type.Assembly, typeConfiguration = CreateConfiguration(type));
+            var assemblyConfiguration = this.GetConfiguration(type.Assembly);
+
+            this.typeConfigurations.Add(type, typeConfiguration = CreateConfiguration(type, assemblyConfiguration));
 
             return typeConfiguration;
         }
 
-        private static TypeConfiguration CreateConfiguration(Type type)
+        [SuppressMessage("StyleCop.CSharp.OrderingRules", "SA1204:StaticElementsMustAppearBeforeInstanceElements", Justification = "Not here.")]
+        private AssemblyConfiguration GetConfiguration(Assembly assembly)
         {
-            var typeConfiguration = new TypeConfiguration();
+            var assemblyConfiguration = default(AssemblyConfiguration);
+            if (this.assemblyConfigurations.TryGetValue(assembly, out assemblyConfiguration))
+            {
+                return assemblyConfiguration;
+            }
 
-            var bootstrapperTypes = type.Assembly.GetTypes().Where(assemblyType => typeof(IBootstrapper).IsAssignableFrom(assemblyType));
+            this.assemblyConfigurations.Add(assembly, assemblyConfiguration = CreateConfiguration(assembly));
+
+            return assemblyConfiguration;
+        }
+
+        private static TypeConfiguration CreateConfiguration(Type type, AssemblyConfiguration assemblyConfiguration)
+        {
+            switch (assemblyConfiguration.RuntimeMode)
+            {
+                case RuntimeMode.EventSourcing:
+                    var aggregateRootFactory = default(Func<object>);
+                    assemblyConfiguration.AggregateRootFactories.TryGetValue(type, out aggregateRootFactory);
+                    return TypeConfiguration.Create(assemblyConfiguration.EventDispatcherFactory, aggregateRootFactory);
+
+                case RuntimeMode.EventSourcingWithoutPersistence:
+                    return TypeConfiguration.Create(assemblyConfiguration.EventDispatcherFactory);
+
+                case RuntimeMode.Plain:
+                default:
+                    return TypeConfiguration.Create();
+            }
+        }
+
+        private static AssemblyConfiguration CreateConfiguration(Assembly assembly)
+        {
+            var bootstrapperTypes = assembly.GetTypes().Where(assemblyType => typeof(IBootstrapper).IsAssignableFrom(assemblyType));
             if (!bootstrapperTypes.Any())
             {
-                return typeConfiguration;
+                return new AssemblyConfiguration();
             }
 
             if (bootstrapperTypes.Count() > 1)
@@ -56,8 +90,8 @@ namespace dddlib.Runtime
                 throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture, 
-                        "The assembly '{0}' has more than one bootstrapper defined.", 
-                        type.Assembly.GetName()));
+                        "The assembly '{0}' has more than one bootstrapper defined.",
+                        assembly.GetName()));
             }
 
             var bootstrapperType = bootstrapperTypes.First();
@@ -85,9 +119,10 @@ namespace dddlib.Runtime
                     ex);
             }
 
+            var assemblyConfiguration = new AssemblyConfiguration();
             try
             {
-                bootstrapper.Bootstrap(typeConfiguration);
+                bootstrapper.Bootstrap(assemblyConfiguration);
             }
             catch (Exception ex)
             {
@@ -99,7 +134,7 @@ namespace dddlib.Runtime
                     ex);
             }
 
-            return typeConfiguration;
+            return assemblyConfiguration;
         }
     }
 }

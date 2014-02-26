@@ -5,36 +5,21 @@
 namespace dddlib.Runtime
 {
     using System;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.Linq;
-
-    /*  TODO (Cameron): 
-        Change exceptions from RuntimeException exceptions... MAYBE NOT?
-        See note at bottom.
-        Consider getting config from other sources eg. attributes? (Maybe not?)
-        Need to validate configuration eg. cannot have an event dispatcher factory and run in Plain mode - decide all rules and where to validate.  */
 
     /// <summary>
     /// Represents the type configuration.
     /// </summary>
-    public sealed class TypeConfiguration : IConfiguration
+    public sealed class TypeConfiguration
     {
-        private static readonly Func<Type, IEventDispatcher> DefaultEventDispatcherFactory = type => new DefaultEventDispatcher(type);
+        private readonly RuntimeMode runtimeMode;
+        private readonly Func<Type, IEventDispatcher> eventDispatcherFactory;
+        private readonly Func<object> aggregateRootFactory;
 
-        private readonly Dictionary<Type, Func<object>> aggregateRootFactories = new Dictionary<Type, Func<object>>();
-
-        private RuntimeMode runtimeMode;
-        private Func<Type, IEventDispatcher> eventDispatcherFactory;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TypeConfiguration"/> class.
-        /// </summary>
-        public TypeConfiguration()
+        private TypeConfiguration(RuntimeMode runtimeMode, Func<Type, IEventDispatcher> eventDispatcherFactory, Func<object> aggregateRootFactory)
         {
-            // NOTE (Cameron): Default(s).
-            this.runtimeMode = default(RuntimeMode);
-            this.eventDispatcherFactory = DefaultEventDispatcherFactory;
+            this.runtimeMode = runtimeMode;
+            this.eventDispatcherFactory = eventDispatcherFactory;
+            this.aggregateRootFactory = aggregateRootFactory;
         }
 
         /// <summary>
@@ -56,63 +41,42 @@ namespace dddlib.Runtime
         }
 
         /// <summary>
-        /// Tries the get aggregate root factory.
+        /// Gets the aggregate root factory.
         /// </summary>
-        /// <param name="type">The type of aggregate root.</param>
-        /// <param name="factory">The factory.</param>
-        /// <returns>Returns <c>true</c> if the aggregate root factory has been returned; otherwise <c>false</c>.</returns>
-        public bool TryGetAggregateRootFactory(Type type, out Func<object> factory)
+        /// <value>The aggregate root factory.</value>
+        public Func<object> AggregateRootFactory
         {
-            return this.aggregateRootFactories.TryGetValue(type, out factory);
+            get { return this.aggregateRootFactory; }
         }
 
         /// <summary>
-        /// Sets the event dispatcher factory.
+        /// Creates an event sourcing type configuration.
         /// </summary>
         /// <param name="eventDispatcherFactory">The event dispatcher factory.</param>
-        public void SetEventDispatcherFactory(Func<Type, IEventDispatcher> eventDispatcherFactory)
+        /// <param name="aggregateRootFactory">The aggregate root factory.</param>
+        /// <returns>An event sourcing type configuration.</returns>
+        public static TypeConfiguration Create(Func<Type, IEventDispatcher> eventDispatcherFactory, Func<object> aggregateRootFactory)
         {
-            Guard.Against.Null(() => eventDispatcherFactory);
-
-            this.eventDispatcherFactory = eventDispatcherFactory;
+            return new TypeConfiguration(RuntimeMode.EventSourcing, eventDispatcherFactory, aggregateRootFactory);
         }
 
         /// <summary>
-        /// Sets the runtime mode for the domain model contained within this assembly.
+        /// Creates an event sourcing without persistence type configuration.
         /// </summary>
-        /// <param name="mode">The runtime mode.</param>
-        //// LINK (Cameron): http://blogs.msdn.com/b/brada/archive/2003/11/29/50903.aspx
-        public void SetRuntimeMode(RuntimeMode mode)
+        /// <param name="eventDispatcherFactory">The event dispatcher factory.</param>
+        /// <returns>An event sourcing without persistence type configuration.</returns>
+        public static TypeConfiguration Create(Func<Type, IEventDispatcher> eventDispatcherFactory)
         {
-            if (!Enum.GetValues(typeof(RuntimeMode)).Cast<RuntimeMode>().Contains(mode))
-            {
-                // NOTE (Cameron): Unset enumeration.
-                throw new ArgumentException("Enumeration value is invalid.", "mode");
-            }
-
-            this.runtimeMode = mode;
+            return new TypeConfiguration(RuntimeMode.EventSourcingWithoutPersistence, eventDispatcherFactory, null);
         }
 
         /// <summary>
-        /// Registers the specified factory for creating an uninitialized instance of an aggregate of the specified type.
+        /// Creates a plain type configuration.
         /// </summary>
-        /// <typeparam name="T">The type of aggregate root.</typeparam>
-        /// <param name="factory">The factory for the aggregate root.</param>
-        public void RegisterAggregateRootFactory<T>(Func<T> factory) where T : AggregateRoot
+        /// <returns>A plain type configuration.</returns>
+        public static TypeConfiguration Create()
         {
-            Guard.Against.Null(() => factory);
-
-            if (this.aggregateRootFactories.ContainsKey(typeof(T)))
-            {
-                throw new RuntimeException(
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "Cannot register more than one aggregate root factory for the type '{0}'.",
-                        typeof(T)));
-            }
-
-            // TODO (Cameron): Some expression voodoo to fix the double enclosing.
-            this.aggregateRootFactories.Add(typeof(T), () => factory());
+            return new TypeConfiguration(RuntimeMode.Plain, null, null);
         }
     }
 }

@@ -51,6 +51,7 @@
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="BusinessException.cs" />
     <Compile Include="Entity.cs" />
+    <Compile Include="Runtime\AssemblyConfiguration.cs" />
     <Compile Include="Runtime\EnumerableExtensions.cs" />
     <Compile Include="Guard.cs" />
     <Compile Include="IAggregateRoot.cs" />
