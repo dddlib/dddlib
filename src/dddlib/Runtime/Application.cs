@@ -102,6 +102,7 @@ namespace dddlib.Runtime
             return this.GetDescriptor(type, typeof(ValueObject<>));
         }
 
+        // TODO (Cameron): Allow nested runtime exceptions to bubble up.
         private TypeDescriptor GetDescriptor(Type type, Type descriptorType)
         {
             Guard.Against.Null(() => type);
@@ -136,6 +137,11 @@ namespace dddlib.Runtime
                 }
                 catch (Exception ex)
                 {
+                    if (ex is RuntimeException)
+                    {
+                        throw;
+                    }
+
                     throw new RuntimeException(
                         "The type configuration provider factory threw an exception during invocation.\r\nSee inner exception for details.",
                         ex);
@@ -148,6 +154,11 @@ namespace dddlib.Runtime
                 }
                 catch (Exception ex)
                 {
+                    if (ex is RuntimeException)
+                    {
+                        throw;
+                    }
+
                     throw new RuntimeException(
                         string.Format(
                             CultureInfo.InvariantCulture,

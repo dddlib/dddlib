@@ -4,24 +4,60 @@
 
 namespace dddlib.Tests.RuntimeMode
 {
+    using System;
     using dddlib.Runtime;
+    using FakeItEasy;
+    using FluentAssertions;
     using Xunit;
 
     public class PlainTests
     {
-        [Fact(Skip = "Doesn't work yet.")]
-        public void Do()
+        [Fact]
+        public void CreatePlainAggregateRoot()
         {
-            ////var configuration = new TypeConfiguration();
-            ////configuration.SetEventDispatcherFactory(type => new DefaultEventDispatcher(type));
+            var type = typeof(TestAggregate);
+            var typeConfiguration = TypeConfiguration.Create();
+            var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
 
-            using (new Application())
+            A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);
+
+            using (new Application(t => typeConfigurationProvider))
             {
-                var aggregate = new TestAggregate();
+                Action action = () => new TestAggregate();
+                action.ShouldNotThrow();
             }
+        }
 
-            ////var typeAnalyzer = new TypeAnalyzer(configuration);
-            ////var typeDescriptor = typeAnalyzer.GetDescriptor(typeof(Plain.Car));
+        [Fact]
+        public void CreateEventSourcingWithoutPersistenceAggregateRoot()
+        {
+            var type = typeof(TestAggregate);
+            var typeConfiguration = TypeConfiguration.Create(t => new DefaultEventDispatcher(t));
+            var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
+
+            A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);
+
+            using (new Application(t => typeConfigurationProvider))
+            {
+                Action action = () => new TestAggregate();
+                action.ShouldNotThrow();
+            }
+        }
+
+        [Fact]
+        public void CreateEventSourcingAggregateRoot()
+        {
+            var type = typeof(TestAggregate);
+            var typeConfiguration = TypeConfiguration.Create(t => new DefaultEventDispatcher(t), () => new TestAggregate());
+            var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
+
+            A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);
+
+            using (new Application(t => typeConfigurationProvider))
+            {
+                Action action = () => new TestAggregate();
+                action.ShouldThrow<RuntimeException>();
+            }
         }
 
         private class TestAggregate : AggregateRoot

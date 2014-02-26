@@ -13,6 +13,7 @@ namespace dddlib.Runtime
 
     /*  TODO (Cameron):
         Make method virtual.
+        Consider getting config from other sources eg. attributes? (Maybe not?)
         Consider removing RuntimeException - is this always invoked in a try catch that throws a runtime exception anyway?  */
 
     /// <summary>

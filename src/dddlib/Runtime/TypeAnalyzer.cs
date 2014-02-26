@@ -24,18 +24,21 @@ namespace dddlib.Runtime
 
             if (typeof(AggregateRoot).IsAssignableFrom(type))
             {
-                try
+                if (configuration.EventDispatcherFactory != null)
                 {
-                    descriptor.EventDispatcher = configuration.EventDispatcherFactory(type);
-                }
-                catch (Exception ex)
-                {
-                    throw new RuntimeException(
-                        string.Format(
-                            CultureInfo.InvariantCulture, 
-                            "The event dispatcher factory of type '{0}' threw an exception during invocation.", 
-                            type.Name),
-                        ex);
+                    try
+                    {
+                        descriptor.EventDispatcher = configuration.EventDispatcherFactory(type);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new RuntimeException(
+                            string.Format(
+                                CultureInfo.InvariantCulture,
+                                "The event dispatcher factory of type '{0}' threw an exception during invocation.",
+                                type.Name),
+                            ex);
+                    }
                 }
             }
 
@@ -57,8 +60,14 @@ namespace dddlib.Runtime
 
                 if (naturalKey == null)
                 {
-                    throw new RuntimeException(
-                        string.Format(CultureInfo.InvariantCulture, "The entity of type '{0}' does not have a natural key defined.", type.Name));
+                    if (configuration.AggregateRootFactory != null)
+                    {
+                        throw new RuntimeException(
+                            string.Format(CultureInfo.InvariantCulture, "The entity of type '{0}' does not have a natural key defined.", type.Name));
+                    }
+
+                    descriptor.EqualityComparer = EqualityComparer<object>.Default;
+                    return descriptor;
                 }
 
                 var equalityComparerType = naturalKey.EqualityComparer;

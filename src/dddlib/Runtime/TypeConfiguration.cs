@@ -23,15 +23,6 @@ namespace dddlib.Runtime
         }
 
         /// <summary>
-        /// Gets the runtime mode.
-        /// </summary>
-        /// <value>The runtime mode.</value>
-        public RuntimeMode RuntimeMode
-        {
-            get { return this.runtimeMode; }
-        }
-
-        /// <summary>
         /// Gets the event dispatcher factory.
         /// </summary>
         /// <value>The event dispatcher factory.</value>
@@ -47,6 +38,11 @@ namespace dddlib.Runtime
         public Func<object> AggregateRootFactory
         {
             get { return this.aggregateRootFactory; }
+        }
+
+        internal RuntimeMode RuntimeMode
+        {
+            get { return this.runtimeMode; }
         }
 
         /// <summary>

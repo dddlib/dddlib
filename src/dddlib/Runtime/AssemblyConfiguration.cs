@@ -8,13 +8,13 @@ namespace dddlib.Runtime
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+using System.Reflection;
 
     internal class AssemblyConfiguration : IConfiguration
     {
         /*  TODO (Cameron): 
             Change exceptions from RuntimeException exceptions... MAYBE NOT?
             See note at bottom.
-            Consider getting config from other sources eg. attributes? (Maybe not?)
             Need to validate configuration eg. cannot have an event dispatcher factory and run in Plain mode - decide all rules and where to validate.
             Consider Guard extension for Enum: Guard.Against.InvalidEnum(() => enum);
             Consider an undefined runtime mode, or a nullable property getter.  */
@@ -55,7 +55,7 @@ namespace dddlib.Runtime
             this.eventDispatcherFactory = factory;
         }
 
-        //// LINK (Cameron): http://blogs.msdn.com/b/brada/archive/2003/11/29/50903.aspx
+        // LINK (Cameron): http://blogs.msdn.com/b/brada/archive/2003/11/29/50903.aspx
         public void SetRuntimeMode(RuntimeMode mode)
         {
             if (!Enum.GetValues(typeof(RuntimeMode)).Cast<RuntimeMode>().Contains(mode))
