@@ -22,6 +22,7 @@ namespace dddlib
     {
         private readonly List<object> events = new List<object>();
         private readonly IEventDispatcher eventDispatcher;
+        private readonly bool isTransient;
 
         private string state;
         private bool isDestroyed;
@@ -32,6 +33,7 @@ namespace dddlib
         protected AggregateRoot()
         {
             this.eventDispatcher = Application.Current.GetAggregateRootDescriptor(this.GetType()).EventDispatcher;
+            this.isTransient = Application.Current.GetAggregateRootDescriptor(this.GetType()).Factory == null;
         }
 
         string IAggregateRoot.State
@@ -137,7 +139,7 @@ namespace dddlib
 
             this.eventDispatcher.Dispatch(this, @event);
 
-            if (isNew)
+            if (isNew && !this.isTransient)
             {
                 this.events.Add(@event);
             }

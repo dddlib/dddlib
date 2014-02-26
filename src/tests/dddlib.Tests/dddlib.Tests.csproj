@@ -51,7 +51,9 @@
     <Compile Include="RuntimeMode\Plain\Registration.cs" />
     <Compile Include="RuntimeMode\Plain\Wheel.cs" />
     <Compile Include="Runtime\ApplicationTests.cs" />
-    <Compile Include="Runtime\DomainTests.cs" />
+    <Compile Include="Runtime\Domain\NonPersistableEventBasedAggregateRootTests.cs" />
+    <Compile Include="Runtime\Domain\PersistableEventBasedAggregateRootTests.cs" />
+    <Compile Include="Runtime\Domain\NonEventBasedAggregateRootTests.cs" />
     <Compile Include="Support\Bootstrapper.cs" />
     <Compile Include="Support\Car.cs" />
     <Compile Include="Support\Vehicle.cs" />

@@ -1,8 +1,8 @@
-﻿// <copyright file="PlainTests.cs" company="dddlib contributors">
+﻿// <copyright file="NonEventBasedAggregateRootTests.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Tests.RuntimeMode
+namespace dddlib.Tests.Runtime
 {
     using System;
     using dddlib.Runtime;
@@ -10,11 +10,13 @@ namespace dddlib.Tests.RuntimeMode
     using FluentAssertions;
     using Xunit;
 
-    public class PlainTests
+    // for every type of configuration
+    public class NonEventBasedAggregateRootTests
     {
         [Fact]
-        public void CreateNonEventBasedAggregateRoot()
+        public void CreateWithNonEventBasedConfiguration()
         {
+            // arrange
             var type = typeof(TestAggregate);
             var typeConfiguration = TypeConfiguration.Create();
             var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
@@ -23,14 +25,15 @@ namespace dddlib.Tests.RuntimeMode
 
             using (new Application(t => typeConfigurationProvider))
             {
-                Action action = () => new TestAggregate();
-                action.ShouldNotThrow();
+                // act (and assert)
+                new TestAggregate();
             }
         }
 
         [Fact]
-        public void CreateEventBasedTransientAggregateRoot()
+        public void CreateWithNonPersistableEventBasedConfiguration()
         {
+            // arrange
             var type = typeof(TestAggregate);
             var typeConfiguration = TypeConfiguration.Create(t => new DefaultEventDispatcher(t));
             var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
@@ -39,14 +42,15 @@ namespace dddlib.Tests.RuntimeMode
 
             using (new Application(t => typeConfigurationProvider))
             {
-                Action action = () => new TestAggregate();
-                action.ShouldNotThrow();
+                // act (and assert)
+                new TestAggregate();
             }
         }
 
         [Fact]
-        public void CreateEventBasedAggregateRoot()
+        public void CreateWithPersistableEventBasedConfiguration()
         {
+            // arrange
             var type = typeof(TestAggregate);
             var typeConfiguration = TypeConfiguration.Create(t => new DefaultEventDispatcher(t), () => new TestAggregate());
             var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
@@ -55,7 +59,10 @@ namespace dddlib.Tests.RuntimeMode
 
             using (new Application(t => typeConfigurationProvider))
             {
+                // act
                 Action action = () => new TestAggregate();
+                
+                // assert
                 action.ShouldThrow<RuntimeException>();
             }
         }
