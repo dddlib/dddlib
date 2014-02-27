@@ -12,7 +12,7 @@ namespace dddlib.Runtime
         /// <summary>
         /// Bootstraps the specified configuration.
         /// </summary>
-        /// <param name="config">The configuration.</param>
-        void Bootstrap(IConfiguration config);
+        /// <param name="configure">The configuration.</param>
+        void Bootstrap(IConfiguration configure);
     }
 }

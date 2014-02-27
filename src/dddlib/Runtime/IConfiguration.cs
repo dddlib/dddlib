@@ -7,44 +7,33 @@ namespace dddlib.Runtime
     using System;
     using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
+    using dddlib.Runtime.Configuration;
 
     /// <summary>
     /// Exposes the public members of the configuration.
     /// </summary>
     //// NOTE (Cameron): Set to never be visible in the editor. Not sue if this is a sensible design choice... but it is a design choice.
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public interface IConfiguration
+    public interface IConfiguration : IFluentExtensions
     {
         /// <summary>
-        /// Sets the event dispatcher factory to use for all aggregate roots in the assembly containing the implementation.
+        /// Gets the aggregate roots configuration options.
         /// </summary>
-        /// <param name="factory">The event dispatcher factory.</param>
-        void SetEventDispatcherFactory(Func<Type, IEventDispatcher> factory);
+        /// <value>The aggregate roots configuration options.</value>
+        IConfigureAggregateRoots AggregateRoots { get; }
 
         /// <summary>
-        /// Registers the specified factory for creating an uninitialized instance of an aggregate of the specified type.
+        /// Gets the aggregate root configuration options for the specified type of aggregate root.
         /// </summary>
         /// <typeparam name="T">The type of aggregate root.</typeparam>
-        /// <param name="factory">The factory for the aggregate root.</param>
-        void RegisterAggregateRootFactory<T>(Func<T> factory) where T : AggregateRoot;
+        /// <returns>The aggregate root configuration options.</returns>
+        IConfigureAggregateRoot<T> AggregateRoot<T>() where T : AggregateRoot;
 
-        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Not my call.")]
-        [SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", MessageId = "GetType", Justification = "This is it.")]
-        [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible in editor.")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        Type GetType();
-
-        [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible in editor.")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        int GetHashCode();
-
-        [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible in editor.")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        string ToString();
-
-        [SuppressMessage("Microsoft.Naming", "CA1720:IdentifiersShouldNotContainTypeNames", MessageId = "obj", Justification = "Not my call")]
-        [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible in editor.")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        bool Equals(object obj);
+        /// <summary>
+        /// Gets the entity configuration options for the specified type of entity.
+        /// </summary>
+        /// <typeparam name="T">The type of entity.</typeparam>
+        /// <returns>The entity configuration options.</returns>
+        ////IConfigureEntity<T> Entity<T>() where T : Entity;
     }
 }

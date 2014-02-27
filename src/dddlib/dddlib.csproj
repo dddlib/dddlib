@@ -51,7 +51,13 @@
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="BusinessException.cs" />
     <Compile Include="Entity.cs" />
-    <Compile Include="Runtime\AssemblyConfiguration.cs" />
+    <Compile Include="Runtime\Configuration\AssemblyConfiguration.cs" />
+    <Compile Include="Runtime\Configuration\ConfigureAggregateRoot.cs" />
+    <Compile Include="Runtime\Configuration\ConfigureAggregateRoots.cs" />
+    <Compile Include="Runtime\Configuration\ConfigureEntity.cs" />
+    <Compile Include="Runtime\Configuration\IConfigureAggregateRoots.cs" />
+    <Compile Include="Runtime\Configuration\IConfigureEntities.cs" />
+    <Compile Include="Runtime\Configuration\IFluentExtensions.cs" />
     <Compile Include="Runtime\EnumerableExtensions.cs" />
     <Compile Include="Guard.cs" />
     <Compile Include="IAggregateRoot.cs" />
@@ -66,7 +72,6 @@
     <Compile Include="Runtime\IBootstrapper.cs" />
     <Compile Include="Runtime\IEventDispatcher.cs" />
     <Compile Include="Runtime\RuntimeException.cs" />
-    <Compile Include="Runtime\RuntimeMode.cs" />
     <Compile Include="Runtime\TypeAnalyzer.cs" />
     <Compile Include="Runtime\TypeDescriptor.cs" />
     <Compile Include="ValueObject.cs" />

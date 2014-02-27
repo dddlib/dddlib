@@ -18,7 +18,7 @@ namespace dddlib.Tests.Runtime
         {
             // arrange
             var type = typeof(TestAggregate);
-            var typeConfiguration = TypeConfiguration.Create();
+            var typeConfiguration = new TypeConfiguration();
             var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
 
             A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);
@@ -35,7 +35,7 @@ namespace dddlib.Tests.Runtime
         {
             // arrange
             var type = typeof(TestAggregate);
-            var typeConfiguration = TypeConfiguration.Create(t => new DefaultEventDispatcher(t));
+            var typeConfiguration = new TypeConfiguration(new DefaultEventDispatcher(typeof(TestAggregate)));
             var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
 
             A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);
@@ -52,7 +52,7 @@ namespace dddlib.Tests.Runtime
         {
             // arrange
             var type = typeof(TestAggregate);
-            var typeConfiguration = TypeConfiguration.Create(t => new DefaultEventDispatcher(t), () => new TestAggregate());
+            var typeConfiguration = new TypeConfiguration(new DefaultEventDispatcher(typeof(TestAggregate)), () => new TestAggregate());
             var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
 
             A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);

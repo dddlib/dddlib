@@ -1,11 +1,3 @@
---Application to be disposable
---Ambient application to be singleton instance
---Ability to specify current appilcation in using block
-Application constructor to take bootsrapper dependency & possibly domain?
-Ability to bootstrap application and domain:
-application.SetEventDispatcher()
-
-
 Default event dispatcher to be public and overridable.
 and to take method name as parameter?
 
@@ -13,38 +5,10 @@ Functionality:
 Can change name of aggregate apply method
 Can change whole invocation process -> EventDispatcher (more func args required)?
 
-DDDLIB_STRICT compiler symbol
 NaturalKey attribute required for reconstitution on AggregateRoot
 Optional NaturalKey required for each entity
 Default ValueObject should be best-effort deep value equality (overridable)
 
-
-
-===== NEW! ====
-Domain is concerned with validation
-Domain is an aggregate root
-Domain should have AggregateRoot, Entity and ValueObject entity types
-Domain should be valid or invalid
-
-Application should use domain for validation
-Application should enable bootstrapping of Domain services
-Application wire-up of any domain implementation should use Domain
-
-Domain consists of:
-Domain : AggregateRoot
-AggregateRoot : Entity
-Entity : Entity
-ValueObject : Entity
-ValidationRule/Result : ValueObject
-IValidationService (service)
-
-None of the domain should ever be exposed by the application
-Bootstrapping is an application concern
-Wire-up is an application concern
-Wire-up should continue to be performant
-
-
-Domain styles:
 DefaultEventDispatcher - takes method name as argument
 MementoEventDispatcher - takes method name as argument
 MicrobusEventDispatcher - takes nested event dispatcher as argument
@@ -52,3 +16,16 @@ MicrobusEventDispatcher - takes nested event dispatcher as argument
 Event-based
 Record events for persistence - requires factories
 Do not record events for persistence - factories not required
+
+
+=========== NEW ===========
+Rework configuration - it should be explicit, not inferred
+Create test suite for these dimensions:
+Type (configuration)
+Type (aggregate root, entity, value object) as coded
+
+Something like this
+
+Given a configuration for event-based non-persisting
+When I create an aggregate for non event-based
+Then the runtime throws an exception

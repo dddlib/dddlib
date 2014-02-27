@@ -11,24 +11,48 @@ namespace dddlib.Runtime
     /// </summary>
     public sealed class TypeConfiguration
     {
-        private readonly RuntimeMode runtimeMode;
-        private readonly Func<Type, IEventDispatcher> eventDispatcherFactory;
+        private readonly IEventDispatcher eventDispatcher;
         private readonly Func<object> aggregateRootFactory;
 
-        private TypeConfiguration(RuntimeMode runtimeMode, Func<Type, IEventDispatcher> eventDispatcherFactory, Func<object> aggregateRootFactory)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TypeConfiguration"/> class.
+        /// </summary>
+        public TypeConfiguration()
         {
-            this.runtimeMode = runtimeMode;
-            this.eventDispatcherFactory = eventDispatcherFactory;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TypeConfiguration"/> class.
+        /// </summary>
+        /// <param name="eventDispatcher">The event dispatcher.</param>
+        public TypeConfiguration(IEventDispatcher eventDispatcher)
+            : this()
+        {
+            Guard.Against.Null(() => eventDispatcher);
+
+            this.eventDispatcher = eventDispatcher;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TypeConfiguration" /> class.
+        /// </summary>
+        /// <param name="eventDispatcher">The event dispatcher.</param>
+        /// <param name="aggregateRootFactory">The aggregate root.</param>
+        public TypeConfiguration(IEventDispatcher eventDispatcher, Func<object> aggregateRootFactory)
+            : this(eventDispatcher)
+        {
+            Guard.Against.Null(() => aggregateRootFactory);
+
             this.aggregateRootFactory = aggregateRootFactory;
         }
 
         /// <summary>
-        /// Gets the event dispatcher factory.
+        /// Gets the event dispatcher.
         /// </summary>
-        /// <value>The event dispatcher factory.</value>
-        public Func<Type, IEventDispatcher> EventDispatcherFactory
+        /// <value>The event dispatcher.</value>
+        public IEventDispatcher EventDispatcher
         {
-            get { return this.eventDispatcherFactory; }
+            get { return this.eventDispatcher; }
         }
 
         /// <summary>
@@ -38,41 +62,6 @@ namespace dddlib.Runtime
         public Func<object> AggregateRootFactory
         {
             get { return this.aggregateRootFactory; }
-        }
-
-        internal RuntimeMode RuntimeMode
-        {
-            get { return this.runtimeMode; }
-        }
-
-        /// <summary>
-        /// Creates an event sourcing type configuration.
-        /// </summary>
-        /// <param name="eventDispatcherFactory">The event dispatcher factory.</param>
-        /// <param name="aggregateRootFactory">The aggregate root factory.</param>
-        /// <returns>An event sourcing type configuration.</returns>
-        public static TypeConfiguration Create(Func<Type, IEventDispatcher> eventDispatcherFactory, Func<object> aggregateRootFactory)
-        {
-            return new TypeConfiguration(RuntimeMode.EventSourcing, eventDispatcherFactory, aggregateRootFactory);
-        }
-
-        /// <summary>
-        /// Creates an event sourcing without persistence type configuration.
-        /// </summary>
-        /// <param name="eventDispatcherFactory">The event dispatcher factory.</param>
-        /// <returns>An event sourcing without persistence type configuration.</returns>
-        public static TypeConfiguration Create(Func<Type, IEventDispatcher> eventDispatcherFactory)
-        {
-            return new TypeConfiguration(RuntimeMode.EventSourcingWithoutPersistence, eventDispatcherFactory, null);
-        }
-
-        /// <summary>
-        /// Creates a plain type configuration.
-        /// </summary>
-        /// <returns>A plain type configuration.</returns>
-        public static TypeConfiguration Create()
-        {
-            return new TypeConfiguration(RuntimeMode.Plain, null, null);
         }
     }
 }

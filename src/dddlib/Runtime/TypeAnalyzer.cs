@@ -26,11 +26,11 @@ namespace dddlib.Runtime
 
             if (typeof(AggregateRoot).IsAssignableFrom(type))
             {
-                if (configuration.EventDispatcherFactory != null)
+                if (configuration.EventDispatcher != null)
                 {
                     try
                     {
-                        descriptor.EventDispatcher = configuration.EventDispatcherFactory(type);
+                        descriptor.EventDispatcher = configuration.EventDispatcher;
                     }
                     catch (Exception ex)
                     {

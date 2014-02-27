@@ -10,6 +10,7 @@ namespace dddlib.Runtime
     using System.Globalization;
     using System.Linq;
     using System.Reflection;
+    using dddlib.Runtime.Configuration;
 
     /*  TODO (Cameron):
         Make method virtual.
@@ -41,7 +42,7 @@ namespace dddlib.Runtime
 
             var assemblyConfiguration = this.GetConfiguration(type.Assembly);
 
-            this.typeConfigurations.Add(type, typeConfiguration = CreateConfiguration(type, assemblyConfiguration));
+            this.typeConfigurations.Add(type, typeConfiguration = assemblyConfiguration.CreateConfiguration(type));
 
             return typeConfiguration;
         }
@@ -58,24 +59,6 @@ namespace dddlib.Runtime
             this.assemblyConfigurations.Add(assembly, assemblyConfiguration = CreateConfiguration(assembly));
 
             return assemblyConfiguration;
-        }
-
-        private static TypeConfiguration CreateConfiguration(Type type, AssemblyConfiguration assemblyConfiguration)
-        {
-            switch (assemblyConfiguration.RuntimeMode)
-            {
-                case RuntimeMode.EventSourcing:
-                    var aggregateRootFactory = default(Func<object>);
-                    assemblyConfiguration.AggregateRootFactories.TryGetValue(type, out aggregateRootFactory);
-                    return TypeConfiguration.Create(assemblyConfiguration.EventDispatcherFactory, aggregateRootFactory);
-
-                case RuntimeMode.EventSourcingWithoutPersistence:
-                    return TypeConfiguration.Create(assemblyConfiguration.EventDispatcherFactory);
-
-                case RuntimeMode.Plain:
-                default:
-                    return TypeConfiguration.Create();
-            }
         }
 
         private static AssemblyConfiguration CreateConfiguration(Assembly assembly)
