@@ -14,6 +14,7 @@ namespace dddlib.Runtime
     /// </summary>
     public sealed class Application : IDisposable
     {
+        private static readonly Type[] ValidTypes = new[] { typeof(AggregateRoot), typeof(Entity), typeof(ValueObject<>) };
         private static readonly Lazy<Application> DefaultApplication = new Lazy<Application>(() => new Application(), true);
         private static readonly List<Application> Applications = new List<Application>();
         private static readonly object SyncLock = new object();
@@ -87,23 +88,7 @@ namespace dddlib.Runtime
             }
         }
 
-        internal TypeDescriptor GetAggregateRootDescriptor(Type type)
-        {
-            return this.GetDescriptor(type, typeof(AggregateRoot));
-        }
-
-        internal TypeDescriptor GetEntityDescriptor(Type type)
-        {
-            return this.GetDescriptor(type, typeof(Entity));
-        }
-
-        internal TypeDescriptor GetValueObjectDescriptor(Type type)
-        {
-            return this.GetDescriptor(type, typeof(ValueObject<>));
-        }
-
-        // TODO (Cameron): Allow nested runtime exceptions to bubble up.
-        private TypeDescriptor GetDescriptor(Type type, Type descriptorType)
+        internal TypeDescriptor GetTypeDescriptor(Type type)
         {
             Guard.Against.Null(() => type);
 
@@ -112,7 +97,7 @@ namespace dddlib.Runtime
                 throw new ObjectDisposedException(this.GetType().FullName);
             }
 
-            if (!descriptorType.IsAssignableFrom(type))
+            if (!ValidTypes.Any(baseType => baseType.IsAssignableFrom(type)))
             {
                 throw new ArgumentException("Invalid runtime type specified.", "type");
             }

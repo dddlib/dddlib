@@ -32,8 +32,10 @@ namespace dddlib
         /// </summary>
         protected AggregateRoot()
         {
-            this.eventDispatcher = Application.Current.GetAggregateRootDescriptor(this.GetType()).EventDispatcher;
-            this.isTransient = Application.Current.GetAggregateRootDescriptor(this.GetType()).Factory == null;
+            var typeDescriptor = Application.Current.GetTypeDescriptor(this.GetType());
+            
+            this.eventDispatcher = typeDescriptor.EventDispatcher;
+            this.isTransient = typeDescriptor.Factory == null;
         }
 
         string IAggregateRoot.State

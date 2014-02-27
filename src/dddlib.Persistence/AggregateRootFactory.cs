@@ -13,8 +13,8 @@ namespace dddlib.Persistence
         Consider a different (non-ES) repository - maybe just many overloads?
         Cache factory per aggregate.  */
 
-    using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using dddlib.Runtime;
 
     /// <summary>
@@ -34,7 +34,17 @@ namespace dddlib.Persistence
             where T : AggregateRoot
         {
             // TODO (Cameron): Make this more performant. Consider using some type of IL instantiation.
-            var aggregate = Application.Current.GetAggregateRootDescriptor(typeof(T)).Factory() as IAggregateRoot;
+            var typeDescriptor = Application.Current.GetTypeDescriptor(typeof(T));
+            if (typeDescriptor.Factory == null)
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "The aggregate root of type '{0}' does not have a factory method registered with the runtime.",
+                        typeof(T)));
+            }
+
+            var aggregate = typeDescriptor.Factory.Invoke() as IAggregateRoot;
             aggregate.Initialize(memento, events, state);
             return (T)aggregate;
         }
