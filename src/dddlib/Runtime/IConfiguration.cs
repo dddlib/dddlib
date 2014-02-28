@@ -34,6 +34,6 @@ namespace dddlib.Runtime
         /// </summary>
         /// <typeparam name="T">The type of entity.</typeparam>
         /// <returns>The entity configuration options.</returns>
-        ////IConfigureEntity<T> Entity<T>() where T : Entity;
+        IConfigureEntity<T> Entity<T>() where T : Entity;
     }
 }
