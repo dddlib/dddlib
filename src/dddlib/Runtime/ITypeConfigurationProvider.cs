@@ -5,6 +5,7 @@
 namespace dddlib.Runtime
 {
     using System;
+    using dddlib.Runtime.Configuration;
 
     /// <summary>
     /// Exposes the public members of the type configuration provider.

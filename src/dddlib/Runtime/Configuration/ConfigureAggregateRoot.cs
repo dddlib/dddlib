@@ -27,9 +27,14 @@ namespace dddlib.Runtime.Configuration
         {
         }
 
+        public IConfigureAggregateRoot<T> ToDispatchEventsUsing(IEventDispatcher eventDispatcher)
+        {
+            throw new NotImplementedException();
+        }
+
         public IConfigureAggregateRoot<T> ToDispatchEventsUsing(Func<Type, IEventDispatcher> eventDispatcherFactory)
         {
-            return this;
+            throw new NotImplementedException();
         }
     }
 }

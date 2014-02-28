@@ -40,16 +40,28 @@ namespace dddlib.Runtime.Configuration
     /// <typeparam name="TConfiguration">The type of the configuration.</typeparam>
     /// <typeparam name="T">The type of aggregate root.</typeparam>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public interface IConfigureAggregateRoot<TConfiguration, T> : IConfigureEntity<TConfiguration, T>, IConfigureAggregateRoots<TConfiguration>, IFluentExtensions
+    public interface IConfigureAggregateRoot<TConfiguration, T> : IConfigureEntity<TConfiguration, T>, IFluentExtensions
         where T : AggregateRoot
         where TConfiguration : IConfigureAggregateRoot<TConfiguration, T>
     {
+        /// <summary>
+        /// Configures the runtime to not dispatch any events.
+        /// </summary>
+        ////void ToNotDispatchEvents();
+
         /// <summary>
         /// Configures the runtime to reconstitute the uninitialized aggregate root using the specified aggregate root factory.
         /// </summary>
         /// <param name="uninitializedFactory">The aggregate root factory.</param>
         /// <returns>The configuration.</returns>
         TConfiguration ToReconstituteUsing(Func<T> uninitializedFactory);
+
+        /// <summary>
+        /// Configures the runtime to use the specified event dispatcher for dispatching events.
+        /// </summary>
+        /// <param name="eventDispatcher">The event dispatcher.</param>
+        /// <returns>The configuration.</returns>
+        ////TConfiguration ToDispatchEventsUsing(IEventDispatcher eventDispatcher);
     }
 
     [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1124:DoNotUseRegions", Justification = "Here the code is meant to be hidden.")]

@@ -14,6 +14,7 @@ namespace dddlib.Runtime
     using System.Globalization;
     using System.Linq;
     using System.Reflection;
+    using dddlib.Runtime.Configuration;
 
     // TODO (Cameron): Test that the Natural key is from the most recent subclass of entity.
     internal class TypeAnalyzer
