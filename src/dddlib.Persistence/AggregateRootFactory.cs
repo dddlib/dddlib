@@ -18,7 +18,7 @@ namespace dddlib.Persistence
     using dddlib.Runtime;
 
     /// <summary>
-    /// A factory that provides the ability to reconstitute an aggregate root.
+    /// Represents the aggregate root factory.
     /// </summary>
     public sealed class AggregateRootFactory
     {
