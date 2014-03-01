@@ -104,9 +104,10 @@ namespace dddlib.Runtime
             }
 
             var assemblyConfiguration = new AssemblyConfiguration();
+            var bootstrapperConfiguration = new BootstrapperConfiguration(assemblyConfiguration);
             try
             {
-                bootstrapper.Bootstrap(assemblyConfiguration);
+                bootstrapper.Bootstrap(bootstrapperConfiguration);
             }
             catch (Exception ex)
             {
@@ -118,7 +119,7 @@ namespace dddlib.Runtime
                     ex);
             }
 
-            return assemblyConfiguration;
+            return bootstrapperConfiguration.AssemblyConfiguration;
         }
     }
 }

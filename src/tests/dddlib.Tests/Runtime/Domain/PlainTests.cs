@@ -33,7 +33,7 @@ namespace dddlib.Tests.RuntimeMode
         public void CreateEventBasedTransientAggregateRoot()
         {
             var type = typeof(TestAggregate);
-            var typeConfiguration = new TypeConfiguration(new DefaultEventDispatcher(typeof(TestAggregate)));
+            var typeConfiguration = new TypeConfiguration { EventDispatcher = new DefaultEventDispatcher(typeof(TestAggregate)) };
             var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
 
             A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);
@@ -49,7 +49,7 @@ namespace dddlib.Tests.RuntimeMode
         public void CreateEventBasedAggregateRoot()
         {
             var type = typeof(TestAggregate);
-            var typeConfiguration = new TypeConfiguration(new DefaultEventDispatcher(typeof(TestAggregate)), () => new TestAggregate());
+            var typeConfiguration = new TypeConfiguration { EventDispatcher = new DefaultEventDispatcher(typeof(TestAggregate)), AggregateRootFactory = () => new TestAggregate() };
             var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
 
             A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);

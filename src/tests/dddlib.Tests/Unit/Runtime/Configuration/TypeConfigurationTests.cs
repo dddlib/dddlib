@@ -5,18 +5,20 @@
 namespace dddlib.Tests.Unit.Runtime.Configuration
 {
     using dddlib.Runtime.Configuration;
+    using FluentAssertions;
     using Xunit;
 
     public class TypeConfigurationTests
     {
         [Fact]
-        public void Do()
+        public void CreateTypeConfigurationWithNoArguments()
         {
             // arrange
             var typeConfiguration = new TypeConfiguration();
 
             // assert
-            ////typeConfiguration.
+            typeConfiguration.AggregateRootFactory.Should().BeNull();
+            typeConfiguration.EventDispatcher.Should().BeNull();
         }
     }
 }

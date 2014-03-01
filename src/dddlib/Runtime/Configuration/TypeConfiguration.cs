@@ -11,57 +11,16 @@ namespace dddlib.Runtime.Configuration
     /// </summary>
     public sealed class TypeConfiguration
     {
-        private readonly IEventDispatcher eventDispatcher;
-        private readonly Func<object> aggregateRootFactory;
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="TypeConfiguration"/> class.
+        /// Gets or sets the event dispatcher.
         /// </summary>
-        public TypeConfiguration()
-        {
-        }
+        /// <value>The event dispatcher</value>
+        public IEventDispatcher EventDispatcher { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="TypeConfiguration"/> class.
-        /// </summary>
-        /// <param name="eventDispatcher">The event dispatcher.</param>
-        public TypeConfiguration(IEventDispatcher eventDispatcher)
-            : this()
-        {
-            Guard.Against.Null(() => eventDispatcher);
-
-            this.eventDispatcher = eventDispatcher;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TypeConfiguration" /> class.
-        /// </summary>
-        /// <param name="eventDispatcher">The event dispatcher.</param>
-        /// <param name="aggregateRootFactory">The aggregate root.</param>
-        public TypeConfiguration(IEventDispatcher eventDispatcher, Func<object> aggregateRootFactory)
-            : this(eventDispatcher)
-        {
-            Guard.Against.Null(() => aggregateRootFactory);
-
-            this.aggregateRootFactory = aggregateRootFactory;
-        }
-
-        /// <summary>
-        /// Gets the event dispatcher.
-        /// </summary>
-        /// <value>The event dispatcher.</value>
-        public IEventDispatcher EventDispatcher
-        {
-            get { return this.eventDispatcher; }
-        }
-
-        /// <summary>
-        /// Gets the aggregate root factory.
+        /// Gets or sets the aggregate root factory.
         /// </summary>
         /// <value>The aggregate root factory.</value>
-        public Func<object> AggregateRootFactory
-        {
-            get { return this.aggregateRootFactory; }
-        }
+        public Func<object> AggregateRootFactory { get; set; }
     }
 }
