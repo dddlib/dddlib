@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Tests
+namespace dddlib.Tests.Unit
 {
     public class BusinessExceptionTests
     {

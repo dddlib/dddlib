@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Tests.Runtime
+namespace dddlib.Tests.Unit.Runtime
 {
     using System;
     using dddlib.Runtime;

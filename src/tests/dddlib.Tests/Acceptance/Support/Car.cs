@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Tests.RuntimeMode.Plain
+namespace dddlib.Tests.Acceptnace.Support
 {
     using System.Collections.Generic;
     using System.Globalization;

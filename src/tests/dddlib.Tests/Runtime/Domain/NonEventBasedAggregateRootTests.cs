@@ -24,7 +24,7 @@ namespace dddlib.Tests.Runtime
 
             A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);
 
-            using (new Application(t => typeConfigurationProvider))
+            using (new Application(typeConfigurationProvider))
             {
                 // act (and assert)
                 new TestAggregate();
@@ -41,7 +41,7 @@ namespace dddlib.Tests.Runtime
 
             A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);
 
-            using (new Application(t => typeConfigurationProvider))
+            using (new Application(typeConfigurationProvider))
             {
                 // act (and assert)
                 new TestAggregate();
@@ -58,7 +58,7 @@ namespace dddlib.Tests.Runtime
 
             A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);
 
-            using (new Application(t => typeConfigurationProvider))
+            using (new Application(typeConfigurationProvider))
             {
                 // act
                 Action action = () => new TestAggregate();

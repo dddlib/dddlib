@@ -24,7 +24,7 @@ namespace dddlib.Runtime
         private static readonly object SyncLock = new object();
 
         private readonly Dictionary<Type, TypeDescriptor> typeDescriptors = new Dictionary<Type, TypeDescriptor>();
-        private readonly Func<Type, ITypeConfigurationProvider> configurationProviderFactory;
+        private readonly ITypeConfigurationProvider typeConfigurationProvider;
 
         private bool isDisposed = false;
 
@@ -32,19 +32,19 @@ namespace dddlib.Runtime
         /// Initializes a new instance of the <see cref="Application"/> class.
         /// </summary>
         public Application()
-            : this(type => new DefaultTypeConfigurationProvider())
+            : this(new DefaultTypeConfigurationProvider())
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Application"/> class.
+        /// Initializes a new instance of the <see cref="Application" /> class.
         /// </summary>
-        /// <param name="configurationProviderFactory">The configuration provider factory.</param>
-        public Application(Func<Type, ITypeConfigurationProvider> configurationProviderFactory)
+        /// <param name="typeConfigurationProvider">The type configuration provider.</param>
+        public Application(ITypeConfigurationProvider typeConfigurationProvider)
         {
-            Guard.Against.Null(() => configurationProviderFactory);
+            Guard.Against.Null(() => typeConfigurationProvider);
 
-            this.configurationProviderFactory = configurationProviderFactory;
+            this.typeConfigurationProvider = typeConfigurationProvider;
 
             lock (SyncLock)
             {
@@ -119,27 +119,10 @@ namespace dddlib.Runtime
                     return typeDescriptor;
                 }
 
-                var typeConfigurationProvider = default(ITypeConfigurationProvider);
-                try
-                {
-                    typeConfigurationProvider = this.configurationProviderFactory(type);
-                }
-                catch (Exception ex)
-                {
-                    if (ex is RuntimeException)
-                    {
-                        throw;
-                    }
-
-                    throw new RuntimeException(
-                        "The type configuration provider factory threw an exception during invocation.\r\nSee inner exception for details.",
-                        ex);
-                }
-
                 var typeConfiguration = default(TypeConfiguration);
                 try
                 {
-                    typeConfiguration = typeConfigurationProvider.GetConfiguration(type);
+                    typeConfiguration = this.typeConfigurationProvider.GetConfiguration(type);
                 }
                 catch (Exception ex)
                 {
@@ -152,7 +135,7 @@ namespace dddlib.Runtime
                         string.Format(
                             CultureInfo.InvariantCulture,
                             "The type configuration provider of type '{0}' threw an exception during invocation.\r\nSee inner exception for details.",
-                            typeConfigurationProvider.GetType()),
+                            this.typeConfigurationProvider.GetType()),
                         ex);
                 }
 

@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Tests
+namespace dddlib.Tests.Unit
 {
     using dddlib.Tests.Support;
     using Xunit;
@@ -14,10 +14,10 @@ namespace dddlib.Tests
         [Fact(Skip = "Doesn't work.")]
         public void X()
         {
-            var car = new Car("JBC");
-            var car2 = new Car("JBC1");
+            ////var car = new Car("JBC");
+            ////var car2 = new Car("JBC1");
 
-            var areEqual = car == car2;
+            ////var areEqual = car == car2;
         }
     }
 }

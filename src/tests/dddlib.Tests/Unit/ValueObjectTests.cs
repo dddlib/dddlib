@@ -2,8 +2,9 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Tests
+namespace dddlib.Tests.Unit
 {
+    using System.Collections.Generic;
     using dddlib.Tests.Support;
     using FluentAssertions;
     using Xunit;
@@ -31,5 +32,23 @@ namespace dddlib.Tests
         }
 
         // test complex equality
+        private sealed class Vector : ValueObject<Vector>
+        {
+            public Vector(int x, int y)
+            {
+                this.X = x;
+                this.Y = y;
+            }
+
+            public int X { get; private set; }
+
+            public int Y { get; private set; }
+
+            protected override IEnumerable<object> GetValue()
+            {
+                yield return this.X;
+                yield return this.Y;
+            }
+        }
     }
 }

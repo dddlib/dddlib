@@ -37,30 +37,28 @@
     </None>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <Folder Include="RuntimeMode\EventSourcingWithoutPersistence\" />
-    <Folder Include="RuntimeMode\EventSourcing\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AggregateRootTests.cs" />
-    <Compile Include="BusinessExceptionTests.cs" />
-    <Compile Include="EntityTests.cs" />
-    <Compile Include="NaturalKeyAttributeTests.cs" />
-    <Compile Include="RuntimeMode\PlainTests.cs" />
-    <Compile Include="RuntimeMode\Plain\Car.cs" />
-    <Compile Include="RuntimeMode\Plain\Registration.cs" />
-    <Compile Include="RuntimeMode\Plain\Wheel.cs" />
-    <Compile Include="Runtime\ApplicationTests.cs" />
+    <Compile Include="Unit\AggregateRootTests.cs" />
+    <Compile Include="Unit\BusinessExceptionTests.cs" />
+    <Compile Include="Unit\EntityTests.cs" />
+    <Compile Include="Unit\NaturalKeyAttributeTests.cs" />
+    <Compile Include="Runtime\Domain\PlainTests.cs" />
+    <Compile Include="Acceptance\Support\Car.cs" />
+    <Compile Include="Acceptance\Support\Registration.cs" />
+    <Compile Include="Acceptance\Support\Wheel.cs" />
+    <Compile Include="Unit\Runtime\ApplicationTests.cs" />
+    <Compile Include="Unit\Runtime\Configuration\AssemblyConfigurationTests.cs" />
+    <Compile Include="Unit\Runtime\Configuration\TypeConfigurationTests.cs" />
     <Compile Include="Runtime\Domain\NonPersistableEventBasedAggregateRootTests.cs" />
     <Compile Include="Runtime\Domain\PersistableEventBasedAggregateRootTests.cs" />
     <Compile Include="Runtime\Domain\NonEventBasedAggregateRootTests.cs" />
-    <Compile Include="Support\Bootstrapper.cs" />
-    <Compile Include="Support\Car.cs" />
-    <Compile Include="Support\Vehicle.cs" />
-    <Compile Include="Support\VehicleRegistered.cs" />
-    <Compile Include="Support\Vector.cs" />
-    <Compile Include="Support\VehicleScrapped.cs" />
-    <Compile Include="ValueObjectTests.cs" />
+    <Compile Include="Unit\Runtime\DefaultEventDispatcherTests.cs" />
+    <Compile Include="Unit\Runtime\DefaultTypeConfigurationProviderTests.cs" />
+    <Compile Include="Unit\Runtime\RuntimeExceptionTests.cs" />
+    <Compile Include="Unit\Runtime\TypeAnalyzerTests.cs" />
+    <Compile Include="Unit\Runtime\TypeDescriptorTests.cs" />
+    <Compile Include="Unit\ValueObjectTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FakeItEasy">
