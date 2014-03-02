@@ -1,4 +1,8 @@
-﻿namespace dddlib.Runtime.Configuration
+﻿// <copyright file="BootstrapperConfiguration.cs" company="dddlib contributors">
+//  Copyright (c) dddlib contributors. All rights reserved.
+// </copyright>
+
+namespace dddlib.Runtime.Configuration
 {
     internal class BootstrapperConfiguration : IConfiguration
     {
@@ -9,6 +13,11 @@
             Guard.Against.Null(() => assemblyConfiguration);
 
             this.assemblyConfiguration = assemblyConfiguration;
+        }
+
+        public AssemblyConfiguration AssemblyConfiguration
+        {
+            get { return this.assemblyConfiguration; }
         }
 
         public IConfigureAggregateRoots AggregateRoots
@@ -24,11 +33,6 @@
         public IConfigureEntity<T> Entity<T>() where T : Entity
         {
             return new ConfigureEntity<T>(this.assemblyConfiguration);
-        }
-
-        public AssemblyConfiguration AssemblyConfiguration
-        {
-            get { return this.assemblyConfiguration; }
         }
     }
 }

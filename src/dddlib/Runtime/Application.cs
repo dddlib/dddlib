@@ -11,7 +11,9 @@ namespace dddlib.Runtime
     using dddlib.Runtime.Configuration;
 
     /*  TODO (Cameron):
-        Consider taking a Func<IConfiguration> as an argument to bypass the bootstrapper.  */
+        Consider taking a Func<IConfiguration> as an argument to bypass the bootstrapper.
+        Or an AssemblyConfiguration
+        Or an instance of IBootstrapper - especially this because it allows for DI into the bootstrapper  */
 
     /// <summary>
     /// Represents an application.

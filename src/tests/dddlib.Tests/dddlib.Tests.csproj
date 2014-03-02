@@ -39,6 +39,7 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <Compile Include="Acceptance\AggregateRootTests.cs" />
     <Compile Include="Unit\AggregateRootTests.cs" />
     <Compile Include="Unit\BusinessExceptionTests.cs" />
     <Compile Include="Unit\EntityTests.cs" />

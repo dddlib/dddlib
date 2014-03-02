@@ -14,7 +14,7 @@ namespace dddlib.Runtime.Configuration
         /// <summary>
         /// Gets or sets the event dispatcher.
         /// </summary>
-        /// <value>The event dispatcher</value>
+        /// <value>The event dispatcher.</value>
         public IEventDispatcher EventDispatcher { get; set; }
 
         /// <summary>
