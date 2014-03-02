@@ -18,16 +18,14 @@ namespace dddlib.Persistence
         /// <param name="aggregateRoot">The aggregate root.</param>
         public void Save<T>(T aggregateRoot) where T : AggregateRoot
         {
-            var aggregate = (IAggregateRoot)aggregateRoot;
-            
-            var memento = aggregate.GetMemento();
-            var events = aggregate.GetUncommittedEvents();
-            var state = aggregate.State;
+            var memento = aggregateRoot.GetMemento();
+            var events = aggregateRoot.GetUncommittedEvents();
+            var state = aggregateRoot.State;
 
             // save?
             var newState = default(string);
 
-            aggregate.CommitEvents(newState);
+            aggregateRoot.CommitEvents(newState);
         }
 
         /// <summary>

@@ -29,7 +29,7 @@ namespace dddlib.Tests.Runtime
             {
                 // act
                 var aggregate = new TestAggregate(naturalKey);
-                var uncommittedEvents = ((IAggregateRoot)aggregate).GetUncommittedEvents().ToArray();
+                var uncommittedEvents = aggregate.GetUncommittedEvents().ToArray();
 
                 // assert
                 uncommittedEvents.Should().BeEmpty();                            // cannot persist
@@ -53,7 +53,7 @@ namespace dddlib.Tests.Runtime
             {
                 // act
                 var aggregate = new TestAggregate(naturalKey);
-                var uncommittedEvents = ((IAggregateRoot)aggregate).GetUncommittedEvents().ToArray();
+                var uncommittedEvents = aggregate.GetUncommittedEvents().ToArray();
 
                 // assert
                 uncommittedEvents.Should().BeEmpty();                            // cannot persist
@@ -77,7 +77,7 @@ namespace dddlib.Tests.Runtime
             {
                 // act
                 var aggregate = new TestAggregate(naturalKey);
-                var uncommittedEvents = ((IAggregateRoot)aggregate).GetUncommittedEvents().ToArray();
+                var uncommittedEvents = aggregate.GetUncommittedEvents().ToArray();
                 
                 // assert
                 uncommittedEvents.Should().ContainInOrder(new[] { naturalKey }); // can persist

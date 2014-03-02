@@ -18,7 +18,7 @@ namespace dddlib
     /// <summary>
     /// Represents an aggregate root.
     /// </summary>
-    public abstract class AggregateRoot : Entity, IAggregateRoot
+    public abstract class AggregateRoot : Entity
     {
         private readonly List<object> events = new List<object>();
         private readonly IEventDispatcher eventDispatcher;
@@ -38,12 +38,12 @@ namespace dddlib
             this.isTransient = typeDescriptor.Factory == null;
         }
 
-        string IAggregateRoot.State
+        internal string State
         {
             get { return this.state; }
         }
 
-        void IAggregateRoot.Initialize(object memento, IEnumerable<object> events, string state)
+        internal void Initialize(object memento, IEnumerable<object> events, string state)
         {
             Guard.Against.Null(() => events);
 
@@ -60,17 +60,17 @@ namespace dddlib
             this.state = state;
         }
 
-        object IAggregateRoot.GetMemento()
+        internal object GetMemento()
         {
             return this.GetState();
         }
 
-        IEnumerable<object> IAggregateRoot.GetUncommittedEvents()
+        internal IEnumerable<object> GetUncommittedEvents()
         {
             return this.events;
         }
 
-        void IAggregateRoot.CommitEvents(string state)
+        internal void CommitEvents(string state)
         {
             this.events.Clear();
             this.state = state;

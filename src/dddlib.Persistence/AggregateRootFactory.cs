@@ -44,9 +44,9 @@ namespace dddlib.Persistence
                         typeof(T)));
             }
 
-            var aggregate = typeDescriptor.Factory.Invoke() as IAggregateRoot;
-            aggregate.Initialize(memento, events, state);
-            return (T)aggregate;
+            var aggregateRoot = typeDescriptor.Factory.Invoke() as T;
+            aggregateRoot.Initialize(memento, events, state);
+            return aggregateRoot;
         }
 
         // IMPORTANT (Cameron): If we save a car, which is a vehicle to the vehicle repo and the natural key is inherited, what happens?

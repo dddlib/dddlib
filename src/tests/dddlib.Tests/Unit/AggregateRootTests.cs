@@ -172,12 +172,12 @@ namespace dddlib.Tests.Unit
             var events = new[] { new SomethingHappened() };
             
             // act
-            var aggregate = Activator.CreateInstance(typeof(PersistedAggregate), true) as PersistedAggregate;
-            ((IAggregateRoot)aggregate).Initialize(memento, events, "state");
-            aggregate.MakeSomethingHappen();
+            var aggregateRoot = Activator.CreateInstance(typeof(PersistedAggregate), true) as PersistedAggregate;
+            aggregateRoot.Initialize(memento, events, "state");
+            aggregateRoot.MakeSomethingHappen();
 
             // assert
-            aggregate.ThingsThatHappened.Should().HaveCount(2);
+            aggregateRoot.ThingsThatHappened.Should().HaveCount(2);
         }
     }
 }
