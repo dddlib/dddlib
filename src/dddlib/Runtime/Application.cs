@@ -34,12 +34,25 @@ namespace dddlib.Runtime
         /// Initializes a new instance of the <see cref="Application"/> class.
         /// </summary>
         public Application()
-            : this(new DefaultTypeConfigurationProvider())
+            : this(new DefaultTypeConfigurationProvider(null))
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Application" /> class.
+        /// Initializes a new instance of the <see cref="Application"/> class.
+        /// </summary>
+        /// <param name="bootstrapper">The bootstrapper.</param>
+        public Application(IBootstrapper bootstrapper)
+            : this(new DefaultTypeConfigurationProvider(bootstrapper))
+        {
+        }
+
+        ////public Application(Func<IConfiguration> configure)
+        ////{
+        ////}
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Application"/> class.
         /// </summary>
         /// <param name="typeConfigurationProvider">The type configuration provider.</param>
         public Application(ITypeConfigurationProvider typeConfigurationProvider)

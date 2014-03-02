@@ -8,17 +8,18 @@ namespace dddlib.Runtime.Configuration
 
     internal class ConfigureAggregateRoots : IConfigureAggregateRoots
     {
-        public ConfigureAggregateRoots(AssemblyConfiguration configuration)
+        private readonly RuntimeConfiguration configuration;
+
+        public ConfigureAggregateRoots(RuntimeConfiguration configuration)
         {
+            Guard.Against.Null(() => configuration);
+
+            this.configuration = configuration;
         }
 
         public void ToNotDispatchEvents()
         {
-        }
-
-        public IConfigureAggregateRoots ToDispatchEventsUsing(Func<Type, IEventDispatcher> eventDispatcherFactory)
-        {
-            return this;
+            this.configuration.DoNotDispatchEvents();
         }
     }
 }

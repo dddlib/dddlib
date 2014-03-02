@@ -22,8 +22,19 @@ namespace dddlib.Runtime
     /// </summary>
     public class DefaultTypeConfigurationProvider : ITypeConfigurationProvider
     {
-        private readonly Dictionary<Assembly, AssemblyConfiguration> assemblyConfigurations = new Dictionary<Assembly, AssemblyConfiguration>();
+        private readonly Dictionary<Assembly, RuntimeConfiguration> assemblyConfigurations = new Dictionary<Assembly, RuntimeConfiguration>();
         private readonly Dictionary<Type, TypeConfiguration> typeConfigurations = new Dictionary<Type, TypeConfiguration>();
+
+        private readonly IBootstrapper bootstrapper;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DefaultTypeConfigurationProvider"/> class.
+        /// </summary>
+        /// <param name="bootstrapper">The bootstrapper.</param>
+        public DefaultTypeConfigurationProvider(IBootstrapper bootstrapper)
+        {
+            this.bootstrapper = bootstrapper;
+        }
 
         /// <summary>
         /// Gets the configuration.
@@ -48,25 +59,27 @@ namespace dddlib.Runtime
         }
 
         [SuppressMessage("StyleCop.CSharp.OrderingRules", "SA1204:StaticElementsMustAppearBeforeInstanceElements", Justification = "Not here.")]
-        private AssemblyConfiguration GetConfiguration(Assembly assembly)
+        private RuntimeConfiguration GetConfiguration(Assembly assembly)
         {
-            var assemblyConfiguration = default(AssemblyConfiguration);
+            var assemblyConfiguration = default(RuntimeConfiguration);
             if (this.assemblyConfigurations.TryGetValue(assembly, out assemblyConfiguration))
             {
                 return assemblyConfiguration;
             }
 
-            this.assemblyConfigurations.Add(assembly, assemblyConfiguration = CreateConfiguration(assembly));
+            var bootstrapper = this.bootstrapper ?? GetAssemblyBootstrapper(assembly);
+
+            this.assemblyConfigurations.Add(assembly, assemblyConfiguration = CreateConfiguration(bootstrapper));
 
             return assemblyConfiguration;
         }
 
-        private static AssemblyConfiguration CreateConfiguration(Assembly assembly)
+        private static IBootstrapper GetAssemblyBootstrapper(Assembly assembly)
         {
             var bootstrapperTypes = assembly.GetTypes().Where(assemblyType => typeof(IBootstrapper).IsAssignableFrom(assemblyType));
             if (!bootstrapperTypes.Any())
             {
-                return new AssemblyConfiguration();
+                return new DefaultBootstrapper();
             }
 
             if (bootstrapperTypes.Count() > 1)
@@ -103,11 +116,16 @@ namespace dddlib.Runtime
                     ex);
             }
 
-            var assemblyConfiguration = new AssemblyConfiguration();
-            var bootstrapperConfiguration = new BootstrapperConfiguration(assemblyConfiguration);
+            return bootstrapper;
+        }
+
+        private static RuntimeConfiguration CreateConfiguration(IBootstrapper bootstrapper)
+        {
+            var assemblyConfiguration = new RuntimeConfiguration();
+            var configuration = new BootstrapperConfiguration(assemblyConfiguration);
             try
             {
-                bootstrapper.Bootstrap(bootstrapperConfiguration);
+                bootstrapper.Bootstrap(configuration);
             }
             catch (Exception ex)
             {
@@ -115,11 +133,18 @@ namespace dddlib.Runtime
                     string.Format(
                         CultureInfo.InvariantCulture,
                         "The bootstrapper of type '{0}' threw an exception during invocation.\r\nSee inner exception for details.",
-                        bootstrapperType),
+                        bootstrapper.GetType()),
                     ex);
             }
 
-            return bootstrapperConfiguration.AssemblyConfiguration;
+            return configuration.AssemblyConfiguration;
+        }
+
+        private class DefaultBootstrapper : IBootstrapper
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+            }
         }
     }
 }

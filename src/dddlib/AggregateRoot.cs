@@ -8,7 +8,8 @@ namespace dddlib
         Enable ES without persistence mode.
         Fix exception types (as before).
         Remove IAggregateRoot.
-        More will be required once persistence layer is fleshed out.  */
+        More will be required once persistence layer is fleshed out.
+        Consider enforcing logic around change of state field.  */
 
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;

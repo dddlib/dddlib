@@ -13,23 +13,39 @@ namespace dddlib.Tests.Acceptance
         [Background]
         public void Background()
         {
+            var bootstrapper = default(IBootstrapper);
+
+            "Given an assembly bootstrapper"
+                .Given(() => bootstrapper = new Bootstrapper());
+
             "Given a new application"
-                .Given(() => new Application().Using());
+                .Given(() => new Application(bootstrapper).Using());
         }
 
         [Scenario]
         public void CanInstantiate(string naturalKeyValue)
         {
-            var testAggregateRoot = default(TestAggregateRoot);
+            var aggregateRoot = default(TestAggregateRoot);
 
             "Given a natural key value"
                 .Given(() => naturalKeyValue = "key");
 
-            "When that type of aggregate root is instantiated with the natural key value"
-                .When(() => testAggregateRoot = new TestAggregateRoot(naturalKeyValue));
+            "When an aggregate root is instantiated with the natural key value"
+                .When(() => aggregateRoot = new TestAggregateRoot(naturalKeyValue));
 
-            "The the test aggregate root key should be the natural key value"
-                .Then(() => testAggregateRoot.Key.Should().Be(naturalKeyValue));
+            "The the aggregate root key should be the natural key value"
+                .Then(() => aggregateRoot.Key.Should().Be(naturalKeyValue));
+
+            "And"
+                .And(() => aggregateRoot.GetUncommittedEvents().Should().ContainSingle(x => x as string == naturalKeyValue));
+        }
+
+        private class Bootstrapper : IBootstrapper
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<TestAggregateRoot>().ToReconstituteUsing(() => new TestAggregateRoot());
+            }
         }
 
         private class TestAggregateRoot : AggregateRoot

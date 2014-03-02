@@ -9,32 +9,25 @@ namespace dddlib.Runtime.Configuration
     internal class ConfigureAggregateRoot<T> : IConfigureAggregateRoot<T> 
         where T : AggregateRoot
     {
-        public ConfigureAggregateRoot(AssemblyConfiguration configuration)
+        private readonly RuntimeConfiguration configuration;
+
+        public ConfigureAggregateRoot(RuntimeConfiguration configuration)
         {
+            Guard.Against.Null(() => configuration);
+
+            this.configuration = configuration;
         }
 
         public IConfigureAggregateRoot<T> ToReconstituteUsing(Func<T> uninitializedFactory)
         {
+            this.configuration.RegisterAggregateRootFactory(uninitializedFactory);
             return this;
         }
 
         public IConfigureAggregateRoot<T> ToUseNaturalKey(Func<T, object> naturalKeySelector)
         {
+            this.configuration.RegisterNaturalKeySelector(naturalKeySelector);
             return this;
-        }
-
-        public void ToNotDispatchEvents()
-        {
-        }
-
-        public IConfigureAggregateRoot<T> ToDispatchEventsUsing(IEventDispatcher eventDispatcher)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IConfigureAggregateRoot<T> ToDispatchEventsUsing(Func<Type, IEventDispatcher> eventDispatcherFactory)
-        {
-            throw new NotImplementedException();
         }
     }
 }

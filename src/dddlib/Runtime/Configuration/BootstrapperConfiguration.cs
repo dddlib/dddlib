@@ -6,16 +6,16 @@ namespace dddlib.Runtime.Configuration
 {
     internal class BootstrapperConfiguration : IConfiguration
     {
-        private readonly AssemblyConfiguration assemblyConfiguration;
+        private readonly RuntimeConfiguration assemblyConfiguration;
 
-        public BootstrapperConfiguration(AssemblyConfiguration assemblyConfiguration)
+        public BootstrapperConfiguration(RuntimeConfiguration assemblyConfiguration)
         {
             Guard.Against.Null(() => assemblyConfiguration);
 
             this.assemblyConfiguration = assemblyConfiguration;
         }
 
-        public AssemblyConfiguration AssemblyConfiguration
+        public RuntimeConfiguration AssemblyConfiguration
         {
             get { return this.assemblyConfiguration; }
         }

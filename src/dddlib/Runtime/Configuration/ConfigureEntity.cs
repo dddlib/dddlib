@@ -9,7 +9,7 @@ namespace dddlib.Runtime.Configuration
     internal class ConfigureEntity<T> : IConfigureEntity<T>
         where T : Entity
     {
-        public ConfigureEntity(AssemblyConfiguration configuration)
+        public ConfigureEntity(RuntimeConfiguration configuration)
         {
         }
 
