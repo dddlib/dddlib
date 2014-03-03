@@ -34,22 +34,9 @@ namespace dddlib.Runtime
         /// Initializes a new instance of the <see cref="Application"/> class.
         /// </summary>
         public Application()
-            : this(new DefaultTypeConfigurationProvider(null))
+            : this(new DefaultTypeConfigurationProvider())
         {
         }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Application"/> class.
-        /// </summary>
-        /// <param name="bootstrapper">The bootstrapper.</param>
-        public Application(IBootstrapper bootstrapper)
-            : this(new DefaultTypeConfigurationProvider(bootstrapper))
-        {
-        }
-
-        ////public Application(Func<IConfiguration> configure)
-        ////{
-        ////}
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Application"/> class.
@@ -118,7 +105,8 @@ namespace dddlib.Runtime
 
             if (!ValidTypes.Any(baseType => baseType.IsAssignableFrom(type)))
             {
-                throw new ArgumentException("Invalid runtime type specified.", "type");
+                throw new RuntimeException(
+                    string.Format(CultureInfo.InvariantCulture, "The specified type '{0}' is not a valid runtime type.", type));
             }
 
             var typeDescriptor = default(TypeDescriptor);

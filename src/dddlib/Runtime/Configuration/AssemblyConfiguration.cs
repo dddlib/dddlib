@@ -1,4 +1,4 @@
-﻿// <copyright file="RuntimeConfiguration.cs" company="dddlib contributors">
+﻿// <copyright file="AssemblyConfiguration.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -8,7 +8,7 @@ namespace dddlib.Runtime.Configuration
     using System.Collections.Generic;
 
     // TODO (Cameron): Make public
-    internal class RuntimeConfiguration
+    internal class AssemblyConfiguration
     {
         private readonly Dictionary<Type, Func<object>> aggregateRootFactories = new Dictionary<Type, Func<object>>();
         private readonly Dictionary<Type, Func<object, object>> naturalKeySelectors = new Dictionary<Type, Func<object, object>>();

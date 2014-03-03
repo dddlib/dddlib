@@ -6,6 +6,8 @@ namespace dddlib.Tests.Unit.Runtime
 {
     using System;
     using dddlib.Runtime;
+    using dddlib.Runtime.Configuration;
+    using FakeItEasy;
     using FluentAssertions;
     using Xunit;
 
@@ -73,6 +75,43 @@ namespace dddlib.Tests.Unit.Runtime
 
             // assert
             defaultApplication.Should().Be(Application.Current);
+        }
+
+        [Fact(Skip = "Incomplete")]
+        public void CanCreateTypeDescriptorForValidRuntimeType()
+        {
+            // arrange
+            var type = typeof(object);
+            var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
+
+            using (new Application(typeConfigurationProvider))
+            {
+                // act
+                var typeDescriptor = Application.Current.GetTypeDescriptor(type);
+
+                // assert
+            }
+        }
+
+        [Fact]
+        public void CannotCreateTypeDescriptorForInvalidRuntimeType()
+        {
+            // arrange
+            var type = typeof(object);
+            var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
+
+            using (new Application(typeConfigurationProvider))
+            {
+                // act
+                Action action = () => Application.Current.GetTypeDescriptor(type);
+
+                // assert
+                action.ShouldThrow<RuntimeException>();
+            }
+        }
+
+        private class Aggregate : AggregateRoot
+        {
         }
     }
 }

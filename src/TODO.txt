@@ -29,3 +29,10 @@ Something like this
 Given a configuration for event-based non-persisting
 When I create an aggregate for non event-based
 Then the runtime throws an exception
+
+
+
+========== TESTS ==========
+Configuration sub-system (hard)
+Application hosting (easy)
+Domain behaviour

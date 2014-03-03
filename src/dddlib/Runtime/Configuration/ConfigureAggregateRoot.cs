@@ -9,9 +9,9 @@ namespace dddlib.Runtime.Configuration
     internal class ConfigureAggregateRoot<T> : IConfigureAggregateRoot<T> 
         where T : AggregateRoot
     {
-        private readonly RuntimeConfiguration configuration;
+        private readonly AssemblyConfiguration configuration;
 
-        public ConfigureAggregateRoot(RuntimeConfiguration configuration)
+        public ConfigureAggregateRoot(AssemblyConfiguration configuration)
         {
             Guard.Against.Null(() => configuration);
 

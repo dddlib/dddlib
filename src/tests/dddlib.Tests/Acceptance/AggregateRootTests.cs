@@ -13,13 +13,8 @@ namespace dddlib.Tests.Acceptance
         [Background]
         public void Background()
         {
-            var bootstrapper = default(IBootstrapper);
-
-            "Given an assembly bootstrapper"
-                .Given(() => bootstrapper = new Bootstrapper());
-
             "Given a new application"
-                .Given(() => new Application(bootstrapper).Using());
+                .Given(() => new Application().Using());
         }
 
         [Scenario]

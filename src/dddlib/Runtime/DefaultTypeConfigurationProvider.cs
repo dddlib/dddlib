@@ -11,6 +11,7 @@ namespace dddlib.Runtime
     using System.Linq;
     using System.Reflection;
     using dddlib.Runtime.Configuration;
+    using Configuration = dddlib.Runtime.Configuration.BootstrapperConfiguration;
 
     /*  TODO (Cameron):
         Make method virtual.
@@ -22,19 +23,8 @@ namespace dddlib.Runtime
     /// </summary>
     public class DefaultTypeConfigurationProvider : ITypeConfigurationProvider
     {
-        private readonly Dictionary<Assembly, RuntimeConfiguration> assemblyConfigurations = new Dictionary<Assembly, RuntimeConfiguration>();
+        private readonly Dictionary<Assembly, AssemblyConfiguration> assemblyConfigurations = new Dictionary<Assembly, AssemblyConfiguration>();
         private readonly Dictionary<Type, TypeConfiguration> typeConfigurations = new Dictionary<Type, TypeConfiguration>();
-
-        private readonly IBootstrapper bootstrapper;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DefaultTypeConfigurationProvider"/> class.
-        /// </summary>
-        /// <param name="bootstrapper">The bootstrapper.</param>
-        public DefaultTypeConfigurationProvider(IBootstrapper bootstrapper)
-        {
-            this.bootstrapper = bootstrapper;
-        }
 
         /// <summary>
         /// Gets the configuration.
@@ -59,15 +49,15 @@ namespace dddlib.Runtime
         }
 
         [SuppressMessage("StyleCop.CSharp.OrderingRules", "SA1204:StaticElementsMustAppearBeforeInstanceElements", Justification = "Not here.")]
-        private RuntimeConfiguration GetConfiguration(Assembly assembly)
+        private AssemblyConfiguration GetConfiguration(Assembly assembly)
         {
-            var assemblyConfiguration = default(RuntimeConfiguration);
+            var assemblyConfiguration = default(AssemblyConfiguration);
             if (this.assemblyConfigurations.TryGetValue(assembly, out assemblyConfiguration))
             {
                 return assemblyConfiguration;
             }
 
-            var bootstrapper = this.bootstrapper ?? GetAssemblyBootstrapper(assembly);
+            var bootstrapper = GetAssemblyBootstrapper(assembly);
 
             this.assemblyConfigurations.Add(assembly, assemblyConfiguration = CreateConfiguration(bootstrapper));
 
@@ -119,9 +109,9 @@ namespace dddlib.Runtime
             return bootstrapper;
         }
 
-        private static RuntimeConfiguration CreateConfiguration(IBootstrapper bootstrapper)
+        private static AssemblyConfiguration CreateConfiguration(IBootstrapper bootstrapper)
         {
-            var assemblyConfiguration = new RuntimeConfiguration();
+            var assemblyConfiguration = new AssemblyConfiguration();
             var configuration = new BootstrapperConfiguration(assemblyConfiguration);
             try
             {
