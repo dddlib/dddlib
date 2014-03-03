@@ -26,7 +26,9 @@ namespace dddlib.Runtime
         private static readonly object SyncLock = new object();
 
         private readonly Dictionary<Type, TypeDescriptor> typeDescriptors = new Dictionary<Type, TypeDescriptor>();
+
         private readonly ITypeConfigurationProvider typeConfigurationProvider;
+        private readonly ITypeAnalyzer typeAnalyzer;
 
         private bool isDisposed = false;
 
@@ -43,10 +45,17 @@ namespace dddlib.Runtime
         /// </summary>
         /// <param name="typeConfigurationProvider">The type configuration provider.</param>
         public Application(ITypeConfigurationProvider typeConfigurationProvider)
+            : this(typeConfigurationProvider, new TypeAnalyzer())
+        {
+        }
+
+        internal Application(ITypeConfigurationProvider typeConfigurationProvider, ITypeAnalyzer typeAnalyzer)
         {
             Guard.Against.Null(() => typeConfigurationProvider);
+            Guard.Against.Null(() => typeAnalyzer);
 
             this.typeConfigurationProvider = typeConfigurationProvider;
+            this.typeAnalyzer = typeAnalyzer;
 
             lock (SyncLock)
             {
@@ -126,6 +135,7 @@ namespace dddlib.Runtime
                 try
                 {
                     typeConfiguration = this.typeConfigurationProvider.GetConfiguration(type);
+                    typeDescriptor = this.typeAnalyzer.GetDescriptor(type, typeConfiguration);
                 }
                 catch (Exception ex)
                 {
@@ -134,15 +144,16 @@ namespace dddlib.Runtime
                         throw;
                     }
 
-                    throw new RuntimeException(
-                        string.Format(
-                            CultureInfo.InvariantCulture,
-                            "The type configuration provider of type '{0}' threw an exception during invocation.\r\nSee inner exception for details.",
-                            this.typeConfigurationProvider.GetType()),
-                        ex);
+                    var message = string.Format(
+                        CultureInfo.InvariantCulture,
+                        "The {0} of type '{1}' threw an exception during invocation.\r\nSee inner exception for details.",
+                        typeConfiguration == null ? "type configuration provider" : "type analyzer",
+                        typeConfiguration == null ? this.typeConfigurationProvider.GetType() : this.typeAnalyzer.GetType());
+
+                    throw new RuntimeException(message, ex);
                 }
 
-                this.typeDescriptors.Add(type, typeDescriptor = new TypeAnalyzer().GetDescriptor(type, typeConfiguration));
+                this.typeDescriptors.Add(type, typeDescriptor);
 
                 return typeDescriptor;
             }

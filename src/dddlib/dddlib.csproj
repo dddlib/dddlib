@@ -67,6 +67,7 @@
     <Compile Include="Runtime\Configuration\TypeConfiguration.cs" />
     <Compile Include="Runtime\DefaultTypeConfigurationProvider.cs" />
     <Compile Include="Runtime\DefaultEventDispatcher.cs" />
+    <Compile Include="Runtime\ITypeAnalyzer.cs" />
     <Compile Include="Runtime\ITypeConfigurationProvider.cs" />
     <Compile Include="Runtime\IConfiguration.cs" />
     <Compile Include="Runtime\IBootstrapper.cs" />

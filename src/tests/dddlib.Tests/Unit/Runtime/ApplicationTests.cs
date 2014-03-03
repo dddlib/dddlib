@@ -11,6 +11,11 @@ namespace dddlib.Tests.Unit.Runtime
     using FluentAssertions;
     using Xunit;
 
+    /*  TODO (Cameron):
+        Test multiple disposal of non-default Application
+        Test for ObjectDisposedException
+        Test caching of type descriptors  */
+
     public class ApplicationTests
     {
         [Fact]
@@ -77,24 +82,32 @@ namespace dddlib.Tests.Unit.Runtime
             defaultApplication.Should().Be(Application.Current);
         }
 
-        [Fact(Skip = "Incomplete")]
-        public void CanCreateTypeDescriptorForValidRuntimeType()
+        [Fact]
+        public void ApplicationCanCreateTypeDescriptorForValidRuntimeType()
         {
             // arrange
-            var type = typeof(object);
-            var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
+            var type = typeof(Aggregate);
 
-            using (new Application(typeConfigurationProvider))
+            var typeConfiguration = new TypeConfiguration();
+            var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
+            A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);
+            
+            var typeDescriptor = new TypeDescriptor();
+            var typeAnalyzer = A.Fake<ITypeAnalyzer>(o => o.Strict());
+            A.CallTo(() => typeAnalyzer.GetDescriptor(type, typeConfiguration)).Returns(typeDescriptor);
+
+            using (new Application(typeConfigurationProvider, typeAnalyzer))
             {
                 // act
-                var typeDescriptor = Application.Current.GetTypeDescriptor(type);
+                var actualTypeDescriptor = Application.Current.GetTypeDescriptor(type);
 
                 // assert
+                actualTypeDescriptor.Should().Be(typeDescriptor);
             }
         }
 
         [Fact]
-        public void CannotCreateTypeDescriptorForInvalidRuntimeType()
+        public void ApplicationCannotCreateTypeDescriptorForInvalidRuntimeType()
         {
             // arrange
             var type = typeof(object);
@@ -106,7 +119,79 @@ namespace dddlib.Tests.Unit.Runtime
                 Action action = () => Application.Current.GetTypeDescriptor(type);
 
                 // assert
-                action.ShouldThrow<RuntimeException>();
+                action.ShouldThrow<RuntimeException>().And.Message.Should().Contain(type.FullName);
+            }
+        }
+
+        [Fact]
+        public void ApplicationThrowsRuntimeExceptionOnTypeConfigurationProviderException()
+        {
+            // arrange
+            var innerException = new Exception();
+            var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
+            A.CallTo(() => typeConfigurationProvider.GetConfiguration(A<Type>.Ignored)).Throws(innerException);
+
+            using (new Application(typeConfigurationProvider))
+            {
+                // act
+                Action action = () => Application.Current.GetTypeDescriptor(typeof(Aggregate));
+
+                // assert
+                action.ShouldThrow<RuntimeException>().And.InnerException.Should().Be(innerException);
+            }
+        }
+
+        [Fact]
+        public void ApplicationThrowsRuntimeExceptionOnTypeConfigurationProviderRuntimeException()
+        {
+            // arrange
+            var runtimeException = new RuntimeException();
+            var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
+            A.CallTo(() => typeConfigurationProvider.GetConfiguration(A<Type>.Ignored)).Throws(runtimeException);
+
+            using (new Application(typeConfigurationProvider))
+            {
+                // act
+                Action action = () => Application.Current.GetTypeDescriptor(typeof(Aggregate));
+
+                // assert
+                action.ShouldThrow<RuntimeException>().And.Should().Be(runtimeException);
+            }
+        }
+
+        [Fact]
+        public void ApplicationThrowsRuntimeExceptionOnTypeAnalyzerException()
+        {
+            // arrange
+            var innerException = new Exception();
+            var typeAnalyzer = A.Fake<ITypeAnalyzer>(o => o.Strict());
+            A.CallTo(() => typeAnalyzer.GetDescriptor(A<Type>.Ignored, A<TypeConfiguration>.Ignored)).Throws(innerException);
+
+            using (new Application(A.Fake<ITypeConfigurationProvider>(), typeAnalyzer))
+            {
+                // act
+                Action action = () => Application.Current.GetTypeDescriptor(typeof(Aggregate));
+
+                // assert
+                action.ShouldThrow<RuntimeException>().And.InnerException.Should().Be(innerException);
+            }
+        }
+
+        [Fact]
+        public void ApplicationThrowsRuntimeExceptionOnTypeAnalyzerRuntimeException()
+        {
+            // arrange
+            var runtimeException = new RuntimeException();
+            var typeAnalyzer = A.Fake<ITypeAnalyzer>(o => o.Strict());
+            A.CallTo(() => typeAnalyzer.GetDescriptor(A<Type>.Ignored, A<TypeConfiguration>.Ignored)).Throws(runtimeException);
+
+            using (new Application(A.Fake<ITypeConfigurationProvider>(), typeAnalyzer))
+            {
+                // act
+                Action action = () => Application.Current.GetTypeDescriptor(typeof(Aggregate));
+
+                // assert
+                action.ShouldThrow<RuntimeException>().And.Should().Be(runtimeException);
             }
         }
 

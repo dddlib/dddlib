@@ -7,7 +7,8 @@ namespace dddlib.Runtime
     /*  TODO (Cameron): 
         This is it. This is where the magic happens. Fix last. Test first?
         Consider seperate calls, maybe seperate classes? GetEntity, GetValueObject etc.
-        Fix exceptions (see previous).  */
+        Fix exceptions (see previous).
+        Consider: do not require the type as an argument.  */
 
     using System;
     using System.Collections.Generic;
@@ -17,7 +18,7 @@ namespace dddlib.Runtime
     using dddlib.Runtime.Configuration;
 
     // TODO (Cameron): Test that the Natural key is from the most recent subclass of entity.
-    internal class TypeAnalyzer
+    internal class TypeAnalyzer : ITypeAnalyzer
     {
         private static readonly NullEventDispatcher DefaultEventDispatcher = new NullEventDispatcher();
 
@@ -57,9 +58,9 @@ namespace dddlib.Runtime
                 foreach (var subType in new[] { type }.Traverse(t => t.BaseType == typeof(Entity) ? null : new[] { t.BaseType }))
                 {
                     naturalKey = subType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
-                    .SelectMany(member => member.GetCustomAttributes(typeof(NaturalKeyAttribute), true))
-                    .OfType<NaturalKeyAttribute>()
-                    .SingleOrDefault();
+                        .SelectMany(member => member.GetCustomAttributes(typeof(NaturalKeyAttribute), true))
+                        .OfType<NaturalKeyAttribute>()
+                        .SingleOrDefault();
 
                     if (naturalKey != null)
                     {
