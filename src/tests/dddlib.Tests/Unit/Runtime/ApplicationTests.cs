@@ -12,7 +12,6 @@ namespace dddlib.Tests.Unit.Runtime
     using Xunit;
 
     /*  TODO (Cameron):
-        Test multiple disposal of non-default Application
         Test for ObjectDisposedException
         Test caching of type descriptors  */
 
@@ -47,6 +46,20 @@ namespace dddlib.Tests.Unit.Runtime
 
             // assert
             currentApplication.Should().Be(defaultApplication);
+        }
+
+        [Fact]
+        public void CanDisposeApplicationMultipleTimes()
+        {
+            // arrange
+            var application = new Application();
+            
+            // act
+            application.Dispose();
+            Action action = () => application.Dispose();
+
+            // assert
+            action.ShouldNotThrow();
         }
 
         [Fact]
