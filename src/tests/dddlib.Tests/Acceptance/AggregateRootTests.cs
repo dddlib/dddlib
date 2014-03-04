@@ -5,6 +5,7 @@
 namespace dddlib.Tests.Acceptance
 {
     using dddlib.Runtime;
+    using dddlib.Runtime.Configuration;
     using FluentAssertions;
     using Xbehave;
 

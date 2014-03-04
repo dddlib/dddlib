@@ -135,6 +135,24 @@ namespace dddlib.Runtime
                 try
                 {
                     typeConfiguration = this.typeConfigurationProvider.GetConfiguration(type);
+                }
+                catch (Exception ex)
+                {
+                    if (ex is RuntimeException)
+                    {
+                        throw;
+                    }
+
+                    throw new RuntimeException(
+                        string.Format(
+                            CultureInfo.InvariantCulture,
+                            "The type configuration provider of type '{0}' threw an exception during invocation.\r\nSee inner exception for details.",
+                            this.typeConfigurationProvider.GetType()), 
+                        ex);
+                }
+
+                try
+                {
                     typeDescriptor = this.typeAnalyzer.GetDescriptor(type, typeConfiguration);
                 }
                 catch (Exception ex)
@@ -144,13 +162,12 @@ namespace dddlib.Runtime
                         throw;
                     }
 
-                    var message = string.Format(
-                        CultureInfo.InvariantCulture,
-                        "The {0} of type '{1}' threw an exception during invocation.\r\nSee inner exception for details.",
-                        typeConfiguration == null ? "type configuration provider" : "type analyzer",
-                        typeConfiguration == null ? this.typeConfigurationProvider.GetType() : this.typeAnalyzer.GetType());
-
-                    throw new RuntimeException(message, ex);
+                    throw new RuntimeException(
+                        string.Format(
+                            CultureInfo.InvariantCulture,
+                            "The type analyzer of type '{0}' threw an exception during invocation.\r\nSee inner exception for details.",
+                            this.typeAnalyzer.GetType()),
+                        ex);
                 }
 
                 this.typeDescriptors.Add(type, typeDescriptor);
