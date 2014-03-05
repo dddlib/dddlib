@@ -22,8 +22,8 @@ namespace dddlib
     public abstract class AggregateRoot : Entity
     {
         private readonly List<object> events = new List<object>();
-        private readonly IEventDispatcher eventDispatcher;
-        private readonly bool isTransient;
+        
+        private readonly RuntimeAggregateRoot runtime;
 
         private string state;
         private bool isDestroyed;
@@ -33,10 +33,7 @@ namespace dddlib
         /// </summary>
         protected AggregateRoot()
         {
-            var typeDescriptor = Application.Current.GetTypeDescriptor(this.GetType());
-            
-            this.eventDispatcher = typeDescriptor.EventDispatcher;
-            this.isTransient = typeDescriptor.Factory == null;
+            this.runtime = Application.Current.Get<RuntimeAggregateRoot>(this.GetType());
         }
 
         internal string State
@@ -140,9 +137,13 @@ namespace dddlib
                 return;
             }
 
-            this.eventDispatcher.Dispatch(this, @event);
+            if (this.runtime.Options.DispatchEvents)
+            {
+                // TODO (Cameron): Add try... catch block.
+                this.runtime.EventDispatcher.Dispatch(this, @event);
+            }
 
-            if (isNew && !this.isTransient)
+            if (this.runtime.Options.PersistEvents && isNew)
             {
                 this.events.Add(@event);
             }

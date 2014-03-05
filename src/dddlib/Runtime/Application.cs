@@ -103,6 +103,24 @@ namespace dddlib.Runtime
             }
         }
 
+        internal T Get<T>(Type type) where T : class
+        {
+            var typeDescriptor = this.GetTypeDescriptor(type);
+            var runtimeType = new RuntimeAggregateRoot
+            {
+                EqualityComparer = typeDescriptor.EqualityComparer,
+                EventDispatcher = typeDescriptor.EventDispatcher,
+                Factory = typeDescriptor.Factory,
+                Options = new RuntimeAggregateRoot.RuntimeOptions
+                {
+                    DispatchEvents = true,
+                    PersistEvents = typeDescriptor.Factory != null,
+                }
+            };
+
+            return runtimeType as T;
+        }
+
         internal TypeDescriptor GetTypeDescriptor(Type type)
         {
             Guard.Against.Null(() => type);

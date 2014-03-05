@@ -51,6 +51,10 @@
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="BusinessException.cs" />
     <Compile Include="Entity.cs" />
+    <Compile Include="Runtime\Analyzer\AggregateRootAnalyzer.cs" />
+    <Compile Include="Runtime\Analyzer\RuntimeEntity.cs" />
+    <Compile Include="Runtime\Analyzer\RuntimeValueObject.cs" />
+    <Compile Include="Runtime\Analyzer\RuntimeAggregateRoot.cs" />
     <Compile Include="Runtime\Configuration\AssemblyConfiguration.cs" />
     <Compile Include="Runtime\Configuration\BootstrapperConfiguration.cs" />
     <Compile Include="Runtime\Configuration\ConfigureAggregateRoot.cs" />
