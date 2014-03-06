@@ -8,6 +8,6 @@ namespace dddlib.Runtime
 
     internal class RuntimeValueObject
     {
-        public IEqualityComparer<object> EqualityComparer { get; internal set; }
+        public object EqualityComparer { get; internal set; }
     }
 }

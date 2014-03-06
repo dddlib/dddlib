@@ -105,7 +105,8 @@ namespace dddlib.Runtime
 
         internal T Get<T>(Type type) where T : class
         {
-            var typeDescriptor = this.GetTypeDescriptor(type);
+            var typeConfiguration = this.typeConfigurationProvider.GetConfiguration(type);
+            var typeDescriptor = new dddlib.Runtime.Analyzer.AggregateRootAnalyzer().GetRuntimeType(type, typeConfiguration);
             var runtimeType = new RuntimeAggregateRoot
             {
                 EqualityComparer = typeDescriptor.EqualityComparer,

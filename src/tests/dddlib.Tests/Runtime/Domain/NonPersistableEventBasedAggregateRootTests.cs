@@ -14,7 +14,7 @@ namespace dddlib.Tests.Runtime
     // for every type of configuration
     public class NonPersistableEventBasedAggregateRootTests
     {
-        [Fact]
+        [Fact(Skip = "I'm not sure that this is the desired behaviour.")]
         public void CreateWithNonEventBasedConfiguration()
         {
             // arrange
