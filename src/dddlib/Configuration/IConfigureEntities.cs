@@ -5,7 +5,7 @@
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(
     "StyleCop.CSharp.DocumentationRules", "SA1649:FileHeaderFileNameDocumentationMustMatchTypeName", Scope = "Module", Justification = "Reviewed.")]
 
-namespace dddlib.Runtime.Configuration
+namespace dddlib.Configuration
 {
     using System;
     using System.Collections.Generic;

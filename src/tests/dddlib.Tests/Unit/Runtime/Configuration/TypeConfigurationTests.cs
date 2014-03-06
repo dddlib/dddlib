@@ -5,7 +5,6 @@
 namespace dddlib.Tests.Unit.Runtime.Configuration
 {
     using dddlib.Runtime;
-    using dddlib.Runtime.Configuration;
     using FluentAssertions;
     using Xunit;
 

@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Runtime.Configuration
+namespace dddlib.Configuration
 {
     internal class BootstrapperConfiguration : IConfiguration
     {

@@ -6,7 +6,7 @@ namespace dddlib.Runtime
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
-    using dddlib.Runtime.Configuration;
+    using dddlib.Configuration;
 
     internal interface ITypeAnalyzer
     {

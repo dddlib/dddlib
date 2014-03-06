@@ -6,7 +6,6 @@ namespace dddlib.Tests.RuntimeMode
 {
     using System;
     using dddlib.Runtime;
-    using dddlib.Runtime.Configuration;
     using FakeItEasy;
     using FluentAssertions;
     using Xunit;

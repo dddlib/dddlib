@@ -4,8 +4,8 @@
 
 namespace dddlib.Tests.Acceptance
 {
+    using dddlib.Configuration;
     using dddlib.Runtime;
-    using dddlib.Runtime.Configuration;
     using FluentAssertions;
     using Xbehave;
 

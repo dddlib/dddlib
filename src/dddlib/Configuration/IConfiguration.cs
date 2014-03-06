@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Runtime.Configuration
+namespace dddlib.Configuration
 {
     using System;
     using System.ComponentModel;
@@ -12,7 +12,6 @@ namespace dddlib.Runtime.Configuration
     /// Exposes the public members of the configuration.
     /// </summary>
     //// NOTE (Cameron): Set to never be visible in the editor. Not sue if this is a sensible design choice... but it is a design choice.
-    [EditorBrowsable(EditorBrowsableState.Never)]
     public interface IConfiguration : IFluentExtensions
     {
         /// <summary>

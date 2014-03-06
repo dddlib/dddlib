@@ -8,7 +8,7 @@ namespace dddlib.Runtime
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
-    using dddlib.Runtime.Configuration;
+    using dddlib.Configuration;
 
     /*  TODO (Cameron):
         Consider taking a Func<IConfiguration> as an argument to bypass the bootstrapper.

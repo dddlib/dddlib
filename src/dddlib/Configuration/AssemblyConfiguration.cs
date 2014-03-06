@@ -2,10 +2,11 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Runtime.Configuration
+namespace dddlib.Configuration
 {
     using System;
     using System.Collections.Generic;
+    using dddlib.Runtime;
 
     // TODO (Cameron): Make public
     internal class AssemblyConfiguration

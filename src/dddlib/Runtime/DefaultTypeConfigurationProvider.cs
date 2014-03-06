@@ -10,8 +10,7 @@ namespace dddlib.Runtime
     using System.Globalization;
     using System.Linq;
     using System.Reflection;
-    using dddlib.Runtime.Configuration;
-    using Configuration = dddlib.Runtime.Configuration.BootstrapperConfiguration;
+    using dddlib.Configuration;
 
     /*  TODO (Cameron):
         Make method virtual.

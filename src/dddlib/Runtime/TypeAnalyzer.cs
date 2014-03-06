@@ -15,7 +15,7 @@ namespace dddlib.Runtime
     using System.Globalization;
     using System.Linq;
     using System.Reflection;
-    using dddlib.Runtime.Configuration;
+    using dddlib.Configuration;
 
     // TODO (Cameron): Test that the Natural key is from the most recent subclass of entity.
     internal class TypeAnalyzer : ITypeAnalyzer
@@ -80,7 +80,21 @@ namespace dddlib.Runtime
                     return descriptor;
                 }
 
-                var equalityComparerType = naturalKey.EqualityComparer;
+                var naturalKeyEqualityComparer = default(NaturalKeyAttribute.EqualityComparerAttribute);
+                foreach (var subType in new[] { type }.Traverse(t => t.BaseType == typeof(Entity) ? null : new[] { t.BaseType }))
+                {
+                    naturalKeyEqualityComparer = subType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
+                        .SelectMany(member => member.GetCustomAttributes(typeof(NaturalKeyAttribute.EqualityComparerAttribute), true))
+                        .OfType<NaturalKeyAttribute.EqualityComparerAttribute>()
+                        .SingleOrDefault();
+
+                    if (naturalKeyEqualityComparer != null)
+                    {
+                        break;
+                    }
+                }
+
+                var equalityComparerType = default(object);
                 if (equalityComparerType == null)
                 {
                     descriptor.EqualityComparer = EqualityComparer<object>.Default;
@@ -90,7 +104,7 @@ namespace dddlib.Runtime
                 var equalityComparer = default(IEqualityComparer<object>);
                 try
                 {
-                    equalityComparer = (IEqualityComparer<object>)Activator.CreateInstance(equalityComparerType);
+                    // equalityComparer = (IEqualityComparer<object>)Activator.CreateInstance(equalityComparerType);
                 }
                 catch (Exception ex)
                 {
