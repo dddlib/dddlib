@@ -54,12 +54,12 @@ namespace dddlib.Runtime
 
             if (typeof(Entity).IsAssignableFrom(type))
             {
-                var naturalKey = default(NaturalKeyAttribute);
+                var naturalKey = default(NaturalKey);
                 foreach (var subType in new[] { type }.Traverse(t => t.BaseType == typeof(Entity) ? null : new[] { t.BaseType }))
                 {
                     naturalKey = subType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
-                        .SelectMany(member => member.GetCustomAttributes(typeof(NaturalKeyAttribute), true))
-                        .OfType<NaturalKeyAttribute>()
+                        .SelectMany(member => member.GetCustomAttributes(typeof(NaturalKey), true))
+                        .OfType<NaturalKey>()
                         .SingleOrDefault();
 
                     if (naturalKey != null)
@@ -80,12 +80,12 @@ namespace dddlib.Runtime
                     return descriptor;
                 }
 
-                var naturalKeyEqualityComparer = default(NaturalKeyAttribute.EqualityComparerAttribute);
+                var naturalKeyEqualityComparer = default(NaturalKey.EqualityComparer);
                 foreach (var subType in new[] { type }.Traverse(t => t.BaseType == typeof(Entity) ? null : new[] { t.BaseType }))
                 {
                     naturalKeyEqualityComparer = subType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
-                        .SelectMany(member => member.GetCustomAttributes(typeof(NaturalKeyAttribute.EqualityComparerAttribute), true))
-                        .OfType<NaturalKeyAttribute.EqualityComparerAttribute>()
+                        .SelectMany(member => member.GetCustomAttributes(typeof(NaturalKey.EqualityComparer), true))
+                        .OfType<NaturalKey.EqualityComparer>()
                         .SingleOrDefault();
 
                     if (naturalKeyEqualityComparer != null)

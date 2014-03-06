@@ -65,7 +65,7 @@
     <Compile Include="Configuration\IFluentExtensions.cs" />
     <Compile Include="Runtime\EnumerableExtensions.cs" />
     <Compile Include="Guard.cs" />
-    <Compile Include="NaturalKeyAttribute.cs" />
+    <Compile Include="NaturalKey.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Runtime\Application.cs" />
     <Compile Include="Runtime\TypeConfiguration.cs" />

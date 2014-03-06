@@ -4,10 +4,12 @@
 
 namespace dddlib.Tests.Acceptance
 {
-    using dddlib.Configuration;
-    using dddlib.Runtime;
-    using FluentAssertions;
-    using Xbehave;
+    using System;
+using System.Collections.Generic;
+using dddlib.Configuration;
+using dddlib.Runtime;
+using FluentAssertions;
+using Xbehave;
 
     public class AggregateRootTests
     {
@@ -46,6 +48,9 @@ namespace dddlib.Tests.Acceptance
 
         private class TestAggregateRoot : AggregateRoot
         {
+            [NaturalKey.EqualityComparer]
+            private static readonly IEqualityComparer<string> EqualityComparer = StringComparer.OrdinalIgnoreCase;
+
             public TestAggregateRoot(string key)
             {
                 this.Apply(key);

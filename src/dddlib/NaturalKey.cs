@@ -1,4 +1,4 @@
-﻿// <copyright file="NaturalKeyAttribute.cs" company="dddlib contributors">
+﻿// <copyright file="NaturalKey.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -12,7 +12,7 @@ namespace dddlib
     /// </summary>
     //// LINK (Cameron): http://alabaxblog.info/2009/07/why-sealed-attributes/
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-    public sealed class NaturalKeyAttribute : Attribute
+    public sealed class NaturalKey : Attribute
     {
         /// <summary>
         /// When overridden in a derived class, indicates whether the value of this instance is the default value for the derived class.
@@ -27,7 +27,7 @@ namespace dddlib
         /// Use this attribute to decorate a natural key equality comparer on an aggregate root.
         /// </summary>
         [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-        public sealed class EqualityComparerAttribute : Attribute
+        public sealed class EqualityComparer : Attribute
         {
             /// <summary>
             /// When overridden in a derived class, indicates whether the value of this instance is the default value for the derived class.
