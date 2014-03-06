@@ -24,7 +24,13 @@ namespace dddlib.Runtime.Configuration
             return this;
         }
 
-        public IConfigureAggregateRoot<T> ToUseNaturalKey(Func<T, object> naturalKeySelector)
+        public IConfigureAggregateRoot<T> ToUseNaturalKey<TKey>(Func<T, TKey> naturalKeySelector)
+        {
+            this.configuration.RegisterNaturalKeySelector(naturalKeySelector);
+            return this;
+        }
+
+        public IConfigureAggregateRoot<T> ToUseNaturalKey<TKey>(Func<T, TKey> naturalKeySelector, System.Collections.Generic.IEqualityComparer<TKey> equalityComparer)
         {
             this.configuration.RegisterNaturalKeySelector(naturalKeySelector);
             return this;

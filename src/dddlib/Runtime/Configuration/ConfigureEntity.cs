@@ -13,7 +13,12 @@ namespace dddlib.Runtime.Configuration
         {
         }
 
-        public IConfigureEntity<T> ToUseNaturalKey(Func<T, object> naturalKeySelector)
+        public IConfigureEntity<T> ToUseNaturalKey<TKey>(Func<T, TKey> naturalKeySelector)
+        {
+            return this;
+        }
+
+        public IConfigureEntity<T> ToUseNaturalKey<TKey>(Func<T, TKey> naturalKeySelector, System.Collections.Generic.IEqualityComparer<TKey> equalityComparer)
         {
             return this;
         }

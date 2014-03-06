@@ -34,7 +34,7 @@ namespace dddlib.Runtime.Configuration
             this.aggregateRootFactories.Add(typeof(T), () => aggregateRootFactory());
         }
 
-        public void RegisterNaturalKeySelector<T>(Func<T, object> naturalKeySelector) where T : AggregateRoot
+        public void RegisterNaturalKeySelector<T, TKey>(Func<T, TKey> naturalKeySelector) where T : AggregateRoot
         {
             Guard.Against.Null(() => naturalKeySelector);
             

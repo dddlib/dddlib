@@ -8,6 +8,7 @@
 namespace dddlib.Runtime.Configuration
 {
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
 
@@ -24,9 +25,19 @@ namespace dddlib.Runtime.Configuration
         /// <summary>
         /// Configures the runtime to assign the natural key of entity using the specified natural key selector.
         /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
         /// <param name="naturalKeySelector">The natural key selector.</param>
         /// <returns>The configuration.</returns>
-        TConfiguration ToUseNaturalKey(Func<T, object> naturalKeySelector);
+        TConfiguration ToUseNaturalKey<TKey>(Func<T, TKey> naturalKeySelector);
+
+        /// <summary>
+        /// Configures the runtime to assign the natural key of entity using the specified natural key selector.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <param name="naturalKeySelector">The natural key selector.</param>
+        /// <param name="equalityComparer">The equality comparer for the natural key.</param>
+        /// <returns>The configuration.</returns>
+        TConfiguration ToUseNaturalKey<TKey>(Func<T, TKey> naturalKeySelector, IEqualityComparer<TKey> equalityComparer);
     }
 
     [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1124:DoNotUseRegions", Justification = "Here the code is meant to be hidden.")]
