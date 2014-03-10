@@ -53,6 +53,7 @@
     <Compile Include="Entity.cs" />
     <Compile Include="Runtime\Analyzer\AggregateRootAnalyzer.cs" />
     <Compile Include="Runtime\Analyzer\RuntimeEntity.cs" />
+    <Compile Include="Runtime\Analyzer\RuntimeType.cs" />
     <Compile Include="Runtime\Analyzer\RuntimeValueObject.cs" />
     <Compile Include="Runtime\Analyzer\RuntimeAggregateRoot.cs" />
     <Compile Include="Configuration\AssemblyConfiguration.cs" />

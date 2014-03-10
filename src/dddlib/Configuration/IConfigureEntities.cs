@@ -9,7 +9,6 @@ namespace dddlib.Configuration
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
@@ -17,7 +16,6 @@ namespace dddlib.Configuration
     /// </summary>
     /// <typeparam name="TConfiguration">The type of the configuration.</typeparam>
     /// <typeparam name="T">The type of entity.</typeparam>
-    [EditorBrowsable(EditorBrowsableState.Never)]
     public interface IConfigureEntity<TConfiguration, T> : IFluentExtensions
         where T : Entity
         where TConfiguration : IConfigureEntity<TConfiguration, T>
@@ -47,7 +45,6 @@ namespace dddlib.Configuration
     /// Exposes the public members of the entity configuration.
     /// </summary>
     /// <typeparam name="T">The type of entity.</typeparam>
-    [EditorBrowsable(EditorBrowsableState.Never)]
     public interface IConfigureEntity<T> : IConfigureEntity<IConfigureEntity<T>, T>, IFluentExtensions
         where T : Entity
     {

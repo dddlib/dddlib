@@ -8,12 +8,6 @@ namespace dddlib.Runtime
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
-    using dddlib.Configuration;
-
-    /*  TODO (Cameron):
-        Consider taking a Func<IConfiguration> as an argument to bypass the bootstrapper.
-        Or an AssemblyConfiguration
-        Or an instance of IBootstrapper - especially this because it allows for DI into the bootstrapper  */
 
     /// <summary>
     /// Represents an application.
@@ -36,16 +30,7 @@ namespace dddlib.Runtime
         /// Initializes a new instance of the <see cref="Application"/> class.
         /// </summary>
         public Application()
-            : this(new DefaultTypeConfigurationProvider())
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Application"/> class.
-        /// </summary>
-        /// <param name="typeConfigurationProvider">The type configuration provider.</param>
-        public Application(ITypeConfigurationProvider typeConfigurationProvider)
-            : this(typeConfigurationProvider, new TypeAnalyzer())
+            : this(new DefaultTypeConfigurationProvider(), new TypeAnalyzer())
         {
         }
 
@@ -103,7 +88,7 @@ namespace dddlib.Runtime
             }
         }
 
-        internal T Get<T>(Type type) where T : class
+        internal T Get<T>(Type type) where T : RuntimeType
         {
             var typeConfiguration = this.typeConfigurationProvider.GetConfiguration(type);
             var typeDescriptor = new dddlib.Runtime.Analyzer.AggregateRootAnalyzer().GetRuntimeType(type, typeConfiguration);

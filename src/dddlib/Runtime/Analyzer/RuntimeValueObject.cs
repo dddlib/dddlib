@@ -6,7 +6,7 @@ namespace dddlib.Runtime
 {
     using System.Collections.Generic;
 
-    internal class RuntimeValueObject
+    internal class RuntimeValueObject : RuntimeType
     {
         public object EqualityComparer { get; internal set; }
     }

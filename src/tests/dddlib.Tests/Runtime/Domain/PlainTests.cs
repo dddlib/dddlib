@@ -21,7 +21,7 @@ namespace dddlib.Tests.RuntimeMode
 
             A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);
 
-            using (new Application(typeConfigurationProvider))
+            using (new Application(typeConfigurationProvider, new TypeAnalyzer()))
             {
                 Action action = () => new TestAggregate();
                 action.ShouldNotThrow();
@@ -37,7 +37,7 @@ namespace dddlib.Tests.RuntimeMode
 
             A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);
 
-            using (new Application(typeConfigurationProvider))
+            using (new Application(typeConfigurationProvider, new TypeAnalyzer()))
             {
                 Action action = () => new TestAggregate();
                 action.ShouldNotThrow();
@@ -53,7 +53,7 @@ namespace dddlib.Tests.RuntimeMode
 
             A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);
 
-            using (new Application(typeConfigurationProvider))
+            using (new Application(typeConfigurationProvider, new TypeAnalyzer()))
             {
                 Action action = () => new TestAggregate();
                 action.ShouldThrow<RuntimeException>();
