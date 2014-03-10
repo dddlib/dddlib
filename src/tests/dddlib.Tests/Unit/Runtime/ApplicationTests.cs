@@ -105,7 +105,7 @@ namespace dddlib.Tests.Unit.Runtime
             A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);
             
             var typeDescriptor = new TypeDescriptor();
-            var typeAnalyzer = A.Fake<ITypeAnalyzer>(o => o.Strict());
+            var typeAnalyzer = A.Fake<ITypeAnalyzer2>(o => o.Strict());
             A.CallTo(() => typeAnalyzer.GetDescriptor(type, typeConfiguration)).Returns(typeDescriptor);
 
             using (new Application(typeConfigurationProvider, typeAnalyzer))
@@ -124,7 +124,7 @@ namespace dddlib.Tests.Unit.Runtime
             // arrange
             var type = typeof(object);
             var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
-            var typeAnalyzer = A.Fake<ITypeAnalyzer>(o => o.Strict());
+            var typeAnalyzer = A.Fake<ITypeAnalyzer2>(o => o.Strict());
 
             using (new Application(typeConfigurationProvider, typeAnalyzer))
             {
@@ -144,7 +144,7 @@ namespace dddlib.Tests.Unit.Runtime
             var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
             A.CallTo(() => typeConfigurationProvider.GetConfiguration(A<Type>.Ignored)).Throws(innerException);
 
-            using (new Application(typeConfigurationProvider, A.Fake<ITypeAnalyzer>()))
+            using (new Application(typeConfigurationProvider, A.Fake<ITypeAnalyzer2>()))
             {
                 // act
                 Action action = () => Application.Current.GetTypeDescriptor(typeof(Aggregate));
@@ -162,7 +162,7 @@ namespace dddlib.Tests.Unit.Runtime
             var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
             A.CallTo(() => typeConfigurationProvider.GetConfiguration(A<Type>.Ignored)).Throws(runtimeException);
 
-            using (new Application(typeConfigurationProvider, A.Fake<ITypeAnalyzer>()))
+            using (new Application(typeConfigurationProvider, A.Fake<ITypeAnalyzer2>()))
             {
                 // act
                 Action action = () => Application.Current.GetTypeDescriptor(typeof(Aggregate));
@@ -177,7 +177,7 @@ namespace dddlib.Tests.Unit.Runtime
         {
             // arrange
             var innerException = new Exception();
-            var typeAnalyzer = A.Fake<ITypeAnalyzer>(o => o.Strict());
+            var typeAnalyzer = A.Fake<ITypeAnalyzer2>(o => o.Strict());
             A.CallTo(() => typeAnalyzer.GetDescriptor(A<Type>.Ignored, A<TypeConfiguration>.Ignored)).Throws(innerException);
 
             using (new Application(A.Fake<ITypeConfigurationProvider>(), typeAnalyzer))
@@ -195,7 +195,7 @@ namespace dddlib.Tests.Unit.Runtime
         {
             // arrange
             var runtimeException = new RuntimeException();
-            var typeAnalyzer = A.Fake<ITypeAnalyzer>(o => o.Strict());
+            var typeAnalyzer = A.Fake<ITypeAnalyzer2>(o => o.Strict());
             A.CallTo(() => typeAnalyzer.GetDescriptor(A<Type>.Ignored, A<TypeConfiguration>.Ignored)).Throws(runtimeException);
 
             using (new Application(A.Fake<ITypeConfigurationProvider>(), typeAnalyzer))

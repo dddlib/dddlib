@@ -4,13 +4,12 @@
 
 namespace dddlib.Runtime
 {
-    using System;
-    using System.Diagnostics.CodeAnalysis;
-    using dddlib.Configuration;
-
-    internal interface ITypeAnalyzer
+    internal interface ITypeAnalyzer<T> where T : RuntimeType
     {
-        [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1632:DocumentationTextMustMeetMinimumCharacterLength", Justification = "Not here.")]
-        TypeDescriptor GetDescriptor(Type type, TypeConfiguration configuration);
+        T Get(TypeAnalyzer type, IConfiguration<T> configuration);
+    }
+
+    internal interface IConfiguration<T> where T : RuntimeType
+    {
     }
 }

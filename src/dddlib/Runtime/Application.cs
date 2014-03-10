@@ -22,7 +22,7 @@ namespace dddlib.Runtime
         private readonly Dictionary<Type, TypeDescriptor> typeDescriptors = new Dictionary<Type, TypeDescriptor>();
 
         private readonly ITypeConfigurationProvider typeConfigurationProvider;
-        private readonly ITypeAnalyzer typeAnalyzer;
+        private readonly ITypeAnalyzer2 typeAnalyzer;
 
         private bool isDisposed = false;
 
@@ -34,7 +34,7 @@ namespace dddlib.Runtime
         {
         }
 
-        internal Application(ITypeConfigurationProvider typeConfigurationProvider, ITypeAnalyzer typeAnalyzer)
+        internal Application(ITypeConfigurationProvider typeConfigurationProvider, ITypeAnalyzer2 typeAnalyzer)
         {
             Guard.Against.Null(() => typeConfigurationProvider);
             Guard.Against.Null(() => typeAnalyzer);
