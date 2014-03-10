@@ -21,7 +21,7 @@ namespace dddlib.Configuration
             this.dispatchEvents = false;
         }
 
-        public void RegisterAggregateRootFactory<T>(Func<T> aggregateRootFactory) where T : AggregateRoot
+        public void RegisterAggregateRootFactory<T>(Func<T> aggregateRootFactory) where T : dddlib.AggregateRoot
         {
             Guard.Against.Null(() => aggregateRootFactory);
 
@@ -35,7 +35,7 @@ namespace dddlib.Configuration
             this.aggregateRootFactories.Add(typeof(T), () => aggregateRootFactory());
         }
 
-        public void RegisterNaturalKeySelector<T, TKey>(Func<T, TKey> naturalKeySelector) where T : AggregateRoot
+        public void RegisterNaturalKeySelector<T, TKey>(Func<T, TKey> naturalKeySelector) where T : dddlib.AggregateRoot
         {
             Guard.Against.Null(() => naturalKeySelector);
             

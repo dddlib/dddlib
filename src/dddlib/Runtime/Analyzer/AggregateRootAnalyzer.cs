@@ -8,7 +8,7 @@ namespace dddlib.Runtime.Analyzer
 
     internal class AggregateRootAnalyzer
     {
-        public RuntimeAggregateRoot GetRuntimeType(Type type, TypeConfiguration configuration)
+        public AggregateRootType GetRuntimeType(Type type, TypeConfiguration configuration)
         {
             if (!typeof(AggregateRoot).IsAssignableFrom(type))
             {
@@ -20,12 +20,12 @@ namespace dddlib.Runtime.Analyzer
 
             var equalityComparer = new TypeAnalyzer().GetDescriptor(type, configuration).EqualityComparer;
 
-            var runtimeType = new RuntimeAggregateRoot
+            var runtimeType = new AggregateRootType
             {
                 Factory = configuration.AggregateRootFactory,
                 EqualityComparer = equalityComparer,
                 EventDispatcher = new DefaultEventDispatcher(type),
-                Options = new RuntimeAggregateRoot.RuntimeOptions
+                Options = new AggregateRootType.RuntimeOptions
                 {
                     PersistEvents = configuration.AggregateRootFactory == null,
                     DispatchEvents = dispatchEvents,

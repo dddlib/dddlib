@@ -15,7 +15,7 @@ namespace dddlib.Runtime
 
     internal class TypeDescriptor
     {
-        public IEventDispatcher EventDispatcher { get; internal set; }
+        public ITargetedEventDispatcher EventDispatcher { get; internal set; }
 
         public IEqualityComparer<object> EqualityComparer { get; internal set; }
 

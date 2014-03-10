@@ -1,4 +1,4 @@
-﻿// <copyright file="RuntimeAggregateRoot.cs" company="dddlib contributors">
+﻿// <copyright file="AggregateRootType.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -7,13 +7,13 @@ namespace dddlib.Runtime
     using System;
     using System.Collections.Generic;
 
-    internal class RuntimeAggregateRoot : RuntimeType
+    internal class AggregateRootType : RuntimeType
     {
         public Func<object> Factory { get; internal set; }
 
         public IEqualityComparer<object> EqualityComparer { get; internal set; }
 
-        public IEventDispatcher EventDispatcher { get; internal set; }
+        public ITargetedEventDispatcher EventDispatcher { get; internal set; }
 
         public RuntimeOptions Options { get; internal set; }
 

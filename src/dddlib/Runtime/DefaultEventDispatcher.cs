@@ -23,7 +23,7 @@ namespace dddlib.Runtime
     /// <summary>
     /// Represents the default event dispatcher.
     /// </summary>
-    public sealed class DefaultEventDispatcher : IEventDispatcher
+    internal sealed class DefaultEventDispatcher : ITargetedEventDispatcher
     {
         private static readonly string ApplyMethodName = GetApplyMethodName();
 

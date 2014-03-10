@@ -92,12 +92,12 @@ namespace dddlib.Runtime
         {
             var typeConfiguration = this.typeConfigurationProvider.GetConfiguration(type);
             var typeDescriptor = new dddlib.Runtime.Analyzer.AggregateRootAnalyzer().GetRuntimeType(type, typeConfiguration);
-            var runtimeType = new RuntimeAggregateRoot
+            var runtimeType = new AggregateRootType
             {
                 EqualityComparer = typeDescriptor.EqualityComparer,
                 EventDispatcher = typeDescriptor.EventDispatcher,
                 Factory = typeDescriptor.Factory,
-                Options = new RuntimeAggregateRoot.RuntimeOptions
+                Options = new AggregateRootType.RuntimeOptions
                 {
                     DispatchEvents = true,
                     PersistEvents = typeDescriptor.Factory != null,

@@ -123,7 +123,7 @@ namespace dddlib.Runtime
             return descriptor;
         }
 
-        private class NullEventDispatcher : IEventDispatcher
+        private class NullEventDispatcher : ITargetedEventDispatcher
         {
             public void Dispatch(object target, object @event)
             {

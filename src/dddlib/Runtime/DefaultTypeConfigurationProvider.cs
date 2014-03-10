@@ -20,7 +20,7 @@ namespace dddlib.Runtime
     /// <summary>
     /// Represents the default type configuration provider.
     /// </summary>
-    public class DefaultTypeConfigurationProvider : ITypeConfigurationProvider
+    internal class DefaultTypeConfigurationProvider : ITypeConfigurationProvider
     {
         private readonly Dictionary<Assembly, AssemblyConfiguration> assemblyConfigurations = new Dictionary<Assembly, AssemblyConfiguration>();
         private readonly Dictionary<Type, TypeConfiguration> typeConfigurations = new Dictionary<Type, TypeConfiguration>();

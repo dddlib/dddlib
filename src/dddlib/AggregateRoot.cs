@@ -23,7 +23,7 @@ namespace dddlib
     {
         private readonly List<object> events = new List<object>();
         
-        private readonly RuntimeAggregateRoot runtime;
+        private readonly AggregateRootType runtime;
 
         private string state;
         private bool isDestroyed;
@@ -33,7 +33,7 @@ namespace dddlib
         /// </summary>
         protected AggregateRoot()
         {
-            this.runtime = Application.Current.Get<RuntimeAggregateRoot>(this.GetType());
+            this.runtime = Application.Current.Get<AggregateRootType>(this.GetType());
         }
 
         internal string State

@@ -9,13 +9,13 @@ namespace dddlib.Runtime
     /// <summary>
     /// Represents the type configuration.
     /// </summary>
-    public sealed class TypeConfiguration
+    internal sealed class TypeConfiguration
     {
         /// <summary>
         /// Gets or sets the event dispatcher.
         /// </summary>
         /// <value>The event dispatcher.</value>
-        public IEventDispatcher EventDispatcher { get; set; }
+        public ITargetedEventDispatcher EventDispatcher { get; set; }
 
         /// <summary>
         /// Gets or sets the aggregate root factory.
