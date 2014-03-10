@@ -5,6 +5,7 @@
 namespace dddlib.Configuration
 {
     using System;
+    using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
 
     /*  NOTE (Cameron): 
@@ -15,6 +16,7 @@ namespace dddlib.Configuration
     /// Exposes the public members of the aggregate roots configuration.
     /// </summary>
     /// <typeparam name="TConfiguration">The type of the configuration.</typeparam>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public interface IConfigureAggregateRoots<TConfiguration> : IFluentExtensions
         where TConfiguration : IConfigureAggregateRoots<TConfiguration>
     {
@@ -37,6 +39,7 @@ namespace dddlib.Configuration
     /// </summary>
     /// <typeparam name="TConfiguration">The type of the configuration.</typeparam>
     /// <typeparam name="T">The type of aggregate root.</typeparam>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public interface IConfigureAggregateRoot<TConfiguration, T> : IConfigureEntity<TConfiguration, T>, IFluentExtensions
         where T : AggregateRoot
         where TConfiguration : IConfigureAggregateRoot<TConfiguration, T>
@@ -67,6 +70,7 @@ namespace dddlib.Configuration
     /// <summary>
     /// Exposes the public members of the aggregate roots configuration.
     /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public interface IConfigureAggregateRoots : IConfigureAggregateRoots<IConfigureAggregateRoots>, IFluentExtensions
     {
     }
@@ -75,6 +79,7 @@ namespace dddlib.Configuration
     /// Exposes the public members of the aggregate root configuration.
     /// </summary>
     /// <typeparam name="T">The type of aggregate root.</typeparam>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public interface IConfigureAggregateRoot<T> : IConfigureAggregateRoot<IConfigureAggregateRoot<T>, T>, IFluentExtensions
         where T : AggregateRoot
     {
