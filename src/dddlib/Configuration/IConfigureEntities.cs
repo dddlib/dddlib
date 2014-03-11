@@ -31,13 +31,21 @@ namespace dddlib.Configuration
         TConfiguration ToUseNaturalKey<TKey>(Func<T, TKey> naturalKeySelector);
 
         /// <summary>
-        /// Configures the runtime to assign the natural key of entity using the specified natural key selector.
+        /// Configures the runtime to assign the natural key of entity using the specified natural key selector and equality comparer.
         /// </summary>
         /// <typeparam name="TKey">The type of the key.</typeparam>
         /// <param name="naturalKeySelector">The natural key selector.</param>
         /// <param name="equalityComparer">The equality comparer for the natural key.</param>
         /// <returns>The configuration.</returns>
         TConfiguration ToUseNaturalKey<TKey>(Func<T, TKey> naturalKeySelector, IEqualityComparer<TKey> equalityComparer);
+
+        /// <summary>
+        /// Configures the runtime to assign the natural key of entity using the specified natural key equality comparer.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <param name="equalityComparer">The equality comparer for the natural key.</param>
+        /// <returns>The configuration.</returns>
+        TConfiguration ToUseNaturalKeyEqualityComparer<TKey>(IEqualityComparer<TKey> equalityComparer);
     }
 
     [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1124:DoNotUseRegions", Justification = "Here the code is meant to be hidden.")]

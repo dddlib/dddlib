@@ -4,7 +4,13 @@
 
 namespace dddlib.Runtime.Analyzer
 {
+    using System;
+    using System.Collections.Generic;
+
     internal class EntityConfiguration
     {
+        public Func<object, object> NaturalKeySelector { get; set; }
+
+        public IEqualityComparer<object> NaturalKeyEqualityComparer { get; set; }
     }
 }

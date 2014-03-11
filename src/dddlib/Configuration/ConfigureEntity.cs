@@ -22,5 +22,10 @@ namespace dddlib.Configuration
         {
             return this;
         }
+
+        public IConfigureEntity<T> ToUseNaturalKeyEqualityComparer<TKey>(System.Collections.Generic.IEqualityComparer<TKey> equalityComparer)
+        {
+            return this;
+        }
     }
 }

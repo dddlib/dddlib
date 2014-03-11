@@ -35,5 +35,10 @@ namespace dddlib.Configuration
             this.configuration.RegisterNaturalKeySelector(naturalKeySelector);
             return this;
         }
+
+        public IConfigureAggregateRoot<T> ToUseNaturalKeyEqualityComparer<TKey>(System.Collections.Generic.IEqualityComparer<TKey> equalityComparer)
+        {
+            return this;
+        }
     }
 }
