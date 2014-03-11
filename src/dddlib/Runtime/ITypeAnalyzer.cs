@@ -4,12 +4,14 @@
 
 namespace dddlib.Runtime
 {
+    using System;
+
     internal interface ITypeAnalyzer<T> where T : RuntimeType
     {
-        T Get(TypeAnalyzer type, IConfiguration<T> configuration);
+        T Get(Type type, Configuration<T> configuration);
     }
 
-    internal interface IConfiguration<T> where T : RuntimeType
+    internal class Configuration<T> where T : RuntimeType
     {
     }
 }

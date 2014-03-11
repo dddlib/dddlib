@@ -52,8 +52,13 @@
     <Compile Include="BusinessException.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="Runtime\Analyzer\AggregateRootAnalyzer.cs" />
+    <Compile Include="Runtime\Analyzer\AggregateRootConfiguration.cs" />
+    <Compile Include="Runtime\Analyzer\EntityAnalyzer.cs" />
+    <Compile Include="Runtime\Analyzer\EntityConfiguration.cs" />
     <Compile Include="Runtime\Analyzer\EntityType.cs" />
     <Compile Include="Runtime\Analyzer\RuntimeType.cs" />
+    <Compile Include="Runtime\Analyzer\ValueObjectAnalyzer.cs" />
+    <Compile Include="Runtime\Analyzer\ValueObjectConfiguration.cs" />
     <Compile Include="Runtime\Analyzer\ValueObjectType.cs" />
     <Compile Include="Runtime\Analyzer\AggregateRootType.cs" />
     <Compile Include="Configuration\AssemblyConfiguration.cs" />

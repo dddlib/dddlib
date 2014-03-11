@@ -7,11 +7,9 @@ namespace dddlib.Runtime
     using System;
     using System.Collections.Generic;
 
-    internal class AggregateRootType : RuntimeType
+    internal class AggregateRootType : EntityType
     {
         public Func<object> Factory { get; internal set; }
-
-        public IEqualityComparer<object> EqualityComparer { get; internal set; }
 
         public ITargetedEventDispatcher EventDispatcher { get; internal set; }
 
