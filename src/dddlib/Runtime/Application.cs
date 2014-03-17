@@ -88,23 +88,15 @@ namespace dddlib.Runtime
             }
         }
 
-        internal T Get<T>(Type type) where T : RuntimeType
+        internal AggregateRootType GetAggregateRootType(Type type)
         {
-            var typeConfiguration = this.typeConfigurationProvider.GetConfiguration(type);
-            var typeDescriptor = new dddlib.Runtime.Analyzer.AggregateRootAnalyzer().GetRuntimeType(type, typeConfiguration);
-            var runtimeType = new AggregateRootType
-            {
-                EqualityComparer = typeDescriptor.EqualityComparer,
-                EventDispatcher = typeDescriptor.EventDispatcher,
-                Factory = typeDescriptor.Factory,
-                Options = new AggregateRootType.RuntimeOptions
-                {
-                    DispatchEvents = true,
-                    PersistEvents = typeDescriptor.Factory != null,
-                }
-            };
+            var bootstrapper = new Bootstrapper();
+            var typeAnalyzer = new AggregateRootAnalyzer();
+            var manager = new AggregateRootConfigurationManager();
+            var configProvider = new AggregateRootConfigurationProvider(bootstrapper, typeAnalyzer, manager);
+            var factory = new AggregateRootTypeFactory(configProvider);
 
-            return runtimeType as T;
+            return factory.Create(type);
         }
 
         internal TypeDescriptor GetTypeDescriptor(Type type)

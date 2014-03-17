@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Runtime.Analyzer
+namespace dddlib.Runtime
 {
     using System;
     using System.Collections.Generic;
@@ -11,13 +11,8 @@ namespace dddlib.Runtime.Analyzer
 
     internal class EntityAnalyzer
     {
-        public EntityType GetRuntimeType(Type type, EntityConfiguration configuration)
+        public EntityType GetConfiguration(Type type)
         {
-            if (!typeof(Entity).IsAssignableFrom(type))
-            {
-                throw new Exception();
-            }
-
             var naturalKey = default(NaturalKey);
             foreach (var subType in new[] { type }.Traverse(t => t.BaseType == typeof(Entity) ? null : new[] { t.BaseType }))
             {
@@ -65,12 +60,10 @@ namespace dddlib.Runtime.Analyzer
             }
 
             // TODO (Cameron): Get equality comparer from config.
-            var runtimeType = new EntityType
+            return new EntityType
             {
-                EqualityComparer = EqualityComparer<object>.Default,
+                NaturalKeyEqualityComparer = EqualityComparer<object>.Default,
             };
-
-            return runtimeType;
         }
     }
 }
