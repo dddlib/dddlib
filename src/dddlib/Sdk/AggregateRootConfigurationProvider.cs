@@ -48,7 +48,7 @@ namespace dddlib.Runtime
 
         private AggregateRootConfiguration GetTypeConfiguration(Type type)
         {
-            var bootstrapperConfiguration = this.bootstrapper.GetConfiguration(type);
+            var bootstrapperConfiguration = this.bootstrapper.GetAggregateRootConfiguration(type);
             var typeAnalyzerConfiguration = this.typeAnalyzer.GetConfiguration(type);
 
             return new[] { bootstrapperConfiguration, typeAnalyzerConfiguration }.Combine();

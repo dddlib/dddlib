@@ -99,6 +99,17 @@ namespace dddlib.Runtime
             return factory.Create(type);
         }
 
+        internal EntityType GetEntityType(Type type)
+        {
+            var bootstrapper = new Bootstrapper();
+            var typeAnalyzer = new EntityAnalyzer();
+            var manager = new EntityConfigurationManager();
+            var configProvider = new EntityConfigurationProvider(bootstrapper, typeAnalyzer, manager);
+            var factory = new EntityTypeFactory(configProvider);
+
+            return factory.Create(type);
+        }
+
         internal TypeDescriptor GetTypeDescriptor(Type type)
         {
             Guard.Against.Null(() => type);

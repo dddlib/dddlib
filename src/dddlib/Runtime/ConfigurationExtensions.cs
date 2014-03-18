@@ -21,6 +21,17 @@ namespace dddlib.Runtime
             };
         }
 
+        public static EntityConfiguration Combine(this IEnumerable<EntityConfiguration> values)
+        {
+            return new EntityConfiguration
+            {
+                NaturalKeySelector = values.Select(value => value.NaturalKeySelector).CombineValues(),
+                NaturalKeyEqualityComparer = values.Select(value => value.NaturalKeyEqualityComparer).CombineValues(),
+                ////NaturalKeySelector = values.Select(value => value.NaturalKeySelector).CombineValues(),
+                ////NaturalKeyEqualityComparer = values.Select(value => value.NaturalKeyEqualityComparer).CombineValues(),
+            };
+        }
+
         private static T CombineValues<T>(this IEnumerable<T> values) where T : class
         {
             return CombineValues(values, value => value != null);

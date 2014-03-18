@@ -11,7 +11,7 @@ namespace dddlib.Runtime
 
     internal class EntityAnalyzer
     {
-        public EntityType GetConfiguration(Type type)
+        public EntityConfiguration GetConfiguration(Type type)
         {
             var naturalKey = default(NaturalKey);
             foreach (var subType in new[] { type }.Traverse(t => t.BaseType == typeof(Entity) ? null : new[] { t.BaseType }))
@@ -56,11 +56,11 @@ namespace dddlib.Runtime
                 ////        string.Format(CultureInfo.InvariantCulture, "The entity of type '{0}' does not have a natural key defined.", type.Name));
                 ////}
 
-                return new EntityType();
+                return new EntityConfiguration();
             }
 
             // TODO (Cameron): Get equality comparer from config.
-            return new EntityType
+            return new EntityConfiguration
             {
                 NaturalKeyEqualityComparer = EqualityComparer<object>.Default,
             };

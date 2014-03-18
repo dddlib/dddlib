@@ -23,9 +23,9 @@ namespace dddlib
         /// </summary>
         protected Entity()
         {
-            var typeDescriptor = Application.Current.GetTypeDescriptor(this.GetType());
+            var typeDescriptor = Application.Current.GetEntityType(this.GetType());
 
-            this.equalityComparer = typeDescriptor.EqualityComparer;
+            this.equalityComparer = typeDescriptor.NaturalKeyEqualityComparer;
         }
 
         [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible anywhere.")]

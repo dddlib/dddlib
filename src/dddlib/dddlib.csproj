@@ -57,10 +57,13 @@
     <Compile Include="Sdk\AggregateRootConfigurationProvider.cs" />
     <Compile Include="Sdk\AggregateRootTypeFactory.cs" />
     <Compile Include="Sdk\AggregateRootType.cs" />
+    <Compile Include="Sdk\EntityConfigurationManager.cs" />
+    <Compile Include="Sdk\EntityConfigurationProvider.cs" />
     <Compile Include="Sdk\EntityType.cs" />
     <Compile Include="Runtime\Bootstrapper.cs" />
     <Compile Include="Sdk\EntityAnalyzer.cs" />
     <Compile Include="Sdk\EntityConfiguration.cs" />
+    <Compile Include="Sdk\EntityTypeFactory.cs" />
     <Compile Include="Sdk\ValueObjectAnalyzer.cs" />
     <Compile Include="Sdk\ValueObjectConfiguration.cs" />
     <Compile Include="Configuration\AssemblyConfiguration.cs" />

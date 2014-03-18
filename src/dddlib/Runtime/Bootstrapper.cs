@@ -8,7 +8,7 @@ namespace dddlib.Runtime
 
     internal class Bootstrapper
     {
-        public AggregateRootConfiguration GetConfiguration(Type type)
+        public AggregateRootConfiguration GetAggregateRootConfiguration(Type type)
         {
             var x = new DefaultTypeConfigurationProvider();
             var y = x.GetConfiguration(type);
@@ -16,6 +16,13 @@ namespace dddlib.Runtime
             {
                 Factory = y.AggregateRootFactory,
                 ApplyMethodName = null,
+            };
+        }
+
+        public EntityConfiguration GetEntityConfiguration(Type type)
+        {
+            return new EntityConfiguration
+            {
             };
         }
     }
