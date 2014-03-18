@@ -10,7 +10,13 @@ namespace dddlib.Runtime
     {
         public AggregateRootConfiguration GetConfiguration(Type type)
         {
-            return null;
+            var x = new DefaultTypeConfigurationProvider();
+            var y = x.GetConfiguration(type);
+            return new AggregateRootConfiguration
+            {
+                Factory = y.AggregateRootFactory,
+                ApplyMethodName = null,
+            };
         }
     }
 }

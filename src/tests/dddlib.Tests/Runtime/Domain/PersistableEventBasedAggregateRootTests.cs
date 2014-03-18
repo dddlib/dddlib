@@ -61,7 +61,7 @@ namespace dddlib.Tests.Runtime
             }
         }
 
-        [Fact]
+        [Fact(Skip = "Not sure this is correct any more.")]
         public void CreateWithPersistableEventBasedConfiguration()
         {
             // arrange

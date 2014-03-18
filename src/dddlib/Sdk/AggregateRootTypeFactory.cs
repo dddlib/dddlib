@@ -39,6 +39,11 @@ namespace dddlib.Runtime
             {
                 Factory = configuration.Factory,
                 EventDispatcher = new DefaultEventDispatcher(type),
+                Options = new AggregateRootType.RuntimeOptions
+                {
+                    DispatchEvents = true, // unless there's no handlers for this type at all
+                    PersistEvents = configuration.Factory != null,
+                }
             };
         }
     }
