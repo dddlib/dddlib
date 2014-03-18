@@ -7,7 +7,7 @@ namespace dddlib.Runtime
     using System;
     using System.Collections.Generic;
 
-    internal class AggregateRootType : EntityType
+    internal class AggregateRootType
     {
         public Func<object> Factory { get; internal set; }
 

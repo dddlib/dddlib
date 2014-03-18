@@ -4,10 +4,13 @@
 
 namespace dddlib.Runtime
 {
+    using System;
     using System.Collections.Generic;
 
-    internal class EntityType : RuntimeType
+    internal class EntityType
     {
-        public IEqualityComparer<object> EqualityComparer { get; internal set; }
+        public Func<object, object> NaturalKeySelector { get; internal set; }
+
+        public IEqualityComparer<object> NaturalKeyEqualityComparer { get; internal set; }
     }
 }
