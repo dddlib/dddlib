@@ -1,17 +1,17 @@
-﻿// <copyright file="AggregateRootTests.cs" company="dddlib contributors">
+﻿// <copyright file="AggregateRootTests2.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
 namespace dddlib.Tests.Acceptance
 {
     using System;
-using System.Collections.Generic;
-using dddlib.Configuration;
-using dddlib.Runtime;
-using FluentAssertions;
-using Xbehave;
+    using System.Collections.Generic;
+    using dddlib.Configuration;
+    using dddlib.Runtime;
+    using FluentAssertions;
+    using Xbehave;
 
-    public class AggregateRootTests
+    public class AggregateRootTests2
     {
         [Background]
         public void Background()

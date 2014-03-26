@@ -35,11 +35,14 @@
     <None Include="..\..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
+    <Compile Include="RuntimeTests.NaturalKeySerializerTest.cs" />
+    <Compile Include="RuntimeTests.NaturalKeyTest.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <Compile Include="Acceptance\AggregateRootTests.cs" />
+    <Compile Include="Acceptance\AggregateRootTests2.cs" />
+    <Compile Include="RuntimeTests.cs" />
     <Compile Include="Unit\AggregateRootTests.cs" />
     <Compile Include="Unit\BusinessExceptionTests.cs" />
     <Compile Include="Unit\EntityTests.cs" />

@@ -1,38 +1,34 @@
-Default event dispatcher to be public and overridable.
-and to take method name as parameter?
+Default event dispatcher to take method name as parameter?
+And to handle different method names for different base types
 
 Functionality:
 Can change name of aggregate apply method
-Can change whole invocation process -> EventDispatcher (more func args required)?
+Can change invocation process by specifying an EventDispatcher (not targeted) upon application instantiation
 
-NaturalKey attribute required for reconstitution on AggregateRoot
-Optional NaturalKey required for each entity
 Default ValueObject should be best-effort deep value equality (overridable)
 
 DefaultEventDispatcher - takes method name as argument
 MementoEventDispatcher - takes method name as argument
 MicrobusEventDispatcher - takes nested event dispatcher as argument
 
+=========== NOTES ===========
+
+
+
+
+
+
 Event-based
 Record events for persistence - requires factories
 Do not record events for persistence - factories not required
 
 
-=========== NEW ===========
-Rework configuration - it should be explicit, not inferred
-Create test suite for these dimensions:
-Type (configuration)
-Type (aggregate root, entity, value object) as coded
-
-Something like this
-
-Given a configuration for event-based non-persisting
-When I create an aggregate for non event-based
-Then the runtime throws an exception
+NaturalKey attribute required for reconstitution on AggregateRoot
+Optional NaturalKey required for each entity
 
 
 
-========== TESTS ==========
-Configuration sub-system (hard)
-Application hosting (easy)
-Domain behaviour
+
+Aggregate Root		UnititializedFactory, NaturalKeySerializer, ApplyMethodName
+Entity				NaturalKey, EqualityComparer<NaturalKey>
+Value Object		EqualityComparer<ValueObject>
