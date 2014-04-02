@@ -1,9 +1,6 @@
-﻿// <copyright file="IConfigureEntities.cs" company="dddlib contributors">
+﻿// <copyright file="IConfigureEntity.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
-
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "StyleCop.CSharp.DocumentationRules", "SA1649:FileHeaderFileNameDocumentationMustMatchTypeName", Scope = "Module", Justification = "Reviewed.")]
 
 namespace dddlib.Configuration
 {
@@ -31,21 +28,12 @@ namespace dddlib.Configuration
         TConfiguration ToUseNaturalKey<TKey>(Func<T, TKey> naturalKeySelector);
 
         /// <summary>
-        /// Configures the runtime to assign the natural key of entity using the specified natural key selector and equality comparer.
+        /// Configures the runtime to assign the natural key of entity using the specified natural key selector and string equality comparer.
         /// </summary>
-        /// <typeparam name="TKey">The type of the key.</typeparam>
         /// <param name="naturalKeySelector">The natural key selector.</param>
-        /// <param name="equalityComparer">The equality comparer for the natural key.</param>
+        /// <param name="equalityComparer">The string equality comparer for the natural key.</param>
         /// <returns>The configuration.</returns>
-        TConfiguration ToUseNaturalKey<TKey>(Func<T, TKey> naturalKeySelector, IEqualityComparer<TKey> equalityComparer);
-
-        /// <summary>
-        /// Configures the runtime to assign the natural key of entity using the specified natural key equality comparer.
-        /// </summary>
-        /// <typeparam name="TKey">The type of the key.</typeparam>
-        /// <param name="equalityComparer">The equality comparer for the natural key.</param>
-        /// <returns>The configuration.</returns>
-        TConfiguration ToUseNaturalKeyEqualityComparer<TKey>(IEqualityComparer<TKey> equalityComparer);
+        TConfiguration ToUseNaturalKey(Func<T, string> naturalKeySelector, IEqualityComparer<string> equalityComparer);
     }
 
     [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1124:DoNotUseRegions", Justification = "Here the code is meant to be hidden.")]

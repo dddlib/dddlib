@@ -70,10 +70,9 @@
     <Compile Include="Configuration\AssemblyConfiguration.cs" />
     <Compile Include="Configuration\BootstrapperConfiguration.cs" />
     <Compile Include="Configuration\ConfigureAggregateRoot.cs" />
-    <Compile Include="Configuration\ConfigureAggregateRoots.cs" />
     <Compile Include="Configuration\ConfigureEntity.cs" />
-    <Compile Include="Configuration\IConfigureAggregateRoots.cs" />
-    <Compile Include="Configuration\IConfigureEntities.cs" />
+    <Compile Include="Configuration\IConfigureAggregateRoot.cs" />
+    <Compile Include="Configuration\IConfigureEntity.cs" />
     <Compile Include="Configuration\IFluentExtensions.cs" />
     <Compile Include="Runtime\EnumerableExtensions.cs" />
     <Compile Include="Guard.cs" />

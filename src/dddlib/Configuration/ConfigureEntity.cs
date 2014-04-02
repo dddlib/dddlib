@@ -18,12 +18,7 @@ namespace dddlib.Configuration
             return this;
         }
 
-        public IConfigureEntity<T> ToUseNaturalKey<TKey>(Func<T, TKey> naturalKeySelector, System.Collections.Generic.IEqualityComparer<TKey> equalityComparer)
-        {
-            return this;
-        }
-
-        public IConfigureEntity<T> ToUseNaturalKeyEqualityComparer<TKey>(System.Collections.Generic.IEqualityComparer<TKey> equalityComparer)
+        public IConfigureEntity<T> ToUseNaturalKey(Func<T, string> naturalKeySelector, System.Collections.Generic.IEqualityComparer<string> equalityComparer)
         {
             return this;
         }

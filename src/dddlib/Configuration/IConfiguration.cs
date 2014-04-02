@@ -14,12 +14,6 @@ namespace dddlib.Configuration
     public interface IConfiguration : IFluentExtensions
     {
         /// <summary>
-        /// Gets the aggregate roots configuration options.
-        /// </summary>
-        /// <value>The aggregate roots configuration options.</value>
-        IConfigureAggregateRoots AggregateRoots { get; }
-
-        /// <summary>
         /// Gets the aggregate root configuration options for the specified type of aggregate root.
         /// </summary>
         /// <typeparam name="T">The type of aggregate root.</typeparam>

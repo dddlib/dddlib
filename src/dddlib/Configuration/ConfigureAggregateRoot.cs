@@ -30,14 +30,9 @@ namespace dddlib.Configuration
             return this;
         }
 
-        public IConfigureAggregateRoot<T> ToUseNaturalKey<TKey>(Func<T, TKey> naturalKeySelector, System.Collections.Generic.IEqualityComparer<TKey> equalityComparer)
+        public IConfigureAggregateRoot<T> ToUseNaturalKey(Func<T, string> naturalKeySelector, System.Collections.Generic.IEqualityComparer<string> equalityComparer)
         {
             this.configuration.RegisterNaturalKeySelector(naturalKeySelector);
-            return this;
-        }
-
-        public IConfigureAggregateRoot<T> ToUseNaturalKeyEqualityComparer<TKey>(System.Collections.Generic.IEqualityComparer<TKey> equalityComparer)
-        {
             return this;
         }
     }

@@ -20,11 +20,6 @@ namespace dddlib.Configuration
             get { return this.assemblyConfiguration; }
         }
 
-        public IConfigureAggregateRoots AggregateRoots
-        {
-            get { return new ConfigureAggregateRoots(this.assemblyConfiguration); }
-        }
-
         public IConfigureAggregateRoot<T> AggregateRoot<T>() where T : AggregateRoot
         {
             return new ConfigureAggregateRoot<T>(this.assemblyConfiguration);
