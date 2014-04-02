@@ -32,3 +32,12 @@ Optional NaturalKey required for each entity
 Aggregate Root		UnititializedFactory, NaturalKeySerializer, ApplyMethodName
 Entity				NaturalKey, EqualityComparer<NaturalKey>
 Value Object		EqualityComparer<ValueObject>
+
+
+
+
+TESTS
+=====
+
+
+

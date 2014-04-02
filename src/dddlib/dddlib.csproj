@@ -59,6 +59,7 @@
     <Compile Include="Sdk\AggregateRootType.cs" />
     <Compile Include="Sdk\EntityConfigurationManager.cs" />
     <Compile Include="Sdk\EntityConfigurationProvider.cs" />
+    <Compile Include="Sdk\ValueObjectType.cs" />
     <Compile Include="Sdk\EntityType.cs" />
     <Compile Include="Runtime\Bootstrapper.cs" />
     <Compile Include="Sdk\EntityAnalyzer.cs" />

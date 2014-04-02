@@ -35,7 +35,16 @@
     <None Include="..\..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
+    <Compile Include="Acceptance\AggregateRootPersistenceFeature.cs" />
+    <Compile Include="Acceptance\EntityEqualityFeature.cs" />
+    <Compile Include="Acceptance\ValueObjectEqualityFeature.cs" />
+    <Compile Include="Sdk\AggregateRootTest.cs" />
+    <Compile Include="Sdk\EntityTest.cs" />
+    <Compile Include="Sdk\IBootstrap.cs" />
+    <Compile Include="Sdk\Test.cs" />
+    <Compile Include="Sdk\ValueObjectTest.cs" />
     <Compile Include="RuntimeTests.NaturalKeySerializerTest.cs" />
+    <Compile Include="NaturalKeyTest.cs" />
     <Compile Include="RuntimeTests.NaturalKeyTest.cs" />
     <None Include="packages.config" />
   </ItemGroup>
