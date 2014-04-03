@@ -4,6 +4,13 @@
 
 namespace dddlib.Tests.Acceptance
 {
+    using System;
+    using dddlib.Configuration;
+    using dddlib.Runtime;
+    using dddlib.Tests.Sdk;
+    using FluentAssertions;
+    using Xbehave;
+
     public class EntityEqualityFeature
     {
         /*
@@ -31,6 +38,68 @@ namespace dddlib.Tests.Acceptance
             with natural key selector (undefined in subclass)
 
             [all entity equality tests should also work for aggregate roots]
+            [consider inheritence]
         */
+
+        public class UndefinedNaturalKeySelector
+        {
+            ////[Scenario]
+            public void EntityTests(Type type)
+            {
+                var entityType = default(EntityType);
+
+                "Given a type with an undefined natural key selector"
+                    .Given(() => type = typeof(Subject));
+
+                "When the application is used to get the entity type"
+                    .When(() => entityType = Application.Current.GetEntityType(type));
+
+                "Then the entity type natural key selector should be null"
+                    .Then(() => entityType.NaturalKeySelector.Should().BeNull());
+            }
+
+            public class Subject : Entity
+            {
+                public string NaturalKey { get; set; }
+            }
+        }
+
+        public class ConflictingNaturalKeySelectors
+        {
+            ////[Scenario]
+            public void EntityTests(Type type, Action action)
+            {
+                "Given an instance of the ambient application"
+                    .Given(() =>
+                    {
+                        new Application().Using();
+                    });
+
+                "And a type with conflicting natural key selectors"
+                    .And(() => type = typeof(Subject));
+
+                "When the application is used to get the entity type"
+                    .When(() => action = () => Application.Current.GetEntityType(type));
+
+                "Then a runtime exception should be thrown"
+                    .Then(() => action.ShouldThrow<RuntimeException>());
+            }
+
+            public class Subject : Entity
+            {
+                [NaturalKey]
+                public string NaturalKey { get; set; }
+
+                public string NotNaturalKey { get; set; }
+            }
+
+            private class BootStrapper : IBootstrap<Subject>
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.Entity<Subject>().ToUseNaturalKey(subject => subject.NotNaturalKey);
+                }
+            }
+        }
     }
 }

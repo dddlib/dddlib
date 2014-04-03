@@ -34,7 +34,7 @@ namespace dddlib.Persistence
             where T : AggregateRoot
         {
             // TODO (Cameron): Make this more performant. Consider using some type of IL instantiation.
-            var typeDescriptor = Application.Current.GetTypeDescriptor(typeof(T));
+            var typeDescriptor = Application.Current.GetAggregateRootType(typeof(T));
             if (typeDescriptor.Factory == null)
             {
                 throw new RuntimeException(
