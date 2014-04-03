@@ -90,8 +90,8 @@ namespace dddlib.Runtime
 
         internal AggregateRootType GetAggregateRootType(Type type)
         {
-            var bootstrapper = new Bootstrapper();
-            var typeAnalyzer = new AggregateRootAnalyzer();
+            var bootstrapper = new Bootstrapper();          // .GetConfig(type) for IBootstrapper
+            var typeAnalyzer = new AggregateRootAnalyzer(); // .GetConfig(type) for type
             var manager = new AggregateRootConfigurationManager();
             var configProvider = new AggregateRootConfigurationProvider(bootstrapper, typeAnalyzer, manager);
             var factory = new AggregateRootTypeFactory(configProvider);

@@ -10,6 +10,12 @@ namespace dddlib.Runtime
     {
         public AggregateRootConfiguration GetAggregateRootConfiguration(Type type)
         {
+            //// get the assembly for the type
+            //// get the type of bootstrapper: GetBootstrapperInstance (for a given type) <- inject lookup?
+            //// create a config to run through the bootstrapper
+            //// get the config
+            //// create a runtime config based on results
+
             var x = new DefaultTypeConfigurationProvider();
             var y = x.GetConfiguration(type);
             return new AggregateRootConfiguration
