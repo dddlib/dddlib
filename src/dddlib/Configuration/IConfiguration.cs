@@ -26,5 +26,12 @@ namespace dddlib.Configuration
         /// <typeparam name="T">The type of entity.</typeparam>
         /// <returns>The entity configuration options.</returns>
         IConfigureEntity<T> Entity<T>() where T : Entity;
+
+        /// <summary>
+        /// Gets the value object configuration options for the specified type of value object.
+        /// </summary>
+        /// <typeparam name="T">The type of value object.</typeparam>
+        /// <returns>The value object configuration options.</returns>
+        IConfigureValueObject<T> ValueObject<T>() where T : ValueObject<T>;
     }
 }

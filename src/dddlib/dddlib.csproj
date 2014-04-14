@@ -50,6 +50,8 @@
     </Compile>
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="BusinessException.cs" />
+    <Compile Include="Configuration\IConfigureValueObject.cs" />
+    <Compile Include="Configuration\ValueObjectConfiguration.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="Sdk\AggregateRootConfigurationManager.cs" />
     <Compile Include="Sdk\AggregateRootAnalyzer.cs" />

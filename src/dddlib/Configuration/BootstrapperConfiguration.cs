@@ -29,5 +29,10 @@ namespace dddlib.Configuration
         {
             return new ConfigureEntity<T>(this.assemblyConfiguration);
         }
+
+        public IConfigureValueObject<T> ValueObject<T>() where T : ValueObject<T>
+        {
+            return new ValueObjectConfiguration<T>();
+        }
     }
 }

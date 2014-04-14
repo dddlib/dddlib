@@ -75,6 +75,19 @@ namespace dddlib
         }
 
         /// <summary>
+        /// Maps the specified value to the specified type.
+        /// </summary>
+        /// <typeparam name="T">The type to map to.</typeparam>
+        /// <param name="value">The value.</param>
+        /// <returns>The mapped value.</returns>
+        //// TODO (Cameron): Sort this out.
+        protected static T Map<T>(object value)
+        {
+            // NOTE (Cameron): Should allow for pre-defined mappings to take place from value objects to common types.
+            return default(T);
+        }
+
+        /// <summary>
         /// Gets a memento representing the state of the aggregate root.
         /// </summary>
         /// <returns>A memento representing the state of the aggregate root.</returns>
