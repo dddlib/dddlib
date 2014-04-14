@@ -97,6 +97,7 @@ namespace dddlib.Tests.Acceptance
             {
                 public void Bootstrap(IConfiguration configure)
                 {
+                    // NOTE (Cameron): Configuration goes here using the 'configure' parameter.
                     configure.Entity<Subject>().ToUseNaturalKey(subject => subject.NotNaturalKey);
                 }
             }
