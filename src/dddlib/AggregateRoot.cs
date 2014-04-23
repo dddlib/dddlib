@@ -77,14 +77,16 @@ namespace dddlib
         /// <summary>
         /// Maps the specified value to the specified type.
         /// </summary>
-        /// <typeparam name="T">The type to map to.</typeparam>
+        /// <typeparam name="TOut">The type of the out.</typeparam>
+        /// <typeparam name="TIn">The type of the in.</typeparam>
         /// <param name="value">The value.</param>
         /// <returns>The mapped value.</returns>
         //// TODO (Cameron): Sort this out.
-        protected static T Map<T>(object value)
+        protected static TOut Map<TOut, TIn>(TIn value) where TIn : ValueObject<TIn>
         {
             // NOTE (Cameron): Should allow for pre-defined mappings to take place from value objects to common types.
-            return default(T);
+            // TODO (Cameron): Consider implementing as an extension method.
+            return default(TOut);
         }
 
         /// <summary>
