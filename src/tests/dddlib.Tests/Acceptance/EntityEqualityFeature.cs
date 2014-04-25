@@ -93,6 +93,7 @@ namespace dddlib.Tests.Acceptance
                 public string NotNaturalKey { get; set; }
             }
 
+            // NOTE (Cameron): This makes sense because we'll need multiples of this when we address inherited types.
             private class BootStrapper : IBootstrap<Subject>
             {
                 public void Bootstrap(IConfiguration configure)

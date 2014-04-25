@@ -93,6 +93,10 @@ namespace dddlib.Runtime
             var bootstrapper = new Bootstrapper();          // .GetConfig(type) for IBootstrapper
             var typeAnalyzer = new AggregateRootAnalyzer(); // .GetConfig(type) for type
             var manager = new AggregateRootConfigurationManager();
+
+            /*  NOTE (Cameron): The application (this class) should not need to care about where the configuration comes from.
+             *  Basically, this needs to be a minor re-write of what is below for each of the type (Aggregate, Entity, etc.) overloads
+             *  passing in a function delegate for the config provider call (or something like that) */
             var configProvider = new AggregateRootConfigurationProvider(bootstrapper, typeAnalyzer, manager);
             var factory = new AggregateRootTypeFactory(configProvider);
 
@@ -141,6 +145,7 @@ namespace dddlib.Runtime
                 var typeConfiguration = default(TypeConfiguration);
                 try
                 {
+                    // TODO (Cameron): This should be the config provider call (for each domain type).
                     typeConfiguration = this.typeConfigurationProvider.GetConfiguration(type);
                 }
                 catch (Exception ex)
@@ -160,6 +165,7 @@ namespace dddlib.Runtime
 
                 try
                 {
+                    // TODO (Cameron): This should be the factory call (for each domain config type).
                     typeDescriptor = this.typeAnalyzer.GetDescriptor(type, typeConfiguration);
                 }
                 catch (Exception ex)
