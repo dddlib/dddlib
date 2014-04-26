@@ -4,7 +4,13 @@
 
 namespace dddlib.Runtime
 {
+    using System;
+
     internal class ValueObjectAnalyzer
     {
+        public ValueObjectConfiguration GetConfiguration(Type type)
+        {
+            return new ValueObjectConfiguration();
+        }
     }
 }

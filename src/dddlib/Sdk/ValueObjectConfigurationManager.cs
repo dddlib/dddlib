@@ -1,19 +1,18 @@
-﻿// <copyright file="AggregateRootConfigurationManager.cs" company="dddlib contributors">
+﻿// <copyright file="ValueObjectConfigurationManager.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
 namespace dddlib.Runtime
 {
-    internal class AggregateRootConfigurationManager
+    internal class ValueObjectConfigurationManager
     {
-        public AggregateRootConfiguration Merge(AggregateRootConfiguration typeConfiguration, AggregateRootConfiguration baseTypeConfiguration)
+        public ValueObjectConfiguration Merge(ValueObjectConfiguration typeConfiguration, ValueObjectConfiguration baseTypeConfiguration)
         {
             // this merges the base type configuration
             // there is logic required in here
-            return new AggregateRootConfiguration
+            return new ValueObjectConfiguration
             {
-                ApplyMethodName = typeConfiguration.ApplyMethodName,
-                Factory = typeConfiguration.Factory,
+                EqualityComparer = typeConfiguration.EqualityComparer,
                 ////NaturalKeySelector = typeConfiguration.NaturalKeySelector ?? baseTypeConfiguration.NaturalKeySelector,
                 ////NaturalKeyEqualityComparer = typeConfiguration.NaturalKeyEqualityComparer ?? baseTypeConfiguration.NaturalKeyEqualityComparer,
             };

@@ -43,6 +43,13 @@ namespace dddlib.Runtime
             };
         }
 
+        public ValueObjectConfiguration GetValueObjectConfiguration(Type type)
+        {
+            return new ValueObjectConfiguration
+            {
+            };
+        }
+
         private static IBootstrapper GetBootstrapper(Type type)
         {
             var bootstrapperTypes = type.Assembly.GetTypes().Where(assemblyType => typeof(IBootstrapper).IsAssignableFrom(assemblyType));

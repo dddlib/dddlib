@@ -114,6 +114,17 @@ namespace dddlib.Runtime
             return factory.Create(type);
         }
 
+        internal ValueObjectType GetValueObjectType(Type type)
+        {
+            var bootstrapper = new Bootstrapper();
+            var typeAnalyzer = new ValueObjectAnalyzer();
+            var manager = new ValueObjectConfigurationManager();
+            var configProvider = new ValueObjectConfigurationProvider(bootstrapper, typeAnalyzer, manager);
+            var factory = new ValueObjectTypeFactory(configProvider);
+
+            return factory.Create(type);
+        }
+
         internal TypeDescriptor GetTypeDescriptor(Type type)
         {
             Guard.Against.Null(() => type);

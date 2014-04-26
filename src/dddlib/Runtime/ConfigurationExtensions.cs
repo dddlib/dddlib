@@ -32,6 +32,14 @@ namespace dddlib.Runtime
             };
         }
 
+        public static ValueObjectConfiguration Combine(this IEnumerable<ValueObjectConfiguration> values)
+        {
+            return new ValueObjectConfiguration
+            {
+                EqualityComparer = values.CombineValues(),
+            };
+        }
+
         private static T CombineValues<T>(this IEnumerable<T> values) where T : class
         {
             return CombineValues(values, value => value != null);
