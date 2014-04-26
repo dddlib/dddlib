@@ -23,7 +23,7 @@ namespace dddlib
         /// </summary>
         protected Entity()
         {
-            var typeDescriptor = Application.Current.GetEntityType(this.GetType());
+            var typeDescriptor = Application.Current.Get<EntityType>(this.GetType());
 
             this.equalityComparer = typeDescriptor.NaturalKeyEqualityComparer;
         }

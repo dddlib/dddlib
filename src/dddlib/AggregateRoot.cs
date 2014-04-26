@@ -33,7 +33,7 @@ namespace dddlib
         /// </summary>
         protected AggregateRoot()
         {
-            this.runtime = Application.Current.GetAggregateRootType(this.GetType());
+            this.runtime = Application.Current.Get<AggregateRootType>(this.GetType());
         }
 
         internal string State

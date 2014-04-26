@@ -88,6 +88,26 @@ namespace dddlib.Runtime
             }
         }
 
+        internal T Get<T>(Type type) where T : class // IDomainType
+        {
+            if (typeof(T) == typeof(AggregateRootType))
+            {
+                return this.GetAggregateRootType(type) as T;
+            }
+
+            if (typeof(T) == typeof(EntityType))
+            {
+                return this.GetEntityType(type) as T;
+            }
+
+            if (typeof(T) == typeof(ValueObjectType))
+            {
+                return this.GetValueObjectType(type) as T;
+            }
+
+            throw new NotSupportedException();
+        }
+
         internal AggregateRootType GetAggregateRootType(Type type)
         {
             var bootstrapper = new Bootstrapper();          // .GetConfig(type) for IBootstrapper
