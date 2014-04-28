@@ -19,10 +19,13 @@ namespace dddlib.Runtime
         private static readonly List<Application> Applications = new List<Application>();
         private static readonly object SyncLock = new object();
 
-        private readonly Dictionary<Type, TypeDescriptor> typeDescriptors = new Dictionary<Type, TypeDescriptor>();
+        private readonly Dictionary<Type, AggregateRootType> aggregateRootTypes = new Dictionary<Type, AggregateRootType>();
+        private readonly Dictionary<Type, EntityType> entityTypes = new Dictionary<Type, EntityType>();
+        private readonly Dictionary<Type, ValueObjectType> valueObjectTypes = new Dictionary<Type, ValueObjectType>();
 
-        private readonly ITypeConfigurationProvider typeConfigurationProvider;
-        private readonly ITypeAnalyzer2 typeAnalyzer;
+        private readonly ITypeFactory<AggregateRootType> aggregateRootTypeFactory;
+        private readonly ITypeFactory<EntityType> entityTypeFactory;
+        private readonly ITypeFactory<ValueObjectType> valueObjectTypeFactory;
 
         private bool isDisposed = false;
 
@@ -30,17 +33,22 @@ namespace dddlib.Runtime
         /// Initializes a new instance of the <see cref="Application"/> class.
         /// </summary>
         public Application()
-            : this(new DefaultTypeConfigurationProvider(), new TypeAnalyzer())
+            : this(CreateAggregateRootTypeFactory(), CreateEntityTypeFactory(), CreateValueObjectTypeFactory())
         {
         }
 
-        internal Application(ITypeConfigurationProvider typeConfigurationProvider, ITypeAnalyzer2 typeAnalyzer)
+        internal Application(
+            ITypeFactory<AggregateRootType> aggregateRootTypeFactory,
+            ITypeFactory<EntityType> entityTypeFactory,
+            ITypeFactory<ValueObjectType> valueObjectTypeFactory)
         {
-            Guard.Against.Null(() => typeConfigurationProvider);
-            Guard.Against.Null(() => typeAnalyzer);
+            Guard.Against.Null(() => aggregateRootTypeFactory);
+            Guard.Against.Null(() => entityTypeFactory);
+            Guard.Against.Null(() => valueObjectTypeFactory);
 
-            this.typeConfigurationProvider = typeConfigurationProvider;
-            this.typeAnalyzer = typeAnalyzer;
+            this.aggregateRootTypeFactory = aggregateRootTypeFactory;
+            this.entityTypeFactory = entityTypeFactory;
+            this.valueObjectTypeFactory = valueObjectTypeFactory;
 
             lock (SyncLock)
             {
@@ -88,96 +96,89 @@ namespace dddlib.Runtime
             }
         }
 
-        internal T Get<T>(Type type) where T : class // IDomainType
+        internal AggregateRootType GetAggregateRootType(Type type)
         {
-            if (typeof(T) == typeof(AggregateRootType))
+            if (!typeof(AggregateRoot).IsAssignableFrom(type))
             {
-                return this.GetAggregateRootType(type) as T;
+                throw new RuntimeException(string.Format(CultureInfo.InvariantCulture, "The specified type '{0}' is not an aggregate root.", type));
             }
 
-            if (typeof(T) == typeof(EntityType))
+            return this.GetType<AggregateRootType>(type, this.aggregateRootTypes, this.aggregateRootTypeFactory);
+        }
+        
+        internal EntityType GetEntityType(Type type)
+        {
+            if (!typeof(Entity).IsAssignableFrom(type))
             {
-                return this.GetEntityType(type) as T;
+                throw new RuntimeException(string.Format(CultureInfo.InvariantCulture, "The specified type '{0}' is not an entity.", type));
             }
 
-            if (typeof(T) == typeof(ValueObjectType))
-            {
-                return this.GetValueObjectType(type) as T;
-            }
-
-            throw new NotSupportedException();
+            return this.GetType<EntityType>(type, this.entityTypes, this.entityTypeFactory);
         }
 
-        internal AggregateRootType GetAggregateRootType(Type type)
+        internal ValueObjectType GetValueObjectType(Type type)
+        {
+            if (!typeof(ValueObject<>).IsAssignableFrom(type))
+            {
+                throw new RuntimeException(string.Format(CultureInfo.InvariantCulture, "The specified type '{0}' is not a value object.", type));
+            }
+
+            return this.GetType<ValueObjectType>(type, this.valueObjectTypes, this.valueObjectTypeFactory);
+        }
+
+        private static ITypeFactory<AggregateRootType> CreateAggregateRootTypeFactory()
         {
             var bootstrapper = new Bootstrapper();          // .GetConfig(type) for IBootstrapper
             var typeAnalyzer = new AggregateRootAnalyzer(); // .GetConfig(type) for type
             var manager = new AggregateRootConfigurationManager();
-
-            /*  NOTE (Cameron): The application (this class) should not need to care about where the configuration comes from.
-             *  Basically, this needs to be a minor re-write of what is below for each of the type (Aggregate, Entity, etc.) overloads
-             *  passing in a function delegate for the config provider call (or something like that) */
             var configProvider = new AggregateRootConfigurationProvider(bootstrapper, typeAnalyzer, manager);
-            var factory = new AggregateRootTypeFactory(configProvider);
-
-            return factory.Create(type);
+            return new AggregateRootTypeFactory(configProvider);
         }
 
-        internal EntityType GetEntityType(Type type)
+        private static ITypeFactory<EntityType> CreateEntityTypeFactory()
         {
             var bootstrapper = new Bootstrapper();
             var typeAnalyzer = new EntityAnalyzer();
             var manager = new EntityConfigurationManager();
             var configProvider = new EntityConfigurationProvider(bootstrapper, typeAnalyzer, manager);
-            var factory = new EntityTypeFactory(configProvider);
-
-            return factory.Create(type);
+            return new EntityTypeFactory(configProvider);
         }
 
-        internal ValueObjectType GetValueObjectType(Type type)
+        private static ITypeFactory<ValueObjectType> CreateValueObjectTypeFactory()
         {
             var bootstrapper = new Bootstrapper();
             var typeAnalyzer = new ValueObjectAnalyzer();
             var manager = new ValueObjectConfigurationManager();
             var configProvider = new ValueObjectConfigurationProvider(bootstrapper, typeAnalyzer, manager);
-            var factory = new ValueObjectTypeFactory(configProvider);
-
-            return factory.Create(type);
+            return new ValueObjectTypeFactory(configProvider);
         }
 
-        internal TypeDescriptor GetTypeDescriptor(Type type)
+        private T GetType<T>(Type type, IDictionary<Type, T> runtimeTypes, ITypeFactory<T> factory)
         {
-            Guard.Against.Null(() => type);
+            Guard.Against.Null(() => runtimeTypes);
+            Guard.Against.Null(() => factory);
 
             if (this.isDisposed)
             {
                 throw new ObjectDisposedException(this.GetType().FullName);
             }
 
-            if (!ValidTypes.Any(baseType => baseType.IsAssignableFrom(type)))
+            var runtimeType = default(T);
+            if (runtimeTypes.TryGetValue(type, out runtimeType))
             {
-                throw new RuntimeException(
-                    string.Format(CultureInfo.InvariantCulture, "The specified type '{0}' is not a valid runtime type.", type));
+                return runtimeType;
             }
 
-            var typeDescriptor = default(TypeDescriptor);
-            if (this.typeDescriptors.TryGetValue(type, out typeDescriptor))
+            lock (runtimeTypes)
             {
-                return typeDescriptor;
-            }
-
-            lock (this.typeDescriptors)
-            {
-                if (this.typeDescriptors.TryGetValue(type, out typeDescriptor))
+                if (runtimeTypes.TryGetValue(type, out runtimeType))
                 {
-                    return typeDescriptor;
+                    return runtimeType;
                 }
 
-                var typeConfiguration = default(TypeConfiguration);
                 try
                 {
-                    // TODO (Cameron): This should be the config provider call (for each domain type).
-                    typeConfiguration = this.typeConfigurationProvider.GetConfiguration(type);
+                    runtimeType = factory.Create(type);
                 }
                 catch (Exception ex)
                 {
@@ -189,34 +190,14 @@ namespace dddlib.Runtime
                     throw new RuntimeException(
                         string.Format(
                             CultureInfo.InvariantCulture,
-                            "The type configuration provider of type '{0}' threw an exception during invocation.\r\nSee inner exception for details.",
-                            this.typeConfigurationProvider.GetType()), 
+                            "The type factory of type '{0}' threw an exception during invocation.\r\nSee inner exception for details.",
+                            factory.GetType()),
                         ex);
                 }
 
-                try
-                {
-                    // TODO (Cameron): This should be the factory call (for each domain config type).
-                    typeDescriptor = this.typeAnalyzer.GetDescriptor(type, typeConfiguration);
-                }
-                catch (Exception ex)
-                {
-                    if (ex is RuntimeException)
-                    {
-                        throw;
-                    }
+                runtimeTypes.Add(type, runtimeType);
 
-                    throw new RuntimeException(
-                        string.Format(
-                            CultureInfo.InvariantCulture,
-                            "The type analyzer of type '{0}' threw an exception during invocation.\r\nSee inner exception for details.",
-                            this.typeAnalyzer.GetType()),
-                        ex);
-                }
-
-                this.typeDescriptors.Add(type, typeDescriptor);
-
-                return typeDescriptor;
+                return runtimeType;
             }
         }
     }

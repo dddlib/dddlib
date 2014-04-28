@@ -95,41 +95,39 @@ namespace dddlib.Tests.Unit.Runtime
         }
 
         [Fact]
-        public void ApplicationCanCreateTypeDescriptorForValidRuntimeType()
+        public void ApplicationCanCreateRuntimeTypeForValidType()
         {
             // arrange
             var type = typeof(Aggregate);
 
-            var typeConfiguration = new TypeConfiguration();
-            var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
-            A.CallTo(() => typeConfigurationProvider.GetConfiguration(type)).Returns(typeConfiguration);
-            
-            var typeDescriptor = new TypeDescriptor();
-            var typeAnalyzer = A.Fake<ITypeAnalyzer2>(o => o.Strict());
-            A.CallTo(() => typeAnalyzer.GetDescriptor(type, typeConfiguration)).Returns(typeDescriptor);
+            var expectedType = new AggregateRootType();
+            var factory = A.Fake<ITypeFactory<AggregateRootType>>(o => o.Strict());
+            A.CallTo(() => factory.Create(type)).Returns(expectedType);
 
-            using (new Application(typeConfigurationProvider, typeAnalyzer))
+            using (new Application(factory, A.Fake<ITypeFactory<EntityType>>(o => o.Strict()), A.Fake<ITypeFactory<ValueObjectType>>(o => o.Strict())))
             {
                 // act
-                var actualTypeDescriptor = Application.Current.GetTypeDescriptor(type);
+                var actualType = Application.Current.GetAggregateRootType(type);
 
                 // assert
-                actualTypeDescriptor.Should().Be(typeDescriptor);
+                actualType.Should().Be(expectedType);
             }
         }
 
         [Fact]
-        public void ApplicationCannotCreateTypeDescriptorForInvalidRuntimeType()
+        public void ApplicationCannotCreateRuntimeTypeForInvalidType()
         {
             // arrange
             var type = typeof(object);
-            var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
-            var typeAnalyzer = A.Fake<ITypeAnalyzer2>(o => o.Strict());
 
-            using (new Application(typeConfigurationProvider, typeAnalyzer))
+            var expectedType = new AggregateRootType();
+            var factory = A.Fake<ITypeFactory<AggregateRootType>>(o => o.Strict());
+            A.CallTo(() => factory.Create(type)).Returns(expectedType);
+
+            using (new Application(factory, A.Fake<ITypeFactory<EntityType>>(o => o.Strict()), A.Fake<ITypeFactory<ValueObjectType>>(o => o.Strict())))
             {
                 // act
-                Action action = () => Application.Current.GetTypeDescriptor(type);
+                Action action = () => Application.Current.GetAggregateRootType(type);
 
                 // assert
                 action.ShouldThrow<RuntimeException>().And.Message.Should().Contain(type.FullName);
@@ -137,17 +135,17 @@ namespace dddlib.Tests.Unit.Runtime
         }
 
         [Fact]
-        public void ApplicationThrowsRuntimeExceptionOnTypeConfigurationProviderException()
+        public void ApplicationThrowsRuntimeExceptionOnFactoryException()
         {
             // arrange
             var innerException = new Exception();
-            var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
-            A.CallTo(() => typeConfigurationProvider.GetConfiguration(A<Type>.Ignored)).Throws(innerException);
+            var factory = A.Fake<ITypeFactory<AggregateRootType>>(o => o.Strict());
+            A.CallTo(() => factory.Create(A<Type>.Ignored)).Throws(innerException);
 
-            using (new Application(typeConfigurationProvider, A.Fake<ITypeAnalyzer2>()))
+            using (new Application(factory, A.Fake<ITypeFactory<EntityType>>(o => o.Strict()), A.Fake<ITypeFactory<ValueObjectType>>(o => o.Strict())))
             {
                 // act
-                Action action = () => Application.Current.GetTypeDescriptor(typeof(Aggregate));
+                Action action = () => Application.Current.GetAggregateRootType(typeof(Aggregate));
 
                 // assert
                 action.ShouldThrow<RuntimeException>().And.InnerException.Should().Be(innerException);
@@ -155,53 +153,17 @@ namespace dddlib.Tests.Unit.Runtime
         }
 
         [Fact]
-        public void ApplicationThrowsRuntimeExceptionOnTypeConfigurationProviderRuntimeException()
+        public void ApplicationThrowsRuntimeExceptionOnFactoryRuntimeException()
         {
             // arrange
             var runtimeException = new RuntimeException();
-            var typeConfigurationProvider = A.Fake<ITypeConfigurationProvider>(o => o.Strict());
-            A.CallTo(() => typeConfigurationProvider.GetConfiguration(A<Type>.Ignored)).Throws(runtimeException);
+            var factory = A.Fake<ITypeFactory<AggregateRootType>>(o => o.Strict());
+            A.CallTo(() => factory.Create(A<Type>.Ignored)).Throws(runtimeException);
 
-            using (new Application(typeConfigurationProvider, A.Fake<ITypeAnalyzer2>()))
+            using (new Application(factory, A.Fake<ITypeFactory<EntityType>>(o => o.Strict()), A.Fake<ITypeFactory<ValueObjectType>>(o => o.Strict())))
             {
                 // act
-                Action action = () => Application.Current.GetTypeDescriptor(typeof(Aggregate));
-
-                // assert
-                action.ShouldThrow<RuntimeException>().And.Should().Be(runtimeException);
-            }
-        }
-
-        [Fact]
-        public void ApplicationThrowsRuntimeExceptionOnTypeAnalyzerException()
-        {
-            // arrange
-            var innerException = new Exception();
-            var typeAnalyzer = A.Fake<ITypeAnalyzer2>(o => o.Strict());
-            A.CallTo(() => typeAnalyzer.GetDescriptor(A<Type>.Ignored, A<TypeConfiguration>.Ignored)).Throws(innerException);
-
-            using (new Application(A.Fake<ITypeConfigurationProvider>(), typeAnalyzer))
-            {
-                // act
-                Action action = () => Application.Current.GetTypeDescriptor(typeof(Aggregate));
-
-                // assert
-                action.ShouldThrow<RuntimeException>().And.InnerException.Should().Be(innerException);
-            }
-        }
-
-        [Fact]
-        public void ApplicationThrowsRuntimeExceptionOnTypeAnalyzerRuntimeException()
-        {
-            // arrange
-            var runtimeException = new RuntimeException();
-            var typeAnalyzer = A.Fake<ITypeAnalyzer2>(o => o.Strict());
-            A.CallTo(() => typeAnalyzer.GetDescriptor(A<Type>.Ignored, A<TypeConfiguration>.Ignored)).Throws(runtimeException);
-
-            using (new Application(A.Fake<ITypeConfigurationProvider>(), typeAnalyzer))
-            {
-                // act
-                Action action = () => Application.Current.GetTypeDescriptor(typeof(Aggregate));
+                Action action = () => Application.Current.GetAggregateRootType(typeof(Aggregate));
 
                 // assert
                 action.ShouldThrow<RuntimeException>().And.Should().Be(runtimeException);

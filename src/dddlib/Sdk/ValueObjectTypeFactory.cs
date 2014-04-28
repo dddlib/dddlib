@@ -8,7 +8,7 @@ namespace dddlib.Runtime
     using System.Collections.Generic;
     using System.Linq;
 
-    internal class ValueObjectTypeFactory
+    internal class ValueObjectTypeFactory : ITypeFactory<ValueObjectType>
     {
         private readonly ValueObjectConfigurationProvider configurationProvider;
 

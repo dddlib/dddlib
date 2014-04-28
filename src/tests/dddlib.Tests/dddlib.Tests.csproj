@@ -48,7 +48,9 @@
     <Compile Include="RuntimeTests.NaturalKeyTest.cs" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Runtime\" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="Acceptance\AggregateRootTests2.cs" />
     <Compile Include="RuntimeTests.cs" />
@@ -56,16 +58,12 @@
     <Compile Include="Unit\BusinessExceptionTests.cs" />
     <Compile Include="Unit\EntityTests.cs" />
     <Compile Include="Unit\NaturalKeyAttributeTests.cs" />
-    <Compile Include="Runtime\Domain\PlainTests.cs" />
     <Compile Include="Acceptance\Support\Car.cs" />
     <Compile Include="Acceptance\Support\Registration.cs" />
     <Compile Include="Acceptance\Support\Wheel.cs" />
     <Compile Include="Unit\Runtime\ApplicationTests.cs" />
     <Compile Include="Unit\Runtime\Configuration\AssemblyConfigurationTests.cs" />
     <Compile Include="Unit\Runtime\Configuration\TypeConfigurationTests.cs" />
-    <Compile Include="Runtime\Domain\NonPersistableEventBasedAggregateRootTests.cs" />
-    <Compile Include="Runtime\Domain\PersistableEventBasedAggregateRootTests.cs" />
-    <Compile Include="Runtime\Domain\NonEventBasedAggregateRootTests.cs" />
     <Compile Include="Unit\Runtime\DefaultEventDispatcherTests.cs" />
     <Compile Include="Unit\Runtime\DefaultTypeConfigurationProviderTests.cs" />
     <Compile Include="Unit\Runtime\RuntimeExceptionTests.cs" />

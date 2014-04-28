@@ -8,7 +8,7 @@ namespace dddlib.Runtime
     using System.Collections.Generic;
     using System.Linq;
 
-    internal class AggregateRootTypeFactory
+    internal class AggregateRootTypeFactory : ITypeFactory<AggregateRootType>
     {
         private readonly AggregateRootConfigurationProvider configurationProvider;
 

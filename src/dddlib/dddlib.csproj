@@ -53,6 +53,7 @@
     <Compile Include="Configuration\IConfigureValueObject.cs" />
     <Compile Include="Configuration\ValueObjectConfiguration.cs" />
     <Compile Include="Entity.cs" />
+    <Compile Include="Runtime\ITypeFactory.cs" />
     <Compile Include="Sdk\AggregateRootConfigurationManager.cs" />
     <Compile Include="Sdk\AggregateRootAnalyzer.cs" />
     <Compile Include="Sdk\AggregateRootConfiguration.cs" />

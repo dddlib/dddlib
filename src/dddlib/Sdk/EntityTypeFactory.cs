@@ -8,7 +8,7 @@ namespace dddlib.Runtime
     using System.Collections.Generic;
     using System.Linq;
 
-    internal class EntityTypeFactory
+    internal class EntityTypeFactory : ITypeFactory<EntityType>
     {
         private readonly EntityConfigurationProvider configurationProvider;
 
