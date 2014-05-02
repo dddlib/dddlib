@@ -26,7 +26,7 @@ namespace dddlib.Configuration
                 this.aggregateRootConfigurations.Add(typeof(T), configuration = new AggregateRootConfiguration());
             }
 
-            return new ConfigureAggregateRoot<T>(configuration);
+            return new ConfigureAggregateRoot<T>(configuration, this.Entity<T>());
         }
 
         public IConfigureEntity<T> Entity<T>() where T : Entity

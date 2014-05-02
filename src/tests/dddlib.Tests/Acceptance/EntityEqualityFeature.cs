@@ -50,15 +50,14 @@ namespace dddlib.Tests.Acceptance
             "Given a new application"
                 .Given(() =>
                 {
+                    var configurationProviders = new IConfigurationProvider<EntityConfiguration>[]
+                    {
+                        new Bootstrapper(this.Bootstrap),
+                        new EntityAnalyzer(),
+                    };
+
                     var configurationManager = new EntityConfigurationManager();
-                    var configurationProvider = new DefaultConfigurationProvider<EntityConfiguration>(
-                        new IConfigurationProvider<EntityConfiguration>[]
-                        {
-                            new Bootstrapper(this.Bootstrap),
-                            new EntityAnalyzer(),
-                        },
-                        configurationManager);
-                    
+                    var configurationProvider = new DefaultConfigurationProvider<EntityConfiguration>(configurationProviders, configurationManager);
                     var entityTypeFactory = new EntityTypeFactory(configurationProvider);
 
                     new Application(
@@ -124,7 +123,7 @@ namespace dddlib.Tests.Acceptance
                 "When an instance of an entity with conflicting natural key selectors is instantiated"
                     .When(() => action = () => new Subject());
 
-                "Then a runtime exception should be thrown"
+                "Then a runtime exception should be thrown" // and the runtime exception should state that the natural key is defined twice
                     .Then(() => action.ShouldThrow<RuntimeException>());
             }
 

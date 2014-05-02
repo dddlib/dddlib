@@ -37,6 +37,7 @@
     </None>
     <Compile Include="Acceptance\AggregateRootPersistenceFeature.cs" />
     <Compile Include="Acceptance\EntityEqualityFeature.cs" />
+    <Compile Include="Acceptance\Support\Bootstrapper.cs" />
     <Compile Include="Acceptance\ValueObjectEqualityFeature.cs" />
     <Compile Include="Sdk\AggregateRootTest.cs" />
     <Compile Include="Sdk\EntityTest.cs" />
