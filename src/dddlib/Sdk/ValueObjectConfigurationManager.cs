@@ -12,7 +12,7 @@ namespace dddlib.Runtime
             // there is logic required in here
             return new ValueObjectConfiguration
             {
-                EqualityComparer = typeConfiguration.EqualityComparer,
+                Mapper = typeConfiguration.Mapper,
                 ////NaturalKeySelector = typeConfiguration.NaturalKeySelector ?? baseTypeConfiguration.NaturalKeySelector,
                 ////NaturalKeyEqualityComparer = typeConfiguration.NaturalKeyEqualityComparer ?? baseTypeConfiguration.NaturalKeyEqualityComparer,
             };

@@ -10,9 +10,9 @@ namespace dddlib.Runtime
 
     internal class AggregateRootTypeFactory : ITypeFactory<AggregateRootType>
     {
-        private readonly AggregateRootConfigurationProvider configurationProvider;
+        private readonly IConfigurationProvider<AggregateRootConfiguration> configurationProvider;
 
-        public AggregateRootTypeFactory(AggregateRootConfigurationProvider configurationProvider)
+        public AggregateRootTypeFactory(IConfigurationProvider<AggregateRootConfiguration> configurationProvider)
         {
             Guard.Against.Null(() => configurationProvider);
 
@@ -30,7 +30,7 @@ namespace dddlib.Runtime
                 .Traverse(t => t.BaseType == typeof(AggregateRoot) ? null : new[] { t.BaseType })
                 .Reverse())
             {
-                configuration = this.configurationProvider.Get(currentType);
+                configuration = this.configurationProvider.GetConfiguration(currentType);
                 mappings.Add(currentType, configuration.ApplyMethodName ?? "Apply");
             }
 

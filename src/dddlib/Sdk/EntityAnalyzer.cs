@@ -7,18 +7,18 @@ namespace dddlib.Runtime
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Linq.Expressions;
     using System.Reflection;
 
-    internal class EntityAnalyzer
+    internal class EntityAnalyzer : IConfigurationProvider<EntityConfiguration>
     {
         public EntityConfiguration GetConfiguration(Type type)
         {
-            var naturalKey = default(NaturalKey);
+            var naturalKey = default(PropertyInfo);
             foreach (var subType in new[] { type }.Traverse(t => t.BaseType == typeof(Entity) ? null : new[] { t.BaseType }))
             {
                 naturalKey = subType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
-                    .SelectMany(member => member.GetCustomAttributes(typeof(NaturalKey), true))
-                    .OfType<NaturalKey>()
+                    .Where(member => member.GetCustomAttributes(typeof(NaturalKey), true).SingleOrDefault() != null)
                     .SingleOrDefault();
 
                 if (naturalKey != null)
@@ -27,28 +27,8 @@ namespace dddlib.Runtime
                 }
             }
 
-            var naturalKeyEqualityComparer = default(NaturalKey.EqualityComparer);
-            foreach (var subType in new[] { type }.Traverse(t => t.BaseType == typeof(Entity) ? null : new[] { t.BaseType }))
-            {
-                naturalKeyEqualityComparer = subType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
-                    .SelectMany(member => member.GetCustomAttributes(typeof(NaturalKey.EqualityComparer), true))
-                    .OfType<NaturalKey.EqualityComparer>()
-                    .SingleOrDefault();
-
-                if (naturalKeyEqualityComparer != null)
-                {
-                    break;
-                }
-            }
-
             if (naturalKey == null) 
             {
-                if (naturalKeyEqualityComparer != null)
-                {
-                    // NOTE (Cameron): There is an equality comparer defined without a natural key.
-                    throw new Exception();
-                }
-
                 // TODO (Cameron): Move into AggregateRootTypeAnalyzer.
                 ////if (configuration.AggregateRootFactory != null)
                 ////{
@@ -59,10 +39,25 @@ namespace dddlib.Runtime
                 return new EntityConfiguration();
             }
 
+            var parameter = Expression.Parameter(type, "entity");
+            var property = Expression.Property(parameter, naturalKey);
+            var funcType = typeof(Func<,>).MakeGenericType(type, naturalKey.PropertyType);
+            var lambda = Expression.Lambda(funcType, property, parameter);
+
+            ParameterExpression sourceParameter = Expression.Parameter(typeof(object), "source");
+            var result = Expression.Lambda<Func<object, object>>(
+                Expression.Invoke(
+                    lambda,
+                    Expression.Convert(sourceParameter, type)),
+                sourceParameter);
+
+            ////var function = Delegate.CreateDelegate(typeof(Func<object, object>), type, naturalKey);;
+            var function = result.Compile() as Func<object, object>;
+
             // TODO (Cameron): Get equality comparer from config.
             return new EntityConfiguration
             {
-                NaturalKeyEqualityComparer = EqualityComparer<object>.Default,
+                NaturalKeySelector = function,
             };
         }
     }

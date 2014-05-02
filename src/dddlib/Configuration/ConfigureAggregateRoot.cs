@@ -5,13 +5,14 @@
 namespace dddlib.Configuration
 {
     using System;
+    using dddlib.Runtime;
 
     internal class ConfigureAggregateRoot<T> : IConfigureAggregateRoot<T> 
         where T : AggregateRoot
     {
-        private readonly AssemblyConfiguration configuration;
+        private readonly AggregateRootConfiguration configuration;
 
-        public ConfigureAggregateRoot(AssemblyConfiguration configuration)
+        public ConfigureAggregateRoot(AggregateRootConfiguration configuration)
         {
             Guard.Against.Null(() => configuration);
 
@@ -20,19 +21,7 @@ namespace dddlib.Configuration
 
         public IConfigureAggregateRoot<T> ToReconstituteUsing(Func<T> uninitializedFactory)
         {
-            this.configuration.RegisterAggregateRootFactory(uninitializedFactory);
-            return this;
-        }
-
-        public IConfigureAggregateRoot<T> ToUseNaturalKey<TKey>(Func<T, TKey> naturalKeySelector)
-        {
-            this.configuration.RegisterNaturalKeySelector(naturalKeySelector);
-            return this;
-        }
-
-        public IConfigureAggregateRoot<T> ToUseNaturalKey(Func<T, string> naturalKeySelector, System.Collections.Generic.IEqualityComparer<string> equalityComparer)
-        {
-            this.configuration.RegisterNaturalKeySelector(naturalKeySelector);
+            this.configuration.Factory = uninitializedFactory;
             return this;
         }
     }

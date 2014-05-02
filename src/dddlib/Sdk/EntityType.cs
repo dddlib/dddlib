@@ -9,8 +9,37 @@ namespace dddlib.Runtime
 
     internal class EntityType
     {
-        public Func<object, object> NaturalKeySelector { get; internal set; }
+        // TODO (Cameron): Mess.
+        public EntityType(Func<object, object> naturalKeySelector, IEqualityComparer<string> naturalKeyStringEqualityComparer)
+        {
+            this.NaturalKeySelector = naturalKeySelector;
+            this.NaturalKeyEqualityComparer = naturalKeyStringEqualityComparer == null 
+                ? (IEqualityComparer<object>)EqualityComparer<object>.Default
+                : new StringObjectEqualityComparer(naturalKeyStringEqualityComparer);
+        }
 
-        public IEqualityComparer<object> NaturalKeyEqualityComparer { get; internal set; }
+        public Func<object, object> NaturalKeySelector { get; private set; }
+
+        public IEqualityComparer<object> NaturalKeyEqualityComparer { get; private set; }
+
+        private class StringObjectEqualityComparer : IEqualityComparer<object>
+        {
+            private readonly IEqualityComparer<string> stringEqualityComparer;
+
+            public StringObjectEqualityComparer(IEqualityComparer<string> stringEqualityComparer)
+            {
+                this.stringEqualityComparer = stringEqualityComparer;
+            }
+
+            public new bool Equals(object x, object y)
+            {
+                return this.stringEqualityComparer.Equals((string)x, (string)y);
+            }
+
+            public int GetHashCode(object obj)
+            {
+                return this.GetHashCode((string)obj);
+            }
+        }
     }
 }

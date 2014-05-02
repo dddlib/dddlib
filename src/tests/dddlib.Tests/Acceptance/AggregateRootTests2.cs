@@ -48,9 +48,6 @@ namespace dddlib.Tests.Acceptance
 
         private class TestAggregateRoot : AggregateRoot
         {
-            [NaturalKey.EqualityComparer]
-            private static readonly IEqualityComparer<string> EqualityComparer = StringComparer.OrdinalIgnoreCase;
-
             public TestAggregateRoot(string key)
             {
                 this.Apply(key);

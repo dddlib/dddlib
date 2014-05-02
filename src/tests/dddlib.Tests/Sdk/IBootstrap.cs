@@ -6,7 +6,8 @@ namespace dddlib.Tests.Sdk
 {
     using dddlib.Configuration;
 
-    internal interface IBootstrap<T> ////: IBootstrapper
+    internal interface IBootstrap<T>
     {
+        void Bootstrap(IConfiguration configure);
     }
 }

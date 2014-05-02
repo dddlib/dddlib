@@ -5,13 +5,16 @@
 namespace dddlib.Tests.Acceptance
 {
     using System;
+    using System.Linq;
+    using System.Reflection;
     using dddlib.Configuration;
     using dddlib.Runtime;
     using dddlib.Tests.Sdk;
+    using FakeItEasy;
     using FluentAssertions;
     using Xbehave;
 
-    public class EntityEqualityFeature
+    public abstract class EntityEqualityFeature
     {
         /*
             Entity Equality
@@ -41,21 +44,70 @@ namespace dddlib.Tests.Acceptance
             [consider inheritence]
         */
 
-        public class UndefinedNaturalKeySelector
+        [Background]
+        public void Background()
         {
-            ////[Scenario]
-            public void EntityTests(Type type)
+            "Given a new application"
+                .Given(() =>
+                {
+                    var configurationManager = new EntityConfigurationManager();
+                    var configurationProvider = new DefaultConfigurationProvider<EntityConfiguration>(
+                        new IConfigurationProvider<EntityConfiguration>[]
+                        {
+                            new Bootstrapper(this.Bootstrap),
+                            new EntityAnalyzer(),
+                        },
+                        configurationManager);
+                    
+                    var entityTypeFactory = new EntityTypeFactory(configurationProvider);
+
+                    new Application(
+                        A.Fake<ITypeFactory<AggregateRootType>>(o => o.Strict()),
+                        entityTypeFactory,
+                        A.Fake<ITypeFactory<ValueObjectType>>(o => o.Strict()))
+                        .Using();
+                });
+        }
+
+        // TODO (Cameron): This is all a bit of a hack.
+        private Action<IConfiguration> Bootstrap(Type type)
+        {
+            var bootstrappers = this.GetType().GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
+                .Where(t => t.GetInterfaces()
+                    .Any(@interface => @interface.IsGenericType && @interface.GetGenericTypeDefinition() == typeof(IBootstrap<>)))
+                .ToArray();
+
+            var bootstrapperType = bootstrappers.SingleOrDefault(t => t.GetInterfaces()[0].GetGenericArguments()[0] == type);
+            if (bootstrapperType == null)
             {
-                var entityType = default(EntityType);
+                return c => { };
+            }
 
-                "Given a type with an undefined natural key selector"
-                    .Given(() => type = typeof(Subject));
+            var bootstrapper = Activator.CreateInstance(bootstrapperType);
+            var method = bootstrapperType.GetMethod("Bootstrap");
 
-                "When the application is used to get the entity type"
-                    .When(() => entityType = Application.Current.GetEntityType(type));
+            Action<IConfiguration> action = (Action<IConfiguration>)Delegate.CreateDelegate(typeof(Action<IConfiguration>), bootstrapper, method);
 
-                "Then the entity type natural key selector should be null"
-                    .Then(() => entityType.NaturalKeySelector.Should().BeNull());
+            return action; //// (Action<IConfiguration>)bootstrapper.Bootstrap;
+        }
+
+        public class UndefinedNaturalKeySelector : EntityEqualityFeature
+        {
+            [Scenario]
+            public void UndefinedNaturalKeySelectorScenario(Subject instance1, Subject instance2, bool areEqual)
+            {
+                "Given two instances of an entity with an undefined natural key selector"
+                    .Given(() => 
+                    {
+                        instance1 = new Subject();
+                        instance2 = new Subject();
+                    });
+
+                "When the instances are compared for equality"
+                    .When(() => areEqual = instance1 == instance2);
+
+                "Then they are not considered equal"
+                    .Then(() => areEqual.Should().BeFalse());
             }
 
             public class Subject : Entity
@@ -64,22 +116,13 @@ namespace dddlib.Tests.Acceptance
             }
         }
 
-        public class ConflictingNaturalKeySelectors
+        public class ConflictingNaturalKeySelectors : EntityEqualityFeature
         {
-            ////[Scenario]
-            public void EntityTests(Type type, Action action)
+            [Scenario]
+            public void ConflictingNaturalKeySelectorsScenario(Type type, Action action)
             {
-                "Given an instance of the ambient application"
-                    .Given(() =>
-                    {
-                        new Application().Using();
-                    });
-
-                "And a type with conflicting natural key selectors"
-                    .And(() => type = typeof(Subject));
-
-                "When the application is used to get the entity type"
-                    .When(() => action = () => Application.Current.GetEntityType(type));
+                "When an instance of an entity with conflicting natural key selectors is instantiated"
+                    .When(() => action = () => new Subject());
 
                 "Then a runtime exception should be thrown"
                     .Then(() => action.ShouldThrow<RuntimeException>());

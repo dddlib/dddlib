@@ -16,16 +16,14 @@ namespace dddlib
     //// TODO (Cameron): Ensure that an entity can be created without a natural key.
     public abstract class Entity
     {
-        private IEqualityComparer<object> equalityComparer;
+        private readonly EntityType runtimeType;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Entity"/> class.
         /// </summary>
         protected Entity()
         {
-            var typeDescriptor = Application.Current.GetEntityType(this.GetType());
-
-            this.equalityComparer = typeDescriptor.NaturalKeyEqualityComparer;
+            this.runtimeType = Application.Current.GetEntityType(this.GetType());
         }
 
         [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible anywhere.")]
@@ -84,10 +82,16 @@ namespace dddlib
                 return false;
             }
 
-            var thisValue = this.GetNaturalKey();
-            var otherValue = other.GetNaturalKey();
+            if (this.runtimeType.NaturalKeySelector == null)
+            {
+                // NOTE (Cameron): This entity has no natural key defined and doesn't meet the [previous] criteria for .NET reference equality.
+                return false;
+            }
 
-            return this.equalityComparer.Equals(thisValue, otherValue);
+            var thisValue = this.runtimeType.NaturalKeySelector(this);
+            var otherValue = this.runtimeType.NaturalKeySelector(other);
+
+            return this.runtimeType.NaturalKeyEqualityComparer.Equals(thisValue, otherValue);
         }
 
         // TODO (Cameron): Mess.

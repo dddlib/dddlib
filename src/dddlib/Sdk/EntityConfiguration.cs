@@ -11,6 +11,6 @@ namespace dddlib.Runtime
     {
         public Func<object, object> NaturalKeySelector { get; set; }
 
-        public IEqualityComparer<object> NaturalKeyEqualityComparer { get; set; }
+        public IEqualityComparer<string> NaturalKeyStringEqualityComparer { get; set; }
     }
 }

@@ -42,6 +42,7 @@
     <AssemblyOriginatorKeyFile>..\dddlib.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
@@ -50,9 +51,12 @@
     </Compile>
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="BusinessException.cs" />
+    <Compile Include="Configuration\ConfigureValueObject.cs" />
     <Compile Include="Configuration\IConfigureValueObject.cs" />
     <Compile Include="Configuration\ValueObjectConfiguration.cs" />
     <Compile Include="Entity.cs" />
+    <Compile Include="Runtime\IConfigurationProvider.cs" />
+    <Compile Include="Runtime\IConfigurationManager.cs" />
     <Compile Include="Runtime\ITypeFactory.cs" />
     <Compile Include="Sdk\AggregateRootConfigurationManager.cs" />
     <Compile Include="Sdk\AggregateRootAnalyzer.cs" />
@@ -60,6 +64,7 @@
     <Compile Include="Sdk\AggregateRootConfigurationProvider.cs" />
     <Compile Include="Sdk\AggregateRootTypeFactory.cs" />
     <Compile Include="Sdk\AggregateRootType.cs" />
+    <Compile Include="Sdk\DefaultConfigurationProvider.cs" />
     <Compile Include="Sdk\EntityConfigurationManager.cs" />
     <Compile Include="Sdk\EntityConfigurationProvider.cs" />
     <Compile Include="Sdk\ValueObjectConfigurationManager.cs" />

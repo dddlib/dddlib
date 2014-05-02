@@ -15,9 +15,9 @@ namespace dddlib.Runtime
     using System.Globalization;
     using System.Linq;
     using System.Reflection;
-    using dddlib.Configuration;
 
     // TODO (Cameron): Test that the Natural key is from the most recent subclass of entity.
+    [Obsolete]
     internal class TypeAnalyzer : ITypeAnalyzer2
     {
         private static readonly NullEventDispatcher DefaultEventDispatcher = new NullEventDispatcher();
@@ -78,20 +78,6 @@ namespace dddlib.Runtime
 
                     descriptor.EqualityComparer = EqualityComparer<object>.Default;
                     return descriptor;
-                }
-
-                var naturalKeyEqualityComparer = default(NaturalKey.EqualityComparer);
-                foreach (var subType in new[] { type }.Traverse(t => t.BaseType == typeof(Entity) ? null : new[] { t.BaseType }))
-                {
-                    naturalKeyEqualityComparer = subType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
-                        .SelectMany(member => member.GetCustomAttributes(typeof(NaturalKey.EqualityComparer), true))
-                        .OfType<NaturalKey.EqualityComparer>()
-                        .SingleOrDefault();
-
-                    if (naturalKeyEqualityComparer != null)
-                    {
-                        break;
-                    }
                 }
 
                 var equalityComparerType = default(object);

@@ -19,7 +19,7 @@ namespace dddlib.Configuration
     /// <typeparam name="TConfiguration">The type of the configuration.</typeparam>
     /// <typeparam name="T">The type of aggregate root.</typeparam>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public interface IConfigureAggregateRoot<TConfiguration, T> : IConfigureEntity<TConfiguration, T>, IFluentExtensions
+    public interface IConfigureAggregateRoot<TConfiguration, T> : IFluentExtensions
         where T : AggregateRoot
         where TConfiguration : IConfigureAggregateRoot<TConfiguration, T>
     {

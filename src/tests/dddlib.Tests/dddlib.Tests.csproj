@@ -67,7 +67,6 @@
     <Compile Include="Unit\Runtime\DefaultEventDispatcherTests.cs" />
     <Compile Include="Unit\Runtime\DefaultTypeConfigurationProviderTests.cs" />
     <Compile Include="Unit\Runtime\RuntimeExceptionTests.cs" />
-    <Compile Include="Unit\Runtime\TypeAnalyzerTests.cs" />
     <Compile Include="Unit\Runtime\TypeDescriptorTests.cs" />
     <Compile Include="Unit\ValueObjectTests.cs" />
   </ItemGroup>

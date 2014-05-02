@@ -4,35 +4,75 @@
 
 namespace dddlib.Configuration
 {
-    internal class BootstrapperConfiguration : IConfiguration
+    using System;
+    using System.Collections.Generic;
+    using dddlib.Runtime;
+
+    internal class BootstrapperConfiguration : 
+        IConfiguration,
+        IConfigurationProvider<AggregateRootConfiguration>,
+        IConfigurationProvider<EntityConfiguration>,
+        IConfigurationProvider<ValueObjectConfiguration>
     {
-        private readonly AssemblyConfiguration assemblyConfiguration;
-
-        public BootstrapperConfiguration(AssemblyConfiguration assemblyConfiguration)
-        {
-            Guard.Against.Null(() => assemblyConfiguration);
-
-            this.assemblyConfiguration = assemblyConfiguration;
-        }
-
-        public AssemblyConfiguration AssemblyConfiguration
-        {
-            get { return this.assemblyConfiguration; }
-        }
+        private Dictionary<Type, AggregateRootConfiguration> aggregateRootConfigurations = new Dictionary<Type, AggregateRootConfiguration>();
+        private Dictionary<Type, EntityConfiguration> entityConfigurations = new Dictionary<Type, EntityConfiguration>();
+        private Dictionary<Type, ValueObjectConfiguration> valueObjectConfigurations = new Dictionary<Type, ValueObjectConfiguration>();
 
         public IConfigureAggregateRoot<T> AggregateRoot<T>() where T : AggregateRoot
         {
-            return new ConfigureAggregateRoot<T>(this.assemblyConfiguration);
+            var configuration = default(AggregateRootConfiguration);
+            if (!this.aggregateRootConfigurations.TryGetValue(typeof(T), out configuration))
+            {
+                this.aggregateRootConfigurations.Add(typeof(T), configuration = new AggregateRootConfiguration());
+            }
+
+            return new ConfigureAggregateRoot<T>(configuration);
         }
 
         public IConfigureEntity<T> Entity<T>() where T : Entity
         {
-            return new ConfigureEntity<T>(this.assemblyConfiguration);
+            var configuration = default(EntityConfiguration);
+            if (!this.entityConfigurations.TryGetValue(typeof(T), out configuration))
+            {
+                this.entityConfigurations.Add(typeof(T), configuration = new EntityConfiguration());
+            }
+
+            return new ConfigureEntity<T>(configuration);
         }
 
         public IConfigureValueObject<T> ValueObject<T>() where T : ValueObject<T>
         {
-            return new ValueObjectConfiguration<T>();
+            var configuration = default(ValueObjectConfiguration);
+            if (!this.valueObjectConfigurations.TryGetValue(typeof(T), out configuration))
+            {
+                this.valueObjectConfigurations.Add(typeof(T), configuration = new ValueObjectConfiguration());
+            }
+
+            return new ConfigureValueObject<T>(configuration);
+        }
+
+        AggregateRootConfiguration IConfigurationProvider<AggregateRootConfiguration>.GetConfiguration(Type type)
+        {
+            var configuration = default(AggregateRootConfiguration);
+            this.aggregateRootConfigurations.TryGetValue(type, out configuration);
+
+            return configuration ?? new AggregateRootConfiguration();
+        }
+
+        EntityConfiguration IConfigurationProvider<EntityConfiguration>.GetConfiguration(Type type)
+        {
+            var configuration = default(EntityConfiguration);
+            this.entityConfigurations.TryGetValue(type, out configuration);
+
+            return configuration ?? new EntityConfiguration();
+        }
+
+        ValueObjectConfiguration IConfigurationProvider<ValueObjectConfiguration>.GetConfiguration(Type type)
+        {
+            var configuration = default(ValueObjectConfiguration);
+            this.valueObjectConfigurations.TryGetValue(type, out configuration);
+
+            return configuration ?? new ValueObjectConfiguration();
         }
     }
 }

@@ -4,8 +4,10 @@
 
 namespace dddlib.Runtime
 {
+    using System;
+
     internal class ValueObjectConfiguration
     {
-        public object EqualityComparer { get; internal set; }
+        public Func<object, object> Mapper { get; set; }
     }
 }

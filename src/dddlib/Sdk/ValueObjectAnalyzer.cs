@@ -6,7 +6,7 @@ namespace dddlib.Runtime
 {
     using System;
 
-    internal class ValueObjectAnalyzer
+    internal class ValueObjectAnalyzer : IConfigurationProvider<ValueObjectConfiguration>
     {
         public ValueObjectConfiguration GetConfiguration(Type type)
         {

@@ -9,53 +9,71 @@ namespace dddlib.Runtime
     using System.Linq;
     using dddlib.Configuration;
 
-    internal class Bootstrapper
+    internal class Bootstrapper : 
+        IConfigurationProvider<AggregateRootConfiguration>, 
+        IConfigurationProvider<EntityConfiguration>, 
+        IConfigurationProvider<ValueObjectConfiguration>
     {
-        public AggregateRootConfiguration GetAggregateRootConfiguration(Type type)
+        private readonly Func<Type, Action<IConfiguration>> bootstrapperProvider;
+
+        public Bootstrapper()
+            : this(GetBootstrapper)
         {
-            //// get the assembly for the type
-            //// get the type of bootstrapper: GetBootstrapperInstance (for a given type) <- inject lookup?
-            var bootstrapper = GetBootstrapper(type);
-
-            //// create a config to run through the bootstrapper
-            var assemblyConfiguration = new AssemblyConfiguration();
-            var configuration = new BootstrapperConfiguration(assemblyConfiguration);
-
-            //// get the config
-            bootstrapper.Bootstrap(configuration);
-
-            //// create a runtime config based on results
-            var result = assemblyConfiguration.CreateConfiguration(type);
-
-            var x = new DefaultTypeConfigurationProvider();
-            var y = x.GetConfiguration(type);
-            return new AggregateRootConfiguration
-            {
-                Factory = y.AggregateRootFactory,
-                ApplyMethodName = null,
-            };
         }
 
-        public EntityConfiguration GetEntityConfiguration(Type type)
+        public Bootstrapper(Func<Type, Action<IConfiguration>> getBootstrapper)
         {
-            return new EntityConfiguration
-            {
-            };
+            Guard.Against.Null(() => getBootstrapper);
+
+            this.bootstrapperProvider = getBootstrapper;
         }
 
-        public ValueObjectConfiguration GetValueObjectConfiguration(Type type)
+        AggregateRootConfiguration IConfigurationProvider<AggregateRootConfiguration>.GetConfiguration(Type type)
         {
-            return new ValueObjectConfiguration
-            {
-            };
+            var bootstrap = this.bootstrapperProvider(type);
+
+            // create a config to run through the bootstrapper
+            var configuration = new BootstrapperConfiguration();
+
+            // bootstrap
+            bootstrap(configuration);
+
+            return ((IConfigurationProvider<AggregateRootConfiguration>)configuration).GetConfiguration(type);
         }
 
-        private static IBootstrapper GetBootstrapper(Type type)
+        EntityConfiguration IConfigurationProvider<EntityConfiguration>.GetConfiguration(Type type)
+        {
+            var bootstrap = this.bootstrapperProvider(type);
+
+            // create a config to run through the bootstrapper
+            var configuration = new BootstrapperConfiguration();
+
+            // bootstrap
+            bootstrap(configuration);
+
+            return ((IConfigurationProvider<EntityConfiguration>)configuration).GetConfiguration(type);
+        }
+
+        ValueObjectConfiguration IConfigurationProvider<ValueObjectConfiguration>.GetConfiguration(Type type)
+        {
+            var bootstrap = this.bootstrapperProvider(type);
+
+            // create a config to run through the bootstrapper
+            var configuration = new BootstrapperConfiguration();
+
+            // bootstrap
+            bootstrap(configuration);
+
+            return ((IConfigurationProvider<ValueObjectConfiguration>)configuration).GetConfiguration(type);
+        }
+
+        // TODO (Cameron): Consider BootstrapperProvider class.
+        private static Action<IConfiguration> GetBootstrapper(Type type)
         {
             var bootstrapperTypes = type.Assembly.GetTypes().Where(assemblyType => typeof(IBootstrapper).IsAssignableFrom(assemblyType));
             if (!bootstrapperTypes.Any())
             {
-                return new DefaultBootstrapper();
+                return config => { };
             }
 
             if (bootstrapperTypes.Count() > 1)
@@ -92,14 +110,7 @@ namespace dddlib.Runtime
                     ex);
             }
 
-            return bootstrapper;
-        }
-
-        private class DefaultBootstrapper : IBootstrapper
-        {
-            public void Bootstrap(IConfiguration configure)
-            {
-            }
+            return bootstrapper.Bootstrap;
         }
     }
 }

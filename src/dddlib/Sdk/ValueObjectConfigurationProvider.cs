@@ -7,22 +7,22 @@ namespace dddlib.Runtime
     using System;
     using System.Collections.Generic;
 
-    internal class ValueObjectConfigurationProvider
+    internal class ValueObjectConfigurationProvider : IConfigurationProvider<ValueObjectConfiguration>
     {
         private readonly Dictionary<Type, ValueObjectConfiguration> config = new Dictionary<Type, ValueObjectConfiguration>();
 
-        private readonly Bootstrapper bootstrapper;
-        private readonly ValueObjectAnalyzer typeAnalyzer;
+        private readonly IConfigurationProvider<ValueObjectConfiguration> bootstrapper;
+        private readonly IConfigurationProvider<ValueObjectConfiguration> typeAnalyzer;
         private readonly ValueObjectConfigurationManager manager;
 
-        public ValueObjectConfigurationProvider(Bootstrapper bootstrapper, ValueObjectAnalyzer typeAnalyzer, ValueObjectConfigurationManager manager)
+        public ValueObjectConfigurationProvider(IConfigurationProvider<ValueObjectConfiguration> bootstrapper, IConfigurationProvider<ValueObjectConfiguration> typeAnalyzer, ValueObjectConfigurationManager manager)
         {
             this.bootstrapper = bootstrapper;
             this.typeAnalyzer = typeAnalyzer;
             this.manager = manager;
         }
 
-        public ValueObjectConfiguration Get(Type type)
+        public ValueObjectConfiguration GetConfiguration(Type type)
         {
             if (!typeof(ValueObject<>).IsAssignableFrom(type))
             {
@@ -41,14 +41,14 @@ namespace dddlib.Runtime
         private ValueObjectConfiguration GetRuntimeTypeConfiguration(Type type)
         {
             var typeConfiguration = this.GetTypeConfiguration(type);
-            var baseTypeConfiguration = type.BaseType == typeof(ValueObject<>) ? new ValueObjectConfiguration() : this.Get(type.BaseType);
+            var baseTypeConfiguration = type.BaseType == typeof(ValueObject<>) ? new ValueObjectConfiguration() : this.GetConfiguration(type.BaseType);
 
             return this.manager.Merge(typeConfiguration, baseTypeConfiguration);
         }
 
         private ValueObjectConfiguration GetTypeConfiguration(Type type)
         {
-            var bootstrapperConfiguration = this.bootstrapper.GetValueObjectConfiguration(type);
+            var bootstrapperConfiguration = this.bootstrapper.GetConfiguration(type);
             var typeAnalyzerConfiguration = this.typeAnalyzer.GetConfiguration(type);
 
             return new[] { bootstrapperConfiguration, typeAnalyzerConfiguration }.Combine();

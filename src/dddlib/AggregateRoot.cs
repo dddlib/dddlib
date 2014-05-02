@@ -23,7 +23,7 @@ namespace dddlib
     {
         private readonly List<object> events = new List<object>();
         
-        private readonly AggregateRootType runtime;
+        private readonly AggregateRootType runtimeType;
 
         private string state;
         private bool isDestroyed;
@@ -33,7 +33,7 @@ namespace dddlib
         /// </summary>
         protected AggregateRoot()
         {
-            this.runtime = Application.Current.GetAggregateRootType(this.GetType());
+            this.runtimeType = Application.Current.GetAggregateRootType(this.GetType());
         }
 
         internal string State
@@ -152,13 +152,13 @@ namespace dddlib
                 return;
             }
 
-            if (this.runtime.Options.DispatchEvents)
+            if (this.runtimeType.Options.DispatchEvents)
             {
                 // TODO (Cameron): Add try... catch block.
-                this.runtime.EventDispatcher.Dispatch(this, @event);
+                this.runtimeType.EventDispatcher.Dispatch(this, @event);
             }
 
-            if (this.runtime.Options.PersistEvents && isNew)
+            if (this.runtimeType.Options.PersistEvents && isNew)
             {
                 this.events.Add(@event);
             }

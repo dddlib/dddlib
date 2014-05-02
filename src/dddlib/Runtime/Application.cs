@@ -128,20 +128,28 @@ namespace dddlib.Runtime
 
         private static ITypeFactory<AggregateRootType> CreateAggregateRootTypeFactory()
         {
-            var bootstrapper = new Bootstrapper();          // .GetConfig(type) for IBootstrapper
-            var typeAnalyzer = new AggregateRootAnalyzer(); // .GetConfig(type) for type
-            var manager = new AggregateRootConfigurationManager();
-            var configProvider = new AggregateRootConfigurationProvider(bootstrapper, typeAnalyzer, manager);
-            return new AggregateRootTypeFactory(configProvider);
+            var configurationProvider = new DefaultConfigurationProvider<AggregateRootConfiguration>(
+                new IConfigurationProvider<AggregateRootConfiguration>[]
+                {
+                    new Bootstrapper(),
+                    new AggregateRootAnalyzer(),
+                },
+                new AggregateRootConfigurationManager());
+
+            return new AggregateRootTypeFactory(configurationProvider);
         }
 
         private static ITypeFactory<EntityType> CreateEntityTypeFactory()
         {
-            var bootstrapper = new Bootstrapper();
-            var typeAnalyzer = new EntityAnalyzer();
-            var manager = new EntityConfigurationManager();
-            var configProvider = new EntityConfigurationProvider(bootstrapper, typeAnalyzer, manager);
-            return new EntityTypeFactory(configProvider);
+            var configurationProvider = new DefaultConfigurationProvider<EntityConfiguration>(
+                new IConfigurationProvider<EntityConfiguration>[]
+                {
+                    new Bootstrapper(),
+                    new EntityAnalyzer(),
+                },
+                new EntityConfigurationManager());
+
+            return new EntityTypeFactory(configurationProvider);
         }
 
         private static ITypeFactory<ValueObjectType> CreateValueObjectTypeFactory()

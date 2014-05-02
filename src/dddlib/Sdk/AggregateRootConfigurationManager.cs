@@ -4,7 +4,7 @@
 
 namespace dddlib.Runtime
 {
-    internal class AggregateRootConfigurationManager
+    internal class AggregateRootConfigurationManager : IConfigurationManager<AggregateRootConfiguration>
     {
         public AggregateRootConfiguration Merge(AggregateRootConfiguration typeConfiguration, AggregateRootConfiguration baseTypeConfiguration)
         {

@@ -7,24 +7,24 @@ namespace dddlib.Runtime
     using System;
     using System.Collections.Generic;
 
-    internal class EntityConfigurationProvider
+    internal class EntityConfigurationProvider : IConfigurationProvider<EntityConfiguration>
     {
         private readonly Dictionary<Type, EntityConfiguration> config = new Dictionary<Type, EntityConfiguration>();
 
-        private readonly Bootstrapper bootstrapper;
-        private readonly EntityAnalyzer typeAnalyzer;
+        private readonly IConfigurationProvider<EntityConfiguration> bootstrapper;
+        private readonly IConfigurationProvider<EntityConfiguration> typeAnalyzer;
         private readonly EntityConfigurationManager manager;
 
-        public EntityConfigurationProvider(Bootstrapper bootstrapper, EntityAnalyzer typeAnalyzer, EntityConfigurationManager manager)
+        public EntityConfigurationProvider(IConfigurationProvider<EntityConfiguration> bootstrapper, IConfigurationProvider<EntityConfiguration> typeAnalyzer, EntityConfigurationManager manager)
         {
             this.bootstrapper = bootstrapper;
             this.typeAnalyzer = typeAnalyzer;
             this.manager = manager;
         }
 
-        public EntityConfiguration Get(Type type)
+        public EntityConfiguration GetConfiguration(Type type)
         {
-            if (!typeof(AggregateRoot).IsAssignableFrom(type))
+            if (!typeof(Entity).IsAssignableFrom(type))
             {
                 throw new Exception("not an entity!");
             }
@@ -41,14 +41,14 @@ namespace dddlib.Runtime
         private EntityConfiguration GetRuntimeTypeConfiguration(Type type)
         {
             var typeConfiguration = this.GetTypeConfiguration(type);
-            var baseTypeConfiguration = type.BaseType == typeof(Entity) ? new EntityConfiguration() : this.Get(type.BaseType);
+            var baseTypeConfiguration = type.BaseType == typeof(Entity) ? new EntityConfiguration() : this.GetConfiguration(type.BaseType);
 
             return this.manager.Merge(typeConfiguration, baseTypeConfiguration);
         }
 
         private EntityConfiguration GetTypeConfiguration(Type type)
         {
-            var bootstrapperConfiguration = this.bootstrapper.GetEntityConfiguration(type);
+            var bootstrapperConfiguration = this.bootstrapper.GetConfiguration(type);
             var typeAnalyzerConfiguration = this.typeAnalyzer.GetConfiguration(type);
 
             return new[] { bootstrapperConfiguration, typeAnalyzerConfiguration }.Combine();

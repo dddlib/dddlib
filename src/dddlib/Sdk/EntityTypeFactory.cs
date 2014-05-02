@@ -5,14 +5,12 @@
 namespace dddlib.Runtime
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
 
     internal class EntityTypeFactory : ITypeFactory<EntityType>
     {
-        private readonly EntityConfigurationProvider configurationProvider;
+        private readonly IConfigurationProvider<EntityConfiguration> configurationProvider;
 
-        public EntityTypeFactory(EntityConfigurationProvider configurationProvider)
+        public EntityTypeFactory(IConfigurationProvider<EntityConfiguration> configurationProvider)
         {
             Guard.Against.Null(() => configurationProvider);
 
@@ -21,14 +19,10 @@ namespace dddlib.Runtime
 
         public EntityType Create(Type type)
         {
-            var configuration = this.configurationProvider.Get(type);
+            var configuration = this.configurationProvider.GetConfiguration(type);
 
             // create type
-            return new EntityType
-            {
-                NaturalKeySelector = configuration.NaturalKeySelector,
-                NaturalKeyEqualityComparer = configuration.NaturalKeyEqualityComparer,
-            };
+            return new EntityType(configuration.NaturalKeySelector, configuration.NaturalKeyStringEqualityComparer);
         }
     }
 }

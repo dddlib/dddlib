@@ -10,9 +10,9 @@ namespace dddlib.Runtime
 
     internal class ValueObjectTypeFactory : ITypeFactory<ValueObjectType>
     {
-        private readonly ValueObjectConfigurationProvider configurationProvider;
+        private readonly IConfigurationProvider<ValueObjectConfiguration> configurationProvider;
 
-        public ValueObjectTypeFactory(ValueObjectConfigurationProvider configurationProvider)
+        public ValueObjectTypeFactory(IConfigurationProvider<ValueObjectConfiguration> configurationProvider)
         {
             Guard.Against.Null(() => configurationProvider);
 
@@ -21,12 +21,12 @@ namespace dddlib.Runtime
 
         public ValueObjectType Create(Type type)
         {
-            var configuration = this.configurationProvider.Get(type);
+            var configuration = this.configurationProvider.GetConfiguration(type);
 
             // create type
             return new ValueObjectType
             {
-                EqualityComparer = configuration.EqualityComparer as IEqualityComparer<object>,
+                ////EqualityComparer = configuration.EqualityComparer as IEqualityComparer<object>,
             };
         }
     }

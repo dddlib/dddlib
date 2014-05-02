@@ -7,22 +7,22 @@ namespace dddlib.Runtime
     using System;
     using System.Collections.Generic;
 
-    internal class AggregateRootConfigurationProvider
+    internal class AggregateRootConfigurationProvider : IConfigurationProvider<AggregateRootConfiguration>
     {
         private readonly Dictionary<Type, AggregateRootConfiguration> config = new Dictionary<Type, AggregateRootConfiguration>();
 
-        private readonly Bootstrapper bootstrapper;
-        private readonly AggregateRootAnalyzer typeAnalyzer;
+        private readonly IConfigurationProvider<AggregateRootConfiguration> bootstrapper;
+        private readonly IConfigurationProvider<AggregateRootConfiguration> typeAnalyzer;
         private readonly AggregateRootConfigurationManager manager;
 
-        public AggregateRootConfigurationProvider(Bootstrapper bootstrapper, AggregateRootAnalyzer typeAnalyzer, AggregateRootConfigurationManager manager)
+        public AggregateRootConfigurationProvider(IConfigurationProvider<AggregateRootConfiguration> bootstrapper, IConfigurationProvider<AggregateRootConfiguration> typeAnalyzer, AggregateRootConfigurationManager manager)
         {
             this.bootstrapper = bootstrapper;
             this.typeAnalyzer = typeAnalyzer;
             this.manager = manager;
         }
 
-        public AggregateRootConfiguration Get(Type type)
+        public AggregateRootConfiguration GetConfiguration(Type type)
         {
             if (!typeof(AggregateRoot).IsAssignableFrom(type))
             {
@@ -41,14 +41,14 @@ namespace dddlib.Runtime
         private AggregateRootConfiguration GetRuntimeTypeConfiguration(Type type)
         {
             var typeConfiguration = this.GetTypeConfiguration(type);
-            var baseTypeConfiguration = type.BaseType == typeof(AggregateRoot) ? new AggregateRootConfiguration() : this.Get(type.BaseType);
+            var baseTypeConfiguration = type.BaseType == typeof(AggregateRoot) ? new AggregateRootConfiguration() : this.GetConfiguration(type.BaseType);
 
             return this.manager.Merge(typeConfiguration, baseTypeConfiguration);
         }
 
         private AggregateRootConfiguration GetTypeConfiguration(Type type)
         {
-            var bootstrapperConfiguration = this.bootstrapper.GetAggregateRootConfiguration(type);
+            var bootstrapperConfiguration = this.bootstrapper.GetConfiguration(type);
             var typeAnalyzerConfiguration = this.typeAnalyzer.GetConfiguration(type);
 
             return new[] { bootstrapperConfiguration, typeAnalyzerConfiguration }.Combine();

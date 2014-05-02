@@ -4,7 +4,7 @@
 
 namespace dddlib.Runtime
 {
-    internal class EntityConfigurationManager
+    internal class EntityConfigurationManager : IConfigurationManager<EntityConfiguration>
     {
         public EntityConfiguration Merge(EntityConfiguration typeConfiguration, EntityConfiguration baseTypeConfiguration)
         {
@@ -13,7 +13,7 @@ namespace dddlib.Runtime
             return new EntityConfiguration
             {
                 NaturalKeySelector = typeConfiguration.NaturalKeySelector ?? baseTypeConfiguration.NaturalKeySelector,
-                NaturalKeyEqualityComparer = typeConfiguration.NaturalKeyEqualityComparer ?? baseTypeConfiguration.NaturalKeyEqualityComparer,
+                NaturalKeyStringEqualityComparer = typeConfiguration.NaturalKeyStringEqualityComparer ?? baseTypeConfiguration.NaturalKeyStringEqualityComparer,
             };
         }
     }
