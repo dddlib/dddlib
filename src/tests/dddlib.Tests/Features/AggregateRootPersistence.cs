@@ -1,10 +1,12 @@
-﻿// <copyright file="AggregateRootPersistenceFeature.cs" company="dddlib contributors">
+﻿// <copyright file="AggregateRootPersistence.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Tests.Acceptance
+namespace dddlib.Tests.Features
 {
-    public class AggregateRootPersistenceFeature
+    using dddlib.Tests.Sdk;
+
+    public abstract class AggregateRootPersistence : Feature
     {
         /*
             AggregateRoot Persistence (Guid)

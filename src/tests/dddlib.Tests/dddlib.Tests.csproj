@@ -35,17 +35,12 @@
     <None Include="..\..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
-    <Compile Include="Acceptance\AggregateRootPersistenceFeature.cs" />
-    <Compile Include="Acceptance\EntityEqualityFeature.cs" />
-    <Compile Include="Acceptance\Support\Bootstrapper.cs" />
-    <Compile Include="Acceptance\ValueObjectEqualityFeature.cs" />
-    <Compile Include="Sdk\AggregateRootTest.cs" />
-    <Compile Include="Sdk\EntityTest.cs" />
-    <Compile Include="Sdk\IBootstrap.cs" />
-    <Compile Include="Sdk\Test.cs" />
-    <Compile Include="Sdk\ValueObjectTest.cs" />
+    <Compile Include="Features\AggregateRootPersistence.cs" />
+    <Compile Include="Features\EntityEquality.cs" />
+    <Compile Include="Support\Bootstrapper.cs" />
+    <Compile Include="Features\ValueObjectEquality.cs" />
+    <Compile Include="Sdk\Feature.cs" />
     <Compile Include="RuntimeTests.NaturalKeySerializerTest.cs" />
-    <Compile Include="NaturalKeyTest.cs" />
     <Compile Include="RuntimeTests.NaturalKeyTest.cs" />
     <None Include="packages.config" />
   </ItemGroup>
@@ -53,15 +48,15 @@
     <Folder Include="Runtime\" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Acceptance\AggregateRootTests2.cs" />
+    <Compile Include="AggregateRootTests2.cs" />
     <Compile Include="RuntimeTests.cs" />
     <Compile Include="Unit\AggregateRootTests.cs" />
     <Compile Include="Unit\BusinessExceptionTests.cs" />
     <Compile Include="Unit\EntityTests.cs" />
     <Compile Include="Unit\NaturalKeyAttributeTests.cs" />
-    <Compile Include="Acceptance\Support\Car.cs" />
-    <Compile Include="Acceptance\Support\Registration.cs" />
-    <Compile Include="Acceptance\Support\Wheel.cs" />
+    <Compile Include="Support\Car.cs" />
+    <Compile Include="Support\Registration.cs" />
+    <Compile Include="Support\Wheel.cs" />
     <Compile Include="Unit\Runtime\ApplicationTests.cs" />
     <Compile Include="Unit\Runtime\Configuration\AssemblyConfigurationTests.cs" />
     <Compile Include="Unit\Runtime\Configuration\TypeConfigurationTests.cs" />

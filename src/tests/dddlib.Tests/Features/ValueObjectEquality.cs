@@ -1,10 +1,12 @@
-﻿// <copyright file="ValueObjectEqualityFeature.cs" company="dddlib contributors">
+﻿// <copyright file="ValueObjectEquality.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Tests.Acceptance
+namespace dddlib.Tests.Features
 {
-    public class ValueObjectEqualityFeature
+    using dddlib.Tests.Sdk;
+
+    public abstract class ValueObjectEquality : Feature
     {
         /*
             Value Object Equality
