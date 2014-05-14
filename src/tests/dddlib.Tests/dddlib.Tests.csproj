@@ -35,6 +35,7 @@
     <None Include="..\..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
+    <Compile Include="Features\AggregateRootBehaviour.cs" />
     <Compile Include="Features\AggregateRootPersistence.cs" />
     <Compile Include="Features\EntityEquality.cs" />
     <Compile Include="Support\Bootstrapper.cs" />

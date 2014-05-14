@@ -1,4 +1,4 @@
-﻿// <copyright file="AggregateRootPersistence.cs" company="dddlib contributors">
+﻿// <copyright file="AggregateRootBehaviour.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -9,7 +9,7 @@ namespace dddlib.Tests.Features
     using FluentAssertions;
     using Xbehave;
 
-    public abstract class AggregateRootPersistence : Feature
+    public abstract class AggregateRootBehaviour : Feature
     {
         /*
             AggregateRoot Persistence (Guid)
@@ -33,7 +33,7 @@ namespace dddlib.Tests.Features
             AND MORE?
         */
 
-        public class DefinedInBootstrapper : AggregateRootPersistence
+        public class DefinedInBootstrapper : AggregateRootBehaviour
         {
             [Scenario]
             public void Scenario(Subject instance1, Subject instance2, string naturalKey)
