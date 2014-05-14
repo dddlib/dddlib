@@ -17,8 +17,8 @@ namespace dddlib.Tests.Features
             Entity Equality
             ---------------
           X with natural key selector (undefined)
-          X with natural key selector (defined in bootstrapper)
           X with natural key selector (defined in metadata)
+          X with natural key selector (defined in bootstrapper)
             with natural key selector (defined in both bootstrapper and metadata - same)
           X with natural key selector (defined in both bootstrapper and metadata - different)
 
@@ -44,44 +44,80 @@ namespace dddlib.Tests.Features
         public class UndefinedNaturalKeySelector : EntityEquality
         {
             [Scenario]
-            public void Scenario(Subject instance1, Subject instance2, bool consideredEqual)
+            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
             {
-                "Given two instances of an entity with an undefined natural key selector"
-                    .Given(() =>
+                "Given an entity with an undefined natural key selector"
+                    .Given(() => { });
+
+                "And a natural key value"
+                    .And(() => naturalKey = "key");
+
+                "When two instances of that entity are instantiated with that natural key value assigned"
+                    .When(() =>
                     {
-                        instance1 = new Subject();
-                        instance2 = new Subject();
+                        instance1 = new Subject { NaturalKey = naturalKey };
+                        instance2 = new Subject { NaturalKey = naturalKey };
                     });
 
-                "When the instances are compared for equality"
-                    .When(() => consideredEqual = instance1 == instance2);
-
-                "Then they are not considered equal"
-                    .Then(() => consideredEqual.Should().BeFalse());
+                "Then the first instance is not equal to the second instance"
+                    .Then(() => instance1.Should().NotBe(instance2));
             }
 
             public class Subject : Entity
             {
+                public string NaturalKey { get; set; }
+            }
+        }
+
+        public class NaturalKeySelectorDefinedInMetadata : EntityEquality
+        {
+            [Scenario]
+            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
+            {
+                "Given an entity with a natural key selector defined in metadata"
+                    .Given(() => { });
+
+                "And a natural key value"
+                    .And(() => naturalKey = "key");
+
+                "When two instances of that entity are instantiated with that natural key value assigned"
+                    .When(() =>
+                    {
+                        instance1 = new Subject { NaturalKey = naturalKey };
+                        instance2 = new Subject { NaturalKey = naturalKey };
+                    });
+
+                "Then the first instance is equal to the second instance"
+                    .Then(() => instance1.Should().Be(instance2));
+            }
+
+            public class Subject : Entity
+            {
+                [NaturalKey]
+                public string NaturalKey { get; set; }
             }
         }
 
         public class NaturalKeySelectorDefinedInBootstrapper : EntityEquality
         {
             [Scenario]
-            public void Scenario(Subject instance1, Subject instance2, bool consideredEqual)
+            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
             {
-                "Given two instances of an entity with an undefined natural key selector"
-                    .Given(() =>
+                "Given an entity with a natural key selector defined in the bootstrapper"
+                    .Given(() => { });
+
+                "And a natural key value"
+                    .And(() => naturalKey = "key");
+
+                "When two instances of that entity are instantiated with that natural key value assigned"
+                    .When(() =>
                     {
-                        instance1 = new Subject { NaturalKey = "key" };
-                        instance2 = new Subject { NaturalKey = "key" };
+                        instance1 = new Subject { NaturalKey = naturalKey };
+                        instance2 = new Subject { NaturalKey = naturalKey };
                     });
 
-                "When the instances are compared for equality"
-                    .When(() => consideredEqual = instance1 == instance2);
-
-                "Then they are considered equal"
-                    .Then(() => consideredEqual.Should().BeTrue());
+                "Then the first instance is equal to the second instance"
+                    .Then(() => instance1.Should().Be(instance2));
             }
 
             public class Subject : Entity
@@ -98,49 +134,26 @@ namespace dddlib.Tests.Features
             }
         }
 
-        public class NaturalKeySelectorDefinedInMetadata : EntityEquality
-        {
-            [Scenario]
-            public void Scenario(Subject instance1, Subject instance2, bool consideredEqual)
-            {
-                "Given two instances of an entity with an undefined natural key selector"
-                    .Given(() =>
-                    {
-                        instance1 = new Subject { NaturalKey = "key" };
-                        instance2 = new Subject { NaturalKey = "key" };
-                    });
-
-                "When the instances are compared for equality"
-                    .When(() => consideredEqual = instance1 == instance2);
-
-                "Then they are considered equal"
-                    .Then(() => consideredEqual.Should().BeTrue());
-            }
-
-            public class Subject : Entity
-            {
-                [NaturalKey]
-                public string NaturalKey { get; set; }
-            }
-        }
-
         public class NonConflictingNaturalKeySelectors : EntityEquality
         {
             [Scenario(Skip = "Doesn't work yet!")]
-            public void Scenario(Subject instance1, Subject instance2, bool consideredEqual)
+            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
             {
-                "Given two instances of an entity with duplicate non-conflicting natural key selectors"
-                    .Given(() =>
+                "Given an entity with non-conflicting natural key selectors defined in both metadata and the bootstrapper"
+                    .Given(() => { });
+
+                "And a natural key value"
+                    .And(() => naturalKey = "key");
+
+                "When two instances of that entity are instantiated with that natural key value assigned"
+                    .When(() =>
                     {
-                        instance1 = new Subject { NaturalKey = "key" };
-                        instance2 = new Subject { NaturalKey = "key" };
+                        instance1 = new Subject { NaturalKey = naturalKey };
+                        instance2 = new Subject { NaturalKey = naturalKey };
                     });
 
-                "When the instances are compared for equality"
-                    .When(() => consideredEqual = instance1 == instance2);
-
-                "Then they are considered equal"
-                    .Then(() => consideredEqual.Should().BeTrue());
+                "Then the first instance is equal to the second instance"
+                    .Then(() => instance1.Should().Be(instance2));
             }
 
             public class Subject : Entity
@@ -163,7 +176,10 @@ namespace dddlib.Tests.Features
             [Scenario]
             public void Scenario(Type type, Action action)
             {
-                "When an instance of an entity with conflicting natural key selectors is instantiated"
+                "Given an entity with conflicting natural key selectors defined in both metadata and the bootstrapper"
+                    .Given(() => { });
+
+                "When an instance of that entity is instantiated"
                     .When(() => action = () => new Subject());
 
                 "Then a runtime exception should be thrown" // and the runtime exception should state that the natural key is defined twice
