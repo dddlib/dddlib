@@ -35,7 +35,6 @@
     <None Include="..\..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
-    <Compile Include="Features\AggregateRootBehaviour.cs" />
     <Compile Include="Features\AggregateRootEventApplication.cs" />
     <Compile Include="Features\AggregateRootLifecycle.cs" />
     <Compile Include="Features\AggregateRootObjectMappingEntities.cs" />
@@ -43,7 +42,6 @@
     <Compile Include="Features\AggregateRootPersistence.cs" />
     <Compile Include="Features\AggregateRootPersistenceEventSourcing.cs" />
     <Compile Include="Features\EntityEquality.cs" />
-    <Compile Include="Features\ValueObjectMapping.cs" />
     <Compile Include="Support\Bootstrapper.cs" />
     <Compile Include="Features\ValueObjectEquality.cs" />
     <Compile Include="Sdk\Feature.cs" />

@@ -37,3 +37,26 @@ I need to be able to map between value objects and DTO's (to and from)
 As someone who uses dddlib [with event sourcing]
 In order save state
 I need to be able to persist an aggregate root
+
+
+        /*
+            AggregateRoot Persistence (Guid)
+            --------------------------------
+            with natural key selector (undefined) AND with uninitialized factory (undefined)
+            with natural key selector (defined - doesn't matter how) AND with uninitialized factory (undefined)
+            with natural key selector (undefined) AND with uninitialized factory (defined in bootstrapper only)
+            with natural key selector (defined - doesn't matter how) AND with uninitialized factory (defined in bootstrapper only)
+
+            AggregateRoot Persistence (special case: string)
+            ------------------------------------------------
+            ALL FOLLOWING TEST: with natural key selector (defined - doesn't matter how) AND with uninitialized factory (defined in bootstrapper only)
+            with natural key equality comparer (undefined)
+            with natural key equality comparer (string only, defined in bootstrapper only)
+
+            AggregateRoot Persistence (special case: composite key value object: strings)
+            -----------------------------------------------------------------------------
+            ALL FOLLOWING TEST: with natural key selector (defined - doesn't matter how) AND with uninitialized factory (defined in bootstrapper only)
+            with natural key serializer (undefined)
+            with natural key serializer (defined in bootstrapper)
+            AND MORE?
+        */
