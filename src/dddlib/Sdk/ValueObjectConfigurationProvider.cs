@@ -24,10 +24,10 @@ namespace dddlib.Runtime
 
         public ValueObjectConfiguration GetConfiguration(Type type)
         {
-            if (!typeof(ValueObject<>).IsAssignableFrom(type))
-            {
-                throw new Exception("not an aggregate!");
-            }
+            ////if (!typeof(ValueObject<>).IsAssignableFrom(type))
+            ////{
+            ////    throw new Exception("not an aggregate!");
+            ////}
 
             var runtimeTypeConfiguration = default(ValueObjectConfiguration);
             if (!this.config.TryGetValue(type, out runtimeTypeConfiguration))
@@ -38,10 +38,27 @@ namespace dddlib.Runtime
             return runtimeTypeConfiguration;
         }
 
+        // TODO (Cameron): Remove. Somehow.
+        private static bool IsSubclassOfRawGeneric(Type generic, Type type)
+        {
+            while (type != null && type != typeof(object))
+            {
+                var cur = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
+                if (generic == cur)
+                {
+                    return true;
+                }
+
+                type = type.BaseType;
+            }
+
+            return false;
+        }
+
         private ValueObjectConfiguration GetRuntimeTypeConfiguration(Type type)
         {
             var typeConfiguration = this.GetTypeConfiguration(type);
-            var baseTypeConfiguration = type.BaseType == typeof(ValueObject<>) ? new ValueObjectConfiguration() : this.GetConfiguration(type.BaseType);
+            var baseTypeConfiguration = IsSubclassOfRawGeneric(typeof(ValueObject<>), type.BaseType) ? new ValueObjectConfiguration() : this.GetConfiguration(type.BaseType);
 
             return this.manager.Merge(typeConfiguration, baseTypeConfiguration);
         }

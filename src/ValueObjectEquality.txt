@@ -1,0 +1,39 @@
+- Value Object Equality -
+As someone who uses dddlib
+In order to persist an aggregate root with a value object for a natural key
+I need to be able to perform equality operations against value objects
+
+- Entity Equality -
+As someone who uses dddlib
+In order to persist an aggregate root
+I need to be able to perform equality operations against entities (as an aggregate root is an entity)
+
+- Aggregate Root Lifecycle -
+As someone who uses dddlib
+In order to model destruction as a concept
+I need to be able to end the lifecycle of an entity
+
+- Aggregate Root Persistence -
+As someone who uses dddlib
+In order save state
+I need to be able to persist an aggregate root
+
+- Aggregate Root Event Application -
+As someone who uses dddlib [with event sourcing]
+In order to persist events
+I need to be able to record changes in state
+
+- Aggregate Root Object Mapping (Entities) -
+As someone who uses dddlib
+In order to create events from domain objects passed to [command] methods [on an aggregate root]
+I need to be able to map between entities and DTO's (to and from)
+
+- Aggregate Root Object Mapping (Value Objects) -
+As someone who uses dddlib
+In order to create events from domain objects passed to [command] methods [on an aggregate root]
+I need to be able to map between value objects and DTO's (to and from)
+
+- Aggregate Root Persistence (ES) -
+As someone who uses dddlib [with event sourcing]
+In order save state
+I need to be able to persist an aggregate root

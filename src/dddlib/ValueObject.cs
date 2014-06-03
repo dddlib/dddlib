@@ -10,11 +10,7 @@ namespace dddlib
         Think about how this should work with the TypeDescriptors.  */
 
     using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
-    using System.Linq;
     using dddlib.Runtime;
 
     /// <summary>
@@ -25,29 +21,14 @@ namespace dddlib
     public abstract class ValueObject<T> : IEquatable<T>
         where T : ValueObject<T>
     {
-        private static readonly IEqualityComparer<object> DefaultEqualityComparer = new EqualityComparer();
-
-        private readonly IEqualityComparer<object> equalityComparer;
+        private readonly ValueObjectType runtimeType;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ValueObject{T}"/> class.
         /// </summary>
         protected ValueObject()
-            : this(DefaultEqualityComparer)
         {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ValueObject{T}"/> class.
-        /// </summary>
-        /// <param name="equalityComparer">
-        /// The comparer to use for equality comparison of each of the items that together comprise the value of this object.
-        /// </param>
-        protected ValueObject(IEqualityComparer<object> equalityComparer)
-        {
-            Guard.Against.Null(() => equalityComparer);
-
-            this.equalityComparer = equalityComparer;
+            this.runtimeType = Application.Current.GetValueObjectType(this.GetType());
         }
 
         [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible anywhere.")]
@@ -78,21 +59,7 @@ namespace dddlib
         /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public sealed override int GetHashCode()
         {
-            int multiplier = 59;
-            int hashCode = 17;
-
-            foreach (var value in this.GetValueAndValidate())
-            {
-                if (value != null)
-                {
-                    unchecked
-                    {
-                        hashCode = (hashCode * multiplier) + this.equalityComparer.GetHashCode(value);
-                    }
-                }
-            }
-
-            return hashCode;
+            return this.runtimeType.EqualityComparer.GetHashCode(this);
         }
 
         /// <summary>
@@ -119,57 +86,7 @@ namespace dddlib
                 return false;
             }
 
-            var thisValue = this.GetValueAndValidate();
-            var otherValue = other.GetValueAndValidate();
-
-            return otherValue.SequenceEqual(thisValue, this.equalityComparer);
-        }
-
-        /// <summary>
-        /// Gets each of the items that together comprise the value of this object.
-        /// </summary>
-        /// <returns>An enumeration of the items that together comprise the value of this object.</returns>
-        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Inappropriate.")]
-        protected abstract IEnumerable<object> GetValue();
-
-        [SuppressMessage("Microsoft.Naming", "CA2204:Literals should be spelled correctly", MessageId = "GetValue", Justification = "Method name.")]
-        private IEnumerable<object> GetValueAndValidate()
-        {
-            var value = this.GetValue();
-            if (value == null)
-            {
-                throw new RuntimeException(
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "Unable to calculate value equality for '{0}' as the overridden 'GetValue' method implementation is returning null.",
-                        typeof(T).FullName));
-            }
-
-            return value;
-        }
-
-        // TODO (Cameron): Add trace level logging, maybe?
-        private class EqualityComparer : IEqualityComparer<object>
-        {
-            public new bool Equals(object x, object y)
-            {
-                if (object.ReferenceEquals(x, y))
-                {
-                    return true;
-                }
-
-                if (object.ReferenceEquals(x, null) && object.ReferenceEquals(y, null))
-                {
-                    return true;
-                }
-
-                return object.ReferenceEquals(x, null) ? y.Equals(x) : x.Equals(y);
-            }
-
-            public virtual int GetHashCode(object obj)
-            {
-                return obj == null ? 0 : obj.GetHashCode();
-            }
+            return this.runtimeType.EqualityComparer.Equals(this, other);
         }
     }
 }

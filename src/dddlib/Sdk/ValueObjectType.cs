@@ -6,8 +6,9 @@ namespace dddlib.Runtime
 {
     using System.Collections.Generic;
 
-    internal class ValueObjectType
+    internal class ValueObjectType // where T : ValueObject<T>
     {
         public IEqualityComparer<object> EqualityComparer { get; internal set; }
+        ////public IEqualityComparer<ValueObject<T>> EqualityComparer { get; internal set; }
     }
 }

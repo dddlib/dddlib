@@ -9,9 +9,9 @@ namespace dddlib.Runtime
     using System.Linq;
     using dddlib.Configuration;
 
-    internal class Bootstrapper : 
-        IConfigurationProvider<AggregateRootConfiguration>, 
-        IConfigurationProvider<EntityConfiguration>, 
+    internal class Bootstrapper :
+        IConfigurationProvider<AggregateRootConfiguration>,
+        IConfigurationProvider<EntityConfiguration>,
         IConfigurationProvider<ValueObjectConfiguration>
     {
         private readonly Func<Type, Action<IConfiguration>> bootstrapperProvider;
@@ -70,7 +70,9 @@ namespace dddlib.Runtime
         // TODO (Cameron): Consider BootstrapperProvider class.
         private static Action<IConfiguration> GetBootstrapper(Type type)
         {
-            var bootstrapperTypes = type.Assembly.GetTypes().Where(assemblyType => typeof(IBootstrapper).IsAssignableFrom(assemblyType));
+            var bootstrapperTypes = type.Assembly.GetTypes()
+                .Where(assemblyType => typeof(IBootstrapper).IsAssignableFrom(assemblyType) && assemblyType != typeof(IBootstrapper));
+
             if (!bootstrapperTypes.Any())
             {
                 return config => { };

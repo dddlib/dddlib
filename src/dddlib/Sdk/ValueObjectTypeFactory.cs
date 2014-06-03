@@ -26,7 +26,7 @@ namespace dddlib.Runtime
             // create type
             return new ValueObjectType
             {
-                ////EqualityComparer = configuration.EqualityComparer as IEqualityComparer<object>,
+                EqualityComparer = EqualityComparer<object>.Default,
             };
         }
     }

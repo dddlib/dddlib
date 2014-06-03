@@ -118,12 +118,29 @@ namespace dddlib.Runtime
 
         internal ValueObjectType GetValueObjectType(Type type)
         {
-            if (!typeof(ValueObject<>).IsAssignableFrom(type))
+            if (!IsSubclassOfRawGeneric(typeof(ValueObject<>), type))
             {
                 throw new RuntimeException(string.Format(CultureInfo.InvariantCulture, "The specified type '{0}' is not a value object.", type));
             }
 
             return this.GetType<ValueObjectType>(type, this.valueObjectTypes, this.valueObjectTypeFactory);
+        }
+
+        // TODO (Cameron): Remove. Somehow.
+        private static bool IsSubclassOfRawGeneric(Type generic, Type type)
+        {
+            while (type != null && type != typeof(object))
+            {
+                var cur = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
+                if (generic == cur)
+                {
+                    return true;
+                }
+            
+                type = type.BaseType;
+            }
+         
+            return false;
         }
 
         private static ITypeFactory<AggregateRootType> CreateAggregateRootTypeFactory()

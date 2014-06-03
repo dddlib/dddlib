@@ -1,4 +1,4 @@
-﻿// <copyright file="ValueObjectEquality.cs" company="dddlib contributors">
+﻿// <copyright file="ValueObjectMapping.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -6,10 +6,7 @@ namespace dddlib.Tests.Features
 {
     using dddlib.Tests.Sdk;
 
-    // As someone who uses dddlib
-    // In order to persist an aggregate root with a value object for a natural key
-    // I need to be able to perform equality operations against value objects
-    public abstract class ValueObjectEquality : Feature
+    public abstract class ValueObjectMapping : Feature
     {
         /*
             Value Object Equality

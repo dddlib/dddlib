@@ -9,6 +9,9 @@ namespace dddlib.Tests.Features
     using FluentAssertions;
     using Xbehave;
 
+    // As someone who uses dddlib
+    // In order save state
+    // I need to be able to persist an aggregate root
     public abstract class AggregateRootPersistence : Feature
     {
         /*
