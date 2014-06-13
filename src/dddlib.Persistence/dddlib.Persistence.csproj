@@ -51,6 +51,7 @@
     <Compile Include="AggregateRootFactory.cs" />
     <Compile Include="AggregateRootRepository.cs" />
     <Compile Include="Guard.cs" />
+    <Compile Include="IIdentityMap.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
