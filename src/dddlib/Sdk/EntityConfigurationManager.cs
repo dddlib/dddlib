@@ -12,7 +12,8 @@ namespace dddlib.Runtime
             // there is logic required in here
             return new EntityConfiguration
             {
-                NaturalKeySelector = typeConfiguration.NaturalKeySelector ?? baseTypeConfiguration.NaturalKeySelector,
+                EntityType = typeConfiguration.EntityType ?? baseTypeConfiguration.EntityType,
+                NaturalKeyPropertyName = typeConfiguration.NaturalKeyPropertyName ?? baseTypeConfiguration.NaturalKeyPropertyName,
                 NaturalKeyStringEqualityComparer = typeConfiguration.NaturalKeyStringEqualityComparer ?? baseTypeConfiguration.NaturalKeyStringEqualityComparer,
             };
         }

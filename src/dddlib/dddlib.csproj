@@ -67,6 +67,7 @@
     <Compile Include="Sdk\DefaultConfigurationProvider.cs" />
     <Compile Include="Sdk\EntityConfigurationManager.cs" />
     <Compile Include="Sdk\EntityConfigurationProvider.cs" />
+    <Compile Include="Runtime\NaturalKeySelector.cs" />
     <Compile Include="Sdk\ValueObjectConfigurationManager.cs" />
     <Compile Include="Sdk\ValueObjectConfigurationProvider.cs" />
     <Compile Include="Sdk\ValueObjectTypeFactory.cs" />

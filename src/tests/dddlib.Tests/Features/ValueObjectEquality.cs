@@ -5,6 +5,7 @@
 namespace dddlib.Tests.Features
 {
     using dddlib.Tests.Sdk;
+    using Xbehave;
 
     // As someone who uses dddlib
     // In order to persist an aggregate root with a value object for a natural key

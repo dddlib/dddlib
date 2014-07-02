@@ -13,7 +13,8 @@ MicrobusEventDispatcher - takes nested event dispatcher as argument
 
 =========== NOTES ===========
 
-
+Everything should be defined in the bootstrapper by default.
+Subsequent definition mechanisms my be added to provide overrides for the bootstrapper functionality. These mechanisms can be registered elsewhere.
 
 
 
@@ -36,3 +37,27 @@ TESTS
 
 
 
+ContainingAssemblyBootstrapper
+TypeAnalyzerBootstrapper
+
+DefaultConfigurationProvider
+
+
+Analyzer
+
+
+Provider		Config Provider
+Configuration	Config DTO
+Type			Impl
+TypeFactory		Factory
+
+
+EntityType is just config
+
+
+Entity REQUIRES EntityType (which defines configured behaviour)
+EntityType is CREATED by EntityTypeFactory
+EntityType MUST NOT be invalid
+EntityTypeFactory REQUIRES EntityConfiguration (for create method)
+EntityConfiguration IS a DTO
+EntityConfiguration MAY BE invalid

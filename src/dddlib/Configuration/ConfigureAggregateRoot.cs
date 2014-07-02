@@ -6,6 +6,7 @@ namespace dddlib.Configuration
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq.Expressions;
     using dddlib.Runtime;
 
     internal class ConfigureAggregateRoot<T> : IConfigureAggregateRoot<T> 
@@ -29,13 +30,13 @@ namespace dddlib.Configuration
             return this;
         }
 
-        public IConfigureAggregateRoot<T> ToUseNaturalKey<TKey>(Func<T, TKey> naturalKeySelector)
+        public IConfigureAggregateRoot<T> ToUseNaturalKey<TKey>(Expression<Func<T, TKey>> naturalKeySelector)
         {
             this.entityConfig.ToUseNaturalKey(naturalKeySelector);
             return this;
         }
 
-        public IConfigureAggregateRoot<T> ToUseNaturalKey(Func<T, string> naturalKeySelector, IEqualityComparer<string> equalityComparer)
+        public IConfigureAggregateRoot<T> ToUseNaturalKey(Expression<Func<T, string>> naturalKeySelector, IEqualityComparer<string> equalityComparer)
         {
             this.entityConfig.ToUseNaturalKey(naturalKeySelector, equalityComparer);
             return this;

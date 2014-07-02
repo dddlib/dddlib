@@ -6,11 +6,12 @@ namespace dddlib.Runtime
 {
     using System;
     using System.Collections.Generic;
+    using dddlib.Sdk;
 
     internal class EntityType
     {
         // TODO (Cameron): Mess.
-        public EntityType(Func<object, object> naturalKeySelector, IEqualityComparer<string> naturalKeyStringEqualityComparer)
+        public EntityType(NaturalKeySelector naturalKeySelector, IEqualityComparer<string> naturalKeyStringEqualityComparer)
         {
             this.NaturalKeySelector = naturalKeySelector;
             this.NaturalKeyEqualityComparer = naturalKeyStringEqualityComparer == null 
@@ -18,7 +19,7 @@ namespace dddlib.Runtime
                 : new StringObjectEqualityComparer(naturalKeyStringEqualityComparer);
         }
 
-        public Func<object, object> NaturalKeySelector { get; private set; }
+        public NaturalKeySelector NaturalKeySelector { get; private set; }
 
         public IEqualityComparer<object> NaturalKeyEqualityComparer { get; private set; }
 

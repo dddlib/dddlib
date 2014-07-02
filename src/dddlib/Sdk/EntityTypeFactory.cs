@@ -5,6 +5,7 @@
 namespace dddlib.Runtime
 {
     using System;
+    using dddlib.Sdk;
 
     internal class EntityTypeFactory : ITypeFactory<EntityType>
     {
@@ -21,8 +22,10 @@ namespace dddlib.Runtime
         {
             var configuration = this.configurationProvider.GetConfiguration(type);
 
+            var naturalKeySelector = new NaturalKeySelector(configuration.NaturalKeyPropertyName, configuration.EntityType);
+
             // create type
-            return new EntityType(configuration.NaturalKeySelector, configuration.NaturalKeyStringEqualityComparer);
+            return new EntityType(naturalKeySelector, configuration.NaturalKeyStringEqualityComparer);
         }
     }
 }

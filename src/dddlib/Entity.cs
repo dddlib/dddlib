@@ -88,8 +88,8 @@ namespace dddlib
                 return false;
             }
 
-            var thisValue = this.runtimeType.NaturalKeySelector(this);
-            var otherValue = this.runtimeType.NaturalKeySelector(other);
+            var thisValue = this.runtimeType.NaturalKeySelector.Invoke(this);
+            var otherValue = this.runtimeType.NaturalKeySelector.Invoke(other);
 
             return this.runtimeType.NaturalKeyEqualityComparer.Equals(thisValue, otherValue);
         }

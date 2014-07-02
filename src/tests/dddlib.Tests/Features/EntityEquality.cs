@@ -41,7 +41,7 @@ namespace dddlib.Tests.Features
             with natural key selector (undefined in subclass)
 
             [all entity equality tests should also work for aggregate roots]
-            [consider inheritence]
+            [consider inheritance]
         */
 
         public class UndefinedNaturalKeySelector : EntityEquality
@@ -139,7 +139,7 @@ namespace dddlib.Tests.Features
 
         public class NonConflictingNaturalKeySelectors : EntityEquality
         {
-            [Scenario(Skip = "Doesn't work yet!")]
+            [Scenario] // (Skip = "Doesn't work yet!")]
             public void Scenario(Subject instance1, Subject instance2, string naturalKey)
             {
                 "Given an entity with non-conflicting natural key selectors defined in both metadata and the bootstrapper"

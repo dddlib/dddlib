@@ -57,7 +57,8 @@ namespace dddlib.Runtime
             // TODO (Cameron): Get equality comparer from config.
             return new EntityConfiguration
             {
-                NaturalKeySelector = function,
+                NaturalKeyPropertyName = naturalKey.Name,
+                EntityType = type,
             };
         }
     }

@@ -9,7 +9,9 @@ namespace dddlib.Runtime
 
     internal class EntityConfiguration
     {
-        public Func<object, object> NaturalKeySelector { get; set; }
+        public string NaturalKeyPropertyName { get; set; }
+
+        public Type EntityType { get; set; }
 
         public IEqualityComparer<string> NaturalKeyStringEqualityComparer { get; set; }
     }
