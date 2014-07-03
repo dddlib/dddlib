@@ -26,8 +26,21 @@ namespace dddlib.Runtime
             // create type
             return new ValueObjectType
             {
-                EqualityComparer = EqualityComparer<object>.Default,
+                EqualityComparer = new TemporaryEqualityComparer(), // EqualityComparer<object>.Default,
             };
+        }
+
+        private class TemporaryEqualityComparer : IEqualityComparer<object>
+        {
+            public new bool Equals(object x, object y)
+            {
+                return false;
+            }
+
+            public int GetHashCode(object obj)
+            {
+                return 0;
+            }
         }
     }
 }

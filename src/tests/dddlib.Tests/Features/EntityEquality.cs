@@ -139,7 +139,7 @@ namespace dddlib.Tests.Features
 
         public class NonConflictingNaturalKeySelectors : EntityEquality
         {
-            [Scenario] // (Skip = "Doesn't work yet!")]
+            [Scenario]
             public void Scenario(Subject instance1, Subject instance2, string naturalKey)
             {
                 "Given an entity with non-conflicting natural key selectors defined in both metadata and the bootstrapper"

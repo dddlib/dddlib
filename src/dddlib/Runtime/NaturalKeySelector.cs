@@ -20,9 +20,25 @@ namespace dddlib.Sdk
             this.propertyName = propertyName;
             this.type = type;
 
-            var naturalKey = type.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
-                .Where(member => member.Name == propertyName)
-                .SingleOrDefault();
+            if (type == null || propertyName == null)
+            {
+                this.propertyName = string.Empty;
+                this.type = typeof(object);
+                return;
+            }
+
+            var naturalKey = default(PropertyInfo);
+            foreach (var subType in new[] { type }.Traverse(t => t.BaseType == typeof(Entity) ? null : new[] { t.BaseType }))
+            {
+                naturalKey = subType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
+                    .Where(member => member.Name == propertyName)
+                    .SingleOrDefault();
+
+                if (naturalKey != null)
+                {
+                    break;
+                }
+            }
 
             var parameter = Expression.Parameter(type, "entity");
             var property = Expression.Property(parameter, naturalKey);
@@ -62,7 +78,8 @@ namespace dddlib.Sdk
 
         public object Invoke(Entity entity)
         {
-            return this.selector(entity);
+            // TODO (Cameron): This is rubbish.
+            return this.selector == null ? Guid.NewGuid() : this.selector(entity);
         }
     }
 }
