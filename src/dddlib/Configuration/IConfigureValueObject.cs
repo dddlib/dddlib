@@ -26,6 +26,13 @@ namespace dddlib.Configuration
         /// <param name="mapping">The mapping.</param>
         /// <returns>The configuration.</returns>
         TConfiguration ToMapAs<TOut>(Func<T, TOut> mapping);
+
+        /// <summary>
+        /// Configures the runtime to perform value object equality using the specified equality comparer.
+        /// </summary>
+        /// <param name="equalityComparer">The equality comparer.</param>
+        /// <returns>The configuration.</returns>
+        TConfiguration ToUseEqualityComparer(IEqualityComparer<T> equalityComparer);
     }
 
     [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1124:DoNotUseRegions", Justification = "Here the code is meant to be hidden.")]

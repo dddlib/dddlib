@@ -4,7 +4,7 @@
 
 namespace dddlib.Runtime
 {
-    internal class ValueObjectConfigurationManager
+    internal class ValueObjectConfigurationManager : IConfigurationManager<ValueObjectConfiguration>
     {
         public ValueObjectConfiguration Merge(ValueObjectConfiguration typeConfiguration, ValueObjectConfiguration baseTypeConfiguration)
         {
@@ -12,6 +12,7 @@ namespace dddlib.Runtime
             // there is logic required in here
             return new ValueObjectConfiguration
             {
+                EqaulityComparer = typeConfiguration.EqaulityComparer,
                 Mapper = typeConfiguration.Mapper,
                 ////NaturalKeySelector = typeConfiguration.NaturalKeySelector ?? baseTypeConfiguration.NaturalKeySelector,
                 ////NaturalKeyEqualityComparer = typeConfiguration.NaturalKeyEqualityComparer ?? baseTypeConfiguration.NaturalKeyEqualityComparer,

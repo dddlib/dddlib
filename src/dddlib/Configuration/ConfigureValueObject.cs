@@ -5,6 +5,7 @@
 namespace dddlib.Configuration
 {
     using System;
+    using System.Collections.Generic;
     using dddlib.Runtime;
 
     internal class ConfigureValueObject<T> : IConfigureValueObject<T>
@@ -23,6 +24,12 @@ namespace dddlib.Configuration
         {
             // TODO (Cameron): Some expression based stuff here to negate the need to wrap.
             this.configuration.Mapper = type => mapping((T)type);
+            return this;
+        }
+
+        public IConfigureValueObject<T> ToUseEqualityComparer(IEqualityComparer<T> equalityComparer)
+        {
+            this.configuration.EqaulityComparer = equalityComparer;
             return this;
         }
     }

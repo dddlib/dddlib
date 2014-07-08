@@ -37,6 +37,7 @@ namespace dddlib.Runtime
         {
             return new ValueObjectConfiguration
             {
+                EqaulityComparer = values.Select(value => value.EqaulityComparer).CombineValues(),
                 Mapper = values.Select(value => value.Mapper).CombineValues(),
             };
         }

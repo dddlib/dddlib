@@ -25,20 +25,32 @@ namespace dddlib.Tests.Sdk
             "Given a new application"
                 .Given(() =>
                 {
-                    var configurationProviders = new IConfigurationProvider<EntityConfiguration>[]
+                    // entity
+                    var entityConfigurationProviders = new IConfigurationProvider<EntityConfiguration>[]
                     {
                         new Bootstrapper(this.Bootstrap),
                         new EntityAnalyzer(),
                     };
 
-                    var configurationManager = new EntityConfigurationManager();
-                    var configurationProvider = new DefaultConfigurationProvider<EntityConfiguration>(configurationProviders, configurationManager);
-                    var entityTypeFactory = new EntityTypeFactory(configurationProvider);
+                    var entityConfigurationManager = new EntityConfigurationManager();
+                    var entityConfigurationProvider = new DefaultConfigurationProvider<EntityConfiguration>(entityConfigurationProviders, entityConfigurationManager);
+                    var entityTypeFactory = new EntityTypeFactory(entityConfigurationProvider);
+                    
+                    // value object
+                    var valueObjectConfigurationProviders = new IConfigurationProvider<ValueObjectConfiguration>[]
+                    {
+                        new Bootstrapper(this.Bootstrap),
+                        //// new ValueObjectAnalyzer(),
+                    };
+
+                    var valueObjectConfigurationManager = new ValueObjectConfigurationManager();
+                    var valueObjectConfigurationProvider = new DefaultConfigurationProvider<ValueObjectConfiguration>(valueObjectConfigurationProviders, valueObjectConfigurationManager);
+                    var valueObjectTypeFactory = new ValueObjectTypeFactory(valueObjectConfigurationProvider);
 
                     new Application(
                         A.Fake<ITypeFactory<AggregateRootType>>(o => o.Strict()),
                         entityTypeFactory,
-                        A.Fake<ITypeFactory<ValueObjectType>>(o => o.Strict()))
+                        valueObjectTypeFactory)
                         .Using();
                 });
         }

@@ -8,6 +8,8 @@ namespace dddlib.Runtime
 
     internal class ValueObjectConfiguration
     {
+        public object EqaulityComparer { get; set; }
+
         public Func<object, object> Mapper { get; set; }
     }
 }

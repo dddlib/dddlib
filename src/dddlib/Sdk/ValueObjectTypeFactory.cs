@@ -24,10 +24,7 @@ namespace dddlib.Runtime
             var configuration = this.configurationProvider.GetConfiguration(type);
 
             // create type
-            return new ValueObjectType
-            {
-                ////EqualityComparer = new TemporaryEqualityComparer(), // EqualityComparer<object>.Default,
-            };
+            return new ValueObjectType(configuration.EqaulityComparer);
         }
     }
 }

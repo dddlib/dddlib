@@ -61,7 +61,7 @@ namespace dddlib
         {
             var equalityComparer = this.runtimeType.CreateEqualityComparer<T>();
 
-            return equalityComparer.GetHashCode(this);
+            return equalityComparer.GetHashCode((T)this);
         }
 
         /// <summary>
@@ -87,10 +87,10 @@ namespace dddlib
                 // NOTE (Cameron): Type mismatch.
                 return false;
             }
-
+            
             var equalityComparer = this.runtimeType.CreateEqualityComparer<T>();
             
-            return equalityComparer.Equals(this, other);
+            return equalityComparer.Equals((T)this, other);
         }
     }
 }

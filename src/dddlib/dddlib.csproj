@@ -53,7 +53,6 @@
     <Compile Include="BusinessException.cs" />
     <Compile Include="Configuration\ConfigureValueObject.cs" />
     <Compile Include="Configuration\IConfigureValueObject.cs" />
-    <Compile Include="Configuration\ValueObjectConfiguration.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="Runtime\ValueObjectEqualityComparer.cs" />
     <Compile Include="Runtime\IConfigurationProvider.cs" />

@@ -42,7 +42,8 @@ namespace dddlib.Runtime
             dynamic allConfigurations = this.configurationProviders.Select(configurationProvider => configurationProvider.GetConfiguration(type));
             var typeConfiguration = ConfigurationExtensions.Combine(allConfigurations);
 
-            var baseTypeConfiguration = typeof(AggregateRoot).Assembly.GetTypes().Contains(type.BaseType) 
+            var baseTypeConfiguration =
+                typeof(AggregateRoot).Assembly.GetTypes().Contains(type.BaseType.IsGenericType ? type.BaseType.GetGenericTypeDefinition() : type.BaseType)
                 ? new T() 
                 : this.GetConfiguration(type.BaseType);
 
