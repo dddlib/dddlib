@@ -4,20 +4,21 @@
 
 namespace dddlib.Tests.Unit
 {
-    using dddlib.Tests.Support;
+    using dddlib.Tests.Acceptnace.Support;
+    using FluentAssertions;
     using Xunit;
 
     public class EntityTests
     {
-        // test equality
-        // test natural key value resolution
-        [Fact(Skip = "Doesn't work.")]
+        [Fact]
         public void X()
         {
-            ////var car = new Car("JBC");
-            ////var car2 = new Car("JBC1");
+            var car = new Car(new Registration("JBC"));
+            var car2 = new Car(new Registration("JBC"));
+            var car3 = new Car(new Registration("JBC1"));
 
-            ////var areEqual = car == car2;
+            (car == car2).Should().BeTrue();
+            (car == car3).Should().BeFalse();
         }
     }
 }

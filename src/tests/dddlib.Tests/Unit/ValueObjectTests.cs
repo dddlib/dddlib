@@ -12,7 +12,7 @@ namespace dddlib.Tests.Unit
     public class ValueObjectTests
     {
         // happy path
-        [Fact(Skip = "I've broken this.")]
+        [Fact]
         public void VectorEqualityTest()
         {
             var firstVector = new Vector(1, 2);

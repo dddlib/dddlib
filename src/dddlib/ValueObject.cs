@@ -59,7 +59,9 @@ namespace dddlib
         /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public sealed override int GetHashCode()
         {
-            return this.runtimeType.EqualityComparer.GetHashCode(this);
+            var equalityComparer = this.runtimeType.CreateEqualityComparer<T>();
+
+            return equalityComparer.GetHashCode(this);
         }
 
         /// <summary>
@@ -86,7 +88,9 @@ namespace dddlib
                 return false;
             }
 
-            return this.runtimeType.EqualityComparer.Equals(this, other);
+            var equalityComparer = this.runtimeType.CreateEqualityComparer<T>();
+            
+            return equalityComparer.Equals(this, other);
         }
     }
 }

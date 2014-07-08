@@ -8,7 +8,13 @@ namespace dddlib.Runtime
 
     internal class ValueObjectType // where T : ValueObject<T>
     {
-        public IEqualityComparer<object> EqualityComparer { get; internal set; }
+        ////public IEqualityComparer<object> EqualityComparer { get; internal set; }
         ////public IEqualityComparer<ValueObject<T>> EqualityComparer { get; internal set; }
+
+        public IEqualityComparer<ValueObject<T>> CreateEqualityComparer<T>() 
+            where T : ValueObject<T>
+        {
+            return new ValueObjectEqualityComparer<T>();
+        }
     }
 }
