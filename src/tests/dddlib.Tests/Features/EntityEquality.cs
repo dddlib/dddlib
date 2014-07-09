@@ -205,5 +205,70 @@ namespace dddlib.Tests.Features
                 }
             }
         }
+
+        public class CaseSensitiveUndefinedEqualityComparer : EntityEquality
+        {
+            [Scenario]
+            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
+            {
+                "Given a value object with an undefined equality comparer"
+                    .Given(() => { });
+
+                "And a natural key value"
+                    .And(() => naturalKey = "key");
+
+                "When two instances of that value object that are instantiated with different values"
+                    .When(() =>
+                    {
+                        instance1 = new Subject { NaturalKey = naturalKey.ToUpperInvariant() };
+                        instance2 = new Subject { NaturalKey = naturalKey.ToLowerInvariant() };
+                    });
+
+                "Then the first instance is equal to the second instance"
+                    .Then(() => instance1.Should().NotBe(instance2));
+            }
+
+            public class Subject : Entity
+            {
+                [NaturalKey]
+                public string NaturalKey { get; set; }
+            }
+        }
+
+        public class CaseSensitiveEqualityComparerDefinedInBootstrapper : EntityEquality
+        {
+            [Scenario]
+            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
+            {
+                "Given a value object with an undefined equality comparer"
+                    .Given(() => { });
+
+                "And a natural key value"
+                    .And(() => naturalKey = "key");
+
+                "When two instances of that value object that are instantiated with different values"
+                    .When(() =>
+                    {
+                        instance1 = new Subject { NaturalKey = naturalKey.ToUpperInvariant() };
+                        instance2 = new Subject { NaturalKey = naturalKey.ToLowerInvariant() };
+                    });
+
+                "Then the first instance is equal to the second instance"
+                    .Then(() => instance1.Should().Be(instance2));
+            }
+
+            public class Subject : Entity
+            {
+                public string NaturalKey { get; set; }
+            }
+
+            private class BootStrapper : IBootstrap<Subject>
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.Entity<Subject>().ToUseNaturalKey(subject => subject.NaturalKey, StringComparer.OrdinalIgnoreCase);
+                }
+            }
+        }
     }
 }

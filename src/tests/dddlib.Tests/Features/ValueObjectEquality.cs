@@ -26,6 +26,7 @@ namespace dddlib.Tests.Features
             with equality comparer (defined in both bootstrapper and metadata - different)
             
             CONSIDER:
+          X Case sensitive string value comparison.
           X Case insensitive string value comparison.
         */
 
