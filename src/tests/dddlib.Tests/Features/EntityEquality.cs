@@ -22,7 +22,7 @@ namespace dddlib.Tests.Features
           X with natural key selector (undefined)
           X with natural key selector (defined in metadata)
           X with natural key selector (defined in bootstrapper)
-            with natural key selector (defined in both bootstrapper and metadata - same)
+          X with natural key selector (defined in both bootstrapper and metadata - same)
           X with natural key selector (defined in both bootstrapper and metadata - different)
 
             Entity Equality (special case: string)
