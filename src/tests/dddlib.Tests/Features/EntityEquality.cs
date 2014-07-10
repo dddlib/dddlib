@@ -27,8 +27,8 @@ namespace dddlib.Tests.Features
 
             Entity Equality (special case: string)
             --------------------------------------
-            with natural key selector (defined - doesn't matter how) AND with natural key equality comparer (undefined)
-            with natural key selector (defined - doesn't matter how) AND with natural key equality comparer (string only, defined in bootstrapper only)
+          X with natural key selector (defined - doesn't matter how) AND with natural key equality comparer (undefined)
+          X with natural key selector (defined - doesn't matter how) AND with natural key equality comparer (string only, defined in bootstrapper only)
 
             Entity Equality (special case: composite key value object: strings)
             -------------------------------------------------------------------
@@ -268,6 +268,49 @@ namespace dddlib.Tests.Features
                 {
                     configure.Entity<Subject>().ToUseNaturalKey(subject => subject.NaturalKey, StringComparer.OrdinalIgnoreCase);
                 }
+            }
+        }
+
+        public class CaseSensitiveCompositeNaturalKeyEqualityComparer : EntityEquality
+        {
+            [Scenario]
+            public void Scenario(Subject instance1, Subject instance2, string component1, string component2)
+            {
+                "Given a value object with an undefined equality comparer"
+                    .Given(() => { });
+
+                "And a natural key value"
+                    .And(() => 
+                    {
+                        component1 = "key1";
+                        component2 = "key2";
+                    });
+
+                "When two instances of that value object that are instantiated with different values"
+                    .When(() =>
+                    {
+                        var naturalKey1 = new NaturalKeyValue { Component1 = component1.ToUpperInvariant(), Component2 = component2 };
+                        var naturalKey2 = new NaturalKeyValue { Component1 = component1.ToLowerInvariant(), Component2 = component2 };
+
+                        instance1 = new Subject { NaturalKey = naturalKey1 };
+                        instance2 = new Subject { NaturalKey = naturalKey2 };
+                    });
+
+                "Then the first instance is equal to the second instance"
+                    .Then(() => instance1.Should().NotBe(instance2));
+            }
+
+            public class NaturalKeyValue : ValueObject<NaturalKeyValue>
+            {
+                public string Component1 { get; set; }
+
+                public string Component2 { get; set; }
+            }
+
+            public class Subject : Entity
+            {
+                [NaturalKey]
+                public NaturalKeyValue NaturalKey { get; set; }
             }
         }
     }
