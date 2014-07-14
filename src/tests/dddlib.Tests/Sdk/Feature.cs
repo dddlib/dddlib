@@ -25,6 +25,17 @@ namespace dddlib.Tests.Sdk
             "Given a new application"
                 .Given(() =>
                 {
+                    // aggregate root
+                    var aggregateRootConfigurationProviders = new IConfigurationProvider<AggregateRootConfiguration>[]
+                    {
+                        new Bootstrapper(this.Bootstrap),
+                        new AggregateRootAnalyzer(),
+                    };
+
+                    var aggregateRootConfigurationManager = new AggregateRootConfigurationManager();
+                    var aggregateRootConfigurationProvider = new DefaultConfigurationProvider<AggregateRootConfiguration>(aggregateRootConfigurationProviders, aggregateRootConfigurationManager);
+                    var aggregateRootTypeFactory = new AggregateRootTypeFactory(aggregateRootConfigurationProvider);
+
                     // entity
                     var entityConfigurationProviders = new IConfigurationProvider<EntityConfiguration>[]
                     {
@@ -35,7 +46,7 @@ namespace dddlib.Tests.Sdk
                     var entityConfigurationManager = new EntityConfigurationManager();
                     var entityConfigurationProvider = new DefaultConfigurationProvider<EntityConfiguration>(entityConfigurationProviders, entityConfigurationManager);
                     var entityTypeFactory = new EntityTypeFactory(entityConfigurationProvider);
-                    
+
                     // value object
                     var valueObjectConfigurationProviders = new IConfigurationProvider<ValueObjectConfiguration>[]
                     {
@@ -48,7 +59,7 @@ namespace dddlib.Tests.Sdk
                     var valueObjectTypeFactory = new ValueObjectTypeFactory(valueObjectConfigurationProvider);
 
                     new Application(
-                        A.Fake<ITypeFactory<AggregateRootType>>(o => o.Strict()),
+                        aggregateRootTypeFactory,
                         entityTypeFactory,
                         valueObjectTypeFactory)
                         .Using();

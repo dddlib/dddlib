@@ -32,7 +32,7 @@ namespace dddlib.Tests.Features
 
             Entity Equality (special case: composite key value object: strings)
             -------------------------------------------------------------------
-            with natural key selector (defined - doesn't matter how)
+          X with natural key selector (defined - doesn't matter how)
 
             Entity Equality (Inherited)
             ---------------------------

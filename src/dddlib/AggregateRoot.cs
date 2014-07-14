@@ -70,6 +70,8 @@ namespace dddlib
 
         internal void CommitEvents(string state)
         {
+            Guard.Against.NullOrEmpty(() => state);
+
             this.events.Clear();
             this.state = state;
         }
@@ -96,11 +98,13 @@ namespace dddlib
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Inappropriate.")]
         protected virtual object GetState()
         {
-            throw new RuntimeException(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    "The aggregate root of type '{0}' has not been configured to create a memento representing its state.",
-                    this.GetType().Name));
+            ////throw new RuntimeException(
+            ////    string.Format(
+            ////        CultureInfo.InvariantCulture,
+            ////        "The aggregate root of type '{0}' has not been configured to create a memento representing its state.",
+            ////        this.GetType().Name));
+
+            return null;
         }
 
         /// <summary>

@@ -54,6 +54,8 @@
     <Compile Include="Configuration\ConfigureValueObject.cs" />
     <Compile Include="Configuration\IConfigureValueObject.cs" />
     <Compile Include="Entity.cs" />
+    <Compile Include="Guard.cs" />
+    <Compile Include="GuardExtensions.cs" />
     <Compile Include="Runtime\ValueObjectEqualityComparer.cs" />
     <Compile Include="Runtime\IConfigurationProvider.cs" />
     <Compile Include="Runtime\IConfigurationManager.cs" />
@@ -88,7 +90,6 @@
     <Compile Include="Configuration\IConfigureEntity.cs" />
     <Compile Include="Configuration\IFluentExtensions.cs" />
     <Compile Include="Runtime\EnumerableExtensions.cs" />
-    <Compile Include="Guard.cs" />
     <Compile Include="NaturalKey.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Runtime\Application.cs" />

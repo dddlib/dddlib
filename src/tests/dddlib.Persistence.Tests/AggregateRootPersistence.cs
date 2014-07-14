@@ -2,9 +2,10 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Tests.Features
+namespace dddlib.Persistence.Tests
 {
     using dddlib.Configuration;
+    using dddlib.Persistence.Memory;
     using dddlib.Tests.Sdk;
     using FluentAssertions;
     using Xbehave;
@@ -39,23 +40,25 @@ namespace dddlib.Tests.Features
         public class DefinedInBootstrapper : AggregateRootPersistence
         {
             [Scenario]
-            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
+            public void Scenario(MemoryRepository<Subject> repository, Subject instance, Subject otherInstance, string naturalKey)
             {
-                ////"Given an entity with a natural key selector defined in the bootstrapper"
-                ////    .Given(() => { });
+                "Given a repository"
+                    .Given(() => repository = new MemoryRepository<Subject>());
 
-                ////"And a natural key value"
-                ////    .And(() => naturalKey = "key");
+                "And a natural key value"
+                    .And(() => naturalKey = "key");
 
-                ////"When two instances of that entity are instantiated with that natural key value assigned"
-                ////    .When(() =>
-                ////    {
-                ////        instance1 = new Subject { NaturalKey = naturalKey };
-                ////        instance2 = new Subject { NaturalKey = naturalKey };
-                ////    });
+                "And an instance of an entity with that natural key"
+                    .And(() => instance = new Subject(naturalKey));
 
-                ////"Then the first instance is equal to the second instance"
-                ////    .Then(() => instance1.Should().Be(instance2));
+                "When that instance is saved to the repository"
+                    .When(() => repository.Save(instance));
+
+                "And an other instance is loaded from the repository"
+                    .And(() => otherInstance = repository.Load(instance.NaturalKey));
+
+                "Then that instance should be the other instance"
+                    .Then(() => instance.Should().Be(otherInstance));
             }
 
             public class Subject : AggregateRoot
@@ -69,7 +72,17 @@ namespace dddlib.Tests.Features
                 {
                 }
 
-                public string NaturalKey { get; set; }
+                public string NaturalKey { get; private set; }
+
+                protected override object GetState()
+                {
+                    return this.NaturalKey;
+                }
+
+                protected override void SetState(object memento)
+                {
+                    this.NaturalKey = memento.ToString();
+                }
 
                 private void Handle(NewSubject @event)
                 {

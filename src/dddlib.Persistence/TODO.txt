@@ -1,0 +1,25 @@
+﻿Requirements:
+
+Must be able to map a GUID to a serializable type eg. string
+Must be able to map a GUID to a ValueObject
+Must be able to map a GUID to a ValueObject with custom equality
+
+Must be able to map a GUID to another version of the identifier
+
+
+
+
+Example Table:
+Version, SerializedValue, GUID
+1, key, {GUID.1}
+2, key-key2, {GUID.1}
+1, otherKey,{GUID.2}
+
+Load all keys from a specific version into a dictionary with GUID as the value.
+
+Version upgrade will need to occur during the up-conversion process as the new key will likely require more information from the stream - or another stream.
+
+What happens if just the serialization changes? Version change?
+
+API:
+GUID Map(object naturalKey)

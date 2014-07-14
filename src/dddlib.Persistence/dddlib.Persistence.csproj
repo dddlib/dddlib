@@ -49,10 +49,14 @@
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="AggregateRootFactory.cs" />
-    <Compile Include="AggregateRootRepository.cs" />
-    <Compile Include="Guard.cs" />
+    <Compile Include="EventStoreRepository.cs" />
+    <Compile Include="IEventStoreRepository.cs" />
     <Compile Include="IIdentityMap.cs" />
+    <Compile Include="IRepository.cs" />
+    <Compile Include="Memory\MemoryIdentityMap.cs" />
+    <Compile Include="Memory\MemoryRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Repository.cs" />
   </ItemGroup>
   <ItemGroup>
     <CodeAnalysisDictionary Include="..\dddlib.dictionary">
@@ -68,6 +72,9 @@
       <Project>{57610450-0379-472e-b40c-18b11295eefa}</Project>
       <Name>dddlib</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="TODO.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
