@@ -14,11 +14,14 @@ dddlib contributors</authors>
     <releaseNotes>TBD</releaseNotes>
     <copyright>Copyright (c) dddlib contributors.</copyright>
     <tags>domain driven design library dddlib persistence</tags>
+    <dependencies>
+      <dependency id="dddlib" version="$version$" />
+    </dependencies>
     <frameworkAssemblies>
       <frameworkAssembly assemblyName="System" targetFramework="net45" />
     </frameworkAssemblies>
   </metadata>
   <files>
-    <file src="dddlib\bin\Release\*.dll" target="lib\net45" />
+    <file src="dddlib.Persistence\bin\Release\dddlib.Persistence.dll" target="lib\net45" />
   </files>
 </package>
