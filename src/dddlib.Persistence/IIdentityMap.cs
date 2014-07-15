@@ -5,6 +5,7 @@
 namespace dddlib.Persistence
 {
     using System;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Exposes the public members of the identity map.
@@ -14,9 +15,18 @@ namespace dddlib.Persistence
         /// <summary>
         /// Maps the specified key.
         /// </summary>
-        /// <param name="type">The type of aggregate root.</param>
-        /// <param name="key">The key value.</param>
+        /// <param name="aggregateRootType">Type of the aggregate root.</param>
+        /// <param name="naturalKey">The natural key.</param>
+        /// <param name="naturalKeyEqualityComparer">The natural key equality comparer.</param>
         /// <returns>A stream id.</returns>
-        Guid Map(Type type, object key);
+        Guid GetOrAdd(Type aggregateRootType, object naturalKey, IEqualityComparer<object> naturalKeyEqualityComparer);
+
+        /// <summary>
+        /// Gets the specified type.
+        /// </summary>
+        /// <param name="aggregateRootType">Type of the aggregate root.</param>
+        /// <param name="naturalKey">The natural key.</param>
+        /// <returns>A stream id.</returns>
+        Guid Get(Type aggregateRootType, object naturalKey);
     }
 }

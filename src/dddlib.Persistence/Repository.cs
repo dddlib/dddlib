@@ -43,7 +43,7 @@ namespace dddlib.Persistence
             var entityType = Application.Current.GetEntityType(type);
 
             var naturalKey = entityType.NaturalKeySelector.Invoke(aggregateRoot);
-            var id = this.identityMap.Map(type, naturalKey);
+            var id = this.identityMap.GetOrAdd(type, naturalKey, entityType.NaturalKeyEqualityComparer);
 
             var memento = aggregateRoot.GetMemento();
             if (memento == null)
@@ -75,7 +75,7 @@ namespace dddlib.Persistence
         /// <returns>The aggregate root.</returns>
         public T Load(object naturalKey)
         {
-            var id = this.identityMap.Map(typeof(T), naturalKey);
+            var id = this.identityMap.Get(typeof(T), naturalKey);
 
             var state = default(string);
             var memento = this.Load(id, out state);

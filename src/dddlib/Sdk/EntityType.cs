@@ -39,7 +39,7 @@ namespace dddlib.Runtime
 
             public int GetHashCode(object obj)
             {
-                return this.GetHashCode((string)obj);
+                return this.stringEqualityComparer.GetHashCode((string)obj);
             }
         }
     }

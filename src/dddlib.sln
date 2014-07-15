@@ -47,6 +47,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Persistence.XEventSt
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Tests.Support", "tests\dddlib.Tests.Support\dddlib.Tests.Support.csproj", "{6777CB50-8686-4A93-A492-01862E07342C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Playground", "dddlib.Playground\dddlib.Playground.csproj", "{7658B398-10A6-490C-A562-4BF4F54F321D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -89,6 +91,10 @@ Global
 		{6777CB50-8686-4A93-A492-01862E07342C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6777CB50-8686-4A93-A492-01862E07342C}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{6777CB50-8686-4A93-A492-01862E07342C}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{7658B398-10A6-490C-A562-4BF4F54F321D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7658B398-10A6-490C-A562-4BF4F54F321D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7658B398-10A6-490C-A562-4BF4F54F321D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7658B398-10A6-490C-A562-4BF4F54F321D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

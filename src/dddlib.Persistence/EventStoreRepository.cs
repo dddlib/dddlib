@@ -41,7 +41,7 @@ namespace dddlib.Persistence
             var entityType = dddlib.Runtime.Application.Current.GetEntityType(type);
 
             var naturalKey = entityType.NaturalKeySelector.Invoke(aggregateRoot);
-            var streamID = this.identityMap.Map(type, naturalKey);
+            var streamID = this.identityMap.GetOrAdd(type, naturalKey, entityType.NaturalKeyEqualityComparer);
 
             var memento = aggregateRoot.GetMemento();
             var events = aggregateRoot.GetUncommittedEvents();

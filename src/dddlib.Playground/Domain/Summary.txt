@@ -1,0 +1,4 @@
+﻿Many failings:
+View logic in application
+No logic in model
+Invalid state possible
