@@ -50,9 +50,11 @@
     </Compile>
     <Compile Include="AggregateRootFactory.cs" />
     <Compile Include="EventStoreRepository.cs" />
+    <Compile Include="IEventStore.cs" />
     <Compile Include="IEventStoreRepository.cs" />
     <Compile Include="IIdentityMap.cs" />
     <Compile Include="IRepository.cs" />
+    <Compile Include="Memory\MemoryEventStore.cs" />
     <Compile Include="Memory\MemoryIdentityMap.cs" />
     <Compile Include="Memory\MemoryRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

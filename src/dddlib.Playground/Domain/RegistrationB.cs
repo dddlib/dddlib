@@ -3,6 +3,7 @@
     using System;
     using System.Linq;
 
+    // LINK (Cameron): http://en.wikipedia.org/wiki/Vehicle_registration_plates_of_the_United_Kingdom,_Crown_dependencies_and_overseas_territories
     public class RegistrationB
     {
         public RegistrationB(string areaCode)

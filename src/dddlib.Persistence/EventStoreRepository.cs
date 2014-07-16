@@ -14,16 +14,20 @@ namespace dddlib.Persistence
     public class EventStoreRepository : IEventStoreRepository
     {
         private readonly IIdentityMap identityMap;
+        private readonly IEventStore eventStore;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EventStoreRepository"/> class.
+        /// Initializes a new instance of the <see cref="EventStoreRepository" /> class.
         /// </summary>
         /// <param name="identityMap">The identity map.</param>
-        public EventStoreRepository(IIdentityMap identityMap)
+        /// <param name="eventStore">The event store.</param>
+        public EventStoreRepository(IIdentityMap identityMap, IEventStore eventStore)
         {
             Guard.Against.Null(() => identityMap);
+            Guard.Against.Null(() => eventStore);
 
             this.identityMap = identityMap;
+            this.eventStore = eventStore;
         }
 
         /// <summary>
@@ -41,9 +45,9 @@ namespace dddlib.Persistence
             var entityType = dddlib.Runtime.Application.Current.GetEntityType(type);
 
             var naturalKey = entityType.NaturalKeySelector.Invoke(aggregateRoot);
-            var streamID = this.identityMap.GetOrAdd(type, naturalKey, entityType.NaturalKeyEqualityComparer);
+            var id = this.identityMap.GetOrAdd(type, naturalKey, entityType.NaturalKeyEqualityComparer);
 
-            var memento = aggregateRoot.GetMemento();
+            ////var memento = aggregateRoot.GetMemento();
             var events = aggregateRoot.GetUncommittedEvents();
 
             var state = aggregateRoot.State;
@@ -52,7 +56,8 @@ namespace dddlib.Persistence
                 // NOTE (Cameron): This is the initial commit, for what it's worth.
             }
 
-            var newState = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
+            var newState = default(string);
+            this.eventStore.CommitStream(id, events, state, out newState);
 
             // NOTE (Cameron): Save.
             // save the memento with the new commits if the state is the same as the old state and replace the state with the new state.
@@ -67,12 +72,13 @@ namespace dddlib.Persistence
         /// <returns>The aggregate root.</returns>
         public T Load<T>(object naturalKey) where T : AggregateRoot
         {
-            var memento = default(object); // get snapshot
-            var events = default(IEnumerable<object>); // get events
+            var id = this.identityMap.Get(typeof(T), naturalKey);
+
             var state = default(string); // get state
+            var events = this.eventStore.GetStream(id, out state);
 
             var factory = new AggregateRootFactory();
-            var aggregateRoot = factory.Reconstitute<T>(memento, events, state);
+            var aggregateRoot = factory.Reconstitute<T>(null, events, state);
             return aggregateRoot;
         }
     }

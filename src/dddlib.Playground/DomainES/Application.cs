@@ -8,7 +8,8 @@
     {
         public void Demonstrate()
         {
-            var repository = new EventStoreRepository(new MemoryIdentityMap());
+            var eventStore = new MemoryEventStore();
+            var repository = new EventStoreRepository(new MemoryIdentityMap(), eventStore);
 
             // enter a car into the system (so it can go through the speed trap)
             var registration = new Registration("BD02 XYZ");

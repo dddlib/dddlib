@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Linq;
 
+    // LINK (Cameron): http://en.wikipedia.org/wiki/Vehicle_registration_plates_of_the_United_Kingdom,_Crown_dependencies_and_overseas_territories
     public class RegistrationD
     {
         private static readonly Dictionary<char, string> RegistrationAreas = new Dictionary<char, string>
