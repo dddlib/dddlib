@@ -7,6 +7,8 @@ namespace dddlib.Persistence.Memory
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
+    using dddlib.Runtime;
 
     /// <summary>
     /// Represents a memory-based event store.
@@ -43,6 +45,7 @@ namespace dddlib.Persistence.Memory
             data.Events = data.Events ?? new List<object>();
             data.Events.AddRange(events);
             data.State = newState = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
+            data.Timestamp = DateTime.Now;
 
             this.store[id] = data;
         }
@@ -66,11 +69,30 @@ namespace dddlib.Persistence.Memory
             return data.Events.ToArray();
         }
 
+        /// <summary>
+        /// Replays the events to.
+        /// </summary>
+        /// <param name="views">The views.</param>
+        public void ReplayEventsTo(params object[] views)
+        {
+            foreach (var view in views)
+            {
+                foreach (var @event in this.store
+                    .OrderBy(e => e.Value.Timestamp)
+                    .SelectMany(e => e.Value.Events))
+                {
+                    new RubbishEventDispatcher(view.GetType()).Dispatch(view, @event);
+                }
+            }
+        }
+
         private class Data
         {
             public List<object> Events { get; set; }
 
             public string State { get; set; }
+
+            public DateTime Timestamp { get; set; }
         }
     }
 }

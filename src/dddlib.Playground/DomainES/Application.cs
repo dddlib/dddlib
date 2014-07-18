@@ -1,6 +1,7 @@
 ﻿namespace dddlib.Playground.DomainES
 {
     using System;
+    using System.Collections.Generic;
     using dddlib.Persistence;
     using dddlib.Persistence.Memory;
 
@@ -29,9 +30,14 @@
             // what happens here?
             //repository.Save(sameCar);
 
-            Console.WriteLine("Car: {0}", stillSameCar.Registration.Number);
-            //Console.WriteLine("Max speed: {0}", stillSameCar.MaxRecordedSpeed);
-            //Console.WriteLine("Min speed: {0}", stillSameCar.MinRecordedSpeed);
+            // NOTE (Cameron): This is nonsense.
+            var viewState = new Dictionary<string, CarDto>();
+            var view = new CarSpeedTrapView(viewState);
+            eventStore.ReplayEventsTo(view);
+
+            Console.WriteLine("Car: {0}", viewState[registration.Number].Registration);
+            Console.WriteLine("Max speed: {0}", viewState[registration.Number].MaxRecordedSpeed);
+            Console.WriteLine("Min speed: {0}", viewState[registration.Number].MinRecordedSpeed);
         }
     }
 }

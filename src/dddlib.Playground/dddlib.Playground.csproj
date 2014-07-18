@@ -52,6 +52,8 @@
     <Compile Include="DomainDDD\Car.cs" />
     <Compile Include="DomainDDD\Application.cs" />
     <Compile Include="DomainES\Application.cs" />
+    <Compile Include="DomainES\CarDto.cs" />
+    <Compile Include="DomainES\CarSpeedTrapView.cs" />
     <Compile Include="Domain\Car.cs" />
     <Compile Include="DomainDDD\Registration.cs" />
     <Compile Include="DomainES\Registration.cs" />

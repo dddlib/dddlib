@@ -28,5 +28,11 @@ namespace dddlib.Persistence
         /// <param name="state">The state.</param>
         /// <returns>The events.</returns>
         IEnumerable<object> GetStream(Guid id, out string state);
+
+        /// <summary>
+        /// Replays the events to.
+        /// </summary>
+        /// <param name="views">The views.</param>
+        void ReplayEventsTo(params object[] views);
     }
 }
