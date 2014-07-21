@@ -4,7 +4,7 @@
 
     public class Car : AggregateRoot
     {
-        // NOTE (Cameron): For reconstitution prior to setting state.
+        // NOTE (Cameron): For reconstitution prior to setting state. Required for persistence by dddlib.dll.
         internal Car()
         {
         }

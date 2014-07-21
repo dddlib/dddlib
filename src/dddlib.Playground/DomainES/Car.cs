@@ -2,7 +2,7 @@
 {
     public class Car : AggregateRoot
     {
-        // NOTE (Cameron): For reconstitution prior to setting state.
+        // NOTE (Cameron): For reconstitution prior to setting state. Required for persistence by dddlib.dll.
         internal Car()
         {
         }
@@ -31,5 +31,17 @@
         {
             this.Registration = new Registration(@event.RegistrationNumber);
         }
+    }
+
+    public class CarEnteredIntoSystem
+    {
+        public string RegistrationNumber { get; set; }
+    }
+
+    public class CarPassedThroughSpeedTrap
+    {
+        public string RegistrationNumber { get; set; }
+
+        public int Speed { get; set; }
     }
 }

@@ -1,0 +1,7 @@
+﻿Much fixes:
+We're using a string as a key for persistence when the natural key is a value object
+
+This is DDD
+
+Still some failings:
+View logic still in model
