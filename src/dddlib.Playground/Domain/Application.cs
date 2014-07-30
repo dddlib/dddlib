@@ -26,6 +26,8 @@
             // what happens here?
             //repository.Save(sameCar);
 
+            // output (view)
+            Console.WriteLine("\r\n === DOMAIN ===");
             Console.WriteLine("Car: {0}", stillSameCar.Registration.Number);
             Console.WriteLine("Max speed: {0}", stillSameCar.MaxRecordedSpeed);
             Console.WriteLine("Min speed: {0}", stillSameCar.MinRecordedSpeed);

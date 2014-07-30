@@ -8,11 +8,6 @@
         {
             Guard.Against.Null(() => registration);
 
-            if (registration.Number.StartsWith("P"))
-            {
-                throw new BusinessException("The car is an export and cannot be driven here.");
-            }
-
             this.Registration = registration;
         }
 

@@ -46,19 +46,23 @@
   <ItemGroup>
     <Compile Include="Anemic\Application.cs" />
     <Compile Include="Anemic\MemoryRepository.cs" />
+    <Compile Include="Anemic\Playground.cs" />
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="Anemic\Car.cs" />
+    <Compile Include="DomainDDD\Playground.cs" />
     <Compile Include="DomainES\Car.cs" />
     <Compile Include="DomainDDD\Car.cs" />
     <Compile Include="DomainDDD\Application.cs" />
     <Compile Include="DomainES\Application.cs" />
     <Compile Include="DomainES\CarDto.cs" />
     <Compile Include="DomainES\CarSpeedTrapView.cs" />
+    <Compile Include="DomainES\Playground.cs" />
     <Compile Include="Domain\Car.cs" />
     <Compile Include="DomainDDD\Registration.cs" />
     <Compile Include="DomainES\Registration.cs" />
     <Compile Include="Domain\Application.cs" />
     <Compile Include="Domain\MemoryRepository.cs" />
+    <Compile Include="Domain\Playground.cs" />
     <Compile Include="Guard.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

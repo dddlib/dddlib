@@ -8,7 +8,7 @@
 
         public void Save(Car car)
         {
-            this.store[car.Registration.Number] = car;
+            this.store[car.Registration.Number] = new Car(car.Registration);
         }
 
         public Car Load(string registrationNumber)

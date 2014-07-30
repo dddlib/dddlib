@@ -27,14 +27,13 @@
             stillSameCar.PassedThroughSpeedTrapAt(167);
             repository.Save(stillSameCar);
 
-            // what happens here?
-            //repository.Save(sameCar);
-
-            // NOTE (Cameron): This is nonsense.
+            // generate the view from the events
             var viewState = new Dictionary<string, CarDto>();
             var view = new CarSpeedTrapView(viewState);
             eventStore.ReplayEventsTo(view);
 
+            // output (view)
+            Console.WriteLine("\r\n === DOMAIN ES ===");
             Console.WriteLine("Car: {0}", viewState[registration.Number].Registration);
             Console.WriteLine("Max speed: {0}", viewState[registration.Number].MaxRecordedSpeed);
             Console.WriteLine("Min speed: {0}", viewState[registration.Number].MinRecordedSpeed);

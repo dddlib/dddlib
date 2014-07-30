@@ -141,7 +141,11 @@ namespace dddlib
                 // TODO (Cameron): Use the natural key and type.
                 // maybe: Unable to change Bob because a Person with that name no longer exists.
                 // or: cannot change the aggregate of type Person with the identity Bob as this aggregates lifecycle has ended.
-                throw new BusinessException("Unable to apply the specified change as this instance of the aggregate root no longer exists.");
+                throw new BusinessException(
+                    string.Format(
+                        "Unable to apply the specified change of type '{0}' to the aggregate root of type '{1}' as this instance of the aggregate root no longer exists",
+                        @event.GetType(),
+                        this.GetType()));
             }
 
             this.Apply(@event, isNew: true);
