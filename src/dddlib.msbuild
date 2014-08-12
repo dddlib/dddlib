@@ -45,14 +45,14 @@
 
   <Target Name="Package" DependsOnTargets="CreateBuildDir;UpdateVersion">
     <Exec Command="$(Nuget) pack $(SolutionName).nuspec -OutputDir &quot;$(BuildDir)&quot; -Version $(SemanticVersion)" />
-    <Exec Command="$(Nuget) pack dddlib.Persistence.nuspec -OutputDir &quot;$(BuildDir)&quot; -Version $(SemanticVersion)" />
-    <Exec Command="$(Nuget) pack dddlib.Persistence.NEventStore.nuspec -OutputDir &quot;$(BuildDir)&quot; -Version $(SemanticVersion)" />
+    <Exec Command="$(Nuget) pack $(SolutionName).Persistence.nuspec -OutputDir &quot;$(BuildDir)&quot; -Version $(SemanticVersion)" />
+    <Exec Command="$(Nuget) pack $(SolutionName).Persistence.NEventStore.nuspec -OutputDir &quot;$(BuildDir)&quot; -Version $(SemanticVersion)" />
   </Target>
 
   <Target Name="Publish" DependsOnTargets="Package">
     <Exec Command="$(Nuget) push &quot;$(BuildDir)\$(SolutionName).$(SemanticVersion).nupkg&quot; $(NugetPublishApiKey) -Source $(NugetPublishUrl)" />
-    <Exec Command="$(Nuget) push &quot;$(BuildDir)\dddlib.Persistence.$(SemanticVersion).nupkg&quot; $(NugetPublishApiKey) -Source $(NugetPublishUrl)" />
-    <Exec Command="$(Nuget) push &quot;$(BuildDir)\dddlib.Persistence.NEventStore.$(SemanticVersion).nupkg&quot; $(NugetPublishApiKey) -Source $(NugetPublishUrl)" />
+    <Exec Command="$(Nuget) push &quot;$(BuildDir)\$(SolutionName).Persistence.$(SemanticVersion).nupkg&quot; $(NugetPublishApiKey) -Source $(NugetPublishUrl)" />
+    <Exec Command="$(Nuget) push &quot;$(BuildDir)\$(SolutionName).Persistence.NEventStore.$(SemanticVersion).nupkg&quot; $(NugetPublishApiKey) -Source $(NugetPublishUrl)" />
   </Target>
 
 </Project>
