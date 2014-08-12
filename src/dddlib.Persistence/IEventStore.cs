@@ -13,24 +13,24 @@ namespace dddlib.Persistence
     public interface IEventStore
     {
         /// <summary>
-        /// Commits the specified identifier.
+        /// Commits the events to a stream.
         /// </summary>
-        /// <param name="id">The identifier.</param>
-        /// <param name="events">The events.</param>
-        /// <param name="state">The state.</param>
-        /// <param name="newState">The new state.</param>
-        void CommitStream(Guid id, IEnumerable<object> events, string state, out string newState);
+        /// <param name="id">The stream identifier.</param>
+        /// <param name="events">The events to commit.</param>
+        /// <param name="preCommitState">The pre-commit state of the stream.</param>
+        /// <param name="postCommitState">The post-commit state of stream.</param>
+        void CommitStream(Guid id, IEnumerable<object> events, string preCommitState, out string postCommitState);
 
         /// <summary>
-        /// Gets the stream.
+        /// Gets the events for a stream.
         /// </summary>
-        /// <param name="id">The identifier.</param>
-        /// <param name="state">The state.</param>
+        /// <param name="id">The stream identifier.</param>
+        /// <param name="state">The state of the steam.</param>
         /// <returns>The events.</returns>
         IEnumerable<object> GetStream(Guid id, out string state);
 
         /// <summary>
-        /// Replays the events to.
+        /// Replays the events to the specified view(s).
         /// </summary>
         /// <param name="views">The views.</param>
         void ReplayEventsTo(params object[] views);
