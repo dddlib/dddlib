@@ -41,7 +41,7 @@ namespace dddlib.Persistence.NEventStore
 
             using (var stream = this.eventStore.OpenStream(id, 0, int.MaxValue))
             {
-                if (stream.CommitSequence.ToString() != preCommitState)
+                if (preCommitState != null && preCommitState != stream.CommitSequence.ToString())
                 {
                     throw new Exception("Concurrency?");
                 }
@@ -84,7 +84,10 @@ namespace dddlib.Persistence.NEventStore
                 .SelectMany(commit => commit.Events)
                 .Select(@event => @event.Body))
             {
-                // new RubbishEventDispatcher(view.GetType()).Dispatch(view, @event);
+                foreach (var view in views)
+                {
+                    new Runtime.RubbishEventDispatcher(view.GetType()).Dispatch(view, @event);
+                }
             }
         }
     }

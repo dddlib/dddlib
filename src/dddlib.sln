@@ -50,6 +50,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Tests.Support", "tes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Playground", "dddlib.Playground\dddlib.Playground.csproj", "{7658B398-10A6-490C-A562-4BF4F54F321D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Persistence.Playground", "dddlib.Persistence.Playground\dddlib.Persistence.Playground.csproj", "{38FF228D-CE03-46BF-ABC1-66DECDD5D6FE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -96,6 +98,10 @@ Global
 		{7658B398-10A6-490C-A562-4BF4F54F321D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7658B398-10A6-490C-A562-4BF4F54F321D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7658B398-10A6-490C-A562-4BF4F54F321D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38FF228D-CE03-46BF-ABC1-66DECDD5D6FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38FF228D-CE03-46BF-ABC1-66DECDD5D6FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38FF228D-CE03-46BF-ABC1-66DECDD5D6FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38FF228D-CE03-46BF-ABC1-66DECDD5D6FE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
