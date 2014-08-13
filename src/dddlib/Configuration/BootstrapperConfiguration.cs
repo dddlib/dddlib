@@ -18,7 +18,7 @@ namespace dddlib.Configuration
         private Dictionary<Type, EntityConfiguration> entityConfigurations = new Dictionary<Type, EntityConfiguration>();
         private Dictionary<Type, ValueObjectConfiguration> valueObjectConfigurations = new Dictionary<Type, ValueObjectConfiguration>();
 
-        public IConfigureAggregateRoot<T> AggregateRoot<T>() where T : AggregateRoot
+        public IAggregateRootConfigurationWrapper<T> AggregateRoot<T>() where T : AggregateRoot
         {
             var configuration = default(AggregateRootConfiguration);
             if (!this.aggregateRootConfigurations.TryGetValue(typeof(T), out configuration))
@@ -26,10 +26,10 @@ namespace dddlib.Configuration
                 this.aggregateRootConfigurations.Add(typeof(T), configuration = new AggregateRootConfiguration());
             }
 
-            return new ConfigureAggregateRoot<T>(configuration, this.Entity<T>());
+            return new AggregateRootConfigurationWrapper<T>(configuration, this.Entity<T>());
         }
 
-        public IConfigureEntity<T> Entity<T>() where T : Entity
+        public IEntityConfigurationWrapper<T> Entity<T>() where T : Entity
         {
             var configuration = default(EntityConfiguration);
             if (!this.entityConfigurations.TryGetValue(typeof(T), out configuration))
@@ -37,10 +37,10 @@ namespace dddlib.Configuration
                 this.entityConfigurations.Add(typeof(T), configuration = new EntityConfiguration());
             }
 
-            return new ConfigureEntity<T>(configuration);
+            return new EntityConfigurationWrapper<T>(configuration);
         }
 
-        public IConfigureValueObject<T> ValueObject<T>() where T : ValueObject<T>
+        public IValueObjectConfigurationWrapper<T> ValueObject<T>() where T : ValueObject<T>
         {
             var configuration = default(ValueObjectConfiguration);
             if (!this.valueObjectConfigurations.TryGetValue(typeof(T), out configuration))
@@ -48,7 +48,7 @@ namespace dddlib.Configuration
                 this.valueObjectConfigurations.Add(typeof(T), configuration = new ValueObjectConfiguration());
             }
 
-            return new ConfigureValueObject<T>(configuration);
+            return new ValueObjectConfigurationWrapper<T>(configuration);
         }
 
         AggregateRootConfiguration IConfigurationProvider<AggregateRootConfiguration>.GetConfiguration(Type type)

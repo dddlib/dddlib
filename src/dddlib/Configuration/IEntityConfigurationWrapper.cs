@@ -1,4 +1,4 @@
-﻿// <copyright file="IConfigureEntity.cs" company="dddlib contributors">
+﻿// <copyright file="IEntityConfigurationWrapper.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -10,15 +10,18 @@ namespace dddlib.Configuration
     using System.Diagnostics.CodeAnalysis;
     using System.Linq.Expressions;
 
-    /// <summary>
-    /// Exposes the public members of the entity configuration.
-    /// </summary>
-    /// <typeparam name="TConfiguration">The type of the configuration.</typeparam>
-    /// <typeparam name="T">The type of entity.</typeparam>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public interface IConfigureEntity<TConfiguration, T> : IFluentExtensions
+    [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible in editor.")]
+    public interface IEntityConfigurationWrapper<T> : IEntityConfigurationWrapper<IEntityConfigurationWrapper<T>, T>, IFluentExtensions
         where T : Entity
-        where TConfiguration : IConfigureEntity<TConfiguration, T>
+    {
+    }
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible in editor.")]
+    public interface IEntityConfigurationWrapper<TConfiguration, T> : IFluentExtensions
+        where T : Entity
+        where TConfiguration : IEntityConfigurationWrapper<TConfiguration, T>
     {
         /// <summary>
         /// Configures the runtime to assign the natural key of entity using the specified natural key selector.
@@ -36,19 +39,4 @@ namespace dddlib.Configuration
         /// <returns>The configuration.</returns>
         TConfiguration ToUseNaturalKey(Expression<Func<T, string>> naturalKeySelector, IEqualityComparer<string> equalityComparer);
     }
-
-    [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1124:DoNotUseRegions", Justification = "Here the code is meant to be hidden.")]
-    #region ** Don't bother touching anything in this region **
-
-    /// <summary>
-    /// Exposes the public members of the entity configuration.
-    /// </summary>
-    /// <typeparam name="T">The type of entity.</typeparam>
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public interface IConfigureEntity<T> : IConfigureEntity<IConfigureEntity<T>, T>, IFluentExtensions
-        where T : Entity
-    {
-    }
-
-    #endregion
 }

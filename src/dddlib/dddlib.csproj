@@ -51,8 +51,8 @@
     </Compile>
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="BusinessException.cs" />
-    <Compile Include="Configuration\ConfigureValueObject.cs" />
-    <Compile Include="Configuration\IConfigureValueObject.cs" />
+    <Compile Include="Configuration\ValueObjectConfigurationWrapper.cs" />
+    <Compile Include="Configuration\IValueObjectConfigurationWrapper.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="Guard.cs" />
     <Compile Include="GuardExtensions.cs" />
@@ -82,12 +82,11 @@
     <Compile Include="Sdk\EntityTypeFactory.cs" />
     <Compile Include="Sdk\ValueObjectAnalyzer.cs" />
     <Compile Include="Sdk\ValueObjectConfiguration.cs" />
-    <Compile Include="Configuration\AssemblyConfiguration.cs" />
     <Compile Include="Configuration\BootstrapperConfiguration.cs" />
-    <Compile Include="Configuration\ConfigureAggregateRoot.cs" />
-    <Compile Include="Configuration\ConfigureEntity.cs" />
-    <Compile Include="Configuration\IConfigureAggregateRoot.cs" />
-    <Compile Include="Configuration\IConfigureEntity.cs" />
+    <Compile Include="Configuration\AggregateRootConfigurationWrapper.cs" />
+    <Compile Include="Configuration\EntityConfigurationWrapper.cs" />
+    <Compile Include="Configuration\IAggregateRootConfigurationWrapper.cs" />
+    <Compile Include="Configuration\IEntityConfigurationWrapper.cs" />
     <Compile Include="Configuration\IFluentExtensions.cs" />
     <Compile Include="Runtime\EnumerableExtensions.cs" />
     <Compile Include="NaturalKey.cs" />

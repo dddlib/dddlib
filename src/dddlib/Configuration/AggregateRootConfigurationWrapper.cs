@@ -1,4 +1,4 @@
-﻿// <copyright file="ConfigureAggregateRoot.cs" company="dddlib contributors">
+﻿// <copyright file="AggregateRootConfigurationWrapper.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -9,13 +9,13 @@ namespace dddlib.Configuration
     using System.Linq.Expressions;
     using dddlib.Runtime;
 
-    internal class ConfigureAggregateRoot<T> : IConfigureAggregateRoot<T> 
+    internal class AggregateRootConfigurationWrapper<T> : IAggregateRootConfigurationWrapper<T> 
         where T : AggregateRoot
     {
         private readonly AggregateRootConfiguration configuration;
-        private readonly IConfigureEntity<T> entityConfig;
+        private readonly IEntityConfigurationWrapper<T> entityConfig;
 
-        public ConfigureAggregateRoot(AggregateRootConfiguration configuration, IConfigureEntity<T> entityConfig)
+        public AggregateRootConfigurationWrapper(AggregateRootConfiguration configuration, IEntityConfigurationWrapper<T> entityConfig)
         {
             Guard.Against.Null(() => configuration);
             Guard.Against.Null(() => entityConfig);
@@ -24,19 +24,19 @@ namespace dddlib.Configuration
             this.entityConfig = entityConfig;
         }
 
-        public IConfigureAggregateRoot<T> ToReconstituteUsing(Func<T> uninitializedFactory)
+        public IAggregateRootConfigurationWrapper<T> ToReconstituteUsing(Func<T> uninitializedFactory)
         {
             this.configuration.Factory = uninitializedFactory;
             return this;
         }
 
-        public IConfigureAggregateRoot<T> ToUseNaturalKey<TKey>(Expression<Func<T, TKey>> naturalKeySelector)
+        public IAggregateRootConfigurationWrapper<T> ToUseNaturalKey<TKey>(Expression<Func<T, TKey>> naturalKeySelector)
         {
             this.entityConfig.ToUseNaturalKey(naturalKeySelector);
             return this;
         }
 
-        public IConfigureAggregateRoot<T> ToUseNaturalKey(Expression<Func<T, string>> naturalKeySelector, IEqualityComparer<string> equalityComparer)
+        public IAggregateRootConfigurationWrapper<T> ToUseNaturalKey(Expression<Func<T, string>> naturalKeySelector, IEqualityComparer<string> equalityComparer)
         {
             this.entityConfig.ToUseNaturalKey(naturalKeySelector, equalityComparer);
             return this;

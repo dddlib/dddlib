@@ -4,10 +4,6 @@
 
 namespace dddlib.Configuration
 {
-    using System;
-    using System.ComponentModel;
-    using System.Diagnostics.CodeAnalysis;
-
     /// <summary>
     /// Exposes the public members of the configuration.
     /// </summary>
@@ -18,20 +14,20 @@ namespace dddlib.Configuration
         /// </summary>
         /// <typeparam name="T">The type of aggregate root.</typeparam>
         /// <returns>The aggregate root configuration options.</returns>
-        IConfigureAggregateRoot<T> AggregateRoot<T>() where T : AggregateRoot;
+        IAggregateRootConfigurationWrapper<T> AggregateRoot<T>() where T : AggregateRoot;
 
         /// <summary>
         /// Gets the entity configuration options for the specified type of entity.
         /// </summary>
         /// <typeparam name="T">The type of entity.</typeparam>
         /// <returns>The entity configuration options.</returns>
-        IConfigureEntity<T> Entity<T>() where T : Entity;
+        IEntityConfigurationWrapper<T> Entity<T>() where T : Entity;
 
         /// <summary>
         /// Gets the value object configuration options for the specified type of value object.
         /// </summary>
         /// <typeparam name="T">The type of value object.</typeparam>
         /// <returns>The value object configuration options.</returns>
-        IConfigureValueObject<T> ValueObject<T>() where T : ValueObject<T>;
+        IValueObjectConfigurationWrapper<T> ValueObject<T>() where T : ValueObject<T>;
     }
 }
