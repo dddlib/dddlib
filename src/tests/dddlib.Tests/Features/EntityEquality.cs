@@ -36,142 +36,14 @@ namespace dddlib.Tests.Features
 
             Entity Equality (Inherited)
             ---------------------------
-            with natural key selector (undefined)
-            with natural key selector (undefined in base)
-            with natural key selector (undefined in subclass)
+          X with natural key selector (undefined)
+          X with natural key selector (undefined in base)
+          X with natural key selector (undefined in subclass)
+          X with natural key selector (undefined in both base and subclass)
 
             [all entity equality tests should also work for aggregate roots]
             [consider inheritance]
         */
-
-        public class InheritedUndefinedNaturalKeySelector : EntityEquality
-        {
-            [Scenario]
-            public void Scenario(SuperSubject instance1, SuperSubject instance2)
-            {
-                "Given an entity with an undefined natural key selector"
-                    .Given(() => { });
-
-                "When two instances of that entity are instantiated"
-                    .When(() =>
-                    {
-                        instance1 = new SuperSubject();
-                        instance2 = new SuperSubject();
-                    });
-
-                "Then the first instance is not equal to the second instance"
-                    .Then(() => instance1.Should().NotBe(instance2));
-            }
-
-            public class Subject : Entity
-            {
-            }
-
-            public class SuperSubject : Subject
-            {
-            }
-        }
-
-        public class NaturalKeySelectorDefinedInInheritingClass : EntityEquality
-        {
-            [Scenario]
-            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
-            {
-                "Given an entity with a natural key selector defined in the inheriting class"
-                    .Given(() => { });
-
-                "And a natural key value"
-                    .And(() => naturalKey = "key");
-
-                "When two instances of that entity are instantiated with that natural key value assigned"
-                    .When(() =>
-                    {
-                        instance1 = new SuperSubject { NaturalKey = naturalKey };
-                        instance2 = new SuperSubject { NaturalKey = naturalKey };
-                    });
-
-                "Then the first instance is equal to the second instance"
-                    .Then(() => instance1.Should().Be(instance2));
-            }
-
-            public class Subject : Entity
-            {
-            }
-
-            public class SuperSubject : Subject
-            {
-                [NaturalKey]
-                public string NaturalKey { get; set; }
-            }
-        }
-
-        public class NaturalKeySelectorDefinedInInheritedClass : EntityEquality
-        {
-            [Scenario]
-            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
-            {
-                "Given an entity with a natural key selector defined in the inherited class"
-                    .Given(() => { });
-
-                "And a natural key value"
-                    .And(() => naturalKey = "key");
-
-                "When two instances of that entity are instantiated with that natural key value assigned"
-                    .When(() =>
-                    {
-                        instance1 = new SuperSubject { NaturalKey = naturalKey };
-                        instance2 = new SuperSubject { NaturalKey = naturalKey };
-                    });
-
-                "Then the first instance is equal to the second instance"
-                    .Then(() => instance1.Should().Be(instance2));
-            }
-
-            public class Subject : Entity
-            {
-                [NaturalKey]
-                public string NaturalKey { get; set; }
-            }
-
-            public class SuperSubject : Subject
-            {
-            }
-        }
-
-        public class NaturalKeySelectorDefinedInInheritingAndInheritedClass : EntityEquality
-        {
-            [Scenario]
-            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
-            {
-                "Given an entity with a natural key selector defined in the inheriting and inherited class"
-                    .Given(() => { });
-
-                "And a natural key value"
-                    .And(() => naturalKey = "key");
-
-                "When two instances of that entity are instantiated with the inheriting natural key value assigned"
-                    .When(() =>
-                    {
-                        instance1 = new SuperSubject { NaturalKey = "unequalValue", NaturalKey2 = naturalKey };
-                        instance2 = new SuperSubject { NaturalKey = "unequalValue2", NaturalKey2 = naturalKey };
-                    });
-
-                "Then the first instance is equal to the second instance"
-                    .Then(() => instance1.Should().Be(instance2));
-            }
-
-            public class Subject : Entity
-            {
-                [NaturalKey]
-                public string NaturalKey { get; set; }
-            }
-
-            public class SuperSubject : Subject
-            {
-                [NaturalKey]
-                public string NaturalKey2 { get; set; }
-            }
-        }
 
         public class UndefinedNaturalKeySelector : EntityEquality
         {
@@ -436,6 +308,135 @@ namespace dddlib.Tests.Features
             {
                 [NaturalKey]
                 public NaturalKeyValue NaturalKey { get; set; }
+            }
+        }
+
+        public class UndefinedNaturalKeySelectorWithInheritance : EntityEquality
+        {
+            [Scenario]
+            public void Scenario(SuperSubject instance1, SuperSubject instance2)
+            {
+                "Given an entity with an undefined natural key selector"
+                    .Given(() => { });
+
+                "When two instances of that entity are instantiated"
+                    .When(() =>
+                    {
+                        instance1 = new SuperSubject();
+                        instance2 = new SuperSubject();
+                    });
+
+                "Then the first instance is not equal to the second instance"
+                    .Then(() => instance1.Should().NotBe(instance2));
+            }
+
+            public class Subject : Entity
+            {
+            }
+
+            public class SuperSubject : Subject
+            {
+            }
+        }
+
+        public class NaturalKeySelectorDefinedInBaseClass : EntityEquality
+        {
+            [Scenario]
+            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
+            {
+                "Given an entity with a natural key selector defined in the base class"
+                    .Given(() => { });
+
+                "And a natural key value"
+                    .And(() => naturalKey = "key");
+
+                "When two instances of that entity are instantiated with that natural key value assigned"
+                    .When(() =>
+                    {
+                        instance1 = new SuperSubject { NaturalKey = naturalKey };
+                        instance2 = new SuperSubject { NaturalKey = naturalKey };
+                    });
+
+                "Then the first instance is equal to the second instance"
+                    .Then(() => instance1.Should().Be(instance2));
+            }
+
+            public class Subject : Entity
+            {
+                [NaturalKey]
+                public string NaturalKey { get; set; }
+            }
+
+            public class SuperSubject : Subject
+            {
+            }
+        }
+
+        public class NaturalKeySelectorDefinedISubclass : EntityEquality
+        {
+            [Scenario]
+            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
+            {
+                "Given an entity with a natural key selector defined in the subclass"
+                    .Given(() => { });
+
+                "And a natural key value"
+                    .And(() => naturalKey = "key");
+
+                "When two instances of that entity are instantiated with that natural key value assigned"
+                    .When(() =>
+                    {
+                        instance1 = new SuperSubject { NaturalKey = naturalKey };
+                        instance2 = new SuperSubject { NaturalKey = naturalKey };
+                    });
+
+                "Then the first instance is equal to the second instance"
+                    .Then(() => instance1.Should().Be(instance2));
+            }
+
+            public class Subject : Entity
+            {
+            }
+
+            public class SuperSubject : Subject
+            {
+                [NaturalKey]
+                public string NaturalKey { get; set; }
+            }
+        }
+
+        public class NaturalKeySelectorDefinedInBothBaseClassAndSubclass : EntityEquality
+        {
+            [Scenario]
+            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
+            {
+                "Given an entity with a natural key selector defined in the base class and the subclass"
+                    .Given(() => { });
+
+                "And a natural key value"
+                    .And(() => naturalKey = "key");
+
+                "When two instances of that entity are instantiated with the subclass natural key value assigned"
+                    .When(() =>
+                    {
+                        instance1 = new SuperSubject { NaturalKey = "unequalValue", NaturalKey2 = naturalKey };
+                        instance2 = new SuperSubject { NaturalKey = "unequalValue2", NaturalKey2 = naturalKey };
+                    });
+
+                "Then the first instance is equal to the second instance"
+                    .Then(() => instance1.Should().Be(instance2));
+            }
+
+            public class Subject : Entity
+            {
+                [NaturalKey]
+                public string NaturalKey { get; set; }
+            }
+
+            public class SuperSubject : Subject
+            {
+                [NaturalKey]
+                public string NaturalKey2 { get; set; }
             }
         }
     }
