@@ -44,22 +44,19 @@ namespace dddlib.Tests.Features
             [consider inheritance]
         */
 
-        public class UndefinedNaturalKeySelector : EntityEquality
+        public class InheritedUndefinedNaturalKeySelector : EntityEquality
         {
             [Scenario]
-            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
+            public void Scenario(SuperSubject instance1, SuperSubject instance2)
             {
                 "Given an entity with an undefined natural key selector"
                     .Given(() => { });
 
-                "And a natural key value"
-                    .And(() => naturalKey = "key");
-
-                "When two instances of that entity are instantiated with that natural key value assigned"
+                "When two instances of that entity are instantiated"
                     .When(() =>
                     {
-                        instance1 = new Subject { NaturalKey = naturalKey };
-                        instance2 = new Subject { NaturalKey = naturalKey };
+                        instance1 = new SuperSubject();
+                        instance2 = new SuperSubject();
                     });
 
                 "Then the first instance is not equal to the second instance"
@@ -68,7 +65,135 @@ namespace dddlib.Tests.Features
 
             public class Subject : Entity
             {
+            }
+
+            public class SuperSubject : Subject
+            {
+            }
+        }
+
+        public class NaturalKeySelectorDefinedInInheritingClass : EntityEquality
+        {
+            [Scenario]
+            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
+            {
+                "Given an entity with a natural key selector defined in the inheriting class"
+                    .Given(() => { });
+
+                "And a natural key value"
+                    .And(() => naturalKey = "key");
+
+                "When two instances of that entity are instantiated with that natural key value assigned"
+                    .When(() =>
+                    {
+                        instance1 = new SuperSubject { NaturalKey = naturalKey };
+                        instance2 = new SuperSubject { NaturalKey = naturalKey };
+                    });
+
+                "Then the first instance is equal to the second instance"
+                    .Then(() => instance1.Should().Be(instance2));
+            }
+
+            public class Subject : Entity
+            {
+            }
+
+            public class SuperSubject : Subject
+            {
+                [NaturalKey]
                 public string NaturalKey { get; set; }
+            }
+        }
+
+        public class NaturalKeySelectorDefinedInInheritedClass : EntityEquality
+        {
+            [Scenario]
+            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
+            {
+                "Given an entity with a natural key selector defined in the inherited class"
+                    .Given(() => { });
+
+                "And a natural key value"
+                    .And(() => naturalKey = "key");
+
+                "When two instances of that entity are instantiated with that natural key value assigned"
+                    .When(() =>
+                    {
+                        instance1 = new SuperSubject { NaturalKey = naturalKey };
+                        instance2 = new SuperSubject { NaturalKey = naturalKey };
+                    });
+
+                "Then the first instance is equal to the second instance"
+                    .Then(() => instance1.Should().Be(instance2));
+            }
+
+            public class Subject : Entity
+            {
+                [NaturalKey]
+                public string NaturalKey { get; set; }
+            }
+
+            public class SuperSubject : Subject
+            {
+            }
+        }
+
+        public class NaturalKeySelectorDefinedInInheritingAndInheritedClass : EntityEquality
+        {
+            [Scenario]
+            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
+            {
+                "Given an entity with a natural key selector defined in the inheriting and inherited class"
+                    .Given(() => { });
+
+                "And a natural key value"
+                    .And(() => naturalKey = "key");
+
+                "When two instances of that entity are instantiated with the inheriting natural key value assigned"
+                    .When(() =>
+                    {
+                        instance1 = new SuperSubject { NaturalKey = "unequalValue", NaturalKey2 = naturalKey };
+                        instance2 = new SuperSubject { NaturalKey = "unequalValue2", NaturalKey2 = naturalKey };
+                    });
+
+                "Then the first instance is equal to the second instance"
+                    .Then(() => instance1.Should().Be(instance2));
+            }
+
+            public class Subject : Entity
+            {
+                [NaturalKey]
+                public string NaturalKey { get; set; }
+            }
+
+            public class SuperSubject : Subject
+            {
+                [NaturalKey]
+                public string NaturalKey2 { get; set; }
+            }
+        }
+
+        public class UndefinedNaturalKeySelector : EntityEquality
+        {
+            [Scenario]
+            public void Scenario(Subject instance1, Subject instance2)
+            {
+                "Given an entity with an undefined natural key selector"
+                    .Given(() => { });
+
+                "When two instances of that entity are instantiated"
+                    .When(() =>
+                    {
+                        instance1 = new Subject();
+                        instance2 = new Subject();
+                    });
+
+                "Then the first instance is not equal to the second instance"
+                    .Then(() => instance1.Should().NotBe(instance2));
+            }
+
+            public class Subject : Entity
+            {
             }
         }
 

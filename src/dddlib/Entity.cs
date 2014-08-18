@@ -54,7 +54,7 @@ namespace dddlib
         /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public sealed override int GetHashCode()
         {
-            var value = this.GetNaturalKey();
+            var value = this.runtimeType.NaturalKeySelector.Invoke(this);
             return value == null ? 0 : value.GetHashCode();
         }
 
@@ -92,15 +92,6 @@ namespace dddlib
             var otherValue = this.runtimeType.NaturalKeySelector.Invoke(other);
 
             return this.runtimeType.NaturalKeyEqualityComparer.Equals(thisValue, otherValue);
-        }
-
-        // TODO (Cameron): Mess.
-        private object GetNaturalKey()
-        {
-            var naturalKeyMember = this.GetType().GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
-                .Single(member => member.GetCustomAttributes(typeof(NaturalKey), false).Any());
-
-            return naturalKeyMember.GetValue(this);
         }
     }
 }

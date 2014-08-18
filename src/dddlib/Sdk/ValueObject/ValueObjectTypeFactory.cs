@@ -5,8 +5,6 @@
 namespace dddlib.Runtime
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
 
     internal class ValueObjectTypeFactory : ITypeFactory<ValueObjectType>
     {
