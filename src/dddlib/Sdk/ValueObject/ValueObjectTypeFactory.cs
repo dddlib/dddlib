@@ -22,7 +22,7 @@ namespace dddlib.Runtime
             var configuration = this.configurationProvider.GetConfiguration(type);
 
             // create type
-            return new ValueObjectType(configuration.EqaulityComparer);
+            return new ValueObjectType(configuration.EqualityComparer);
         }
     }
 }

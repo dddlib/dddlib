@@ -5,12 +5,16 @@
 namespace dddlib.Runtime
 {
     using System;
-    using System.Collections.Generic;
 
-    internal class AggregateRootConfiguration
+    /// <summary>
+    /// Represents the aggregate root configuration.
+    /// </summary>
+    public class AggregateRootConfiguration
     {
-        public Func<object> Factory { get; internal set; }
-
-        public string ApplyMethodName { get; set; }
+        /// <summary>
+        /// Gets or sets the uninitialized aggregate root factory.
+        /// </summary>
+        /// <value>The uninitialized aggregate root factory.</value>
+        public Func<object> UninitializedFactory { get; set; }
     }
 }

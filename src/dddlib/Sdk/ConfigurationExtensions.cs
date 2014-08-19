@@ -14,8 +14,8 @@ namespace dddlib.Runtime
         {
             return new AggregateRootConfiguration
             {
-                Factory = values.Select(value => value.Factory).CombineValues(),
-                ApplyMethodName = values.Select(value => value.ApplyMethodName).CombineValues(),
+                UninitializedFactory = values.Select(value => value.UninitializedFactory).CombineValues(),
+                ////ApplyMethodName = values.Select(value => value.ApplyMethodName).CombineValues(),
                 ////NaturalKeySelector = values.Select(value => value.NaturalKeySelector).CombineValues(),
                 ////NaturalKeyEqualityComparer = values.Select(value => value.NaturalKeyEqualityComparer).CombineValues(),
             };
@@ -37,8 +37,8 @@ namespace dddlib.Runtime
         {
             return new ValueObjectConfiguration
             {
-                EqaulityComparer = values.Select(value => value.EqaulityComparer).CombineValues(),
-                Mapper = values.Select(value => value.Mapper).CombineValues(),
+                EqualityComparer = values.Select(value => value.EqualityComparer).CombineValues(),
+                ////Mapper = values.Select(value => value.Mapper).CombineValues(),
             };
         }
 

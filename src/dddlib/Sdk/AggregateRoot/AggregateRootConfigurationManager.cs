@@ -12,8 +12,8 @@ namespace dddlib.Runtime
             // there is logic required in here
             return new AggregateRootConfiguration
             {
-                ApplyMethodName = typeConfiguration.ApplyMethodName,
-                Factory = typeConfiguration.Factory,
+                UninitializedFactory = typeConfiguration.UninitializedFactory,
+                ////ApplyMethodName = typeConfiguration.ApplyMethodName,
                 ////NaturalKeySelector = typeConfiguration.NaturalKeySelector ?? baseTypeConfiguration.NaturalKeySelector,
                 ////NaturalKeyEqualityComparer = typeConfiguration.NaturalKeyEqualityComparer ?? baseTypeConfiguration.NaturalKeyEqualityComparer,
             };

@@ -31,18 +31,19 @@ namespace dddlib.Runtime
                 .Reverse())
             {
                 configuration = this.configurationProvider.GetConfiguration(currentType);
-                mappings.Add(currentType, configuration.ApplyMethodName ?? "Apply");
+                ////mappings.Add(currentType, configuration.ApplyMethodName ?? "Apply");
+                mappings.Add(currentType, "Handle");
             }
 
             // create type
             return new AggregateRootType
             {
-                Factory = configuration.Factory,
+                Factory = configuration.UninitializedFactory,
                 EventDispatcher = new DefaultEventDispatcher(type),
                 Options = new AggregateRootType.RuntimeOptions
                 {
                     DispatchEvents = true, // unless there's no handlers for this type at all
-                    PersistEvents = configuration.Factory != null,
+                    PersistEvents = configuration.UninitializedFactory != null,
                 }
             };
         }

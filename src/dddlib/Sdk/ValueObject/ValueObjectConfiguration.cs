@@ -4,12 +4,15 @@
 
 namespace dddlib.Runtime
 {
-    using System;
-
-    internal class ValueObjectConfiguration
+    /// <summary>
+    /// Represents the value object configuration.
+    /// </summary>
+    public class ValueObjectConfiguration
     {
-        public object EqaulityComparer { get; set; }
-
-        public Func<object, object> Mapper { get; set; }
+        /// <summary>
+        /// Gets or sets the equality comparer.
+        /// </summary>
+        /// <value>The equality comparer.</value>
+        public object EqualityComparer { get; set; }
     }
 }

@@ -12,8 +12,8 @@ namespace dddlib.Runtime
         {
             return new AggregateRootConfiguration
             {
-                Factory = null, // cannot specify factory on type
-                ApplyMethodName = "Handle", // default
+                UninitializedFactory = null, // cannot specify factory on type
+                ////ApplyMethodName = "Handle", // default
             };
         }
     }
