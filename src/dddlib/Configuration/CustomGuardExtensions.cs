@@ -9,15 +9,14 @@ namespace dddlib.Configuration
 
     internal static class CustomGuardExtensions
     {
-        public static void InvalidExpression<T, TKey>(
-            this Guard guard, Func<Expression<Func<T, TKey>>> memberExpression, out MemberExpression expression)
+        public static void InvalidMemberExpression<T>(this Guard guard, Func<Expression<T>> expression, out MemberExpression memberExpression)
         {
-            Guard.Against.Null(memberExpression);
+            Guard.Against.Null(expression);
 
-            expression = memberExpression().Body as MemberExpression;
-            if (expression == null)
+            memberExpression = expression().Body as MemberExpression;
+            if (memberExpression == null)
             {
-                throw new Exception("not a memberexpression");
+                throw new ArgumentException("Value must be a member expression.", Guard.Expression.Parse(expression));
             }
         }
     }

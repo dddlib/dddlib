@@ -21,7 +21,7 @@
 
                 var car = new Car("abc");
                 repository.Save(car);
-                //var car2 = repository.Load<Car>("abc");
+                var car2 = repository.Load<Car>("abc");
 
                 var data = new List<string>();
                 var view = new CarView(data);

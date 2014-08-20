@@ -14,10 +14,10 @@ namespace dddlib.Configuration
     {
         public IEntityConfigurationWrapper<T> ToUseNaturalKey<TKey>(Expression<Func<T, TKey>> naturalKeySelector)
         {
-            Guard.Against.InvalidExpression(() => naturalKeySelector, out var expression);
+            Guard.Against.InvalidMemberExpression(() => naturalKeySelector, out var memberExpression);
 
             this.configuration.EntityType = typeof(T);
-            this.configuration.NaturalKeyPropertyName = expression.Member.Name;
+            this.configuration.NaturalKeyPropertyName = memberExpression.Member.Name;
 
             return this;
         }
@@ -26,10 +26,10 @@ namespace dddlib.Configuration
             Expression<Func<T, string>> naturalKeySelector, 
             IEqualityComparer<string> equalityComparer)
         {
-            Guard.Against.InvalidExpression(() => naturalKeySelector, out var expression);
+            Guard.Against.Null(() => equalityComparer);
 
-            this.configuration.EntityType = typeof(T);
-            this.configuration.NaturalKeyPropertyName = expression.Member.Name;
+            this.ToUseNaturalKey(naturalKeySelector);
+
             this.configuration.NaturalKeyStringEqualityComparer = equalityComparer;
 
             return this;

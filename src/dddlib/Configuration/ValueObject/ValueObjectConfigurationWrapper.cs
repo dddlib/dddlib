@@ -25,6 +25,7 @@ namespace dddlib.Configuration
             Guard.Against.Null(() => equalityComparer);
 
             this.configuration.EqualityComparer = equalityComparer;
+
             return this;
         }
     }

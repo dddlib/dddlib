@@ -61,3 +61,5 @@ EntityType MUST NOT be invalid
 EntityTypeFactory REQUIRES EntityConfiguration (for create method)
 EntityConfiguration IS a DTO
 EntityConfiguration MAY BE invalid
+
+TODO (Cameron): Add stylecop back to classes that haqve been excluded in .csproj.
