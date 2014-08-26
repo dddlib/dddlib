@@ -23,13 +23,11 @@ namespace dddlib.Configuration
         }
 
         public IEntityConfigurationWrapper<T> ToUseNaturalKey(
-            Expression<Func<T, string>> naturalKeySelector, 
-            IEqualityComparer<string> equalityComparer)
+            Expression<Func<T, string>> naturalKeySelector, IEqualityComparer<string> equalityComparer)
         {
             Guard.Against.Null(() => equalityComparer);
 
             this.ToUseNaturalKey(naturalKeySelector);
-
             this.configuration.NaturalKeyStringEqualityComparer = equalityComparer;
 
             return this;
