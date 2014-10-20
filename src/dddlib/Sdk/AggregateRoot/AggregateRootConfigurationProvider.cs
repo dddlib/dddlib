@@ -7,15 +7,18 @@ namespace dddlib.Runtime
     using System;
     using System.Collections.Generic;
 
-    internal class AggregateRootConfigurationProvider : IConfigurationProvider<AggregateRootConfiguration>
+    internal class AggregateRootConfigurationProvider : IAggregateRootConfigurationProvider
     {
         private readonly Dictionary<Type, AggregateRootConfiguration> config = new Dictionary<Type, AggregateRootConfiguration>();
 
-        private readonly IConfigurationProvider<AggregateRootConfiguration> bootstrapper;
-        private readonly IConfigurationProvider<AggregateRootConfiguration> typeAnalyzer;
+        private readonly IAggregateRootConfigurationProvider bootstrapper;
+        private readonly IAggregateRootConfigurationProvider typeAnalyzer;
         private readonly AggregateRootConfigurationManager manager;
 
-        public AggregateRootConfigurationProvider(IConfigurationProvider<AggregateRootConfiguration> bootstrapper, IConfigurationProvider<AggregateRootConfiguration> typeAnalyzer, AggregateRootConfigurationManager manager)
+        public AggregateRootConfigurationProvider(
+            IAggregateRootConfigurationProvider bootstrapper, 
+            IAggregateRootConfigurationProvider typeAnalyzer, 
+            AggregateRootConfigurationManager manager)
         {
             this.bootstrapper = bootstrapper;
             this.typeAnalyzer = typeAnalyzer;

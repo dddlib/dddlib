@@ -9,9 +9,9 @@ namespace dddlib.Runtime
 
     internal class EntityTypeFactory : ITypeFactory<EntityType>
     {
-        private readonly IConfigurationProvider<EntityConfiguration> configurationProvider;
+        private readonly IEntityConfigurationProvider configurationProvider;
 
-        public EntityTypeFactory(IConfigurationProvider<EntityConfiguration> configurationProvider)
+        public EntityTypeFactory(IEntityConfigurationProvider configurationProvider)
         {
             Guard.Against.Null(() => configurationProvider);
 

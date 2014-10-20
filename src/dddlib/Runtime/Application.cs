@@ -146,27 +146,27 @@ namespace dddlib.Runtime
         private static ITypeFactory<AggregateRootType> CreateAggregateRootTypeFactory()
         {
             var configurationProvider = new DefaultConfigurationProvider<AggregateRootConfiguration>(
-                new IConfigurationProvider<AggregateRootConfiguration>[]
+                new Func<Type, AggregateRootConfiguration>[]
                 {
-                    new Bootstrapper(),
-                    new AggregateRootAnalyzer(),
+                    t => ((IAggregateRootConfigurationProvider)new Bootstrapper()).GetConfiguration(t),
+                    t => new AggregateRootAnalyzer().GetConfiguration(t),
                 },
                 new AggregateRootConfigurationManager());
 
-            return new AggregateRootTypeFactory(configurationProvider);
+            return new AggregateRootTypeFactory(new InternalAggregateRootConfigurationProvider(configurationProvider));
         }
 
         private static ITypeFactory<EntityType> CreateEntityTypeFactory()
         {
             var configurationProvider = new DefaultConfigurationProvider<EntityConfiguration>(
-                new IConfigurationProvider<EntityConfiguration>[]
+                new Func<Type, EntityConfiguration>[]
                 {
-                    new Bootstrapper(),
-                    new EntityAnalyzer(),
+                    t => ((IEntityConfigurationProvider)new Bootstrapper()).GetConfiguration(t),
+                    t => new EntityAnalyzer().GetConfiguration(t),
                 },
                 new EntityConfigurationManager());
 
-            return new EntityTypeFactory(configurationProvider);
+            return new EntityTypeFactory(new InternalEntityConfigurationProvider(configurationProvider));
         }
 
         private static ITypeFactory<ValueObjectType> CreateValueObjectTypeFactory()
@@ -223,6 +223,39 @@ namespace dddlib.Runtime
                 runtimeTypes.Add(type, runtimeType);
 
                 return runtimeType;
+            }
+        }
+
+        // TODO (Cameron): This is a mess.
+        internal class InternalAggregateRootConfigurationProvider
+            : IAggregateRootConfigurationProvider
+        {
+            private readonly DefaultConfigurationProvider<AggregateRootConfiguration> provider;
+
+            public InternalAggregateRootConfigurationProvider(DefaultConfigurationProvider<AggregateRootConfiguration> provider)
+            {
+                this.provider = provider;
+            }
+
+            public AggregateRootConfiguration GetConfiguration(Type type)
+            {
+                return this.provider.GetConfiguration(type);
+            }
+        }
+
+        internal class InternalEntityConfigurationProvider
+            : IEntityConfigurationProvider
+        {
+            private readonly DefaultConfigurationProvider<EntityConfiguration> provider;
+
+            public InternalEntityConfigurationProvider(DefaultConfigurationProvider<EntityConfiguration> provider)
+            {
+                this.provider = provider;
+            }
+
+            public EntityConfiguration GetConfiguration(Type type)
+            {
+                return this.provider.GetConfiguration(type);
             }
         }
     }

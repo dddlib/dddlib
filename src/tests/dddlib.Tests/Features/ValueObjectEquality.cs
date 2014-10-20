@@ -28,6 +28,7 @@ namespace dddlib.Tests.Features
             CONSIDER:
           X Case sensitive string value comparison.
           X Case insensitive string value comparison.
+            Inheritance.
         */
 
         public class UndefinedEqualityComparer : ValueObjectEquality

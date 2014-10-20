@@ -8,15 +8,15 @@ namespace dddlib.Runtime
     using System.Collections.Generic;
     using System.Linq;
 
-    internal class DefaultConfigurationProvider<T> : IConfigurationProvider<T> where T : new()
+    internal class DefaultConfigurationProvider<T> where T : new()
     {
-        private readonly List<IConfigurationProvider<T>> configurationProviders = new List<IConfigurationProvider<T>>();
+        private readonly List<Func<Type, T>> configurationProviders = new List<Func<Type, T>>();
         private readonly Dictionary<Type, T> configurations = new Dictionary<Type, T>();
 
         private readonly IConfigurationManager<T> configurationMerger;
 
         public DefaultConfigurationProvider(
-            IEnumerable<IConfigurationProvider<T>> configurationProviders,
+            IEnumerable<Func<Type, T>> configurationProviders,
             IConfigurationManager<T> configurationMerger)
         {
             Guard.Against.Null(() => configurationMerger);
@@ -39,7 +39,7 @@ namespace dddlib.Runtime
         private T GetRuntimeTypeConfiguration(Type type)
         {
             // TODO (Cameron): Remove dynamic and Microsoft.CSharp reference.
-            dynamic allConfigurations = this.configurationProviders.Select(configurationProvider => configurationProvider.GetConfiguration(type));
+            dynamic allConfigurations = this.configurationProviders.Select(configurationProvider => configurationProvider(type));
             var typeConfiguration = ConfigurationExtensions.Combine(allConfigurations);
 
             var baseTypeConfiguration =

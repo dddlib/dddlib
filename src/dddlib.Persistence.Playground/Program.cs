@@ -10,8 +10,6 @@
 
     internal static class MainProgram
     {
-        private static readonly Guid StreamId = Guid.NewGuid(); // aggregate identifier
-
         private static void Main()
         {
             using (var store = WireupEventStore())

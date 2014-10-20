@@ -51,6 +51,8 @@
     </Compile>
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="BusinessException.cs" />
+    <Compile Include="Sdk\IEntityConfigurationProvider.cs" />
+    <Compile Include="Sdk\IAggregateRootConfigurationProvider.cs" />
     <Compile Include="Configuration\CustomGuardExtensions.cs" />
     <Compile Include="Configuration\ValueObject\ValueObjectConfigurationWrapper.cs">
       <ExcludeFromStyleCop>True</ExcludeFromStyleCop>
@@ -60,7 +62,7 @@
     <Compile Include="Guard.cs" />
     <Compile Include="GuardExtensions.cs" />
     <Compile Include="Sdk\ValueObjectEqualityComparer.cs" />
-    <Compile Include="Sdk\IConfigurationProvider.cs" />
+    <Compile Include="Sdk\IValueObjectConfigurationProvider.cs" />
     <Compile Include="Sdk\IConfigurationManager.cs" />
     <Compile Include="Sdk\ITypeFactory.cs" />
     <Compile Include="Sdk\TypeExtensions.cs" />

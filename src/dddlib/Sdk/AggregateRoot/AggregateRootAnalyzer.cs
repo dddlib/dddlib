@@ -6,7 +6,7 @@ namespace dddlib.Runtime
 {
     using System;
 
-    internal class AggregateRootAnalyzer : IConfigurationProvider<AggregateRootConfiguration>
+    internal class AggregateRootAnalyzer : IAggregateRootConfigurationProvider
     {
         public AggregateRootConfiguration GetConfiguration(Type type)
         {

@@ -36,6 +36,69 @@ namespace dddlib
             this.runtimeType = Application.Current.GetAggregateRootType(this.GetType());
         }
 
+        /// <summary>
+        /// Exposes the public members of the event mapper.
+        /// </summary>
+        /// <typeparam name="TEvent">The type of the event.</typeparam>
+        protected interface IEventMapper<TEvent>
+        {
+            /// <summary>
+            /// Maps the event to an entity.
+            /// </summary>
+            /// <typeparam name="T">The type of entity.</typeparam>
+            /// <returns>The entity.</returns>
+            T ToEntity<T>() where T : Entity;
+
+            /// <summary>
+            /// Maps the event to a value object.
+            /// </summary>
+            /// <typeparam name="T">The type of value object.</typeparam>
+            /// <returns>The value object.</returns>
+            T ToValueObject<T>() where T : ValueObject<T>;
+        }
+
+        /// <summary>
+        /// Exposes the public members of the entity mapper.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity.</typeparam>
+        protected interface IEntityMapper<TEntity> where TEntity : Entity
+        {
+            /// <summary>
+            /// Maps the entity to an event.
+            /// </summary>
+            /// <typeparam name="T">The type of event.</typeparam>
+            /// <returns>The event.</returns>
+            T ToEvent<T>() where T : new();
+
+            /// <summary>
+            /// Maps the entity to an event.
+            /// </summary>
+            /// <typeparam name="T">The type of event.</typeparam>
+            /// <param name="event">The event to map the entity to.</param>
+            void ToEvent<T>(T @event);
+        }
+
+        /// <summary>
+        /// Exposes the public members of the value object mapper.
+        /// </summary>
+        /// <typeparam name="TValueObject">The type of the value object.</typeparam>
+        protected interface IValueObjectMapper<TValueObject> where TValueObject : ValueObject<TValueObject>
+        {
+            /// <summary>
+            /// Maps the entity to an event.
+            /// </summary>
+            /// <typeparam name="T">The type of event.</typeparam>
+            /// <returns>The event.</returns>
+            T ToEvent<T>() where T : new();
+
+            /// <summary>
+            /// Maps the entity to an event.
+            /// </summary>
+            /// <typeparam name="T">The type of event.</typeparam>
+            /// <param name="event">The event to map the entity to.</param>
+            void ToEvent<T>(T @event);
+        }
+
         internal string State
         {
             get { return this.state; }
@@ -77,18 +140,36 @@ namespace dddlib
         }
 
         /// <summary>
-        /// Maps the specified value to the specified type.
+        /// Specifies that the event should be mapped.
         /// </summary>
-        /// <typeparam name="TOut">The type of the out.</typeparam>
-        /// <typeparam name="TIn">The type of the in.</typeparam>
-        /// <param name="value">The value.</param>
-        /// <returns>The mapped value.</returns>
-        //// TODO (Cameron): Sort this out.
-        protected static TOut Map<TOut, TIn>(TIn value) where TIn : ValueObject<TIn>
+        /// <typeparam name="T">The type of event.</typeparam>
+        /// <param name="event">The event.</param>
+        /// <returns>A mapping specification.</returns>
+        protected static IEventMapper<T> MapEvent<T>(T @event)
         {
-            // NOTE (Cameron): Should allow for pre-defined mappings to take place from value objects to common types.
-            // TODO (Cameron): Consider implementing as an extension method.
-            return default(TOut);
+            return null;
+        }
+
+        /// <summary>
+        /// Specifies that the entity should be mapped.
+        /// </summary>
+        /// <typeparam name="T">The type of entity.</typeparam>
+        /// <param name="entity">The entity.</param>
+        /// <returns>A mapping specification.</returns>
+        protected static IEntityMapper<T> MapEntity<T>(T entity) where T : Entity
+        {
+            return null;
+        }
+
+        /// <summary>
+        /// Maps the value object.
+        /// </summary>
+        /// <typeparam name="T">The type of value object.</typeparam>
+        /// <param name="valueObject">The value object.</param>
+        /// <returns>A mapping specification.</returns>
+        protected static IValueObjectMapper<T> MapValueObject<T>(T valueObject) where T : ValueObject<T>
+        {
+            return null;
         }
 
         /// <summary>

@@ -7,15 +7,18 @@ namespace dddlib.Runtime
     using System;
     using System.Collections.Generic;
 
-    internal class ValueObjectConfigurationProvider : IConfigurationProvider<ValueObjectConfiguration>
+    internal class ValueObjectConfigurationProvider : IValueObjectConfigurationProvider
     {
         private readonly Dictionary<Type, ValueObjectConfiguration> config = new Dictionary<Type, ValueObjectConfiguration>();
 
-        private readonly IConfigurationProvider<ValueObjectConfiguration> bootstrapper;
-        private readonly IConfigurationProvider<ValueObjectConfiguration> typeAnalyzer;
+        private readonly IValueObjectConfigurationProvider bootstrapper;
+        private readonly IValueObjectConfigurationProvider typeAnalyzer;
         private readonly ValueObjectConfigurationManager manager;
 
-        public ValueObjectConfigurationProvider(IConfigurationProvider<ValueObjectConfiguration> bootstrapper, IConfigurationProvider<ValueObjectConfiguration> typeAnalyzer, ValueObjectConfigurationManager manager)
+        public ValueObjectConfigurationProvider(
+            IValueObjectConfigurationProvider bootstrapper, 
+            IValueObjectConfigurationProvider typeAnalyzer, 
+            ValueObjectConfigurationManager manager)
         {
             this.bootstrapper = bootstrapper;
             this.typeAnalyzer = typeAnalyzer;

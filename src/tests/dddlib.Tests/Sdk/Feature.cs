@@ -26,36 +26,38 @@ namespace dddlib.Tests.Sdk
                 .Given(() =>
                 {
                     // aggregate root
-                    var aggregateRootConfigurationProviders = new IConfigurationProvider<AggregateRootConfiguration>[]
-                    {
-                        new Bootstrapper(this.Bootstrap),
-                        new AggregateRootAnalyzer(),
-                    };
-
                     var aggregateRootConfigurationManager = new AggregateRootConfigurationManager();
-                    var aggregateRootConfigurationProvider = new DefaultConfigurationProvider<AggregateRootConfiguration>(aggregateRootConfigurationProviders, aggregateRootConfigurationManager);
-                    var aggregateRootTypeFactory = new AggregateRootTypeFactory(aggregateRootConfigurationProvider);
+                    var aggregateRootConfigurationProvider = new DefaultConfigurationProvider<AggregateRootConfiguration>(
+                        new Func<Type, AggregateRootConfiguration>[]
+                        {
+                            t => ((IAggregateRootConfigurationProvider)new Bootstrapper(this.Bootstrap)).GetConfiguration(t),
+                            t => new AggregateRootAnalyzer().GetConfiguration(t),
+                        },
+                        aggregateRootConfigurationManager);
+
+                    var aggregateRootTypeFactory = new AggregateRootTypeFactory(new Application.InternalAggregateRootConfigurationProvider(aggregateRootConfigurationProvider));
 
                     // entity
-                    var entityConfigurationProviders = new IConfigurationProvider<EntityConfiguration>[]
-                    {
-                        new Bootstrapper(this.Bootstrap),
-                        new EntityAnalyzer(),
-                    };
-
                     var entityConfigurationManager = new EntityConfigurationManager();
-                    var entityConfigurationProvider = new DefaultConfigurationProvider<EntityConfiguration>(entityConfigurationProviders, entityConfigurationManager);
-                    var entityTypeFactory = new EntityTypeFactory(entityConfigurationProvider);
+                    var entityConfigurationProvider = new DefaultConfigurationProvider<EntityConfiguration>(
+                        new Func<Type, EntityConfiguration>[]
+                        {
+                            t => ((IEntityConfigurationProvider)new Bootstrapper(this.Bootstrap)).GetConfiguration(t),
+                            t => new EntityAnalyzer().GetConfiguration(t),
+                        },
+                        entityConfigurationManager);
+
+                    var entityTypeFactory = new EntityTypeFactory(new Application.InternalEntityConfigurationProvider(entityConfigurationProvider));
 
                     // value object
-                    var valueObjectConfigurationProviders = new IConfigurationProvider<ValueObjectConfiguration>[]
+                    var valueObjectConfigurationProviders = new IValueObjectConfigurationProvider[]
                     {
                         new Bootstrapper(this.Bootstrap),
                         //// new ValueObjectAnalyzer(),
                     };
 
                     var valueObjectConfigurationManager = new ValueObjectConfigurationManager();
-                    var valueObjectConfigurationProvider = new DefaultConfigurationProvider<ValueObjectConfiguration>(valueObjectConfigurationProviders, valueObjectConfigurationManager);
+                    var valueObjectConfigurationProvider = new ValueObjectConfigurationProvider(new Bootstrapper(this.Bootstrap), new ValueObjectAnalyzer(), new ValueObjectConfigurationManager());
                     var valueObjectTypeFactory = new ValueObjectTypeFactory(valueObjectConfigurationProvider);
 
                     new Application(

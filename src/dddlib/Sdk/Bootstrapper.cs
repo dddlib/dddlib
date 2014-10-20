@@ -10,9 +10,9 @@ namespace dddlib.Runtime
     using dddlib.Configuration;
 
     internal class Bootstrapper :
-        IConfigurationProvider<AggregateRootConfiguration>,
-        IConfigurationProvider<EntityConfiguration>,
-        IConfigurationProvider<ValueObjectConfiguration>
+        IAggregateRootConfigurationProvider,
+        IEntityConfigurationProvider,
+        IValueObjectConfigurationProvider
     {
         private readonly Func<Type, Action<IConfiguration>> bootstrapperProvider;
 
@@ -28,7 +28,7 @@ namespace dddlib.Runtime
             this.bootstrapperProvider = getBootstrapper;
         }
 
-        AggregateRootConfiguration IConfigurationProvider<AggregateRootConfiguration>.GetConfiguration(Type type)
+        AggregateRootConfiguration IAggregateRootConfigurationProvider.GetConfiguration(Type type)
         {
             var bootstrap = this.bootstrapperProvider(type);
 
@@ -38,10 +38,10 @@ namespace dddlib.Runtime
             // bootstrap
             bootstrap(configuration);
 
-            return ((IConfigurationProvider<AggregateRootConfiguration>)configuration).GetConfiguration(type);
+            return ((IAggregateRootConfigurationProvider)configuration).GetConfiguration(type);
         }
 
-        EntityConfiguration IConfigurationProvider<EntityConfiguration>.GetConfiguration(Type type)
+        EntityConfiguration IEntityConfigurationProvider.GetConfiguration(Type type)
         {
             var bootstrap = this.bootstrapperProvider(type);
 
@@ -51,10 +51,10 @@ namespace dddlib.Runtime
             // bootstrap
             bootstrap(configuration);
 
-            return ((IConfigurationProvider<EntityConfiguration>)configuration).GetConfiguration(type);
+            return ((IEntityConfigurationProvider)configuration).GetConfiguration(type);
         }
 
-        ValueObjectConfiguration IConfigurationProvider<ValueObjectConfiguration>.GetConfiguration(Type type)
+        ValueObjectConfiguration IValueObjectConfigurationProvider.GetConfiguration(Type type)
         {
             var bootstrap = this.bootstrapperProvider(type);
 
@@ -64,7 +64,7 @@ namespace dddlib.Runtime
             // bootstrap
             bootstrap(configuration);
 
-            return ((IConfigurationProvider<ValueObjectConfiguration>)configuration).GetConfiguration(type);
+            return ((IValueObjectConfigurationProvider)configuration).GetConfiguration(type);
         }
 
         // TODO (Cameron): Consider BootstrapperProvider class.

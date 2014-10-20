@@ -7,15 +7,18 @@ namespace dddlib.Runtime
     using System;
     using System.Collections.Generic;
 
-    internal class EntityConfigurationProvider : IConfigurationProvider<EntityConfiguration>
+    internal class EntityConfigurationProvider : IEntityConfigurationProvider
     {
         private readonly Dictionary<Type, EntityConfiguration> config = new Dictionary<Type, EntityConfiguration>();
 
-        private readonly IConfigurationProvider<EntityConfiguration> bootstrapper;
-        private readonly IConfigurationProvider<EntityConfiguration> typeAnalyzer;
+        private readonly IEntityConfigurationProvider bootstrapper;
+        private readonly IEntityConfigurationProvider typeAnalyzer;
         private readonly EntityConfigurationManager manager;
 
-        public EntityConfigurationProvider(IConfigurationProvider<EntityConfiguration> bootstrapper, IConfigurationProvider<EntityConfiguration> typeAnalyzer, EntityConfigurationManager manager)
+        public EntityConfigurationProvider(
+            IEntityConfigurationProvider bootstrapper, 
+            IEntityConfigurationProvider typeAnalyzer, 
+            EntityConfigurationManager manager)
         {
             this.bootstrapper = bootstrapper;
             this.typeAnalyzer = typeAnalyzer;

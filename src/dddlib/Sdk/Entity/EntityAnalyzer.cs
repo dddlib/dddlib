@@ -10,7 +10,7 @@ namespace dddlib.Runtime
     using System.Linq.Expressions;
     using System.Reflection;
 
-    internal class EntityAnalyzer : IConfigurationProvider<EntityConfiguration>
+    internal class EntityAnalyzer : IEntityConfigurationProvider
     {
         public EntityConfiguration GetConfiguration(Type type)
         {

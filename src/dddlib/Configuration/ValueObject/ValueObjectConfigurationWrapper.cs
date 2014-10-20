@@ -11,7 +11,16 @@ namespace dddlib.Configuration
     internal class ValueObjectConfigurationWrapper<T>(private ValueObjectConfiguration configuration) : IValueObjectConfigurationWrapper<T>
         where T : ValueObject<T>
     {
-        public IValueObjectConfigurationWrapper<T> ToMapAs<TOut>(Func<T, TOut> mapping)
+        public IValueObjectConfigurationWrapper<T> ToUseEqualityComparer(IEqualityComparer<T> equalityComparer)
+        {
+            Guard.Against.Null(() => equalityComparer);
+
+            this.configuration.EqualityComparer = equalityComparer;
+
+            return this;
+        }
+
+        public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<TEvent, T> mapping)
         {
             Guard.Against.Null(() => mapping);
 
@@ -20,12 +29,13 @@ namespace dddlib.Configuration
             return this;
         }
 
-        public IValueObjectConfigurationWrapper<T> ToUseEqualityComparer(IEqualityComparer<T> equalityComparer)
+        public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<TEvent, T> mapping, Func<TEvent, T> reverseMapping)
         {
-            Guard.Against.Null(() => equalityComparer);
+            Guard.Against.Null(() => mapping);
+            Guard.Against.Null(() => reverseMapping);
 
-            this.configuration.EqualityComparer = equalityComparer;
-
+            // TODO (Cameron): Some expression based stuff here to negate the need to wrap.
+            ////this.configuration.Mapper = type => mapping((T)type);
             return this;
         }
     }

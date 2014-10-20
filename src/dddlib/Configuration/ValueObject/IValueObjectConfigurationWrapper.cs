@@ -23,18 +23,27 @@ namespace dddlib.Configuration
         where TConfiguration : IValueObjectConfigurationWrapper<TConfiguration, T>
     {
         /// <summary>
-        /// Configures the runtime to map the value object to the specified type.
-        /// </summary>
-        /// <typeparam name="TOut">The type to map to.</typeparam>
-        /// <param name="mapping">The mapping.</param>
-        /// <returns>The configuration.</returns>
-        TConfiguration ToMapAs<TOut>(Func<T, TOut> mapping);
-
-        /// <summary>
         /// Configures the runtime to perform value object equality using the specified equality comparer.
         /// </summary>
         /// <param name="equalityComparer">The equality comparer.</param>
         /// <returns>The configuration.</returns>
         TConfiguration ToUseEqualityComparer(IEqualityComparer<T> equalityComparer);
+
+        /// <summary>
+        /// Configures the runtime to map the value object to the specified event type.
+        /// </summary>
+        /// <typeparam name="TEvent">The event type to map to.</typeparam>
+        /// <param name="mapping">The mapping.</param>
+        /// <returns>The configuration.</returns>
+        TConfiguration ToMapToEvent<TEvent>(Action<TEvent, T> mapping);
+
+        /// <summary>
+        /// Configures the runtime to map the value object to the specified event type.
+        /// </summary>
+        /// <typeparam name="TEvent">The event type to map to.</typeparam>
+        /// <param name="mapping">The mapping.</param>
+        /// <param name="reverseMapping">The reverse mapping.</param>
+        /// <returns>The configuration.</returns>
+        TConfiguration ToMapToEvent<TEvent>(Action<TEvent, T> mapping, Func<TEvent, T> reverseMapping);
     }
 }

@@ -10,9 +10,9 @@ namespace dddlib.Configuration
 
     internal class BootstrapperConfiguration : 
         IConfiguration,
-        IConfigurationProvider<AggregateRootConfiguration>,
-        IConfigurationProvider<EntityConfiguration>,
-        IConfigurationProvider<ValueObjectConfiguration>
+        IAggregateRootConfigurationProvider,
+        IEntityConfigurationProvider,
+        IValueObjectConfigurationProvider
     {
         private Dictionary<Type, AggregateRootConfiguration> aggregateRootConfigurations = new Dictionary<Type, AggregateRootConfiguration>();
         private Dictionary<Type, EntityConfiguration> entityConfigurations = new Dictionary<Type, EntityConfiguration>();
@@ -51,26 +51,24 @@ namespace dddlib.Configuration
             return new ValueObjectConfigurationWrapper<T>(configuration);
         }
 
-        AggregateRootConfiguration IConfigurationProvider<AggregateRootConfiguration>.GetConfiguration(Type type)
+        // TODO (Cameron): Confirm type is valid.
+        AggregateRootConfiguration IAggregateRootConfigurationProvider.GetConfiguration(Type type)
         {
-            var configuration = default(AggregateRootConfiguration);
-            this.aggregateRootConfigurations.TryGetValue(type, out configuration);
+            this.aggregateRootConfigurations.TryGetValue(type, out var configuration);
 
             return configuration ?? new AggregateRootConfiguration();
         }
 
-        EntityConfiguration IConfigurationProvider<EntityConfiguration>.GetConfiguration(Type type)
+        EntityConfiguration IEntityConfigurationProvider.GetConfiguration(Type type)
         {
-            var configuration = default(EntityConfiguration);
-            this.entityConfigurations.TryGetValue(type, out configuration);
+            this.entityConfigurations.TryGetValue(type, out var configuration);
 
             return configuration ?? new EntityConfiguration();
         }
 
-        ValueObjectConfiguration IConfigurationProvider<ValueObjectConfiguration>.GetConfiguration(Type type)
+        ValueObjectConfiguration IValueObjectConfigurationProvider.GetConfiguration(Type type)
         {
-            var configuration = default(ValueObjectConfiguration);
-            this.valueObjectConfigurations.TryGetValue(type, out configuration);
+            this.valueObjectConfigurations.TryGetValue(type, out var configuration);
 
             return configuration ?? new ValueObjectConfiguration();
         }

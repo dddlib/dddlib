@@ -32,5 +32,14 @@ namespace dddlib.Configuration
 
             return this;
         }
+
+        public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<TEvent, T> mapping)
+        {
+            Guard.Against.Null(() => mapping);
+
+            // TODO (Cameron): Some expression based stuff here to negate the need to wrap.
+            ////this.configuration.Mapper = type => mapping((T)type);
+            return this;
+        }
     }
 }

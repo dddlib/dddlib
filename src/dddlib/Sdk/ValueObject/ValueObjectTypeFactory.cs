@@ -8,9 +8,9 @@ namespace dddlib.Runtime
 
     internal class ValueObjectTypeFactory : ITypeFactory<ValueObjectType>
     {
-        private readonly IConfigurationProvider<ValueObjectConfiguration> configurationProvider;
+        private readonly IValueObjectConfigurationProvider configurationProvider;
 
-        public ValueObjectTypeFactory(IConfigurationProvider<ValueObjectConfiguration> configurationProvider)
+        public ValueObjectTypeFactory(IValueObjectConfigurationProvider configurationProvider)
         {
             Guard.Against.Null(() => configurationProvider);
 

@@ -24,7 +24,7 @@ namespace dddlib.Configuration
         where TConfiguration : IEntityConfigurationWrapper<TConfiguration, T>
     {
         /// <summary>
-        /// Configures the runtime to assign the natural key of entity using the specified natural key selector.
+        /// Configures the runtime to assign the natural key of the entity using the specified natural key selector.
         /// </summary>
         /// <typeparam name="TKey">The type of the key.</typeparam>
         /// <param name="naturalKeySelector">The natural key selector.</param>
@@ -32,11 +32,19 @@ namespace dddlib.Configuration
         TConfiguration ToUseNaturalKey<TKey>(Expression<Func<T, TKey>> naturalKeySelector);
 
         /// <summary>
-        /// Configures the runtime to assign the natural key of entity using the specified natural key selector and string equality comparer.
+        /// Configures the runtime to assign the natural key of the entity using the specified natural key selector and string equality comparer.
         /// </summary>
         /// <param name="naturalKeySelector">The natural key selector.</param>
         /// <param name="equalityComparer">The string equality comparer for the natural key.</param>
         /// <returns>The configuration.</returns>
         TConfiguration ToUseNaturalKey(Expression<Func<T, string>> naturalKeySelector, IEqualityComparer<string> equalityComparer);
+
+        /// <summary>
+        /// Configures the runtime to map the entity to the specified event type.
+        /// </summary>
+        /// <typeparam name="TEvent">The event type to map to.</typeparam>
+        /// <param name="mapping">The mapping.</param>
+        /// <returns>The configuration.</returns>
+        TConfiguration ToMapToEvent<TEvent>(Action<TEvent, T> mapping);
     }
 }

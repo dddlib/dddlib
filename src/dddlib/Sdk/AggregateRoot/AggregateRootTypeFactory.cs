@@ -10,9 +10,9 @@ namespace dddlib.Runtime
 
     internal class AggregateRootTypeFactory : ITypeFactory<AggregateRootType>
     {
-        private readonly IConfigurationProvider<AggregateRootConfiguration> configurationProvider;
+        private readonly IAggregateRootConfigurationProvider configurationProvider;
 
-        public AggregateRootTypeFactory(IConfigurationProvider<AggregateRootConfiguration> configurationProvider)
+        public AggregateRootTypeFactory(IAggregateRootConfigurationProvider configurationProvider)
         {
             Guard.Against.Null(() => configurationProvider);
 
