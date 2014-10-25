@@ -4,6 +4,8 @@
 
 namespace dddlib.Runtime
 {
+    using System;
+
     /// <summary>
     /// Represents the value object configuration.
     /// </summary>
@@ -14,5 +16,9 @@ namespace dddlib.Runtime
         /// </summary>
         /// <value>The equality comparer.</value>
         public object EqualityComparer { get; set; }
+
+        ////public Action<object, object> ToEventMapping { get; set; }
+
+        ////public Func<object, object> FromEventMapping { get; set; }
     }
 }

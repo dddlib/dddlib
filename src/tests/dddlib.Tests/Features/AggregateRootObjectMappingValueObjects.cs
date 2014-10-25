@@ -46,7 +46,7 @@ namespace dddlib.Tests.Features
             {
                 public Subject(NaturalKey key)
                 {
-                    var @event = MapValueObject(key).ToEvent<NewSubject>();
+                    var @event = Map.ValueObject(key).ToEvent<NewSubject>();
 
                     this.Apply(@event);
                 }
@@ -55,7 +55,7 @@ namespace dddlib.Tests.Features
 
                 private void Handle(NewSubject @event)
                 {
-                    this.NaturalKey = MapEvent(@event).ToValueObject<NaturalKey>();
+                    this.NaturalKey = Map.Event(@event).ToValueObject<NaturalKey>();
                 }
             }
 
@@ -79,7 +79,9 @@ namespace dddlib.Tests.Features
                 public void Bootstrap(IConfiguration configure)
                 {
                     configure.ValueObject<NaturalKey>()
-                        .ToMapToEvent<NewSubject>((@event, key) => @event.NaturalKeyValue = key.Value, @event => new NaturalKey(@event.NaturalKeyValue));
+                        .ToMapToEvent<NewSubject>(
+                            (@event, key) => @event.NaturalKeyValue = key.Value, 
+                            @event => new NaturalKey(@event.NaturalKeyValue));
                 }
             }
         }
@@ -116,14 +118,14 @@ namespace dddlib.Tests.Features
                 {
                     var @event = new DataProcessed { SubjectId = this.Id };
 
-                    MapValueObject(data).ToEvent(@event);
+                    Map.ValueObject(data).ToEvent(@event);
 
                     this.Apply(@event);
                 }
 
                 private void Handle(DataProcessed @event)
                 {
-                    this.ProcessedData = MapEvent(@event).ToValueObject<Data>();
+                    this.ProcessedData = Map.Event(@event).ToValueObject<Data>();
                 }
             }
 

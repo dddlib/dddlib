@@ -36,72 +36,19 @@ namespace dddlib
             this.runtimeType = Application.Current.GetAggregateRootType(this.GetType());
         }
 
-        /// <summary>
-        /// Exposes the public members of the event mapper.
-        /// </summary>
-        /// <typeparam name="TEvent">The type of the event.</typeparam>
-        protected interface IEventMapper<TEvent>
-        {
-            /// <summary>
-            /// Maps the event to an entity.
-            /// </summary>
-            /// <typeparam name="T">The type of entity.</typeparam>
-            /// <returns>The entity.</returns>
-            T ToEntity<T>() where T : Entity;
-
-            /// <summary>
-            /// Maps the event to a value object.
-            /// </summary>
-            /// <typeparam name="T">The type of value object.</typeparam>
-            /// <returns>The value object.</returns>
-            T ToValueObject<T>() where T : ValueObject<T>;
-        }
-
-        /// <summary>
-        /// Exposes the public members of the entity mapper.
-        /// </summary>
-        /// <typeparam name="TEntity">The type of the entity.</typeparam>
-        protected interface IEntityMapper<TEntity> where TEntity : Entity
-        {
-            /// <summary>
-            /// Maps the entity to an event.
-            /// </summary>
-            /// <typeparam name="T">The type of event.</typeparam>
-            /// <returns>The event.</returns>
-            T ToEvent<T>() where T : new();
-
-            /// <summary>
-            /// Maps the entity to an event.
-            /// </summary>
-            /// <typeparam name="T">The type of event.</typeparam>
-            /// <param name="event">The event to map the entity to.</param>
-            void ToEvent<T>(T @event);
-        }
-
-        /// <summary>
-        /// Exposes the public members of the value object mapper.
-        /// </summary>
-        /// <typeparam name="TValueObject">The type of the value object.</typeparam>
-        protected interface IValueObjectMapper<TValueObject> where TValueObject : ValueObject<TValueObject>
-        {
-            /// <summary>
-            /// Maps the entity to an event.
-            /// </summary>
-            /// <typeparam name="T">The type of event.</typeparam>
-            /// <returns>The event.</returns>
-            T ToEvent<T>() where T : new();
-
-            /// <summary>
-            /// Maps the entity to an event.
-            /// </summary>
-            /// <typeparam name="T">The type of event.</typeparam>
-            /// <param name="event">The event to map the entity to.</param>
-            void ToEvent<T>(T @event);
-        }
-
         internal string State
         {
             get { return this.state; }
+        }
+
+        /// <summary>
+        /// Specifies that a mapping should take place.
+        /// </summary>
+        /// <value>The mapping options.</value>
+        [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1623:PropertySummaryDocumentationMustMatchAccessors", Justification = "Not here.")]
+        protected static IMapProvider Map
+        {
+            get { return null; }
         }
 
         internal void Initialize(object memento, IEnumerable<object> events, string state)
@@ -139,6 +86,7 @@ namespace dddlib
             this.state = state;
         }
 
+        /*
         /// <summary>
         /// Specifies that the event should be mapped.
         /// </summary>
@@ -167,10 +115,14 @@ namespace dddlib
         /// <typeparam name="T">The type of value object.</typeparam>
         /// <param name="valueObject">The value object.</param>
         /// <returns>A mapping specification.</returns>
-        protected static IValueObjectMapper<T> MapValueObject<T>(T valueObject) where T : ValueObject<T>
+        protected internal static IValueObjectMapper<T> MapValueObject<T>(T valueObject) where T : ValueObject<T>
         {
-            return null;
+            // HACK (Cameron): This is very hacky - consider a mechanism for injection somehow.
+            var valueObjectRuntimeType = Application.Current.GetValueObjectType(valueObject.GetType());
+
+            return new ValueObjectMapper<T>(valueObjectRuntimeType);
         }
+        */
 
         /// <summary>
         /// Gets a memento representing the state of the aggregate root.

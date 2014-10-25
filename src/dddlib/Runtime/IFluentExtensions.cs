@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Configuration
+namespace dddlib.Runtime
 {
     using System;
     using System.ComponentModel;

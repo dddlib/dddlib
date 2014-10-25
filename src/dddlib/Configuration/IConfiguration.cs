@@ -4,6 +4,8 @@
 
 namespace dddlib.Configuration
 {
+    using dddlib.Runtime;
+
     /// <summary>
     /// Exposes the public members of the configuration.
     /// </summary>

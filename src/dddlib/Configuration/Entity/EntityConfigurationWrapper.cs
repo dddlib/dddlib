@@ -9,9 +9,18 @@ namespace dddlib.Configuration
     using System.Linq.Expressions;
     using dddlib.Runtime;
 
-    internal class EntityConfigurationWrapper<T>(private EntityConfiguration configuration) : IEntityConfigurationWrapper<T>
+    internal class EntityConfigurationWrapper<T> : IEntityConfigurationWrapper<T>
         where T : Entity
     {
+        private readonly EntityConfiguration configuration;
+
+        public EntityConfigurationWrapper(EntityConfiguration configuration)
+        {
+            Guard.Against.Null(() => configuration);
+
+            this.configuration = configuration;
+        }
+
         public IEntityConfigurationWrapper<T> ToUseNaturalKey<TKey>(Expression<Func<T, TKey>> naturalKeySelector)
         {
             Guard.Against.InvalidMemberExpression(() => naturalKeySelector, out var memberExpression);
