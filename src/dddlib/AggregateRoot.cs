@@ -11,6 +11,7 @@ namespace dddlib
         More will be required once persistence layer is fleshed out.
         Consider enforcing logic around change of state field.  */
 
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
@@ -22,6 +23,8 @@ namespace dddlib
     public abstract class AggregateRoot : Entity
     {
         private readonly List<object> events = new List<object>();
+
+        private readonly Lazy<IMapProvider> mapProvider = new Lazy<IMapProvider>(() => new MapperProvider(Application.Current.GetMapper()), true);
         
         private readonly AggregateRootType runtimeType;
 
@@ -46,9 +49,9 @@ namespace dddlib
         /// </summary>
         /// <value>The mapping options.</value>
         [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1623:PropertySummaryDocumentationMustMatchAccessors", Justification = "Not here.")]
-        protected static IMapProvider Map
+        protected IMapProvider Map
         {
-            get { return null; }
+            get { return this.mapProvider.Value; }
         }
 
         internal void Initialize(object memento, IEnumerable<object> events, string state)

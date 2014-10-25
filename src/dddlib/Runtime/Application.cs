@@ -26,6 +26,7 @@ namespace dddlib.Runtime
         private readonly ITypeFactory<AggregateRootType> aggregateRootTypeFactory;
         private readonly ITypeFactory<EntityType> entityTypeFactory;
         private readonly ITypeFactory<ValueObjectType> valueObjectTypeFactory;
+        private readonly Mapper mapper;
 
         private bool isDisposed = false;
 
@@ -33,27 +34,35 @@ namespace dddlib.Runtime
         /// Initializes a new instance of the <see cref="Application"/> class.
         /// </summary>
         public Application()
-            : this(CreateAggregateRootTypeFactory(), CreateEntityTypeFactory(), CreateValueObjectTypeFactory())
+            : this(new Mapper())
         {
         }
 
         internal Application(
             ITypeFactory<AggregateRootType> aggregateRootTypeFactory,
             ITypeFactory<EntityType> entityTypeFactory,
-            ITypeFactory<ValueObjectType> valueObjectTypeFactory)
+            ITypeFactory<ValueObjectType> valueObjectTypeFactory, 
+            Mapper mapper)
         {
             Guard.Against.Null(() => aggregateRootTypeFactory);
             Guard.Against.Null(() => entityTypeFactory);
             Guard.Against.Null(() => valueObjectTypeFactory);
+            Guard.Against.Null(() => mapper);
 
             this.aggregateRootTypeFactory = aggregateRootTypeFactory;
             this.entityTypeFactory = entityTypeFactory;
             this.valueObjectTypeFactory = valueObjectTypeFactory;
+            this.mapper = mapper;
 
             lock (SyncLock)
             {
                 Applications.Add(this);
             }
+        }
+
+        private Application(Mapper mapper)
+            : this(CreateAggregateRootTypeFactory(mapper), CreateEntityTypeFactory(mapper), CreateValueObjectTypeFactory(mapper), mapper)
+        {
         }
 
         /// <summary>
@@ -94,6 +103,11 @@ namespace dddlib.Runtime
 
                 this.isDisposed = true;
             }
+        }
+
+        internal Mapper GetMapper()
+        {
+            return this.mapper;
         }
 
         internal AggregateRootType GetAggregateRootType(Type type)
@@ -143,12 +157,12 @@ namespace dddlib.Runtime
             return false;
         }
 
-        private static ITypeFactory<AggregateRootType> CreateAggregateRootTypeFactory()
+        private static ITypeFactory<AggregateRootType> CreateAggregateRootTypeFactory(Mapper mapper)
         {
             var configurationProvider = new DefaultConfigurationProvider<AggregateRootConfiguration>(
                 new Func<Type, AggregateRootConfiguration>[]
                 {
-                    t => ((IAggregateRootConfigurationProvider)new Bootstrapper()).GetConfiguration(t),
+                    t => ((IAggregateRootConfigurationProvider)new Bootstrapper(mapper)).GetConfiguration(t),
                     t => new AggregateRootAnalyzer().GetConfiguration(t),
                 },
                 new AggregateRootConfigurationManager());
@@ -156,12 +170,12 @@ namespace dddlib.Runtime
             return new AggregateRootTypeFactory(new InternalAggregateRootConfigurationProvider(configurationProvider));
         }
 
-        private static ITypeFactory<EntityType> CreateEntityTypeFactory()
+        private static ITypeFactory<EntityType> CreateEntityTypeFactory(Mapper mapper)
         {
             var configurationProvider = new DefaultConfigurationProvider<EntityConfiguration>(
                 new Func<Type, EntityConfiguration>[]
                 {
-                    t => ((IEntityConfigurationProvider)new Bootstrapper()).GetConfiguration(t),
+                    t => ((IEntityConfigurationProvider)new Bootstrapper(mapper)).GetConfiguration(t),
                     t => new EntityAnalyzer().GetConfiguration(t),
                 },
                 new EntityConfigurationManager());
@@ -169,9 +183,9 @@ namespace dddlib.Runtime
             return new EntityTypeFactory(new InternalEntityConfigurationProvider(configurationProvider));
         }
 
-        private static ITypeFactory<ValueObjectType> CreateValueObjectTypeFactory()
+        private static ITypeFactory<ValueObjectType> CreateValueObjectTypeFactory(Mapper mapper)
         {
-            var bootstrapper = new Bootstrapper();
+            var bootstrapper = new Bootstrapper(mapper);
             var typeAnalyzer = new ValueObjectAnalyzer();
             var manager = new ValueObjectConfigurationManager();
             var configProvider = new ValueObjectConfigurationProvider(bootstrapper, typeAnalyzer, manager);

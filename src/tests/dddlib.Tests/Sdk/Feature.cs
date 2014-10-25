@@ -25,12 +25,14 @@ namespace dddlib.Tests.Sdk
             "Given a new application"
                 .Given(() =>
                 {
+                    var mapper = new Mapper();
+
                     // aggregate root
                     var aggregateRootConfigurationManager = new AggregateRootConfigurationManager();
                     var aggregateRootConfigurationProvider = new DefaultConfigurationProvider<AggregateRootConfiguration>(
                         new Func<Type, AggregateRootConfiguration>[]
                         {
-                            t => ((IAggregateRootConfigurationProvider)new Bootstrapper(this.Bootstrap)).GetConfiguration(t),
+                            t => ((IAggregateRootConfigurationProvider)new Bootstrapper(this.Bootstrap, mapper)).GetConfiguration(t),
                             t => new AggregateRootAnalyzer().GetConfiguration(t),
                         },
                         aggregateRootConfigurationManager);
@@ -42,7 +44,7 @@ namespace dddlib.Tests.Sdk
                     var entityConfigurationProvider = new DefaultConfigurationProvider<EntityConfiguration>(
                         new Func<Type, EntityConfiguration>[]
                         {
-                            t => ((IEntityConfigurationProvider)new Bootstrapper(this.Bootstrap)).GetConfiguration(t),
+                            t => ((IEntityConfigurationProvider)new Bootstrapper(this.Bootstrap, mapper)).GetConfiguration(t),
                             t => new EntityAnalyzer().GetConfiguration(t),
                         },
                         entityConfigurationManager);
@@ -52,18 +54,19 @@ namespace dddlib.Tests.Sdk
                     // value object
                     var valueObjectConfigurationProviders = new IValueObjectConfigurationProvider[]
                     {
-                        new Bootstrapper(this.Bootstrap),
+                        new Bootstrapper(this.Bootstrap, mapper),
                         //// new ValueObjectAnalyzer(),
                     };
 
                     var valueObjectConfigurationManager = new ValueObjectConfigurationManager();
-                    var valueObjectConfigurationProvider = new ValueObjectConfigurationProvider(new Bootstrapper(this.Bootstrap), new ValueObjectAnalyzer(), new ValueObjectConfigurationManager());
+                    var valueObjectConfigurationProvider = new ValueObjectConfigurationProvider(new Bootstrapper(this.Bootstrap, mapper), new ValueObjectAnalyzer(), new ValueObjectConfigurationManager());
                     var valueObjectTypeFactory = new ValueObjectTypeFactory(valueObjectConfigurationProvider);
 
                     new Application(
                         aggregateRootTypeFactory,
                         entityTypeFactory,
-                        valueObjectTypeFactory)
+                        valueObjectTypeFactory,
+                        mapper)
                         .Using();
                 });
         }

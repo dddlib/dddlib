@@ -12,12 +12,15 @@ namespace dddlib.Configuration
         where T : ValueObject<T>
     {
         private readonly ValueObjectConfiguration configuration;
+        private readonly Mapper mapper;
 
-        public ValueObjectConfigurationWrapper(ValueObjectConfiguration configuration)
+        public ValueObjectConfigurationWrapper(ValueObjectConfiguration configuration, Mapper mapper)
         {
             Guard.Against.Null(() => configuration);
+            Guard.Against.Null(() => mapper);
 
             this.configuration = configuration;
+            this.mapper = mapper;
         }
 
         public IValueObjectConfigurationWrapper<T> ToUseEqualityComparer(IEqualityComparer<T> equalityComparer)
@@ -29,24 +32,22 @@ namespace dddlib.Configuration
             return this;
         }
 
-        public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<TEvent, T> mapping)
+        public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping)
         {
             Guard.Against.Null(() => mapping);
 
-            // TODO (Cameron): Some expression based stuff here to negate the need to wrap.
-            ////this.configuration.ToEventMapping = (@event, valueObject) => mapping((TEvent)@event, (T)valueObject);
+            this.mapper.AddMap(mapping);
 
             return this;
         }
 
-        public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<TEvent, T> mapping, Func<TEvent, T> reverseMapping)
+        public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping, Func<TEvent, T> reverseMapping)
         {
             Guard.Against.Null(() => mapping);
             Guard.Against.Null(() => reverseMapping);
 
-            // TODO (Cameron): Some expression based stuff here to negate the need to wrap.
-            ////this.configuration.ToEventMapping = (@event, valueObject) => mapping((TEvent)@event, (T)valueObject);
-            ////this.configuration.FromEventMapping = @event => reverseMapping((TEvent)@event);
+            this.mapper.AddMap(mapping);
+            this.mapper.AddMap(reverseMapping);
 
             return this;
         }

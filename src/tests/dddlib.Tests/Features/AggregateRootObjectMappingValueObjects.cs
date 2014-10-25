@@ -51,6 +51,10 @@ namespace dddlib.Tests.Features
                     this.Apply(@event);
                 }
 
+                internal Subject()
+                {
+                }
+
                 public NaturalKey NaturalKey { get; private set; }
 
                 private void Handle(NewSubject @event)
@@ -78,9 +82,12 @@ namespace dddlib.Tests.Features
             {
                 public void Bootstrap(IConfiguration configure)
                 {
+                    // TODO (Cameron): This is required in order to check the persisted events. Maybe give this some thought...?
+                    configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+
                     configure.ValueObject<NaturalKey>()
                         .ToMapToEvent<NewSubject>(
-                            (@event, key) => @event.NaturalKeyValue = key.Value, 
+                            (key, @event) => @event.NaturalKeyValue = key.Value, 
                             @event => new NaturalKey(@event.NaturalKeyValue));
                 }
             }
@@ -150,8 +157,11 @@ namespace dddlib.Tests.Features
             {
                 public void Bootstrap(IConfiguration configure)
                 {
+                    // TODO (Cameron): This is required in order to check the persisted events. Maybe give this some thought...?
+                    configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+
                     configure.ValueObject<Data>()
-                        .ToMapToEvent<DataProcessed>((@event, data) => @event.DataValue = data.Value, @event => new Data(@event.DataValue));
+                        .ToMapToEvent<DataProcessed>((data, @event) => @event.DataValue = data.Value, @event => new Data(@event.DataValue));
                 }
             }
         }

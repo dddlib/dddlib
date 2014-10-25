@@ -104,7 +104,7 @@ namespace dddlib.Tests.Unit.Runtime
             var factory = A.Fake<ITypeFactory<AggregateRootType>>(o => o.Strict());
             A.CallTo(() => factory.Create(type)).Returns(expectedType);
 
-            using (new Application(factory, A.Fake<ITypeFactory<EntityType>>(o => o.Strict()), A.Fake<ITypeFactory<ValueObjectType>>(o => o.Strict())))
+            using (new Application(factory, A.Fake<ITypeFactory<EntityType>>(o => o.Strict()), A.Fake<ITypeFactory<ValueObjectType>>(o => o.Strict()), new Mapper()))
             {
                 // act
                 var actualType = Application.Current.GetAggregateRootType(type);
@@ -124,7 +124,7 @@ namespace dddlib.Tests.Unit.Runtime
             var factory = A.Fake<ITypeFactory<AggregateRootType>>(o => o.Strict());
             A.CallTo(() => factory.Create(type)).Returns(expectedType);
 
-            using (new Application(factory, A.Fake<ITypeFactory<EntityType>>(o => o.Strict()), A.Fake<ITypeFactory<ValueObjectType>>(o => o.Strict())))
+            using (new Application(factory, A.Fake<ITypeFactory<EntityType>>(o => o.Strict()), A.Fake<ITypeFactory<ValueObjectType>>(o => o.Strict()), new Mapper()))
             {
                 // act
                 Action action = () => Application.Current.GetAggregateRootType(type);
@@ -142,7 +142,7 @@ namespace dddlib.Tests.Unit.Runtime
             var factory = A.Fake<ITypeFactory<AggregateRootType>>(o => o.Strict());
             A.CallTo(() => factory.Create(A<Type>.Ignored)).Throws(innerException);
 
-            using (new Application(factory, A.Fake<ITypeFactory<EntityType>>(o => o.Strict()), A.Fake<ITypeFactory<ValueObjectType>>(o => o.Strict())))
+            using (new Application(factory, A.Fake<ITypeFactory<EntityType>>(o => o.Strict()), A.Fake<ITypeFactory<ValueObjectType>>(o => o.Strict()), new Mapper()))
             {
                 // act
                 Action action = () => Application.Current.GetAggregateRootType(typeof(Aggregate));
@@ -160,7 +160,7 @@ namespace dddlib.Tests.Unit.Runtime
             var factory = A.Fake<ITypeFactory<AggregateRootType>>(o => o.Strict());
             A.CallTo(() => factory.Create(A<Type>.Ignored)).Throws(runtimeException);
 
-            using (new Application(factory, A.Fake<ITypeFactory<EntityType>>(o => o.Strict()), A.Fake<ITypeFactory<ValueObjectType>>(o => o.Strict())))
+            using (new Application(factory, A.Fake<ITypeFactory<EntityType>>(o => o.Strict()), A.Fake<ITypeFactory<ValueObjectType>>(o => o.Strict()), new Mapper()))
             {
                 // act
                 Action action = () => Application.Current.GetAggregateRootType(typeof(Aggregate));

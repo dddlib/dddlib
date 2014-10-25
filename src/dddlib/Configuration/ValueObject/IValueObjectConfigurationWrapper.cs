@@ -36,7 +36,7 @@ namespace dddlib.Configuration
         /// <typeparam name="TEvent">The event type to map to.</typeparam>
         /// <param name="mapping">The mapping.</param>
         /// <returns>The configuration.</returns>
-        TConfiguration ToMapToEvent<TEvent>(Action<TEvent, T> mapping);
+        TConfiguration ToMapToEvent<TEvent>(Action<T, TEvent> mapping);
 
         /// <summary>
         /// Configures the runtime to map the value object to the specified event type.
@@ -45,6 +45,6 @@ namespace dddlib.Configuration
         /// <param name="mapping">The mapping.</param>
         /// <param name="reverseMapping">The reverse mapping.</param>
         /// <returns>The configuration.</returns>
-        TConfiguration ToMapToEvent<TEvent>(Action<TEvent, T> mapping, Func<TEvent, T> reverseMapping);
+        TConfiguration ToMapToEvent<TEvent>(Action<T, TEvent> mapping, Func<TEvent, T> reverseMapping);
     }
 }

@@ -4,24 +4,31 @@
 
 namespace dddlib.Sdk
 {
-    using System;
     using dddlib.Runtime;
 
-    internal class ValueObjectMapper<T> : IValueObjectMapper<T>
-        where T : ValueObject<T>
+    internal class ValueObjectMapper<TValueObject> : IValueObjectMapper<TValueObject>
+        where TValueObject : ValueObject<TValueObject>
     {
-        public ValueObjectMapper(ValueObjectType runtimeType)
+        private readonly TValueObject source;
+        private readonly Mapper mapper;
+
+        public ValueObjectMapper(TValueObject source, Mapper mapper)
         {
+            this.source = source;
+            this.mapper = mapper;
         }
 
-        public TEvent ToEvent<TEvent>() where TEvent : new()
+        public T ToEvent<T>() where T : new()
         {
-            throw new NotImplementedException();
+            var @event = new T();
+            this.ToEvent(@event);
+            return @event;
         }
 
-        public void ToEvent<TEvent>(TEvent @event)
+        public void ToEvent<T>(T @event)
         {
-            throw new NotImplementedException();
+            var map = this.mapper.GetActionMap<TValueObject, T>();
+            map(this.source, @event);
         }
     }
 }
