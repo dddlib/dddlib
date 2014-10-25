@@ -105,16 +105,12 @@
     <Compile Include="Runtime\Application.cs" />
     <Compile Include="Sdk\ConfigurationExtensions.cs" />
     <Compile Include="Sdk\TypeConfiguration.cs" />
-    <Compile Include="Sdk\DefaultTypeConfigurationProvider.cs" />
     <Compile Include="Sdk\DefaultEventDispatcher.cs" />
-    <Compile Include="Sdk\ITypeAnalyzer2.cs" />
     <Compile Include="Sdk\ITypeConfigurationProvider.cs" />
     <Compile Include="Configuration\IConfiguration.cs" />
     <Compile Include="Configuration\IBootstrapper.cs" />
     <Compile Include="Sdk\ITargetedEventDispatcher.cs" />
     <Compile Include="Sdk\RuntimeException.cs" />
-    <Compile Include="Sdk\TypeAnalyzer.cs" />
-    <Compile Include="Sdk\TypeDescriptor.cs" />
     <Compile Include="ValueObject.cs" />
   </ItemGroup>
   <ItemGroup>

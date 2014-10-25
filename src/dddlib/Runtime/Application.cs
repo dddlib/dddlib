@@ -172,15 +172,21 @@ namespace dddlib.Runtime
 
         private static ITypeFactory<EntityType> CreateEntityTypeFactory(Mapper mapper)
         {
-            var configurationProvider = new DefaultConfigurationProvider<EntityConfiguration>(
-                new Func<Type, EntityConfiguration>[]
-                {
-                    t => ((IEntityConfigurationProvider)new Bootstrapper(mapper)).GetConfiguration(t),
-                    t => new EntityAnalyzer().GetConfiguration(t),
-                },
-                new EntityConfigurationManager());
+            ////var configurationProvider = new DefaultConfigurationProvider<EntityConfiguration>(
+            ////    new Func<Type, EntityConfiguration>[]
+            ////    {
+            ////        t => ((IEntityConfigurationProvider)new Bootstrapper(mapper)).GetConfiguration(t),
+            ////        t => new EntityAnalyzer().GetConfiguration(t),
+            ////    },
+            ////    new EntityConfigurationManager());
 
-            return new EntityTypeFactory(new InternalEntityConfigurationProvider(configurationProvider));
+            ////return new EntityTypeFactory(new InternalEntityConfigurationProvider(configurationProvider));
+
+            var bootstrapper = new Bootstrapper(mapper);
+            var typeAnalyzer = new EntityAnalyzer();
+            var manager = new EntityConfigurationManager();
+            var configProvider = new EntityConfigurationProvider(bootstrapper, typeAnalyzer, manager);
+            return new EntityTypeFactory(configProvider);
         }
 
         private static ITypeFactory<ValueObjectType> CreateValueObjectTypeFactory(Mapper mapper)
