@@ -37,7 +37,7 @@ namespace dddlib.Tests.Sdk
                         },
                         aggregateRootConfigurationManager);
 
-                    var aggregateRootTypeFactory = new AggregateRootTypeFactory(new Application.InternalAggregateRootConfigurationProvider(aggregateRootConfigurationProvider));
+                    var aggregateRootTypeFactory = new AggregateRootTypeFactory_Old(new Application.InternalAggregateRootConfigurationProvider(aggregateRootConfigurationProvider));
 
                     // entity
                     var entityConfigurationManager = new EntityConfigurationManager();

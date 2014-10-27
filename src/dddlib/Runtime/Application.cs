@@ -167,7 +167,7 @@ namespace dddlib.Runtime
                 },
                 new AggregateRootConfigurationManager());
 
-            return new AggregateRootTypeFactory(new InternalAggregateRootConfigurationProvider(configurationProvider));
+            return new AggregateRootTypeFactory_Old(new InternalAggregateRootConfigurationProvider(configurationProvider));
         }
 
         private static ITypeFactory<EntityType> CreateEntityTypeFactory(Mapper mapper)
