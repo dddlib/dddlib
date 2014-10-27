@@ -100,7 +100,7 @@ namespace dddlib.Tests.Unit.Runtime
             // arrange
             var type = typeof(Aggregate);
 
-            var expectedType = new AggregateRootType();
+            var expectedType = new AggregateRootType(null, null);
             var factory = A.Fake<ITypeFactory<AggregateRootType>>(o => o.Strict());
             A.CallTo(() => factory.Create(type)).Returns(expectedType);
 
@@ -120,7 +120,7 @@ namespace dddlib.Tests.Unit.Runtime
             // arrange
             var type = typeof(object);
 
-            var expectedType = new AggregateRootType();
+            var expectedType = new AggregateRootType(null, null);
             var factory = A.Fake<ITypeFactory<AggregateRootType>>(o => o.Strict());
             A.CallTo(() => factory.Create(type)).Returns(expectedType);
 

@@ -35,17 +35,8 @@ namespace dddlib.Runtime
                 mappings.Add(currentType, "Handle");
             }
 
-            // create type
-            return new AggregateRootType
-            {
-                Factory = configuration.UninitializedFactory,
-                EventDispatcher = new DefaultEventDispatcher(type),
-                Options = new AggregateRootType.RuntimeOptions
-                {
-                    DispatchEvents = true, // unless there's no handlers for this type at all
-                    PersistEvents = configuration.UninitializedFactory != null,
-                }
-            };
+            // TODO (Cameron): Consider moving some of this into the type itself.
+            return new AggregateRootType(configuration.UninitializedFactory, new DefaultEventDispatcher(type));
         }
     }
 }

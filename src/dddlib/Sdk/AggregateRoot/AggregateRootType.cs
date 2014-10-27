@@ -5,21 +5,41 @@
 namespace dddlib.Runtime
 {
     using System;
-    using System.Collections.Generic;
 
     internal class AggregateRootType
     {
-        public Func<object> Factory { get; internal set; }
+        public AggregateRootType(Func<object> uninitializedFactory, ITargetedEventDispatcher eventDispatcher)
+        {
+            this.UninitializedFactory = uninitializedFactory;
+            this.EventDispatcher = eventDispatcher;
 
-        public ITargetedEventDispatcher EventDispatcher { get; internal set; }
+            // NOTE (Cameron): Only persist events if there is a way to reconstitute the persisted object.
+            var persistEvents = uninitializedFactory != null;
 
-        public RuntimeOptions Options { get; internal set; }
+            // NOTE (Cameron): Only dispatch events IF there is an event dispatcher AND if there are any handler methods?
+            // TODO (Cameron): Check to see if there are any handler methods.
+            var dispatchEvents = eventDispatcher != null;
+
+            this.Options = new RuntimeOptions(persistEvents, dispatchEvents);
+        }
+
+        public Func<object> UninitializedFactory { get; private set; }
+
+        public ITargetedEventDispatcher EventDispatcher { get; private set; }
+
+        public RuntimeOptions Options { get; private set; }
 
         public class RuntimeOptions
         {
-            public bool PersistEvents { get; internal set; }
+            public RuntimeOptions(bool persistEvents, bool dispatchEvents)
+            {
+                this.PersistEvents = persistEvents;
+                this.DispatchEvents = dispatchEvents;
+            }
 
-            public bool DispatchEvents { get; internal set; }
+            public bool PersistEvents { get; private set; }
+
+            public bool DispatchEvents { get; private set; }
         }
     }
 }
