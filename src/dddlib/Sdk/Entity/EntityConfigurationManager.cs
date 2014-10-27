@@ -12,7 +12,7 @@ namespace dddlib.Runtime
             // there is logic required in here
             return new EntityConfiguration
             {
-                EntityType = typeConfiguration.EntityType ?? baseTypeConfiguration.EntityType,
+                RuntimeType = typeConfiguration.RuntimeType ?? baseTypeConfiguration.RuntimeType,
                 NaturalKeyPropertyName = typeConfiguration.NaturalKeyPropertyName ?? baseTypeConfiguration.NaturalKeyPropertyName,
                 NaturalKeyStringEqualityComparer = typeConfiguration.NaturalKeyStringEqualityComparer ?? baseTypeConfiguration.NaturalKeyStringEqualityComparer,
             };

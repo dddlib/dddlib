@@ -31,7 +31,26 @@ namespace dddlib.Runtime
                         runtimeType));
             }
 
+            if (naturalKeySelector == null && naturalKeyStringEqualityComparer != null)
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "The natural key string equality comparer can only be specified in conjunction with a natural key selector.",
+                        naturalKeySelector.ReturnType));
+            }
+
+            if (naturalKeyStringEqualityComparer != null && naturalKeySelector.ReturnType != typeof(string))
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "The specified natural key string equality comparer is incompatible with the natural key selector return type '{0}'.",
+                        naturalKeySelector.ReturnType));
+            }
+
             this.NaturalKeySelector = naturalKeySelector ?? NaturalKeySelector.Undefined;
+
             this.NaturalKeyEqualityComparer = naturalKeyStringEqualityComparer == null 
                 ? (IEqualityComparer<object>)EqualityComparer<object>.Default
                 : new StringObjectEqualityComparer(naturalKeyStringEqualityComparer);

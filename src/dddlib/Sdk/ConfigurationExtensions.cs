@@ -25,7 +25,7 @@ namespace dddlib.Runtime
         {
             return new EntityConfiguration
             {
-                EntityType = values.Select(value => value.EntityType).CombineValues(),
+                RuntimeType = values.Select(value => value.RuntimeType).CombineValues(),
                 NaturalKeyPropertyName = values.Select(value => value.NaturalKeyPropertyName).CombineValues(),
                 NaturalKeyStringEqualityComparer = values.Select(value => value.NaturalKeyStringEqualityComparer).CombineValues(),
                 ////NaturalKeySelector = values.Select(value => value.NaturalKeySelector).CombineValues(),

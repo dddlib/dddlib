@@ -7,27 +7,17 @@ namespace dddlib.Runtime
     using System;
     using dddlib.Sdk;
 
-    internal class EntityTypeFactory : ITypeFactory<EntityType>
+    internal class EntityTypeFactory : IEntityTypeFactory
     {
-        private readonly IEntityConfigurationProvider configurationProvider;
-
-        public EntityTypeFactory(IEntityConfigurationProvider configurationProvider)
+        public EntityType Create(EntityConfiguration configuration)
         {
-            Guard.Against.Null(() => configurationProvider);
-
-            this.configurationProvider = configurationProvider;
-        }
-
-        public EntityType Create(Type type)
-        {
-            var configuration = this.configurationProvider.GetConfiguration(type);
+            Guard.Against.Null(() => configuration);
 
             var naturalKeySelector = string.IsNullOrEmpty(configuration.NaturalKeyPropertyName)
                 ? null
-                : new NaturalKeySelector(configuration.EntityType, configuration.NaturalKeyPropertyName);
+                : new NaturalKeySelector(configuration.RuntimeType, configuration.NaturalKeyPropertyName);
 
-            // create type
-            return new EntityType(type, naturalKeySelector, configuration.NaturalKeyStringEqualityComparer);
+            return new EntityType(configuration.RuntimeType, naturalKeySelector, configuration.NaturalKeyStringEqualityComparer);
         }
     }
 }

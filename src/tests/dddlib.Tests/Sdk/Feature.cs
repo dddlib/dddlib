@@ -49,7 +49,7 @@ namespace dddlib.Tests.Sdk
                         },
                         entityConfigurationManager);
 
-                    var entityTypeFactory = new EntityTypeFactory(new Application.InternalEntityConfigurationProvider(entityConfigurationProvider));
+                    var entityTypeFactory = new EntityTypeFactory_Old(new Application.InternalEntityConfigurationProvider(entityConfigurationProvider));
 
                     // value object
                     var valueObjectConfigurationProviders = new IValueObjectConfigurationProvider[]

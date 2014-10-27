@@ -60,6 +60,8 @@
     <Compile Include="Runtime\MapperProvider.cs" />
     <Compile Include="Sdk\AggregateRoot\AggregateRootTypeFactory.cs" />
     <Compile Include="Sdk\AggregateRoot\IAggregateRootTypeFactory.cs" />
+    <Compile Include="Sdk\Entity\EntityTypeFactory.cs" />
+    <Compile Include="Sdk\Entity\IEntityTypeFactory.cs" />
     <Compile Include="Sdk\IEntityConfigurationProvider.cs" />
     <Compile Include="Sdk\IAggregateRootConfigurationProvider.cs" />
     <Compile Include="Configuration\CustomGuardExtensions.cs" />
@@ -92,7 +94,7 @@
     <Compile Include="Sdk\Bootstrapper.cs" />
     <Compile Include="Sdk\Entity\EntityAnalyzer.cs" />
     <Compile Include="Sdk\Entity\EntityConfiguration.cs" />
-    <Compile Include="Sdk\Entity\EntityTypeFactory.cs" />
+    <Compile Include="Sdk\Entity\EntityTypeFactory_Old.cs" />
     <Compile Include="Sdk\ValueObject\ValueObjectAnalyzer.cs" />
     <Compile Include="Sdk\ValueObject\ValueObjectConfiguration.cs" />
     <Compile Include="Sdk\BootstrapperConfiguration.cs" />

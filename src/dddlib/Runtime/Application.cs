@@ -186,7 +186,7 @@ namespace dddlib.Runtime
             var typeAnalyzer = new EntityAnalyzer();
             var manager = new EntityConfigurationManager();
             var configProvider = new EntityConfigurationProvider(bootstrapper, typeAnalyzer, manager);
-            return new EntityTypeFactory(configProvider);
+            return new EntityTypeFactory_Old(configProvider);
         }
 
         private static ITypeFactory<ValueObjectType> CreateValueObjectTypeFactory(Mapper mapper)

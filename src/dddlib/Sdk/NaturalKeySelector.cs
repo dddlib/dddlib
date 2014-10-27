@@ -15,22 +15,13 @@ namespace dddlib.Sdk
 
         private readonly string propertyName;
         private readonly Type runtimeType;
+        private readonly Type returnType;
         private readonly Func<Entity, object> selector;
 
         public NaturalKeySelector(Type runtimeType, string propertyName)
         {
             Guard.Against.Null(() => runtimeType);
             Guard.Against.NullOrEmpty(() => propertyName);
-
-            this.runtimeType = runtimeType;
-            this.propertyName = propertyName;
-
-            ////if (runtimeType == null || propertyName == null)
-            ////{
-            ////    this.runtimeType = typeof(object);
-            ////    this.propertyName = string.Empty;
-            ////    return;
-            ////}
 
             var naturalKey = default(PropertyInfo);
             foreach (var subType in new[] { runtimeType }.Traverse(t => t.BaseType == typeof(Entity) ? null : new[] { t.BaseType }))
@@ -45,19 +36,21 @@ namespace dddlib.Sdk
                 }
             }
 
+            this.runtimeType = runtimeType;
+            this.propertyName = propertyName;
+            this.returnType = naturalKey.PropertyType;
+
             var parameter = Expression.Parameter(runtimeType, "entity");
             var property = Expression.Property(parameter, naturalKey);
             var funcType = typeof(Func<,>).MakeGenericType(runtimeType, naturalKey.PropertyType);
             var lambda = Expression.Lambda(funcType, property, parameter);
-
-            ParameterExpression sourceParameter = Expression.Parameter(typeof(object), "source");
+            var sourceParameter = Expression.Parameter(typeof(object), "source");
             var result = Expression.Lambda<Func<object, object>>(
                 Expression.Invoke(
                     lambda,
                     Expression.Convert(sourceParameter, runtimeType)),
                 sourceParameter);
 
-            ////var function = Delegate.CreateDelegate(typeof(Func<object, object>), type, naturalKey);;
             this.selector = result.Compile() as Func<Entity, object>;
         }
 
@@ -70,6 +63,11 @@ namespace dddlib.Sdk
         public Type RuntimeType
         {
             get { return this.runtimeType; }
+        }
+
+        public Type ReturnType
+        {
+            get { return this.returnType; }
         }
 
         public override int GetHashCode()

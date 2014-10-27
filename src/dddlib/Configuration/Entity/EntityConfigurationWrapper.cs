@@ -25,7 +25,8 @@ namespace dddlib.Configuration
         {
             Guard.Against.InvalidMemberExpression(() => naturalKeySelector, out var memberExpression);
 
-            this.configuration.EntityType = typeof(T);
+            // TODO (Cameron): I'm not sure this belongs here...
+            this.configuration.RuntimeType = typeof(T);
             this.configuration.NaturalKeyPropertyName = memberExpression.Member.Name;
 
             return this;
