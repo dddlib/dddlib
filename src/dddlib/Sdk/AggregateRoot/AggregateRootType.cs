@@ -5,11 +5,30 @@
 namespace dddlib.Runtime
 {
     using System;
+    using System.Globalization;
 
     internal class AggregateRootType
     {
-        public AggregateRootType(Func<object> uninitializedFactory, ITargetedEventDispatcher eventDispatcher)
+        public AggregateRootType(Type runtimeType, Func<object> uninitializedFactory, ITargetedEventDispatcher eventDispatcher)
         {
+            Guard.Against.Null(() => runtimeType);
+
+            if (!typeof(AggregateRoot).IsAssignableFrom(runtimeType))
+            {
+                throw new RuntimeException(
+                    string.Format(CultureInfo.InvariantCulture, "The specified runtime type '{0}' is not an aggregate root.", runtimeType));
+            }
+
+            if (uninitializedFactory != null && uninitializedFactory.Method.ReturnType != runtimeType)
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture, 
+                        "The specified uninitialized factory return type '{0}' does not match the specified runtime type '{1}'.", 
+                        uninitializedFactory.Method.ReturnType,
+                        runtimeType));
+            }
+
             this.UninitializedFactory = uninitializedFactory;
             this.EventDispatcher = eventDispatcher;
 

@@ -22,10 +22,12 @@ namespace dddlib.Runtime
         {
             var configuration = this.configurationProvider.GetConfiguration(type);
 
-            var naturalKeySelector = new NaturalKeySelector(configuration.NaturalKeyPropertyName, configuration.EntityType);
+            var naturalKeySelector = string.IsNullOrEmpty(configuration.NaturalKeyPropertyName)
+                ? null
+                : new NaturalKeySelector(configuration.EntityType, configuration.NaturalKeyPropertyName);
 
             // create type
-            return new EntityType(naturalKeySelector, configuration.NaturalKeyStringEqualityComparer);
+            return new EntityType(type, naturalKeySelector, configuration.NaturalKeyStringEqualityComparer);
         }
     }
 }

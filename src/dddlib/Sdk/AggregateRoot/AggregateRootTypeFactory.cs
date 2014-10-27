@@ -12,7 +12,7 @@
 
             var eventDispatcher = new DefaultEventDispatcher(configuration.RuntimeType);
 
-            return new AggregateRootType(configuration.UninitializedFactory, eventDispatcher);
+            return new AggregateRootType(configuration.RuntimeType, configuration.UninitializedFactory, eventDispatcher);
         }
     }
 }
