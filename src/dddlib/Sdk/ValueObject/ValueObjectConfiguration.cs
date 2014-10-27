@@ -12,13 +12,16 @@ namespace dddlib.Runtime
     public class ValueObjectConfiguration
     {
         /// <summary>
+        /// Gets or sets the runtime type of the value object.
+        /// </summary>
+        /// <value>The runtime type of the value object.</value>
+        public Type RuntimeType { get; set; }
+
+        /// <summary>
         /// Gets or sets the equality comparer.
         /// </summary>
         /// <value>The equality comparer.</value>
+        //// TODO (Cameron): Make concrete type - not object.
         public object EqualityComparer { get; set; }
-
-        ////public Action<object, object> ToEventMapping { get; set; }
-
-        ////public Func<object, object> FromEventMapping { get; set; }
     }
 }

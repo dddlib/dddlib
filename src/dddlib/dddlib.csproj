@@ -85,10 +85,12 @@
     <Compile Include="Sdk\Entity\EntityConfigurationManager.cs" />
     <Compile Include="Sdk\Entity\EntityConfigurationProvider.cs" />
     <Compile Include="Sdk\NaturalKeySelector.cs" />
+    <Compile Include="Sdk\ValueObject\IValueObjectTypeFactory.cs" />
     <Compile Include="Sdk\ValueObject\ValueObjectConfigurationManager.cs" />
     <Compile Include="Sdk\ValueObject\ValueObjectConfigurationProvider.cs" />
     <Compile Include="Sdk\ValueObject\ValueObjectMapper.cs" />
     <Compile Include="Sdk\ValueObject\ValueObjectTypeFactory.cs" />
+    <Compile Include="Sdk\ValueObject\ValueObjectTypeFactory_Old.cs" />
     <Compile Include="Sdk\ValueObject\ValueObjectType.cs" />
     <Compile Include="Sdk\Entity\EntityType.cs" />
     <Compile Include="Sdk\Bootstrapper.cs" />

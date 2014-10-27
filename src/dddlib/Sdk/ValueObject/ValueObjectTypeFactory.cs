@@ -5,24 +5,15 @@
 namespace dddlib.Runtime
 {
     using System;
+    using dddlib.Sdk;
 
-    internal class ValueObjectTypeFactory : ITypeFactory<ValueObjectType>
+    internal class ValueObjectTypeFactory : IValueObjectTypeFactory
     {
-        private readonly IValueObjectConfigurationProvider configurationProvider;
-
-        public ValueObjectTypeFactory(IValueObjectConfigurationProvider configurationProvider)
+        public ValueObjectType Create(ValueObjectConfiguration configuration)
         {
-            Guard.Against.Null(() => configurationProvider);
+            Guard.Against.Null(() => configuration);
 
-            this.configurationProvider = configurationProvider;
-        }
-
-        public ValueObjectType Create(Type type)
-        {
-            var configuration = this.configurationProvider.GetConfiguration(type);
-
-            // create type
-            return new ValueObjectType(configuration.EqualityComparer);
+            return new ValueObjectType(configuration.RuntimeType, configuration.EqualityComparer);
         }
     }
 }

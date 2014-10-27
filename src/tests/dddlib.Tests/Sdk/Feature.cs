@@ -60,7 +60,7 @@ namespace dddlib.Tests.Sdk
 
                     var valueObjectConfigurationManager = new ValueObjectConfigurationManager();
                     var valueObjectConfigurationProvider = new ValueObjectConfigurationProvider(new Bootstrapper(this.Bootstrap, mapper), new ValueObjectAnalyzer(), new ValueObjectConfigurationManager());
-                    var valueObjectTypeFactory = new ValueObjectTypeFactory(valueObjectConfigurationProvider);
+                    var valueObjectTypeFactory = new ValueObjectTypeFactory_Old(valueObjectConfigurationProvider);
 
                     new Application(
                         aggregateRootTypeFactory,

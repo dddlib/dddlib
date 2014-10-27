@@ -195,7 +195,7 @@ namespace dddlib.Runtime
             var typeAnalyzer = new ValueObjectAnalyzer();
             var manager = new ValueObjectConfigurationManager();
             var configProvider = new ValueObjectConfigurationProvider(bootstrapper, typeAnalyzer, manager);
-            return new ValueObjectTypeFactory(configProvider);
+            return new ValueObjectTypeFactory_Old(configProvider);
         }
 
         private T GetType<T>(Type type, IDictionary<Type, T> runtimeTypes, ITypeFactory<T> factory)
