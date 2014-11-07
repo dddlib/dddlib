@@ -2,8 +2,10 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-    namespace dddlib.Runtime
+namespace dddlib.Runtime
 {
+    using dddlib.Sdk;
+
     internal class AggregateRootTypeFactory : IAggregateRootTypeFactory
     {
         public AggregateRootType Create(AggregateRootConfiguration configuration)

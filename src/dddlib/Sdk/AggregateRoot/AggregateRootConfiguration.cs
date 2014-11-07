@@ -5,6 +5,7 @@
 namespace dddlib.Runtime
 {
     using System;
+    using dddlib.Sdk;
 
     /// <summary>
     /// Represents the aggregate root configuration.
@@ -21,6 +22,6 @@ namespace dddlib.Runtime
         /// Gets or sets the uninitialized aggregate root factory.
         /// </summary>
         /// <value>The uninitialized aggregate root factory.</value>
-        public Func<object> UninitializedFactory { get; set; }
+        public Delegate UninitializedFactory { get; set; }
     }
 }

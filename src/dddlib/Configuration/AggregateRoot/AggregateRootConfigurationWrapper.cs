@@ -8,6 +8,7 @@ namespace dddlib.Configuration
     using System.Collections.Generic;
     using System.Linq.Expressions;
     using dddlib.Runtime;
+    using dddlib.Sdk;
 
     internal class AggregateRootConfigurationWrapper<T> : IAggregateRootConfigurationWrapper<T> 
         where T : AggregateRoot
@@ -26,8 +27,6 @@ namespace dddlib.Configuration
 
         public IAggregateRootConfigurationWrapper<T> ToReconstituteUsing(Func<T> uninitializedFactory)
         {
-            Guard.Against.Null(() => uninitializedFactory);
-
             this.configuration.UninitializedFactory = uninitializedFactory;
 
             return this;

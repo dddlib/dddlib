@@ -6,10 +6,11 @@ namespace dddlib.Runtime
 {
     using System;
     using System.Globalization;
+    using dddlib.Sdk;
 
     internal class AggregateRootType
     {
-        public AggregateRootType(Type runtimeType, Func<object> uninitializedFactory, ITargetedEventDispatcher eventDispatcher)
+        public AggregateRootType(Type runtimeType, Delegate uninitializedFactory, ITargetedEventDispatcher eventDispatcher)
         {
             Guard.Against.Null(() => runtimeType);
 
@@ -19,14 +20,27 @@ namespace dddlib.Runtime
                     string.Format(CultureInfo.InvariantCulture, "The specified runtime type '{0}' is not an aggregate root.", runtimeType));
             }
 
-            if (uninitializedFactory != null && uninitializedFactory.Method.ReturnType != runtimeType)
+            if (uninitializedFactory != null)
             {
-                throw new RuntimeException(
-                    string.Format(
-                        CultureInfo.InvariantCulture, 
-                        "The specified uninitialized factory return type '{0}' does not match the specified runtime type '{1}'.", 
-                        uninitializedFactory.Method.ReturnType,
-                        runtimeType));
+                if (uninitializedFactory.Method.ReturnType != runtimeType)
+                {
+                    throw new RuntimeException(
+                        string.Format(
+                            CultureInfo.InvariantCulture,
+                            "The specified uninitialized factory return type '{0}' does not match the specified runtime type '{1}'.",
+                            uninitializedFactory.Method.ReturnType,
+                            runtimeType));
+                }
+
+                var uninitializedFactoryType = typeof(Func<>).MakeGenericType(runtimeType);
+                if (Delegate.CreateDelegate(uninitializedFactoryType, uninitializedFactory.Method, false) == null)
+                {
+                    throw new RuntimeException(
+                        string.Format(
+                            CultureInfo.InvariantCulture,
+                            "The specified uninitialized factory type does not match the required type of '{0}'.",
+                            uninitializedFactoryType));
+                }
             }
 
             this.UninitializedFactory = uninitializedFactory;
@@ -42,7 +56,7 @@ namespace dddlib.Runtime
             this.Options = new RuntimeOptions(persistEvents, dispatchEvents);
         }
 
-        public Func<object> UninitializedFactory { get; private set; }
+        public Delegate UninitializedFactory { get; private set; }
 
         public ITargetedEventDispatcher EventDispatcher { get; private set; }
 

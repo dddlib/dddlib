@@ -70,6 +70,7 @@
     <Compile Include="Entity.cs" />
     <Compile Include="Guard.cs" />
     <Compile Include="GuardExtensions.cs" />
+    <Compile Include="Sdk\TypeParameterException.cs" />
     <Compile Include="Sdk\ValueObjectEqualityComparer.cs" />
     <Compile Include="Sdk\IValueObjectConfigurationProvider.cs" />
     <Compile Include="Sdk\IConfigurationManager.cs" />
