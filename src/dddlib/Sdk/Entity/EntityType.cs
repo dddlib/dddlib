@@ -16,7 +16,7 @@ namespace dddlib.Runtime
         {
             Guard.Against.Null(() => runtimeType);
 
-            if (!typeof(Entity).IsAssignableFrom(runtimeType))
+            if (!runtimeType.InheritsFrom(typeof(Entity)))
             {
                 throw new RuntimeException(string.Format(CultureInfo.InvariantCulture, "The specified type '{0}' is not an entity.", runtimeType));
             }

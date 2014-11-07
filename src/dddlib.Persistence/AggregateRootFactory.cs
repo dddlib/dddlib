@@ -9,11 +9,11 @@
 
 namespace dddlib.Persistence
 {
-    using System;
     /*  TODO (Cameron): 
-Consider a different (non-ES) repository - maybe just many overloads?
-Cache factory per aggregate.  */
+        Consider a different (non-ES) repository - maybe just many overloads?
+        Cache factory per aggregate.  */
 
+    using System;
     using System.Collections.Generic;
     using System.Globalization;
     using dddlib.Runtime;
@@ -46,8 +46,8 @@ Cache factory per aggregate.  */
                         typeof(T)));
             }
 
-            // TODO(Cameron): Whilst this type cast is safe because of the runtime type we should cache to avoid future casts.
-            var aggregateRoot = ((Func<T>)runtimeType.UninitializedFactory).Invoke();
+            var uninitializedFactory = (Func<T>)runtimeType.UninitializedFactory;
+            var aggregateRoot = uninitializedFactory.Invoke();
             aggregateRoot.Initialize(memento, events, state);
             return aggregateRoot;
         }

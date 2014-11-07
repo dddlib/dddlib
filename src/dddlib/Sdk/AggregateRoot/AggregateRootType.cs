@@ -6,7 +6,6 @@ namespace dddlib.Runtime
 {
     using System;
     using System.Globalization;
-    using dddlib.Sdk;
 
     internal class AggregateRootType
     {
@@ -14,33 +13,21 @@ namespace dddlib.Runtime
         {
             Guard.Against.Null(() => runtimeType);
 
-            if (!typeof(AggregateRoot).IsAssignableFrom(runtimeType))
+            if (!runtimeType.InheritsFrom(typeof(AggregateRoot)))
             {
                 throw new RuntimeException(
                     string.Format(CultureInfo.InvariantCulture, "The specified runtime type '{0}' is not an aggregate root.", runtimeType));
             }
 
-            if (uninitializedFactory != null)
+            var uninitializedFactoryType = typeof(Func<>).MakeGenericType(runtimeType);
+            if (uninitializedFactory != null && uninitializedFactoryType != uninitializedFactory.GetType())
             {
-                if (uninitializedFactory.Method.ReturnType != runtimeType)
-                {
-                    throw new RuntimeException(
-                        string.Format(
-                            CultureInfo.InvariantCulture,
-                            "The specified uninitialized factory return type '{0}' does not match the specified runtime type '{1}'.",
-                            uninitializedFactory.Method.ReturnType,
-                            runtimeType));
-                }
-
-                var uninitializedFactoryType = typeof(Func<>).MakeGenericType(runtimeType);
-                if (Delegate.CreateDelegate(uninitializedFactoryType, uninitializedFactory.Method, false) == null)
-                {
-                    throw new RuntimeException(
-                        string.Format(
-                            CultureInfo.InvariantCulture,
-                            "The specified uninitialized factory type does not match the required type of '{0}'.",
-                            uninitializedFactoryType));
-                }
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "The specified uninitialized factory type of '{0}' does not match the required type of '{1}'.",
+                        uninitializedFactory.GetType(),
+                        uninitializedFactoryType));
             }
 
             this.UninitializedFactory = uninitializedFactory;

@@ -45,6 +45,13 @@ namespace dddlib.Runtime
             return typeof(object).GetDeclaredEqualityOperatorOrDefault();
         }
 
+        public static bool InheritsFrom(this Type type, Type subClass)
+        {
+            return subClass.IsGenericTypeDefinition
+                ? IsSubclassOfRawGeneric(subClass, type)
+                : subClass.IsAssignableFrom(type);
+        }
+
         private static MethodInfo GetDeclaredEqualityOperatorOrDefault(this Type type)
         {
             return type.GetMethods()
@@ -54,6 +61,22 @@ namespace dddlib.Runtime
                     var parameters = candidate.GetParameters();
                     return parameters.Length == 2 && parameters[0].ParameterType == type && parameters[1].ParameterType == type;
                 });
+        }
+
+        private static bool IsSubclassOfRawGeneric(Type genericType, Type type)
+        {
+            while (type != null && type != typeof(object))
+            {
+                var currentType = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
+                if (genericType == currentType)
+                {
+                    return true;
+                }
+
+                type = type.BaseType;
+            }
+
+            return false;
         }
 
         private static class EnumerableProxy

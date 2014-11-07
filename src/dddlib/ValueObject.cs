@@ -10,6 +10,7 @@ namespace dddlib
         Think about how this should work with the TypeDescriptors.  */
 
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using dddlib.Runtime;
 
@@ -22,6 +23,7 @@ namespace dddlib
         where T : ValueObject<T>
     {
         private readonly ValueObjectType runtimeType;
+        private readonly IEqualityComparer<T> equalityComparer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ValueObject{T}"/> class.
@@ -29,6 +31,7 @@ namespace dddlib
         protected ValueObject()
         {
             this.runtimeType = Application.Current.GetValueObjectType(this.GetType());
+            this.equalityComparer = (IEqualityComparer<T>)this.runtimeType.EqualityComparer;
         }
 
         [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible anywhere.")]
@@ -59,9 +62,7 @@ namespace dddlib
         /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public sealed override int GetHashCode()
         {
-            var equalityComparer = this.runtimeType.CreateEqualityComparer<T>();
-
-            return equalityComparer.GetHashCode((T)this);
+            return this.equalityComparer.GetHashCode((T)this);
         }
 
         /// <summary>
@@ -87,10 +88,8 @@ namespace dddlib
                 // NOTE (Cameron): Type mismatch.
                 return false;
             }
-            
-            var equalityComparer = this.runtimeType.CreateEqualityComparer<T>();
-            
-            return equalityComparer.Equals((T)this, other);
+
+            return this.equalityComparer.Equals((T)this, other);
         }
     }
 }

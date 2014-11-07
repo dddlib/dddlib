@@ -11,41 +11,31 @@ namespace dddlib.Runtime
     // TODO (Cameron): Make equality comparer a concrete class or something like that.
     internal class ValueObjectType
     {
-        private readonly object equalityComparer;
-
         public ValueObjectType(Type runtimeType, object equalityComparer)
         {
             Guard.Against.Null(() => runtimeType);
+            Guard.Against.Null(() => equalityComparer);
 
-            if (!IsSubclassOfRawGeneric(typeof(ValueObject<>), runtimeType))
+            if (!runtimeType.InheritsFrom(typeof(ValueObject<>)))
             {
                 throw new RuntimeException(
                     string.Format(CultureInfo.InvariantCulture, "The specified type '{0}' is not a value object.", runtimeType));
             }
 
-            this.equalityComparer = equalityComparer;
-        }
-
-        public IEqualityComparer<T> CreateEqualityComparer<T>()
-            where T : ValueObject<T>
-        {
-            return (this.equalityComparer as IEqualityComparer<T>) ?? new ValueObjectEqualityComparer<T>();
-        }
-
-        private static bool IsSubclassOfRawGeneric(Type genericType, Type type)
-        {
-            while (type != null && type != typeof(object))
+            var equalityComparerType = typeof(IEqualityComparer<>).MakeGenericType(runtimeType);
+            if (equalityComparer != null && equalityComparer.GetType().IsAssignableFrom(equalityComparerType))
             {
-                var currentType = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
-                if (genericType == currentType)
-                {
-                    return true;
-                }
-
-                type = type.BaseType;
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "The specified equality comparer type of '{0}' does not match the required type of '{1}'.",
+                        equalityComparer.GetType(),
+                        equalityComparerType));
             }
 
-            return false;
+            this.EqualityComparer = equalityComparer;
         }
+
+        public object EqualityComparer { get; private set; }
     }
 }

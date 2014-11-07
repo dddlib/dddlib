@@ -13,7 +13,14 @@ namespace dddlib.Runtime
         {
             Guard.Against.Null(() => configuration);
 
-            return new ValueObjectType(configuration.RuntimeType, configuration.EqualityComparer);
+            var equalityComparer = configuration.EqualityComparer ?? CreateEqualityComparer(configuration.RuntimeType);
+
+            return new ValueObjectType(configuration.RuntimeType, equalityComparer);
+        }
+
+        private static object CreateEqualityComparer(Type type)
+        {
+            return Activator.CreateInstance(typeof(ValueObjectEqualityComparer<>).MakeGenericType(type));
         }
     }
 }
