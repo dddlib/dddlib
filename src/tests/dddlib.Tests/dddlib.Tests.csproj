@@ -32,6 +32,8 @@
     <AssemblyOriginatorKeyFile>..\..\dddlib.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Unit\EntityTypeTests.cs" />
+    <Compile Include="Unit\ValueObjectTypeTests.cs" />
     <None Include="..\..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>

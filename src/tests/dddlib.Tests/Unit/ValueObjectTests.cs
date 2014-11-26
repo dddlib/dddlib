@@ -4,8 +4,6 @@
 
 namespace dddlib.Tests.Unit
 {
-    using System.Collections.Generic;
-    using dddlib.Tests.Support;
     using FluentAssertions;
     using Xunit;
 

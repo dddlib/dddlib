@@ -5,9 +5,11 @@
 namespace dddlib.Sdk
 {
     using System;
+    using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using dddlib.Runtime;
 
     internal class NaturalKeySelector : IEquatable<NaturalKeySelector>
     {
@@ -23,8 +25,14 @@ namespace dddlib.Sdk
             Guard.Against.Null(() => runtimeType);
             Guard.Against.NullOrEmpty(() => propertyName);
 
+            // TODO (Cameron): Consider whether this should work on non-entity types.
+            if (!runtimeType.InheritsFrom(typeof(Entity)))
+            {
+                throw new RuntimeException(string.Format(CultureInfo.InvariantCulture, "The specified runtime type '{0}' is not an entity.", runtimeType));
+            }
+
             var naturalKey = default(PropertyInfo);
-            foreach (var subType in new[] { runtimeType }.Traverse(t => t.BaseType == typeof(Entity) ? null : new[] { t.BaseType }))
+            foreach (var subType in new[] { runtimeType }.Traverse(t => t.BaseType == typeof(Entity) || t.BaseType == typeof(Entity) ? null : new[] { t.BaseType }))
             {
                 naturalKey = subType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
                     .Where(member => member.Name == propertyName)

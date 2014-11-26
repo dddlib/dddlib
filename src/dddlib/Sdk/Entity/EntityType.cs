@@ -18,7 +18,7 @@ namespace dddlib.Runtime
 
             if (!runtimeType.InheritsFrom(typeof(Entity)))
             {
-                throw new RuntimeException(string.Format(CultureInfo.InvariantCulture, "The specified type '{0}' is not an entity.", runtimeType));
+                throw new RuntimeException(string.Format(CultureInfo.InvariantCulture, "The specified runtime type '{0}' is not an entity.", runtimeType));
             }
 
             if (naturalKeySelector != null && naturalKeySelector.RuntimeType != runtimeType)
@@ -26,7 +26,7 @@ namespace dddlib.Runtime
                 throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        "The specified natural key selector '{0}' does not match the specified runtime type '{1}'.",
+                        "The specified natural key selector runtime type of '{0}' does not match the specified runtime type '{1}'.",
                         naturalKeySelector.RuntimeType,
                         runtimeType));
             }

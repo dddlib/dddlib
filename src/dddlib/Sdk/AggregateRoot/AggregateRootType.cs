@@ -25,7 +25,7 @@ namespace dddlib.Runtime
                 throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        "The specified uninitialized factory type of '{0}' does not match the required type of '{1}'.",
+                        "Invalid uninitialized factory. The specified uninitialized factory of type '{0}' does not match the required type of '{1}'.",
                         uninitializedFactory.GetType(),
                         uninitializedFactoryType));
             }
