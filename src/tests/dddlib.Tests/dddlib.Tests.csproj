@@ -65,7 +65,6 @@
     <Compile Include="Support\Wheel.cs" />
     <Compile Include="Unit\Runtime\ApplicationTests.cs" />
     <Compile Include="Unit\Runtime\Configuration\AssemblyConfigurationTests.cs" />
-    <Compile Include="Unit\Runtime\Configuration\TypeConfigurationTests.cs" />
     <Compile Include="Unit\Runtime\DefaultEventDispatcherTests.cs" />
     <Compile Include="Unit\Runtime\DefaultTypeConfigurationProviderTests.cs" />
     <Compile Include="Unit\Runtime\RuntimeExceptionTests.cs" />

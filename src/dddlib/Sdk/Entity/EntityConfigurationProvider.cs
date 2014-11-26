@@ -46,7 +46,10 @@ namespace dddlib.Runtime
             var typeConfiguration = this.GetTypeConfiguration(type);
             var baseTypeConfiguration = type.BaseType == typeof(Entity) ? new EntityConfiguration() : this.GetConfiguration(type.BaseType);
 
-            return this.manager.Merge(typeConfiguration, baseTypeConfiguration);
+            var config = this.manager.Merge(typeConfiguration, baseTypeConfiguration);
+            config.RuntimeType = type;
+
+            return config;
         }
 
         private EntityConfiguration GetTypeConfiguration(Type type)

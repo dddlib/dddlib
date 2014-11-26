@@ -63,7 +63,10 @@ namespace dddlib.Runtime
             var typeConfiguration = this.GetTypeConfiguration(type);
             var baseTypeConfiguration = IsSubclassOfRawGeneric(typeof(ValueObject<>), type.BaseType) ? new ValueObjectConfiguration() : this.GetConfiguration(type.BaseType);
 
-            return this.manager.Merge(typeConfiguration, baseTypeConfiguration);
+            var config = this.manager.Merge(typeConfiguration, baseTypeConfiguration);
+            config.RuntimeType = type;
+
+            return config;
         }
 
         private ValueObjectConfiguration GetTypeConfiguration(Type type)
