@@ -89,44 +89,6 @@ namespace dddlib
             this.state = state;
         }
 
-        /*
-        /// <summary>
-        /// Specifies that the event should be mapped.
-        /// </summary>
-        /// <typeparam name="T">The type of event.</typeparam>
-        /// <param name="event">The event.</param>
-        /// <returns>A mapping specification.</returns>
-        protected static IEventMapper<T> MapEvent<T>(T @event)
-        {
-            return null;
-        }
-
-        /// <summary>
-        /// Specifies that the entity should be mapped.
-        /// </summary>
-        /// <typeparam name="T">The type of entity.</typeparam>
-        /// <param name="entity">The entity.</param>
-        /// <returns>A mapping specification.</returns>
-        protected static IEntityMapper<T> MapEntity<T>(T entity) where T : Entity
-        {
-            return null;
-        }
-
-        /// <summary>
-        /// Maps the value object.
-        /// </summary>
-        /// <typeparam name="T">The type of value object.</typeparam>
-        /// <param name="valueObject">The value object.</param>
-        /// <returns>A mapping specification.</returns>
-        protected internal static IValueObjectMapper<T> MapValueObject<T>(T valueObject) where T : ValueObject<T>
-        {
-            // HACK (Cameron): This is very hacky - consider a mechanism for injection somehow.
-            var valueObjectRuntimeType = Application.Current.GetValueObjectType(valueObject.GetType());
-
-            return new ValueObjectMapper<T>(valueObjectRuntimeType);
-        }
-        */
-
         /// <summary>
         /// Gets a memento representing the state of the aggregate root.
         /// </summary>
@@ -167,8 +129,10 @@ namespace dddlib
         /// <summary>
         /// Applies the specified event to the aggregate root.
         /// </summary>
+        /// <typeparam name="T">The type of event.</typeparam>
         /// <param name="event">The event to apply.</param>
-        protected void Apply(object @event)
+        //// NOTE (Cameron): The type constraints on the event stem from the requirements of the mapper functionality.
+        protected void Apply<T>(T @event) where T : class, new()
         {
             Guard.Against.Null(() => @event);
 

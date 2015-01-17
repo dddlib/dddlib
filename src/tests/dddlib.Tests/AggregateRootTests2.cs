@@ -4,8 +4,6 @@
 
 namespace dddlib.Tests.Acceptance
 {
-    using System;
-    using System.Collections.Generic;
     using dddlib.Configuration;
     using dddlib.Runtime;
     using FluentAssertions;
@@ -29,13 +27,13 @@ namespace dddlib.Tests.Acceptance
                 .Given(() => naturalKeyValue = "key");
 
             "When an aggregate root is instantiated with the natural key value"
-                .When(() => aggregateRoot = new TestAggregateRoot(naturalKeyValue));
+                .When(() => aggregateRoot = new TestAggregateRoot(new Key { Value = naturalKeyValue }));
 
-            "The the aggregate root key should be the natural key value"
+            "Then the aggregate root key should be the natural key value"
                 .Then(() => aggregateRoot.Key.Should().Be(naturalKeyValue));
 
             "And"
-                .And(() => aggregateRoot.GetUncommittedEvents().Should().ContainSingle(x => x as string == naturalKeyValue));
+                .And(() => aggregateRoot.GetUncommittedEvents().Should().ContainSingle(x => x.As<Key>().Value == naturalKeyValue));
         }
 
         private class Bootstrapper : IBootstrapper
@@ -48,7 +46,7 @@ namespace dddlib.Tests.Acceptance
 
         private class TestAggregateRoot : AggregateRoot
         {
-            public TestAggregateRoot(string key)
+            public TestAggregateRoot(Key key)
             {
                 this.Apply(key);
             }
@@ -61,10 +59,15 @@ namespace dddlib.Tests.Acceptance
             [NaturalKey] // (EqualityComparer = typeof(StringComparer))]
             public string Key { get; private set; }
 
-            private void Handle(string key)
+            private void Handle(Key key)
             {
-                this.Key = key;
+                this.Key = key.Value;
             }
+        }
+
+        private class Key
+        {
+            public string Value { get; set; }
         }
     }
 }

@@ -28,6 +28,8 @@ namespace dddlib.Runtime
 
         public IValueObjectMapper<T> ValueObject<T>(T valueObject) where T : ValueObject<T>
         {
+            var runtimeType = Application.Current.GetValueObjectType(valueObject.GetType());
+
             return new ValueObjectMapper<T>(valueObject, this.mapper);
         }
     }

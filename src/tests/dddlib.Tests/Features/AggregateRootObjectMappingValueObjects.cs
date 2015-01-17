@@ -15,6 +15,7 @@ namespace dddlib.Tests.Features
     public abstract class AggregateRootObjectMappingValueObjects : Feature
     {
         /*
+            TODO (Cameron):
             So...
             You have an aggregate with a natural key value object
             You recreate the value object in the event handler

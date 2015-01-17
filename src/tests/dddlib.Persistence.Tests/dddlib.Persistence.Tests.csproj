@@ -45,6 +45,7 @@
     <Reference Include="FluentAssertions">
       <HintPath>..\..\..\packages\FluentAssertions.2.1.0.0\lib\net45\FluentAssertions.dll</HintPath>
     </Reference>
+    <Reference Include="System" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="Xbehave">
@@ -63,6 +64,7 @@
     </Compile>
     <Compile Include="AggregateRootPersistence.cs" />
     <Compile Include="AggregateRootPersistenceEventSourcing.cs" />
+    <Compile Include="AggregateRootSnapshotting.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\dddlib.Persistence\dddlib.Persistence.csproj">
