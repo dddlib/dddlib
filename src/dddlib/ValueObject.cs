@@ -24,6 +24,7 @@ namespace dddlib
     {
         private readonly ValueObjectType runtimeType;
         private readonly IEqualityComparer<T> equalityComparer;
+        private readonly T valueObject;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ValueObject{T}"/> class.
@@ -32,6 +33,7 @@ namespace dddlib
         {
             this.runtimeType = Application.Current.GetValueObjectType(this.GetType());
             this.equalityComparer = (IEqualityComparer<T>)this.runtimeType.EqualityComparer;
+            this.valueObject = (T)this; // NOTE (Cameron): Micro-optimization.
         }
 
         [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible anywhere.")]
@@ -62,7 +64,7 @@ namespace dddlib
         /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public sealed override int GetHashCode()
         {
-            return this.equalityComparer.GetHashCode((T)this);
+            return this.equalityComparer.GetHashCode(this.valueObject);
         }
 
         /// <summary>
@@ -89,7 +91,7 @@ namespace dddlib
                 return false;
             }
 
-            return this.equalityComparer.Equals((T)this, other);
+            return this.equalityComparer.Equals(this.valueObject, other);
         }
     }
 }

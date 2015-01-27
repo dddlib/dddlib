@@ -24,7 +24,7 @@ namespace dddlib
     {
         private readonly List<object> events = new List<object>();
 
-        private readonly Lazy<IMapProvider> mapProvider = new Lazy<IMapProvider>(() => new MapperProvider(Application.Current.GetMapper()), true);
+        private readonly Lazy<IMapProvider> mapProvider = new Lazy<IMapProvider>(() => new MapperProvider(), true);
         
         private readonly AggregateRootType runtimeType;
 

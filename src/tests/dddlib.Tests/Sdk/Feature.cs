@@ -74,7 +74,7 @@ namespace dddlib.Tests.Sdk
                     .Any(@interface => @interface.IsGenericType && @interface.GetGenericTypeDefinition() == typeof(IBootstrap<>)))
                 .ToArray();
 
-            var bootstrapperType = bootstrappers.SingleOrDefault(t => t.GetInterfaces()[0].GetGenericArguments()[0] == type);
+            var bootstrapperType = bootstrappers.SingleOrDefault(t => t.GetInterfaces().Any(i => i.GetGenericArguments()[0] == type));
             if (bootstrapperType == null)
             {
                 return c => { };

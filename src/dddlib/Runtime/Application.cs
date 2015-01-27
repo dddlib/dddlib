@@ -110,11 +110,6 @@ namespace dddlib.Runtime
             }
         }
 
-        internal Mapper GetMapper()
-        {
-            return this.mapper;
-        }
-
         internal AggregateRootType GetAggregateRootType(Type type)
         {
             return this.GetType(type, this.aggregateRootTypes, this.aggregateRootTypeFactory);

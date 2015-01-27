@@ -10,10 +10,11 @@ namespace dddlib.Runtime
 
     internal class ValueObjectType
     {
-        public ValueObjectType(Type runtimeType, object equalityComparer)
+        public ValueObjectType(Type runtimeType, object equalityComparer, MappingCollection mappings)
         {
             Guard.Against.Null(() => runtimeType);
             Guard.Against.Null(() => equalityComparer);
+            Guard.Against.Null(() => mappings);
 
             if (!runtimeType.InheritsFrom(typeof(ValueObject<>)))
             {
@@ -33,8 +34,11 @@ namespace dddlib.Runtime
             }
 
             this.EqualityComparer = equalityComparer;
+            this.Mappings = mappings;
         }
 
         public object EqualityComparer { get; private set; }
+
+        public MappingCollection Mappings { get; set; }
     }
 }

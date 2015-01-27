@@ -21,6 +21,12 @@ namespace dddlib.Configuration
 
             this.configuration = configuration;
             this.mapper = mapper;
+
+            // TODO (Cameron): Not sure this belongs here...
+            if (this.configuration.Mappings == null)
+            {
+                this.configuration.Mappings = new MappingCollection();
+            }
         }
 
         public IValueObjectConfigurationWrapper<T> ToUseEqualityComparer(IEqualityComparer<T> equalityComparer)
@@ -36,7 +42,8 @@ namespace dddlib.Configuration
         {
             Guard.Against.Null(() => mapping);
 
-            this.mapper.AddMap(mapping);
+            this.configuration.Mappings.AddOrUpdate(mapping);
+            ////this.mapper.AddMap(mapping);
 
             return this;
         }
@@ -46,8 +53,10 @@ namespace dddlib.Configuration
             Guard.Against.Null(() => mapping);
             Guard.Against.Null(() => reverseMapping);
 
-            this.mapper.AddMap(mapping);
-            this.mapper.AddMap(reverseMapping);
+            this.configuration.Mappings.AddOrUpdate(mapping);
+            this.configuration.Mappings.AddOrUpdate(reverseMapping);
+            ////this.mapper.AddMap(mapping);
+            ////this.mapper.AddMap(reverseMapping);
 
             return this;
         }

@@ -38,6 +38,7 @@ namespace dddlib.Runtime
             return new ValueObjectConfiguration
             {
                 EqualityComparer = values.Select(value => value.EqualityComparer).CombineValues(),
+                Mappings = values.Select(value => value.Mappings).CombineValues(),
                 ////Mapper = values.Select(value => value.Mapper).CombineValues(),
             };
         }

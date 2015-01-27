@@ -23,5 +23,11 @@ namespace dddlib.Runtime
         /// <value>The equality comparer.</value>
         //// TODO (Cameron): Make concrete type - not object.
         public object EqualityComparer { get; set; }
+
+        /// <summary>
+        /// Gets or sets the mappings for this value object.
+        /// </summary>
+        /// <value>The mappings for this value object.</value>
+        public MappingCollection Mappings { get; set; }
     }
 }

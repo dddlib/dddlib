@@ -21,7 +21,7 @@ namespace dddlib.Tests.Features
             You recreate the value object in the event handler
             The logic for the value object changes over time
             The re-creation fails upon reconstitution because the logic has changed
-            The solution is... some sort of mapping...
+            The solution is... some sort of mapping...?
          */
 
         public class ValueObjectMappingWithEventCreation : AggregateRootObjectMappingValueObjects
@@ -79,7 +79,7 @@ namespace dddlib.Tests.Features
                 public string NaturalKeyValue { get; set; }
             }
 
-            private class BootStrapper : IBootstrap<Subject>
+            private class BootStrapper : IBootstrap<Subject>, IBootstrap<NaturalKey>
             {
                 public void Bootstrap(IConfiguration configure)
                 {
@@ -154,7 +154,7 @@ namespace dddlib.Tests.Features
                 public string DataValue { get; set; }
             }
 
-            private class BootStrapper : IBootstrap<Subject>
+            private class BootStrapper : IBootstrap<Subject>, IBootstrap<Data>
             {
                 public void Bootstrap(IConfiguration configure)
                 {

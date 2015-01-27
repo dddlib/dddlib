@@ -15,7 +15,7 @@ namespace dddlib.Runtime
 
             var equalityComparer = configuration.EqualityComparer ?? CreateEqualityComparer(configuration.RuntimeType);
 
-            return new ValueObjectType(configuration.RuntimeType, equalityComparer);
+            return new ValueObjectType(configuration.RuntimeType, equalityComparer, configuration.Mappings ?? new MappingCollection());
         }
 
         private static object CreateEqualityComparer(Type type)

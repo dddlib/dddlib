@@ -4,18 +4,17 @@
 
 namespace dddlib.Sdk
 {
+    using System;
     using dddlib.Runtime;
 
     internal class ValueObjectMapper<TValueObject> : IValueObjectMapper<TValueObject>
         where TValueObject : ValueObject<TValueObject>
     {
         private readonly TValueObject source;
-        private readonly Mapper mapper;
 
-        public ValueObjectMapper(TValueObject source, Mapper mapper)
+        public ValueObjectMapper(TValueObject source)
         {
             this.source = source;
-            this.mapper = mapper;
         }
 
         public T ToEvent<T>() where T : new()
@@ -27,8 +26,15 @@ namespace dddlib.Sdk
 
         public void ToEvent<T>(T @event)
         {
-            var map = this.mapper.GetActionMap<TValueObject, T>();
-            map(this.source, @event);
+            var runtimeType = Application.Current.GetValueObjectType(this.source.GetType());
+
+            var mapping = default(Action<TValueObject, T>);
+            if (!runtimeType.Mappings.TryGet(out mapping))
+            {
+                throw new RuntimeException("Map doesn't exist.");
+            }
+
+            mapping.Invoke(this.source, @event);
         }
     }
 }
