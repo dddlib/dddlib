@@ -6,7 +6,7 @@ namespace dddlib.Sdk
 {
     using System;
 
-    internal class ValueObjectTypeFactory : IValueObjectTypeFactory
+    internal class ValueObjectTypeFactory
     {
         public ValueObjectType Create(ValueObjectConfiguration configuration)
         {

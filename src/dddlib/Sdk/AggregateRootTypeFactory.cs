@@ -4,7 +4,7 @@
 
 namespace dddlib.Sdk
 {
-    internal class AggregateRootTypeFactory : IAggregateRootTypeFactory
+    internal class AggregateRootTypeFactory
     {
         public AggregateRootType Create(AggregateRootConfiguration configuration)
         {

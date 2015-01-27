@@ -2,10 +2,11 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Runtime
+namespace dddlib.Sdk.Configuration
 {
     using System;
     using dddlib.Sdk;
+    using dddlib.Sdk.Configuration;
 
     internal class ValueObjectAnalyzer : IValueObjectConfigurationProvider
     {

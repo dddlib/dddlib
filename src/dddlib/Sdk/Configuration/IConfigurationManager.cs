@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Runtime
+namespace dddlib.Sdk.Configuration
 {
     internal interface IConfigurationManager<T>
     {

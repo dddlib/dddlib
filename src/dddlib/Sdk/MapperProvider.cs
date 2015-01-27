@@ -5,6 +5,7 @@
 namespace dddlib.Sdk
 {
     using System;
+    using dddlib.Runtime;
 
     internal class MapperProvider : IMapProvider
     {

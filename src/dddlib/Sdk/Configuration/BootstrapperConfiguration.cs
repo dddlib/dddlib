@@ -2,10 +2,11 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Configuration
+namespace dddlib.Sdk.Configuration
 {
     using System;
     using System.Collections.Generic;
+    using dddlib.Configuration;
     using dddlib.Runtime;
     using dddlib.Sdk;
 

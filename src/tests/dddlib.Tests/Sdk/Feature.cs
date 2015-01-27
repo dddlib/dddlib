@@ -10,6 +10,7 @@ namespace dddlib.Tests.Sdk
     using dddlib.Configuration;
     using dddlib.Runtime;
     using dddlib.Sdk;
+    using dddlib.Sdk.Configuration;
     using FakeItEasy;
     using Xbehave;
 

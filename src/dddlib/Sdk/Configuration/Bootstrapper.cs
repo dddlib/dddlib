@@ -2,12 +2,13 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Runtime
+namespace dddlib.Sdk.Configuration
 {
     using System;
     using System.Globalization;
     using System.Linq;
     using dddlib.Configuration;
+    using dddlib.Runtime;
     using dddlib.Sdk;
 
     internal class Bootstrapper :

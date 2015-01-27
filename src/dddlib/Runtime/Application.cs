@@ -9,6 +9,7 @@ namespace dddlib.Runtime
     using System.Globalization;
     using System.Linq;
     using dddlib.Sdk;
+    using dddlib.Sdk.Configuration;
 
     /// <summary>
     /// Represents an application.

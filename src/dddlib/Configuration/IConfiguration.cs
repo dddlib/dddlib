@@ -4,11 +4,12 @@
 
 namespace dddlib.Configuration
 {
+    using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using dddlib.Sdk;
 
-    /// <summary>
-    /// Exposes the public members of the configuration.
-    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible in editor.")]
     public interface IConfiguration : IFluentExtensions
     {
         /// <summary>

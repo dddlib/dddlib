@@ -2,12 +2,14 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Sdk
+namespace dddlib.Runtime
 {
-    /// <summary>
-    /// Exposes the public members of the entity mapper.
-    /// </summary>
-    /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
+    using dddlib.Sdk;
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible in editor.")]
     public interface IEntityMapper<TEntity> : IFluentExtensions
         where TEntity : Entity
     {
