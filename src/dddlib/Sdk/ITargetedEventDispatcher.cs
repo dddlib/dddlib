@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Runtime
+namespace dddlib.Sdk
 {
     using System.Diagnostics.CodeAnalysis;
 

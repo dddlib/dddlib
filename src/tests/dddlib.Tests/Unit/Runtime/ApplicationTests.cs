@@ -6,6 +6,7 @@ namespace dddlib.Tests.Unit.Runtime
 {
     using System;
     using dddlib.Runtime;
+    using dddlib.Sdk;
     using FakeItEasy;
     using FluentAssertions;
     using Xunit;

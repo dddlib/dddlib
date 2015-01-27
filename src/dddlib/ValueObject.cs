@@ -13,6 +13,7 @@ namespace dddlib
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using dddlib.Runtime;
+    using dddlib.Sdk;
 
     /// <summary>
     /// Represents a value object.

@@ -16,6 +16,7 @@ namespace dddlib
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using dddlib.Runtime;
+    using dddlib.Sdk;
 
     /// <summary>
     /// Represents an aggregate root.

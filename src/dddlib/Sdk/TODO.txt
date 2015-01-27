@@ -1,1 +1,4 @@
 ﻿This should contain any public classes and wire-up?
+rename to mapcollection
+specify defaults in factory
+introduce valueobjectequalitycomparer concreate type

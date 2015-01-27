@@ -1,1 +1,0 @@
-﻿This should contain Application.cs and any other internal classes

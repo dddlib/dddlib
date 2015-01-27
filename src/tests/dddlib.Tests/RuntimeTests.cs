@@ -8,6 +8,7 @@ namespace dddlib.Tests.Acceptance
     using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
     using dddlib.Runtime;
+    using dddlib.Sdk;
     using Xbehave;
 
     public partial class RuntimeTests

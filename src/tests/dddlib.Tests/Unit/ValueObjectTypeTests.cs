@@ -7,6 +7,7 @@ namespace dddlib.Tests.Unit
     using System;
     using System.Collections.Generic;
     using dddlib.Runtime;
+    using dddlib.Sdk;
     using FluentAssertions;
     using Xunit;
 

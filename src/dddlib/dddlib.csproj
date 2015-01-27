@@ -42,7 +42,6 @@
     <AssemblyOriginatorKeyFile>..\dddlib.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
@@ -51,66 +50,65 @@
     </Compile>
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="BusinessException.cs" />
-    <Compile Include="Runtime\MappingCollection.cs" />
-    <Compile Include="Sdk\Event\EventMapper.cs" />
-    <Compile Include="Sdk\Entity\IEntityMapper.cs" />
-    <Compile Include="Sdk\Event\IEventMapper.cs" />
-    <Compile Include="Runtime\IMapProvider.cs" />
-    <Compile Include="Sdk\ValueObject\IValueObjectMapper.cs" />
-    <Compile Include="Runtime\MapperProvider.cs" />
-    <Compile Include="Sdk\AggregateRoot\AggregateRootTypeFactory.cs" />
-    <Compile Include="Sdk\AggregateRoot\IAggregateRootTypeFactory.cs" />
-    <Compile Include="Sdk\Entity\EntityTypeFactory.cs" />
-    <Compile Include="Sdk\Entity\IEntityTypeFactory.cs" />
-    <Compile Include="Sdk\IEntityConfigurationProvider.cs" />
-    <Compile Include="Sdk\IAggregateRootConfigurationProvider.cs" />
-    <Compile Include="Configuration\CustomGuardExtensions.cs" />
-    <Compile Include="Configuration\ValueObject\ValueObjectConfigurationWrapper.cs" />
-    <Compile Include="Configuration\ValueObject\IValueObjectConfigurationWrapper.cs" />
+    <Compile Include="Sdk\MappingCollection.cs" />
+    <Compile Include="Sdk\EventMapper.cs" />
+    <Compile Include="Sdk\IEntityMapper.cs" />
+    <Compile Include="Sdk\IEventMapper.cs" />
+    <Compile Include="Sdk\IMapProvider.cs" />
+    <Compile Include="Sdk\IValueObjectMapper.cs" />
+    <Compile Include="Sdk\MapperProvider.cs" />
+    <Compile Include="Sdk\AggregateRootTypeFactory.cs" />
+    <Compile Include="Sdk\IAggregateRootTypeFactory.cs" />
+    <Compile Include="Sdk\EntityTypeFactory.cs" />
+    <Compile Include="Sdk\IEntityTypeFactory.cs" />
+    <Compile Include="Sdk\Configuration\IEntityConfigurationProvider.cs" />
+    <Compile Include="Sdk\Configuration\IAggregateRootConfigurationProvider.cs" />
+    <Compile Include="Sdk\Configuration\CustomGuardExtensions.cs" />
+    <Compile Include="Sdk\Configuration\ValueObject\ValueObjectConfigurationWrapper.cs" />
+    <Compile Include="Sdk\Configuration\ValueObject\IValueObjectConfigurationWrapper.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="Guard.cs" />
     <Compile Include="GuardExtensions.cs" />
     <Compile Include="Sdk\ValueObjectEqualityComparer.cs" />
-    <Compile Include="Sdk\IValueObjectConfigurationProvider.cs" />
-    <Compile Include="Sdk\IConfigurationManager.cs" />
+    <Compile Include="Sdk\Configuration\IValueObjectConfigurationProvider.cs" />
+    <Compile Include="Sdk\Configuration\IConfigurationManager.cs" />
     <Compile Include="Sdk\TypeExtensions.cs" />
-    <Compile Include="Sdk\AggregateRoot\AggregateRootConfigurationManager.cs" />
-    <Compile Include="Sdk\AggregateRoot\AggregateRootAnalyzer.cs" />
-    <Compile Include="Sdk\AggregateRoot\AggregateRootConfiguration.cs" />
-    <Compile Include="Sdk\AggregateRoot\AggregateRootConfigurationProvider.cs" />
-    <Compile Include="Sdk\AggregateRoot\AggregateRootType.cs" />
-    <Compile Include="Sdk\DefaultConfigurationProvider.cs" />
-    <Compile Include="Sdk\Entity\EntityConfigurationManager.cs" />
-    <Compile Include="Sdk\Entity\EntityConfigurationProvider.cs" />
+    <Compile Include="Sdk\Configuration\AggregateRoot\AggregateRootConfigurationManager.cs" />
+    <Compile Include="Sdk\Configuration\AggregateRoot\AggregateRootAnalyzer.cs" />
+    <Compile Include="Sdk\AggregateRootConfiguration.cs" />
+    <Compile Include="Sdk\Configuration\AggregateRoot\AggregateRootConfigurationProvider.cs" />
+    <Compile Include="Sdk\AggregateRootType.cs" />
+    <Compile Include="Sdk\Configuration\Entity\EntityConfigurationManager.cs" />
+    <Compile Include="Sdk\Configuration\Entity\EntityConfigurationProvider.cs" />
     <Compile Include="Sdk\NaturalKeySelector.cs" />
-    <Compile Include="Sdk\ValueObject\IValueObjectTypeFactory.cs" />
-    <Compile Include="Sdk\ValueObject\ValueObjectConfigurationManager.cs" />
-    <Compile Include="Sdk\ValueObject\ValueObjectConfigurationProvider.cs" />
-    <Compile Include="Sdk\ValueObject\ValueObjectMapper.cs" />
-    <Compile Include="Sdk\ValueObject\ValueObjectTypeFactory.cs" />
-    <Compile Include="Sdk\ValueObject\ValueObjectType.cs" />
-    <Compile Include="Sdk\Entity\EntityType.cs" />
-    <Compile Include="Sdk\Bootstrapper.cs" />
-    <Compile Include="Sdk\Entity\EntityAnalyzer.cs" />
-    <Compile Include="Sdk\Entity\EntityConfiguration.cs" />
-    <Compile Include="Sdk\ValueObject\ValueObjectAnalyzer.cs" />
-    <Compile Include="Sdk\ValueObject\ValueObjectConfiguration.cs" />
-    <Compile Include="Sdk\BootstrapperConfiguration.cs" />
-    <Compile Include="Configuration\AggregateRoot\AggregateRootConfigurationWrapper.cs" />
-    <Compile Include="Configuration\Entity\EntityConfigurationWrapper.cs" />
-    <Compile Include="Configuration\AggregateRoot\IAggregateRootConfigurationWrapper.cs" />
-    <Compile Include="Configuration\Entity\IEntityConfigurationWrapper.cs" />
-    <Compile Include="Runtime\IFluentExtensions.cs" />
+    <Compile Include="Sdk\IValueObjectTypeFactory.cs" />
+    <Compile Include="Sdk\Configuration\ValueObject\ValueObjectConfigurationManager.cs" />
+    <Compile Include="Sdk\Configuration\ValueObject\ValueObjectConfigurationProvider.cs" />
+    <Compile Include="Sdk\ValueObjectMapper.cs" />
+    <Compile Include="Sdk\ValueObjectTypeFactory.cs" />
+    <Compile Include="Sdk\ValueObjectType.cs" />
+    <Compile Include="Sdk\EntityType.cs" />
+    <Compile Include="Sdk\Configuration\Bootstrapper.cs" />
+    <Compile Include="Sdk\Configuration\Entity\EntityAnalyzer.cs" />
+    <Compile Include="Sdk\EntityConfiguration.cs" />
+    <Compile Include="Sdk\Configuration\ValueObject\ValueObjectAnalyzer.cs" />
+    <Compile Include="Sdk\ValueObjectConfiguration.cs" />
+    <Compile Include="Sdk\Configuration\BootstrapperConfiguration.cs" />
+    <Compile Include="Sdk\Configuration\AggregateRoot\AggregateRootConfigurationWrapper.cs" />
+    <Compile Include="Sdk\Configuration\Entity\EntityConfigurationWrapper.cs" />
+    <Compile Include="Sdk\Configuration\AggregateRoot\IAggregateRootConfigurationWrapper.cs" />
+    <Compile Include="Sdk\Configuration\Entity\IEntityConfigurationWrapper.cs" />
+    <Compile Include="Sdk\IFluentExtensions.cs" />
     <Compile Include="Sdk\EnumerableExtensions.cs" />
     <Compile Include="NaturalKey.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Runtime\Application.cs" />
-    <Compile Include="Sdk\ConfigurationExtensions.cs" />
+    <Compile Include="Sdk\Configuration\ConfigurationExtensions.cs" />
     <Compile Include="Sdk\DefaultEventDispatcher.cs" />
-    <Compile Include="Configuration\IConfiguration.cs" />
+    <Compile Include="Sdk\Configuration\IConfiguration.cs" />
     <Compile Include="Configuration\IBootstrapper.cs" />
     <Compile Include="Sdk\ITargetedEventDispatcher.cs" />
-    <Compile Include="Sdk\RuntimeException.cs" />
+    <Compile Include="Runtime\RuntimeException.cs" />
     <Compile Include="ValueObject.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -123,7 +121,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Runtime\TODO.txt" />
     <Content Include="Sdk\TODO.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

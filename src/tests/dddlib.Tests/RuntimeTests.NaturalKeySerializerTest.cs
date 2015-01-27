@@ -6,6 +6,7 @@ namespace dddlib.Tests.Acceptance
 {
     using System.Diagnostics.CodeAnalysis;
     using dddlib.Runtime;
+    using dddlib.Sdk;
     using FluentAssertions;
 
     [SuppressMessage("StyleCop.CSharp.OrderingRules", "SA1201:ElementsMustAppearInTheCorrectOrder", Justification = "Not here.")]
