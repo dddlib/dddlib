@@ -104,7 +104,7 @@ namespace dddlib.Tests.Unit.Runtime
             var factory = A.Fake<Func<Type, AggregateRootType>>(o => o.Strict());
             A.CallTo(() => factory.Invoke(type)).Returns(expectedType);
 
-            using (new Application(factory, t => null, t => null, new Mapper()))
+            using (new Application(factory, t => null, t => null))
             {
                 // act
                 var actualType = Application.Current.GetAggregateRootType(type);
@@ -122,7 +122,7 @@ namespace dddlib.Tests.Unit.Runtime
             var factory = A.Fake<Func<Type, AggregateRootType>>(o => o.Strict());
             A.CallTo(() => factory.Invoke(A<Type>.Ignored)).Throws(innerException);
 
-            using (new Application(factory, t => null, t => null, new Mapper()))
+            using (new Application(factory, t => null, t => null))
             {
                 // act
                 Action action = () => Application.Current.GetAggregateRootType(typeof(Aggregate));
@@ -140,7 +140,7 @@ namespace dddlib.Tests.Unit.Runtime
             var factory = A.Fake<Func<Type, AggregateRootType>>(o => o.Strict());
             A.CallTo(() => factory.Invoke(A<Type>.Ignored)).Throws(runtimeException);
 
-            using (new Application(factory, t => null, t => null, new Mapper()))
+            using (new Application(factory, t => null, t => null))
             {
                 // act
                 Action action = () => Application.Current.GetAggregateRootType(typeof(Aggregate));

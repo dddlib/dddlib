@@ -15,20 +15,17 @@ namespace dddlib.Runtime
         IValueObjectConfigurationProvider
     {
         private readonly Func<Type, Action<IConfiguration>> bootstrapperProvider;
-        private readonly Mapper mapper;
 
-        public Bootstrapper(Mapper mapper)
-            : this(GetBootstrapper, mapper)
+        public Bootstrapper()
+            : this(GetBootstrapper)
         {
         }
 
-        public Bootstrapper(Func<Type, Action<IConfiguration>> getBootstrapper, Mapper mapper)
+        public Bootstrapper(Func<Type, Action<IConfiguration>> getBootstrapper)
         {
             Guard.Against.Null(() => getBootstrapper);
-            Guard.Against.Null(() => mapper);
 
             this.bootstrapperProvider = getBootstrapper;
-            this.mapper = mapper;
         }
 
         AggregateRootConfiguration IAggregateRootConfigurationProvider.GetConfiguration(Type type)
@@ -36,7 +33,7 @@ namespace dddlib.Runtime
             var bootstrap = this.bootstrapperProvider(type);
 
             // create a config to run through the bootstrapper
-            var configuration = new BootstrapperConfiguration(this.mapper);
+            var configuration = new BootstrapperConfiguration();
 
             // bootstrap
             bootstrap(configuration);
@@ -49,7 +46,7 @@ namespace dddlib.Runtime
             var bootstrap = this.bootstrapperProvider(type);
 
             // create a config to run through the bootstrapper
-            var configuration = new BootstrapperConfiguration(this.mapper);
+            var configuration = new BootstrapperConfiguration();
 
             // bootstrap
             bootstrap(configuration);
@@ -62,7 +59,7 @@ namespace dddlib.Runtime
             var bootstrap = this.bootstrapperProvider(type);
 
             // create a config to run through the bootstrapper
-            var configuration = new BootstrapperConfiguration(this.mapper);
+            var configuration = new BootstrapperConfiguration();
 
             // bootstrap
             bootstrap(configuration);

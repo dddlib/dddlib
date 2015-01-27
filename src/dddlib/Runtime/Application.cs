@@ -26,48 +26,33 @@ namespace dddlib.Runtime
         private readonly Func<Type, EntityType> entityTypeFactory;
         private readonly Func<Type, ValueObjectType> valueObjectTypeFactory;
 
-        private readonly Mapper mapper;
-
         private bool isDisposed = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Application"/> class.
         /// </summary>
         public Application()
-            : this(new Mapper())
+            : this(t => CreateAggregateRootType(t), t => CreateEntityType(t), t => CreateValueObjectType(t))
         {
         }
 
         internal Application(
             Func<Type, AggregateRootType> aggregateRootTypeFactory,
             Func<Type, EntityType> entityTypeFactory,
-            Func<Type, ValueObjectType> valueObjectTypeFactory, 
-            Mapper mapper)
+            Func<Type, ValueObjectType> valueObjectTypeFactory)
         {
             Guard.Against.Null(() => aggregateRootTypeFactory);
             Guard.Against.Null(() => entityTypeFactory);
             Guard.Against.Null(() => valueObjectTypeFactory);
-            Guard.Against.Null(() => mapper);
 
             this.aggregateRootTypeFactory = aggregateRootTypeFactory;
             this.entityTypeFactory = entityTypeFactory;
             this.valueObjectTypeFactory = valueObjectTypeFactory;
-            this.mapper = mapper;
 
             lock (SyncLock)
             {
                 Applications.Add(this);
             }
-        }
-
-        // TODO (Cameron): Use method group when mapper is removed.
-        private Application(Mapper mapper)
-            : this(
-                t => CreateAggregateRootType(mapper, t),
-                t => CreateEntityType(mapper, t),
-                t => CreateValueObjectType(mapper, t),
-                mapper)
-        {
         }
 
         /// <summary>
@@ -125,9 +110,9 @@ namespace dddlib.Runtime
             return this.GetType(type, this.valueObjectTypes, this.valueObjectTypeFactory);
         }
 
-        private static AggregateRootType CreateAggregateRootType(Mapper mapper, Type type)
+        private static AggregateRootType CreateAggregateRootType(Type type)
         {
-            var bootstrapper = new Bootstrapper(mapper);
+            var bootstrapper = new Bootstrapper();
             var typeAnalyzer = new AggregateRootAnalyzer();
             var manager = new AggregateRootConfigurationManager();
             var configProvider = new AggregateRootConfigurationProvider(bootstrapper, typeAnalyzer, manager);
@@ -135,9 +120,9 @@ namespace dddlib.Runtime
             return new AggregateRootTypeFactory().Create(configuration);
         }
 
-        private static EntityType CreateEntityType(Mapper mapper, Type type)
+        private static EntityType CreateEntityType(Type type)
         {
-            var bootstrapper = new Bootstrapper(mapper);
+            var bootstrapper = new Bootstrapper();
             var typeAnalyzer = new EntityAnalyzer();
             var manager = new EntityConfigurationManager();
             var configProvider = new EntityConfigurationProvider(bootstrapper, typeAnalyzer, manager);
@@ -145,9 +130,9 @@ namespace dddlib.Runtime
             return new EntityTypeFactory().Create(configuration);
         }
 
-        private static ValueObjectType CreateValueObjectType(Mapper mapper, Type type)
+        private static ValueObjectType CreateValueObjectType(Type type)
         {
-            var bootstrapper = new Bootstrapper(mapper);
+            var bootstrapper = new Bootstrapper();
             var typeAnalyzer = new ValueObjectAnalyzer();
             var manager = new ValueObjectConfigurationManager();
             var configProvider = new ValueObjectConfigurationProvider(bootstrapper, typeAnalyzer, manager);

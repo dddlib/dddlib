@@ -25,20 +25,17 @@ namespace dddlib.Tests.Sdk
             "Given a new application"
                 .Given(() =>
                 {
-                    var mapper = new Mapper();
-
                     new Application(
-                        t => CreateAggregateRootType(this.Bootstrap, mapper, t),
-                        t => CreateEntityType(this.Bootstrap, mapper, t),
-                        t => CreateValueObjectType(this.Bootstrap, mapper, t),
-                        mapper)
+                        t => CreateAggregateRootType(this.Bootstrap, t),
+                        t => CreateEntityType(this.Bootstrap, t),
+                        t => CreateValueObjectType(this.Bootstrap, t))
                         .Using();
                 });
         }
 
-        private static AggregateRootType CreateAggregateRootType(Func<Type, Action<IConfiguration>> getBootstrapper, Mapper mapper, Type type)
+        private static AggregateRootType CreateAggregateRootType(Func<Type, Action<IConfiguration>> getBootstrapper, Type type)
         {
-            var bootstrapper = new Bootstrapper(getBootstrapper, mapper);
+            var bootstrapper = new Bootstrapper(getBootstrapper);
             var typeAnalyzer = new AggregateRootAnalyzer();
             var manager = new AggregateRootConfigurationManager();
             var configProvider = new AggregateRootConfigurationProvider(bootstrapper, typeAnalyzer, manager);
@@ -46,9 +43,9 @@ namespace dddlib.Tests.Sdk
             return new AggregateRootTypeFactory().Create(configuration);
         }
 
-        private static EntityType CreateEntityType(Func<Type, Action<IConfiguration>> getBootstrapper, Mapper mapper, Type type)
+        private static EntityType CreateEntityType(Func<Type, Action<IConfiguration>> getBootstrapper, Type type)
         {
-            var bootstrapper = new Bootstrapper(getBootstrapper, mapper);
+            var bootstrapper = new Bootstrapper(getBootstrapper);
             var typeAnalyzer = new EntityAnalyzer();
             var manager = new EntityConfigurationManager();
             var configProvider = new EntityConfigurationProvider(bootstrapper, typeAnalyzer, manager);
@@ -56,9 +53,9 @@ namespace dddlib.Tests.Sdk
             return new EntityTypeFactory().Create(configuration);
         }
 
-        private static ValueObjectType CreateValueObjectType(Func<Type, Action<IConfiguration>> getBootstrapper, Mapper mapper, Type type)
+        private static ValueObjectType CreateValueObjectType(Func<Type, Action<IConfiguration>> getBootstrapper, Type type)
         {
-            var bootstrapper = new Bootstrapper(getBootstrapper, mapper);
+            var bootstrapper = new Bootstrapper(getBootstrapper);
             var typeAnalyzer = new ValueObjectAnalyzer();
             var manager = new ValueObjectConfigurationManager();
             var configProvider = new ValueObjectConfigurationProvider(bootstrapper, typeAnalyzer, manager);

@@ -12,15 +12,12 @@ namespace dddlib.Configuration
         where T : ValueObject<T>
     {
         private readonly ValueObjectConfiguration configuration;
-        private readonly Mapper mapper;
 
-        public ValueObjectConfigurationWrapper(ValueObjectConfiguration configuration, Mapper mapper)
+        public ValueObjectConfigurationWrapper(ValueObjectConfiguration configuration)
         {
             Guard.Against.Null(() => configuration);
-            Guard.Against.Null(() => mapper);
 
             this.configuration = configuration;
-            this.mapper = mapper;
 
             // TODO (Cameron): Not sure this belongs here...
             if (this.configuration.Mappings == null)

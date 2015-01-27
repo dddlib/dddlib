@@ -14,16 +14,9 @@ namespace dddlib.Configuration
         IEntityConfigurationProvider,
         IValueObjectConfigurationProvider
     {
-        private readonly Mapper mapper;
-
         private Dictionary<Type, AggregateRootConfiguration> aggregateRootConfigurations = new Dictionary<Type, AggregateRootConfiguration>();
         private Dictionary<Type, EntityConfiguration> entityConfigurations = new Dictionary<Type, EntityConfiguration>();
         private Dictionary<Type, ValueObjectConfiguration> valueObjectConfigurations = new Dictionary<Type, ValueObjectConfiguration>();
-
-        public BootstrapperConfiguration(Mapper mapper)
-        {
-            this.mapper = mapper;
-        }
 
         public IAggregateRootConfigurationWrapper<T> AggregateRoot<T>() where T : AggregateRoot
         {
@@ -55,7 +48,7 @@ namespace dddlib.Configuration
                 this.valueObjectConfigurations.Add(typeof(T), configuration = new ValueObjectConfiguration());
             }
 
-            return new ValueObjectConfigurationWrapper<T>(configuration, this.mapper);
+            return new ValueObjectConfigurationWrapper<T>(configuration);
         }
 
         // TODO (Cameron): Confirm type is valid.

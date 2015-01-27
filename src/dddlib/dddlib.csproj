@@ -57,7 +57,6 @@
     <Compile Include="Sdk\Event\IEventMapper.cs" />
     <Compile Include="Runtime\IMapProvider.cs" />
     <Compile Include="Sdk\ValueObject\IValueObjectMapper.cs" />
-    <Compile Include="Runtime\Mapper.cs" />
     <Compile Include="Runtime\MapperProvider.cs" />
     <Compile Include="Sdk\AggregateRoot\AggregateRootTypeFactory.cs" />
     <Compile Include="Sdk\AggregateRoot\IAggregateRootTypeFactory.cs" />
