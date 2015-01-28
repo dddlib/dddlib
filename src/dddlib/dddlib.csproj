@@ -73,7 +73,7 @@
     <Compile Include="Sdk\TypeExtensions.cs" />
     <Compile Include="Sdk\Configuration\AggregateRootConfigurationManager.cs" />
     <Compile Include="Sdk\Configuration\AggregateRootAnalyzer.cs" />
-    <Compile Include="Sdk\AggregateRootConfiguration.cs" />
+    <Compile Include="Sdk\Configuration\AggregateRootConfiguration.cs" />
     <Compile Include="Sdk\Configuration\AggregateRootConfigurationProvider.cs" />
     <Compile Include="Sdk\AggregateRootType.cs" />
     <Compile Include="Sdk\Configuration\EntityConfigurationManager.cs" />
@@ -87,9 +87,9 @@
     <Compile Include="Sdk\EntityType.cs" />
     <Compile Include="Sdk\Configuration\Bootstrapper.cs" />
     <Compile Include="Sdk\Configuration\EntityAnalyzer.cs" />
-    <Compile Include="Sdk\EntityConfiguration.cs" />
+    <Compile Include="Sdk\Configuration\EntityConfiguration.cs" />
     <Compile Include="Sdk\Configuration\ValueObjectAnalyzer.cs" />
-    <Compile Include="Sdk\ValueObjectConfiguration.cs" />
+    <Compile Include="Sdk\Configuration\ValueObjectConfiguration.cs" />
     <Compile Include="Sdk\Configuration\BootstrapperConfiguration.cs" />
     <Compile Include="Sdk\Configuration\AggregateRootConfigurationWrapper.cs" />
     <Compile Include="Sdk\Configuration\EntityConfigurationWrapper.cs" />

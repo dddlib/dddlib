@@ -4,6 +4,8 @@
 
 namespace dddlib.Sdk
 {
+    using dddlib.Sdk.Configuration;
+
     internal class AggregateRootTypeFactory
     {
         public AggregateRootType Create(AggregateRootConfiguration configuration)

@@ -4,6 +4,8 @@
 
 namespace dddlib.Sdk
 {
+    using dddlib.Sdk.Configuration;
+
     internal class EntityTypeFactory
     {
         public EntityType Create(EntityConfiguration configuration)

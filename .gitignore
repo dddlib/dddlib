@@ -1,4 +1,4 @@
-[Bb]uild/
+/[Bb]uild/
 [Bb]in/
 [Oo]bj/
 [Tt]est[Rr]esults
@@ -10,4 +10,3 @@ StyleCop.Cache
 _ReSharper*
 Thumbs.db
 *.sln.ide
-![Pp]ackages/*

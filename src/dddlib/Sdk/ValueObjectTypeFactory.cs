@@ -5,6 +5,7 @@
 namespace dddlib.Sdk
 {
     using System;
+    using dddlib.Sdk.Configuration;
 
     internal class ValueObjectTypeFactory
     {

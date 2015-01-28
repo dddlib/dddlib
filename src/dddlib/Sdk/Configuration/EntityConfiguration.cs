@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Sdk
+namespace dddlib.Sdk.Configuration
 {
     using System;
     using System.Collections.Generic;
