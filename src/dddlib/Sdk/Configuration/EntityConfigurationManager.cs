@@ -17,6 +17,7 @@ namespace dddlib.Sdk.Configuration
                 RuntimeType = typeConfiguration.RuntimeType ?? baseTypeConfiguration.RuntimeType,
                 NaturalKeyPropertyName = typeConfiguration.NaturalKeyPropertyName ?? baseTypeConfiguration.NaturalKeyPropertyName,
                 NaturalKeyStringEqualityComparer = typeConfiguration.NaturalKeyStringEqualityComparer ?? baseTypeConfiguration.NaturalKeyStringEqualityComparer,
+                Mappings = typeConfiguration.Mappings ?? baseTypeConfiguration.Mappings, // TODO (Cameron): Not right.
             };
         }
     }

@@ -22,7 +22,7 @@ namespace dddlib.Runtime
     /// <summary>
     /// Represents the rubbish event dispatcher.
     /// </summary>
-    public sealed class RubbishEventDispatcher : ITargetedEventDispatcher
+    public sealed class RubbishEventDispatcher : IEventDispatcher
     {
         private static readonly string ApplyMethodName = GetApplyMethodName();
 

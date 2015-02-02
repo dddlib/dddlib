@@ -23,7 +23,7 @@ namespace dddlib.Sdk
     /// <summary>
     /// Represents the default event dispatcher.
     /// </summary>
-    internal sealed class DefaultEventDispatcher : ITargetedEventDispatcher
+    internal sealed class DefaultEventDispatcher : IEventDispatcher
     {
         private static readonly string ApplyMethodName = GetApplyMethodName();
 

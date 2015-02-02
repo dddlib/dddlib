@@ -87,9 +87,7 @@ namespace dddlib.Tests.Features
                     configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
 
                     configure.ValueObject<NaturalKey>()
-                        .ToMapToEvent<NewSubject>(
-                            (key, @event) => @event.NaturalKeyValue = key.Value, 
-                            @event => new NaturalKey(@event.NaturalKeyValue));
+                        .ToMapToEvent<NewSubject>((key, @event) => @event.NaturalKeyValue = key.Value, @event => new NaturalKey(@event.NaturalKeyValue));
                 }
             }
         }

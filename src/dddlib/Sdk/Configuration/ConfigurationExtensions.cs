@@ -29,6 +29,7 @@ namespace dddlib.Sdk.Configuration
                 RuntimeType = values.Select(value => value.RuntimeType).CombineValues(),
                 NaturalKeyPropertyName = values.Select(value => value.NaturalKeyPropertyName).CombineValues(),
                 NaturalKeyStringEqualityComparer = values.Select(value => value.NaturalKeyStringEqualityComparer).CombineValues(),
+                Mappings = values.Select(value => value.Mappings).CombineValues(),
                 ////NaturalKeySelector = values.Select(value => value.NaturalKeySelector).CombineValues(),
                 ////NaturalKeyEqualityComparer = values.Select(value => value.NaturalKeyEqualityComparer).CombineValues(),
             };

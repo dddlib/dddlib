@@ -41,7 +41,6 @@ namespace dddlib.Sdk.Configuration
             Guard.Against.Null(() => mapping);
 
             this.configuration.Mappings.AddOrUpdate(mapping);
-            ////this.mapper.AddMap(mapping);
 
             return this;
         }
@@ -53,8 +52,6 @@ namespace dddlib.Sdk.Configuration
 
             this.configuration.Mappings.AddOrUpdate(mapping);
             this.configuration.Mappings.AddOrUpdate(reverseMapping);
-            ////this.mapper.AddMap(mapping);
-            ////this.mapper.AddMap(reverseMapping);
 
             return this;
         }

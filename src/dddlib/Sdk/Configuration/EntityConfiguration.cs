@@ -29,5 +29,11 @@ namespace dddlib.Sdk.Configuration
         /// </summary>
         /// <value>The natural key string equality comparer.</value>
         public IEqualityComparer<string> NaturalKeyStringEqualityComparer { get; set; }
+
+        /// <summary>
+        /// Gets or sets the mappings for this entity.
+        /// </summary>
+        /// <value>The mappings for this entity.</value>
+        public MappingCollection Mappings { get; set; }
     }
 }

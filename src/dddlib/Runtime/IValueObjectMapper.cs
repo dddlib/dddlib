@@ -24,7 +24,7 @@ namespace dddlib.Runtime
         /// Specifies that the value object should be mapped to an event.
         /// </summary>
         /// <typeparam name="T">The type of event.</typeparam>
-        /// <param name="event">The event to map the entity to.</param>
+        /// <param name="event">The event to map the value object to.</param>
         void ToEvent<T>(T @event);
     }
 }

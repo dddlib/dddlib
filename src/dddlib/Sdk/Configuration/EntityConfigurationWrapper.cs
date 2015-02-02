@@ -8,7 +8,6 @@ namespace dddlib.Sdk.Configuration
     using System.Collections.Generic;
     using System.Linq.Expressions;
     using dddlib.Configuration;
-    using dddlib.Runtime;
     using dddlib.Sdk;
 
     internal class EntityConfigurationWrapper<T> : IEntityConfigurationWrapper<T>
@@ -21,6 +20,12 @@ namespace dddlib.Sdk.Configuration
             Guard.Against.Null(() => configuration);
 
             this.configuration = configuration;
+
+            // TODO (Cameron): Not sure this belongs here...
+            if (this.configuration.Mappings == null)
+            {
+                this.configuration.Mappings = new MappingCollection();
+            }
         }
 
         public IEntityConfigurationWrapper<T> ToUseNaturalKey<TKey>(Expression<Func<T, TKey>> naturalKeySelector)
@@ -49,8 +54,19 @@ namespace dddlib.Sdk.Configuration
         {
             Guard.Against.Null(() => mapping);
 
-            // TODO (Cameron): Some expression based stuff here to negate the need to wrap.
-            ////this.configuration.Mapper = type => mapping((T)type);
+            this.configuration.Mappings.AddOrUpdate(mapping);
+
+            return this;
+        }
+
+        public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping, Func<TEvent, T> reverseMapping)
+        {
+            Guard.Against.Null(() => mapping);
+            Guard.Against.Null(() => reverseMapping);
+
+            this.configuration.Mappings.AddOrUpdate(mapping);
+            this.configuration.Mappings.AddOrUpdate(reverseMapping);
+
             return this;
         }
     }

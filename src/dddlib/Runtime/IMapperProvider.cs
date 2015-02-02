@@ -1,4 +1,4 @@
-﻿// <copyright file="IMapProvider.cs" company="dddlib contributors">
+﻿// <copyright file="IMapperProvider.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -10,7 +10,7 @@ namespace dddlib.Runtime
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible in editor.")]
-    public interface IMapProvider : IFluentExtensions
+    public interface IMapperProvider : IFluentExtensions
     {
         /// <summary>
         /// Specifies that an event should be mapped.

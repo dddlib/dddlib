@@ -2,12 +2,11 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Sdk
+namespace dddlib.Runtime
 {
     using System;
-    using dddlib.Runtime;
 
-    internal class MapperProvider : IMapProvider
+    internal sealed class MapperProvider : IMapperProvider
     {
         public IEventMapper<T> Event<T>(T @event)
         {
@@ -16,7 +15,7 @@ namespace dddlib.Sdk
 
         public IEntityMapper<T> Entity<T>(T entity) where T : Entity
         {
-            throw new NotImplementedException();
+            return new EntityMapper<T>(entity);
         }
 
         public IValueObjectMapper<T> ValueObject<T>(T valueObject) where T : ValueObject<T>

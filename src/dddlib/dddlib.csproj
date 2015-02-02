@@ -50,13 +50,14 @@
     </Compile>
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="BusinessException.cs" />
+    <Compile Include="Runtime\EntityMapper.cs" />
     <Compile Include="Sdk\MappingCollection.cs" />
-    <Compile Include="Sdk\EventMapper.cs" />
+    <Compile Include="Runtime\EventMapper.cs" />
     <Compile Include="Runtime\IEntityMapper.cs" />
     <Compile Include="Runtime\IEventMapper.cs" />
-    <Compile Include="Runtime\IMapProvider.cs" />
+    <Compile Include="Runtime\IMapperProvider.cs" />
     <Compile Include="Runtime\IValueObjectMapper.cs" />
-    <Compile Include="Sdk\MapperProvider.cs" />
+    <Compile Include="Runtime\MapperProvider.cs" />
     <Compile Include="Sdk\AggregateRootTypeFactory.cs" />
     <Compile Include="Sdk\EntityTypeFactory.cs" />
     <Compile Include="Sdk\Configuration\IEntityConfigurationProvider.cs" />
@@ -81,7 +82,7 @@
     <Compile Include="Sdk\NaturalKeySelector.cs" />
     <Compile Include="Sdk\Configuration\ValueObjectConfigurationManager.cs" />
     <Compile Include="Sdk\Configuration\ValueObjectConfigurationProvider.cs" />
-    <Compile Include="Sdk\ValueObjectMapper.cs" />
+    <Compile Include="Runtime\ValueObjectMapper.cs" />
     <Compile Include="Sdk\ValueObjectTypeFactory.cs" />
     <Compile Include="Sdk\ValueObjectType.cs" />
     <Compile Include="Sdk\EntityType.cs" />
@@ -104,7 +105,7 @@
     <Compile Include="Sdk\DefaultEventDispatcher.cs" />
     <Compile Include="Configuration\IConfiguration.cs" />
     <Compile Include="Configuration\IBootstrapper.cs" />
-    <Compile Include="Sdk\ITargetedEventDispatcher.cs" />
+    <Compile Include="Sdk\IEventDispatcher.cs" />
     <Compile Include="Runtime\RuntimeException.cs" />
     <Compile Include="ValueObject.cs" />
   </ItemGroup>
@@ -118,6 +119,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Runtime\TODO.txt" />
     <Content Include="Sdk\TODO.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

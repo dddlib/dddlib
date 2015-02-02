@@ -4,6 +4,7 @@
 
 namespace dddlib.Tests.Features
 {
+    using System;
     using dddlib.Configuration;
     using dddlib.Tests.Sdk;
     using FluentAssertions;
@@ -14,41 +15,30 @@ namespace dddlib.Tests.Features
     // I need to be able to map between entities and DTO's (to and from)
     public abstract class AggregateRootObjectMappingEntities : Feature
     {
-        /*
-            TODO (Cameron):
-            So...
-            You have an aggregate with a natural key value object
-            You recreate the value object in the event handler
-            The logic for the value object changes over time
-            The re-creation fails upon reconstitution because the logic has changed
-            The solution is... some sort of mapping...
-         */
-
-        /*
         public class EntityMappingWithEventCreation : AggregateRootObjectMappingEntities
         {
             [Scenario]
-            public void Scenario(Subject instance, NaturalKey naturalKey)
+            public void Scenario(Subject instance, Thing thing)
             {
-                "Given a natural key that is a value object"
-                    .Given(() => naturalKey = new NaturalKey("naturalKey"));
+                "Given a some thing that is an entity"
+                    .Given(() => thing = new Thing("naturalKey"));
 
-                "When an instance of an aggregate root is created with that natural key"
-                    .When(() => instance = new Subject(naturalKey));
+                "When an instance of an aggregate root is created with that thing"
+                    .When(() => instance = new Subject(thing));
 
-                "Then the natural key of that instance should be the original natural key"
-                    .Then(() => instance.NaturalKey.Should().Be(naturalKey));
+                "Then the thing of that instance should be the original thing"
+                    .Then(() => instance.Thing.Should().Be(thing));
 
-                "And the instance should contain a single uncommitted 'NewSubject' event with a natural key value matching the original natural key value"
+                "And the instance should contain a single uncommitted 'NewSubject' event with a thing value matching the original thing value"
                     .And(() => instance.GetUncommittedEvents().Should().ContainSingle(
-                        @event => @event is NewSubject && ((NewSubject)@event).NaturalKeyValue == naturalKey.Value));
+                        @event => @event is NewSubject && ((NewSubject)@event).ThingValue == thing.Value));
             }
 
             public class Subject : AggregateRoot
             {
-                public Subject(NaturalKey key)
+                public Subject(Thing thing)
                 {
-                    var @event = Map.ValueObject(key).ToEvent<NewSubject>();
+                    var @event = Map.Entity(thing).ToEvent<NewSubject>();
 
                     this.Apply(@event);
                 }
@@ -57,40 +47,39 @@ namespace dddlib.Tests.Features
                 {
                 }
 
-                public NaturalKey NaturalKey { get; private set; }
+                public Thing Thing { get; private set; }
 
                 private void Handle(NewSubject @event)
                 {
-                    this.NaturalKey = Map.Event(@event).ToValueObject<NaturalKey>();
+                    this.Thing = Map.Event(@event).ToEntity<Thing>();
                 }
             }
 
-            public class NaturalKey : ValueObject<NaturalKey>
+            public class Thing : Entity
             {
-                public NaturalKey(string value)
+                public Thing(string value)
                 {
                     this.Value = value;
                 }
 
+                [NaturalKey]
                 public string Value { get; private set; }
             }
 
             public class NewSubject
             {
-                public string NaturalKeyValue { get; set; }
+                public string ThingValue { get; set; }
             }
 
-            private class BootStrapper : IBootstrap<Subject>
+            private class BootStrapper : IBootstrap<Subject>, IBootstrap<Thing>
             {
                 public void Bootstrap(IConfiguration configure)
                 {
                     // TODO (Cameron): This is required in order to check the persisted events. Maybe give this some thought...?
                     configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
 
-                    configure.ValueObject<NaturalKey>()
-                        .ToMapToEvent<NewSubject>(
-                            (key, @event) => @event.NaturalKeyValue = key.Value,
-                            @event => new NaturalKey(@event.NaturalKeyValue));
+                    configure.Entity<Thing>()
+                        .ToMapToEvent<NewSubject>((thing, @event) => @event.ThingValue = thing.Value, @event => new Thing(@event.ThingValue));
                 }
             }
         }
@@ -103,7 +92,7 @@ namespace dddlib.Tests.Features
                 "Given an instance of an aggregate root with an identifier"
                     .Given(() => instance = new Subject { Id = "subjectId" });
 
-                "And some data that is a value object"
+                "And some data that is an entity"
                     .And(() => data = new Data("dataValue"));
 
                 "When the instance processes that data"
@@ -127,24 +116,25 @@ namespace dddlib.Tests.Features
                 {
                     var @event = new DataProcessed { SubjectId = this.Id };
 
-                    Map.ValueObject(data).ToEvent(@event);
+                    Map.Entity(data).ToEvent(@event);
 
                     this.Apply(@event);
                 }
 
                 private void Handle(DataProcessed @event)
                 {
-                    this.ProcessedData = Map.Event(@event).ToValueObject<Data>();
+                    this.ProcessedData = Map.Event(@event).ToEntity<Data>();
                 }
             }
 
-            public class Data : ValueObject<Data>
+            public class Data : Entity
             {
                 public Data(string value)
                 {
                     this.Value = value;
                 }
 
+                [NaturalKey]
                 public string Value { get; private set; }
             }
 
@@ -155,22 +145,17 @@ namespace dddlib.Tests.Features
                 public string DataValue { get; set; }
             }
 
-            private class BootStrapper : IBootstrap<Subject>
+            private class BootStrapper : IBootstrap<Subject>, IBootstrap<Data>
             {
                 public void Bootstrap(IConfiguration configure)
                 {
                     // TODO (Cameron): This is required in order to check the persisted events. Maybe give this some thought...?
                     configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
 
-                    configure.ValueObject<Data>()
+                    configure.Entity<Data>()
                         .ToMapToEvent<DataProcessed>((data, @event) => @event.DataValue = data.Value, @event => new Data(@event.DataValue));
                 }
             }
         }
-
-        public class AggregateRootMapping : AggregateRootObjectMappingValueObjects
-        {
-        }
-        */
     }
 }

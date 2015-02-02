@@ -10,7 +10,7 @@ namespace dddlib.Sdk
 
     internal class AggregateRootType
     {
-        public AggregateRootType(Type runtimeType, Delegate uninitializedFactory, ITargetedEventDispatcher eventDispatcher)
+        public AggregateRootType(Type runtimeType, Delegate uninitializedFactory, IEventDispatcher eventDispatcher)
         {
             Guard.Against.Null(() => runtimeType);
 
@@ -46,7 +46,7 @@ namespace dddlib.Sdk
 
         public Delegate UninitializedFactory { get; private set; }
 
-        public ITargetedEventDispatcher EventDispatcher { get; private set; }
+        public IEventDispatcher EventDispatcher { get; private set; }
 
         public RuntimeOptions Options { get; private set; }
 

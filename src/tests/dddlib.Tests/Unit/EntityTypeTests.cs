@@ -23,7 +23,7 @@ namespace dddlib.Tests.Unit
             var equalityComparer = StringComparer.OrdinalIgnoreCase;
 
             // act (and assert)
-            var runtimeType = new EntityType(type, naturalKeySelector, equalityComparer);
+            var runtimeType = new EntityType(type, naturalKeySelector, equalityComparer, new MappingCollection());
         }
 
         [Fact]
@@ -35,7 +35,7 @@ namespace dddlib.Tests.Unit
             var equalityComparer = StringComparer.OrdinalIgnoreCase;
 
             // act
-            Action action = () => new EntityType(type, naturalKeySelector, equalityComparer);
+            Action action = () => new EntityType(type, naturalKeySelector, equalityComparer, new MappingCollection());
 
             // assert
             action.ShouldThrow<RuntimeException>();
@@ -50,7 +50,7 @@ namespace dddlib.Tests.Unit
             var equalityComparer = StringComparer.OrdinalIgnoreCase;
 
             // act
-            Action action = () => new EntityType(type, naturalKeySelector, equalityComparer);
+            Action action = () => new EntityType(type, naturalKeySelector, equalityComparer, new MappingCollection());
 
             // assert
             action.ShouldThrow<RuntimeException>();

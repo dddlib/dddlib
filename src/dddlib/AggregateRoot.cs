@@ -25,7 +25,7 @@ namespace dddlib
     {
         private readonly List<object> events = new List<object>();
 
-        private readonly Lazy<IMapProvider> mapProvider = new Lazy<IMapProvider>(() => new MapperProvider(), true);
+        private readonly Lazy<IMapperProvider> mapProvider = new Lazy<IMapperProvider>(() => new MapperProvider(), true);
         
         private readonly AggregateRootType runtimeType;
 
@@ -50,7 +50,7 @@ namespace dddlib
         /// </summary>
         /// <value>The mapping options.</value>
         [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1623:PropertySummaryDocumentationMustMatchAccessors", Justification = "Not here.")]
-        protected IMapProvider Map
+        protected IMapperProvider Map
         {
             get { return this.mapProvider.Value; }
         }
@@ -144,7 +144,7 @@ namespace dddlib
                 // or: cannot change the aggregate of type Person with the identity Bob as this aggregates lifecycle has ended.
                 throw new BusinessException(
                     string.Format(
-                        "Unable to apply the specified change of type '{0}' to the aggregate root of type '{1}' as this instance of the aggregate root no longer exists",
+                        "Unable to apply the specified change of type '{0}' to the aggregate root of type '{1}' as the lifecycle of this instance of the aggregate root has been terminated.",
                         @event.GetType(),
                         this.GetType()));
             }

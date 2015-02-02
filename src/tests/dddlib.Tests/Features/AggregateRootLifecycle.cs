@@ -32,7 +32,7 @@ namespace dddlib.Tests.Features
                 .When(() => action = () => subject.Update());
 
             "Then that action should throw an exception"
-                .Then(() => action.ShouldThrow<BusinessException>());
+                .Then(() => action.ShouldThrow<dddlib.BusinessException>());
         }
 
         private class Subject : AggregateRoot
