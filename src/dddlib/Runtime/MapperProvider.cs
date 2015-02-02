@@ -4,8 +4,6 @@
 
 namespace dddlib.Runtime
 {
-    using System;
-
     internal sealed class MapperProvider : IMapperProvider
     {
         public IEventMapper<T> Event<T>(T @event)

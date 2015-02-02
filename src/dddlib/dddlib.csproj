@@ -72,15 +72,12 @@
     <Compile Include="Sdk\Configuration\IValueObjectConfigurationProvider.cs" />
     <Compile Include="Sdk\Configuration\IConfigurationManager.cs" />
     <Compile Include="Sdk\TypeExtensions.cs" />
-    <Compile Include="Sdk\Configuration\AggregateRootConfigurationManager.cs" />
     <Compile Include="Sdk\Configuration\AggregateRootAnalyzer.cs" />
     <Compile Include="Sdk\Configuration\AggregateRootConfiguration.cs" />
     <Compile Include="Sdk\Configuration\AggregateRootConfigurationProvider.cs" />
     <Compile Include="Sdk\AggregateRootType.cs" />
-    <Compile Include="Sdk\Configuration\EntityConfigurationManager.cs" />
     <Compile Include="Sdk\Configuration\EntityConfigurationProvider.cs" />
     <Compile Include="Sdk\NaturalKeySelector.cs" />
-    <Compile Include="Sdk\Configuration\ValueObjectConfigurationManager.cs" />
     <Compile Include="Sdk\Configuration\ValueObjectConfigurationProvider.cs" />
     <Compile Include="Runtime\ValueObjectMapper.cs" />
     <Compile Include="Sdk\ValueObjectTypeFactory.cs" />
@@ -101,7 +98,6 @@
     <Compile Include="NaturalKey.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Runtime\Application.cs" />
-    <Compile Include="Sdk\Configuration\ConfigurationExtensions.cs" />
     <Compile Include="Sdk\DefaultEventDispatcher.cs" />
     <Compile Include="Configuration\IConfiguration.cs" />
     <Compile Include="Configuration\IBootstrapper.cs" />

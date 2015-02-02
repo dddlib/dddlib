@@ -22,6 +22,9 @@ namespace dddlib.Tests.Features
             The logic for the value object changes over time
             The re-creation fails upon reconstitution because the logic has changed
             The solution is... some sort of mapping...?
+
+            1. ensure invalid (eg. throws exception) configuration is handled correctly.
+            2. ensure missing mappings are handled correctly.
          */
 
         public class ValueObjectMappingWithEventCreation : AggregateRootObjectMappingValueObjects

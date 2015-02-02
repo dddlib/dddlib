@@ -14,16 +14,13 @@ namespace dddlib.Sdk.Configuration
 
         private readonly IValueObjectConfigurationProvider bootstrapper;
         private readonly IValueObjectConfigurationProvider typeAnalyzer;
-        private readonly ValueObjectConfigurationManager manager;
 
         public ValueObjectConfigurationProvider(
             IValueObjectConfigurationProvider bootstrapper, 
-            IValueObjectConfigurationProvider typeAnalyzer, 
-            ValueObjectConfigurationManager manager)
+            IValueObjectConfigurationProvider typeAnalyzer)
         {
             this.bootstrapper = bootstrapper;
             this.typeAnalyzer = typeAnalyzer;
-            this.manager = manager;
         }
 
         public ValueObjectConfiguration GetConfiguration(Type type)
@@ -64,7 +61,7 @@ namespace dddlib.Sdk.Configuration
             var typeConfiguration = this.GetTypeConfiguration(type);
             var baseTypeConfiguration = IsSubclassOfRawGeneric(typeof(ValueObject<>), type.BaseType) ? new ValueObjectConfiguration() : this.GetConfiguration(type.BaseType);
 
-            var config = this.manager.Merge(typeConfiguration, baseTypeConfiguration);
+            var config = ValueObjectConfiguration.Merge(typeConfiguration, baseTypeConfiguration);
             config.RuntimeType = type;
 
             return config;
@@ -75,7 +72,7 @@ namespace dddlib.Sdk.Configuration
             var bootstrapperConfiguration = this.bootstrapper.GetConfiguration(type);
             var typeAnalyzerConfiguration = this.typeAnalyzer.GetConfiguration(type);
 
-            return new[] { bootstrapperConfiguration, typeAnalyzerConfiguration }.Combine();
+            return ValueObjectConfiguration.Combine(bootstrapperConfiguration, typeAnalyzerConfiguration);
         }
     }
 }

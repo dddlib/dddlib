@@ -14,16 +14,13 @@ namespace dddlib.Sdk.Configuration
 
         private readonly IEntityConfigurationProvider bootstrapper;
         private readonly IEntityConfigurationProvider typeAnalyzer;
-        private readonly EntityConfigurationManager manager;
 
         public EntityConfigurationProvider(
             IEntityConfigurationProvider bootstrapper, 
-            IEntityConfigurationProvider typeAnalyzer, 
-            EntityConfigurationManager manager)
+            IEntityConfigurationProvider typeAnalyzer)
         {
             this.bootstrapper = bootstrapper;
             this.typeAnalyzer = typeAnalyzer;
-            this.manager = manager;
         }
 
         public EntityConfiguration GetConfiguration(Type type)
@@ -47,7 +44,7 @@ namespace dddlib.Sdk.Configuration
             var typeConfiguration = this.GetTypeConfiguration(type);
             var baseTypeConfiguration = type.BaseType == typeof(Entity) ? new EntityConfiguration() : this.GetConfiguration(type.BaseType);
 
-            var config = this.manager.Merge(typeConfiguration, baseTypeConfiguration);
+            var config = EntityConfiguration.Merge(typeConfiguration, baseTypeConfiguration);
             config.RuntimeType = type;
 
             return config;
@@ -58,7 +55,7 @@ namespace dddlib.Sdk.Configuration
             var bootstrapperConfiguration = this.bootstrapper.GetConfiguration(type);
             var typeAnalyzerConfiguration = this.typeAnalyzer.GetConfiguration(type);
 
-            return new[] { bootstrapperConfiguration, typeAnalyzerConfiguration }.Combine();
+            return EntityConfiguration.Combine(bootstrapperConfiguration, typeAnalyzerConfiguration);
         }
     }
 }

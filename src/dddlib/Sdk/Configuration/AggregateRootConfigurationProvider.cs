@@ -14,16 +14,13 @@ namespace dddlib.Sdk.Configuration
 
         private readonly IAggregateRootConfigurationProvider bootstrapper;
         private readonly IAggregateRootConfigurationProvider typeAnalyzer;
-        private readonly AggregateRootConfigurationManager manager;
 
         public AggregateRootConfigurationProvider(
             IAggregateRootConfigurationProvider bootstrapper, 
-            IAggregateRootConfigurationProvider typeAnalyzer, 
-            AggregateRootConfigurationManager manager)
+            IAggregateRootConfigurationProvider typeAnalyzer)
         {
             this.bootstrapper = bootstrapper;
             this.typeAnalyzer = typeAnalyzer;
-            this.manager = manager;
         }
 
         public AggregateRootConfiguration GetConfiguration(Type type)
@@ -47,7 +44,7 @@ namespace dddlib.Sdk.Configuration
             var typeConfiguration = this.GetTypeConfiguration(type);
             var baseTypeConfiguration = type.BaseType == typeof(AggregateRoot) ? new AggregateRootConfiguration() : this.GetConfiguration(type.BaseType);
 
-            var config = this.manager.Merge(typeConfiguration, baseTypeConfiguration);
+            var config = AggregateRootConfiguration.Merge(typeConfiguration, baseTypeConfiguration);
             config.RuntimeType = type;
 
             return config;
@@ -58,7 +55,7 @@ namespace dddlib.Sdk.Configuration
             var bootstrapperConfiguration = this.bootstrapper.GetConfiguration(type);
             var typeAnalyzerConfiguration = this.typeAnalyzer.GetConfiguration(type);
 
-            return new[] { bootstrapperConfiguration, typeAnalyzerConfiguration }.Combine();
+            return AggregateRootConfiguration.Combine(bootstrapperConfiguration, typeAnalyzerConfiguration);
         }
     }
 }

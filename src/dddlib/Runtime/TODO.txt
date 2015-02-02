@@ -1,2 +1,3 @@
 ﻿Change Application wire-up to decouple that from the app somehow
-Maybe make mapper provider public and move to SDK? - it would need to be configurable on the Application.cs. - vNext for this, I think.
+Make mapper provider public and move to SDK? - it would need to be configurable on the Application.cs. - to allow, for instance, automapper.
+rename all mapper classes to start with default.

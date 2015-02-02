@@ -116,8 +116,7 @@ namespace dddlib.Runtime
         {
             var bootstrapper = new Bootstrapper();
             var typeAnalyzer = new AggregateRootAnalyzer();
-            var manager = new AggregateRootConfigurationManager();
-            var configProvider = new AggregateRootConfigurationProvider(bootstrapper, typeAnalyzer, manager);
+            var configProvider = new AggregateRootConfigurationProvider(bootstrapper, typeAnalyzer);
             var configuration = configProvider.GetConfiguration(type);
             return new AggregateRootTypeFactory().Create(configuration);
         }
@@ -126,8 +125,7 @@ namespace dddlib.Runtime
         {
             var bootstrapper = new Bootstrapper();
             var typeAnalyzer = new EntityAnalyzer();
-            var manager = new EntityConfigurationManager();
-            var configProvider = new EntityConfigurationProvider(bootstrapper, typeAnalyzer, manager);
+            var configProvider = new EntityConfigurationProvider(bootstrapper, typeAnalyzer);
             var configuration = configProvider.GetConfiguration(type);
             return new EntityTypeFactory().Create(configuration);
         }
@@ -136,8 +134,7 @@ namespace dddlib.Runtime
         {
             var bootstrapper = new Bootstrapper();
             var typeAnalyzer = new ValueObjectAnalyzer();
-            var manager = new ValueObjectConfigurationManager();
-            var configProvider = new ValueObjectConfigurationProvider(bootstrapper, typeAnalyzer, manager);
+            var configProvider = new ValueObjectConfigurationProvider(bootstrapper, typeAnalyzer);
             var configuration = configProvider.GetConfiguration(type);
             return new ValueObjectTypeFactory().Create(configuration);
         }
