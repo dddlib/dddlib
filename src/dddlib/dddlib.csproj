@@ -70,7 +70,6 @@
     <Compile Include="GuardExtensions.cs" />
     <Compile Include="Sdk\ValueObjectEqualityComparer.cs" />
     <Compile Include="Sdk\Configuration\IValueObjectConfigurationProvider.cs" />
-    <Compile Include="Sdk\Configuration\IConfigurationManager.cs" />
     <Compile Include="Sdk\TypeExtensions.cs" />
     <Compile Include="Sdk\Configuration\AggregateRootAnalyzer.cs" />
     <Compile Include="Sdk\Configuration\AggregateRootConfiguration.cs" />

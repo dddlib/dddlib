@@ -25,11 +25,6 @@ namespace dddlib.Sdk.Configuration
 
         public ValueObjectConfiguration GetConfiguration(Type type)
         {
-            ////if (!typeof(ValueObject<>).IsAssignableFrom(type))
-            ////{
-            ////    throw new Exception("not an aggregate!");
-            ////}
-
             var runtimeTypeConfiguration = default(ValueObjectConfiguration);
             if (!this.config.TryGetValue(type, out runtimeTypeConfiguration))
             {

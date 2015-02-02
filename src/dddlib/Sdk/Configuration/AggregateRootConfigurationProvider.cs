@@ -25,11 +25,6 @@ namespace dddlib.Sdk.Configuration
 
         public AggregateRootConfiguration GetConfiguration(Type type)
         {
-            if (!typeof(AggregateRoot).IsAssignableFrom(type))
-            {
-                throw new Exception("not an aggregate!");
-            }
-
             var runtimeTypeConfiguration = default(AggregateRootConfiguration);
             if (!this.config.TryGetValue(type, out runtimeTypeConfiguration))
             {

@@ -25,11 +25,6 @@ namespace dddlib.Sdk.Configuration
 
         public EntityConfiguration GetConfiguration(Type type)
         {
-            if (!typeof(Entity).IsAssignableFrom(type))
-            {
-                throw new Exception("not an entity!");
-            }
-
             var runtimeTypeConfiguration = default(EntityConfiguration);
             if (!this.config.TryGetValue(type, out runtimeTypeConfiguration))
             {
