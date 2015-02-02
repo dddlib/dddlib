@@ -6,29 +6,27 @@ namespace dddlib.Sdk.Configuration
 {
     using System;
     using System.Collections.Generic;
-    using dddlib.Sdk;
 
     internal class AggregateRootConfigurationProvider : IAggregateRootConfigurationProvider
     {
-        private readonly Dictionary<Type, AggregateRootConfiguration> config = new Dictionary<Type, AggregateRootConfiguration>();
+        private readonly Dictionary<Type, AggregateRootConfiguration> cachedConfiguration = new Dictionary<Type, AggregateRootConfiguration>();
 
-        private readonly IAggregateRootConfigurationProvider bootstrapper;
-        private readonly IAggregateRootConfigurationProvider typeAnalyzer;
+        private readonly IBootstrapperProvider bootstrapperProvider;
 
-        public AggregateRootConfigurationProvider(
-            IAggregateRootConfigurationProvider bootstrapper, 
-            IAggregateRootConfigurationProvider typeAnalyzer)
+        public AggregateRootConfigurationProvider(IBootstrapperProvider bootstrapperProvider)
         {
-            this.bootstrapper = bootstrapper;
-            this.typeAnalyzer = typeAnalyzer;
+            Guard.Against.Null(() => bootstrapperProvider);
+
+            this.bootstrapperProvider = bootstrapperProvider;
         }
 
         public AggregateRootConfiguration GetConfiguration(Type type)
         {
+            // TODO  (Cameron): This should be included in the configuration collection class then injected in.
             var runtimeTypeConfiguration = default(AggregateRootConfiguration);
-            if (!this.config.TryGetValue(type, out runtimeTypeConfiguration))
+            if (!this.cachedConfiguration.TryGetValue(type, out runtimeTypeConfiguration))
             {
-                this.config.Add(type, runtimeTypeConfiguration = this.GetRuntimeTypeConfiguration(type));
+                this.cachedConfiguration.Add(type, runtimeTypeConfiguration = this.GetRuntimeTypeConfiguration(type));
             }
 
             return runtimeTypeConfiguration;
@@ -36,21 +34,20 @@ namespace dddlib.Sdk.Configuration
 
         private AggregateRootConfiguration GetRuntimeTypeConfiguration(Type type)
         {
-            var typeConfiguration = this.GetTypeConfiguration(type);
+            var bootstrapper = this.bootstrapperProvider.GetBootstrapper(type);
+
+            // TODO (Cameron): This should be an injected configuration collection.
+            var configuration = new BootstrapperConfiguration();
+
+            bootstrapper.Invoke(configuration);
+
+            var typeConfiguration = ((IAggregateRootConfigurationProvider)configuration).GetConfiguration(type);
             var baseTypeConfiguration = type.BaseType == typeof(AggregateRoot) ? new AggregateRootConfiguration() : this.GetConfiguration(type.BaseType);
 
             var config = AggregateRootConfiguration.Merge(typeConfiguration, baseTypeConfiguration);
             config.RuntimeType = type;
 
             return config;
-        }
-
-        private AggregateRootConfiguration GetTypeConfiguration(Type type)
-        {
-            var bootstrapperConfiguration = this.bootstrapper.GetConfiguration(type);
-            var typeAnalyzerConfiguration = this.typeAnalyzer.GetConfiguration(type);
-
-            return AggregateRootConfiguration.Combine(bootstrapperConfiguration, typeAnalyzerConfiguration);
         }
     }
 }

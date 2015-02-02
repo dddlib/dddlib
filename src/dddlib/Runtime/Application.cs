@@ -114,9 +114,8 @@ namespace dddlib.Runtime
 
         private static AggregateRootType CreateAggregateRootType(Type type)
         {
-            var bootstrapper = new Bootstrapper();
-            var typeAnalyzer = new AggregateRootAnalyzer();
-            var configProvider = new AggregateRootConfigurationProvider(bootstrapper, typeAnalyzer);
+            var bootstrapperProvider = new DefaultBootstrapperProvider();
+            var configProvider = new AggregateRootConfigurationProvider(bootstrapperProvider);
             var configuration = configProvider.GetConfiguration(type);
             return new AggregateRootTypeFactory().Create(configuration);
         }

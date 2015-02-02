@@ -27,19 +27,18 @@ namespace dddlib.Tests.Sdk
             "Given a new application"
                 .Given(() =>
                 {
+                    var bootstrapperProvider = new FeatureBootstrapperProvider();
                     new Application(
-                        t => CreateAggregateRootType(this.Bootstrap, t),
-                        t => CreateEntityType(this.Bootstrap, t),
-                        t => CreateValueObjectType(this.Bootstrap, t))
+                        t => CreateAggregateRootType(bootstrapperProvider, t),
+                        t => CreateEntityType(bootstrapperProvider.GetBootstrapper, t),
+                        t => CreateValueObjectType(bootstrapperProvider.GetBootstrapper, t))
                         .Using();
                 });
         }
 
-        private static AggregateRootType CreateAggregateRootType(Func<Type, Action<IConfiguration>> getBootstrapper, Type type)
+        private static AggregateRootType CreateAggregateRootType(IBootstrapperProvider bootstrapperProvider, Type type)
         {
-            var bootstrapper = new Bootstrapper(getBootstrapper);
-            var typeAnalyzer = new AggregateRootAnalyzer();
-            var configProvider = new AggregateRootConfigurationProvider(bootstrapper, typeAnalyzer);
+            var configProvider = new AggregateRootConfigurationProvider(bootstrapperProvider);
             var configuration = configProvider.GetConfiguration(type);
             return new AggregateRootTypeFactory().Create(configuration);
         }
@@ -62,26 +61,31 @@ namespace dddlib.Tests.Sdk
             return new ValueObjectTypeFactory().Create(configuration);
         }
 
-        // TODO (Cameron): This is all a bit of a hack.
-        private Action<IConfiguration> Bootstrap(Type type)
+        private class FeatureBootstrapperProvider : IBootstrapperProvider
         {
-            var bootstrappers = this.GetType().GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
-                .Where(t => t.GetInterfaces()
-                    .Any(@interface => @interface.IsGenericType && @interface.GetGenericTypeDefinition() == typeof(IBootstrap<>)))
-                .ToArray();
-
-            var bootstrapperType = bootstrappers.SingleOrDefault(t => t.GetInterfaces().Any(i => i.GetGenericArguments()[0] == type));
-            if (bootstrapperType == null)
+            // TODO (Cameron): This is all a bit of a hack.
+            public Action<IConfiguration> GetBootstrapper(Type type)
             {
-                return c => { };
+                var bootstrappers = type.DeclaringType == null
+                    ? new Type[0]
+                    : type.DeclaringType.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
+                        .Where(t => t.GetInterfaces()
+                            .Any(@interface => @interface.IsGenericType && @interface.GetGenericTypeDefinition() == typeof(IBootstrap<>)))
+                        .ToArray();
+
+                var bootstrapperType = bootstrappers.SingleOrDefault(t => t.GetInterfaces().Any(i => i.GetGenericArguments()[0] == type));
+                if (bootstrapperType == null)
+                {
+                    return c => { };
+                }
+
+                var bootstrapper = Activator.CreateInstance(bootstrapperType);
+                var method = bootstrapperType.GetMethod("Bootstrap");
+
+                Action<IConfiguration> action = (Action<IConfiguration>)Delegate.CreateDelegate(typeof(Action<IConfiguration>), bootstrapper, method);
+
+                return action; //// (Action<IConfiguration>)bootstrapper.Bootstrap;
             }
-
-            var bootstrapper = Activator.CreateInstance(bootstrapperType);
-            var method = bootstrapperType.GetMethod("Bootstrap");
-
-            Action<IConfiguration> action = (Action<IConfiguration>)Delegate.CreateDelegate(typeof(Action<IConfiguration>), bootstrapper, method);
-
-            return action; //// (Action<IConfiguration>)bootstrapper.Bootstrap;
         }
     }
 }
