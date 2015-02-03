@@ -22,7 +22,7 @@ namespace dddlib.Sdk.Configuration
 
         public AggregateRootConfiguration GetConfiguration(Type type)
         {
-            // TODO  (Cameron): This should be included in the configuration collection class then injected in.
+            // TODO (Cameron): This should be included in the configuration collection class then injected in.
             var runtimeTypeConfiguration = default(AggregateRootConfiguration);
             if (!this.cachedConfiguration.TryGetValue(type, out runtimeTypeConfiguration))
             {

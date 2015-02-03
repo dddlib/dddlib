@@ -8,8 +8,6 @@ namespace dddlib.Sdk.Configuration
     using System.Collections.Generic;
     using System.Linq.Expressions;
     using dddlib.Configuration;
-    using dddlib.Runtime;
-    using dddlib.Sdk;
 
     internal class AggregateRootConfigurationWrapper<T> : IAggregateRootConfigurationWrapper<T> 
         where T : AggregateRoot

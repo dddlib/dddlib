@@ -131,9 +131,8 @@ namespace dddlib.Runtime
 
         private static ValueObjectType CreateValueObjectType(Type type)
         {
-            var bootstrapper = new Bootstrapper();
-            var typeAnalyzer = new ValueObjectAnalyzer();
-            var configProvider = new ValueObjectConfigurationProvider(bootstrapper, typeAnalyzer);
+            var bootstrapperProvider = new DefaultBootstrapperProvider();
+            var configProvider = new ValueObjectConfigurationProvider(bootstrapperProvider);
             var configuration = configProvider.GetConfiguration(type);
             return new ValueObjectTypeFactory().Create(configuration);
         }

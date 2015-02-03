@@ -31,7 +31,7 @@ namespace dddlib.Tests.Sdk
                     new Application(
                         t => CreateAggregateRootType(bootstrapperProvider, t),
                         t => CreateEntityType(bootstrapperProvider.GetBootstrapper, t),
-                        t => CreateValueObjectType(bootstrapperProvider.GetBootstrapper, t))
+                        t => CreateValueObjectType(bootstrapperProvider, t))
                         .Using();
                 });
         }
@@ -52,11 +52,9 @@ namespace dddlib.Tests.Sdk
             return new EntityTypeFactory().Create(configuration);
         }
 
-        private static ValueObjectType CreateValueObjectType(Func<Type, Action<IConfiguration>> getBootstrapper, Type type)
+        private static ValueObjectType CreateValueObjectType(IBootstrapperProvider bootstrapperProvider, Type type)
         {
-            var bootstrapper = new Bootstrapper(getBootstrapper);
-            var typeAnalyzer = new ValueObjectAnalyzer();
-            var configProvider = new ValueObjectConfigurationProvider(bootstrapper, typeAnalyzer);
+            var configProvider = new ValueObjectConfigurationProvider(bootstrapperProvider);
             var configuration = configProvider.GetConfiguration(type);
             return new ValueObjectTypeFactory().Create(configuration);
         }
