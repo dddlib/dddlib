@@ -1,4 +1,4 @@
-﻿// <copyright file="EntityMapper.cs" company="dddlib contributors">
+﻿// <copyright file="DefaultValueObjectMapper.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -7,12 +7,12 @@ namespace dddlib.Runtime
     using System;
     using System.Globalization;
 
-    internal sealed class EntityMapper<TEntity> : IEntityMapper<TEntity>
-        where TEntity : Entity
+    internal sealed class DefaultValueObjectMapper<TValueObject> : IValueObjectMapper<TValueObject>
+        where TValueObject : ValueObject<TValueObject>
     {
-        private readonly TEntity source;
+        private readonly TValueObject source;
 
-        public EntityMapper(TEntity source)
+        public DefaultValueObjectMapper(TValueObject source)
         {
             Guard.Against.Null(() => source);
 
@@ -28,15 +28,15 @@ namespace dddlib.Runtime
 
         public void ToEvent<T>(T @event)
         {
-            var runtimeType = Application.Current.GetEntityType(this.source.GetType());
+            var runtimeType = Application.Current.GetValueObjectType(this.source.GetType());
 
-            var mapping = default(Action<TEntity, T>);
+            var mapping = default(Action<TValueObject, T>);
             if (!runtimeType.Mappings.TryGet(out mapping))
             {
                 throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        "The entity of type '{0}' has not been configured to map to an event of type '{1}'.",
+                        "The value object of type '{0}' has not been configured to map to an event of type '{1}'.",
                         this.source.GetType(),
                         typeof(T)));
             }
@@ -49,9 +49,9 @@ namespace dddlib.Runtime
             {
                 throw new RuntimeException(
                     string.Format(
-                        CultureInfo.InvariantCulture,
-                        "An exception occurred when mapping entity of type '{0}' to event of type '{1}'.",
-                        this.source.GetType(),
+                        CultureInfo.InvariantCulture, 
+                        "An exception occurred when mapping value object of type '{0}' to event of type '{1}'.", 
+                        this.source.GetType(), 
                         typeof(T)),
                     ex);
             }

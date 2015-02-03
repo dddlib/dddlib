@@ -1,4 +1,4 @@
-﻿// <copyright file="EventMapper.cs" company="dddlib contributors">
+﻿// <copyright file="DefaultEventMapper.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -7,11 +7,11 @@ namespace dddlib.Runtime
     using System;
     using System.Globalization;
 
-    internal sealed class EventMapper<TEvent> : IEventMapper<TEvent>
+    internal sealed class DefaultEventMapper<TEvent> : IEventMapper<TEvent>
     {
         private readonly TEvent source;
 
-        public EventMapper(TEvent source)
+        public DefaultEventMapper(TEvent source)
         {
             // NOTE (Cameron): Cannot use Guardian because there is no class type constraint.
             if (source == null)

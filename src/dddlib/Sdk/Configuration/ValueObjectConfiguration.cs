@@ -28,7 +28,7 @@ namespace dddlib.Sdk.Configuration
         /// Gets or sets the mappings for this value object.
         /// </summary>
         /// <value>The mappings for this value object.</value>
-        public MappingCollection Mappings { get; set; }
+        public MapperCollection Mappings { get; set; }
 
         /// <summary>
         /// Combines the specified primary and secondary value object configurations.

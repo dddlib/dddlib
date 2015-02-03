@@ -1,4 +1,4 @@
-﻿// <copyright file="ValueObjectEqualityComparer.cs" company="dddlib contributors">
+﻿// <copyright file="DefaultValueObjectEqualityComparer.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -11,7 +11,7 @@ namespace dddlib.Sdk
     using System.Linq.Expressions;
     using System.Reflection;
 
-    internal class ValueObjectEqualityComparer<T> : IEqualityComparer<ValueObject<T>>
+    internal class DefaultValueObjectEqualityComparer<T> : IEqualityComparer<ValueObject<T>>
         where T : ValueObject<T>
     {
         private static readonly MethodInfo CastToObjects = typeof(object).MakeEnumerableCastMethod();
@@ -20,7 +20,7 @@ namespace dddlib.Sdk
         private readonly Func<ValueObject<T>, ValueObject<T>, bool> equalsMethod;
         private readonly Func<ValueObject<T>, int> hashCodeMethod;
 
-        public ValueObjectEqualityComparer()
+        public DefaultValueObjectEqualityComparer()
         {
             var type = typeof(T);
 

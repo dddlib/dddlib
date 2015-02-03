@@ -16,7 +16,7 @@ namespace dddlib.Sdk
                 ? null
                 : new NaturalKeySelector(configuration.RuntimeType, configuration.NaturalKeyPropertyName);
 
-            return new EntityType(configuration.RuntimeType, naturalKeySelector, configuration.NaturalKeyStringEqualityComparer, configuration.Mappings ?? new MappingCollection());
+            return new EntityType(configuration.RuntimeType, naturalKeySelector, configuration.NaturalKeyStringEqualityComparer, configuration.Mappings ?? new MapperCollection());
         }
     }
 }

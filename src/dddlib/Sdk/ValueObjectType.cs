@@ -11,7 +11,7 @@ namespace dddlib.Sdk
 
     internal class ValueObjectType
     {
-        public ValueObjectType(Type runtimeType, object equalityComparer, MappingCollection mappings)
+        public ValueObjectType(Type runtimeType, object equalityComparer, MapperCollection mappings)
         {
             Guard.Against.Null(() => runtimeType);
             Guard.Against.Null(() => equalityComparer);
@@ -40,6 +40,6 @@ namespace dddlib.Sdk
 
         public object EqualityComparer { get; private set; }
 
-        public MappingCollection Mappings { get; set; }
+        public MapperCollection Mappings { get; set; }
     }
 }

@@ -22,7 +22,7 @@ namespace dddlib.Tests.Unit
             var equalityComparer = new SubjectEqualityComparer();
 
             // act (and assert)
-            var runtimeType = new ValueObjectType(type, equalityComparer, new MappingCollection());
+            var runtimeType = new ValueObjectType(type, equalityComparer, new MapperCollection());
         }
 
         [Fact]
@@ -33,7 +33,7 @@ namespace dddlib.Tests.Unit
             var equalityComparer = new SubjectEqualityComparer();
 
             // act
-            Action action = () => new ValueObjectType(type, equalityComparer, new MappingCollection());
+            Action action = () => new ValueObjectType(type, equalityComparer, new MapperCollection());
 
             // assert
             action.ShouldThrow<RuntimeException>();
@@ -47,7 +47,7 @@ namespace dddlib.Tests.Unit
             var equalityComparer = new object();
 
             // act
-            Action action = () => new ValueObjectType(type, equalityComparer, new MappingCollection());
+            Action action = () => new ValueObjectType(type, equalityComparer, new MapperCollection());
 
             // assert
             action.ShouldThrow<RuntimeException>();

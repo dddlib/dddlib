@@ -35,7 +35,7 @@ namespace dddlib.Sdk.Configuration
         /// Gets or sets the mappings for this entity.
         /// </summary>
         /// <value>The mappings for this entity.</value>
-        public MappingCollection Mappings { get; set; }
+        public MapperCollection Mappings { get; set; }
 
         /// <summary>
         /// Combines the specified primary and secondary entity configurations.

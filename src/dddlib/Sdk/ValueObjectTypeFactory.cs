@@ -15,12 +15,12 @@ namespace dddlib.Sdk
 
             var equalityComparer = configuration.EqualityComparer ?? CreateEqualityComparer(configuration.RuntimeType);
 
-            return new ValueObjectType(configuration.RuntimeType, equalityComparer, configuration.Mappings ?? new MappingCollection());
+            return new ValueObjectType(configuration.RuntimeType, equalityComparer, configuration.Mappings ?? new MapperCollection());
         }
 
         private static object CreateEqualityComparer(Type type)
         {
-            return Activator.CreateInstance(typeof(ValueObjectEqualityComparer<>).MakeGenericType(type));
+            return Activator.CreateInstance(typeof(DefaultValueObjectEqualityComparer<>).MakeGenericType(type));
         }
     }
 }

@@ -12,7 +12,7 @@ namespace dddlib.Sdk
     internal class EntityType
     {
         // TODO (Cameron): Mess.
-        public EntityType(Type runtimeType, NaturalKeySelector naturalKeySelector, IEqualityComparer<string> naturalKeyStringEqualityComparer, MappingCollection mappings)
+        public EntityType(Type runtimeType, NaturalKeySelector naturalKeySelector, IEqualityComparer<string> naturalKeyStringEqualityComparer, MapperCollection mappings)
         {
             Guard.Against.Null(() => runtimeType);
             Guard.Against.Null(() => mappings);
@@ -63,7 +63,7 @@ namespace dddlib.Sdk
 
         public IEqualityComparer<object> NaturalKeyEqualityComparer { get; private set; }
 
-        public MappingCollection Mappings { get; set; }
+        public MapperCollection Mappings { get; set; }
 
         private class StringObjectEqualityComparer : IEqualityComparer<object>
         {

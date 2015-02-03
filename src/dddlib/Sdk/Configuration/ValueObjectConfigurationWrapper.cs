@@ -23,7 +23,7 @@ namespace dddlib.Sdk.Configuration
             // TODO (Cameron): Not sure this belongs here...
             if (this.configuration.Mappings == null)
             {
-                this.configuration.Mappings = new MappingCollection();
+                this.configuration.Mappings = new MapperCollection();
             }
         }
 

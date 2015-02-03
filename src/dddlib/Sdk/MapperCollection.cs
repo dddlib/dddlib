@@ -1,4 +1,4 @@
-﻿// <copyright file="MappingCollection.cs" company="dddlib contributors">
+﻿// <copyright file="MapperCollection.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -10,7 +10,7 @@ namespace dddlib.Sdk
     /// <summary>
     /// Represents a collection of mappings.
     /// </summary>
-    public sealed class MappingCollection
+    public sealed class MapperCollection
     {
         private static readonly MappingIdComparer Comparer = new MappingIdComparer();
 

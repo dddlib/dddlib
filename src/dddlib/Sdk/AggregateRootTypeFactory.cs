@@ -4,6 +4,7 @@
 
 namespace dddlib.Sdk
 {
+    using dddlib.Runtime;
     using dddlib.Sdk.Configuration;
 
     internal class AggregateRootTypeFactory
