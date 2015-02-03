@@ -4,19 +4,20 @@
 
 namespace dddlib.Sdk
 {
+    using System;
     using dddlib.Sdk.Configuration;
 
     internal class EntityTypeFactory
     {
-        public EntityType Create(EntityConfiguration configuration)
+        public EntityType Create(Type type, EntityConfiguration configuration)
         {
             Guard.Against.Null(() => configuration);
 
             var naturalKeySelector = string.IsNullOrEmpty(configuration.NaturalKeyPropertyName)
                 ? null
-                : new NaturalKeySelector(configuration.RuntimeType, configuration.NaturalKeyPropertyName);
+                : new NaturalKeySelector(type, configuration.NaturalKeyPropertyName);
 
-            return new EntityType(configuration.RuntimeType, naturalKeySelector, configuration.NaturalKeyStringEqualityComparer, configuration.Mappings ?? new MapperCollection());
+            return new EntityType(type, naturalKeySelector, configuration.NaturalKeyStringEqualityComparer, configuration.Mappings ?? new MapperCollection());
         }
     }
 }

@@ -14,12 +14,6 @@ namespace dddlib.Sdk.Configuration
     public class EntityConfiguration
     {
         /// <summary>
-        /// Gets or sets the runtime type of the entity.
-        /// </summary>
-        /// <value>The runtime type of the entity.</value>
-        public Type RuntimeType { get; set; }
-
-        /// <summary>
         /// Gets or sets the name of the natural key property.
         /// </summary>
         /// <value>The name of the natural key property.</value>
@@ -58,12 +52,10 @@ namespace dddlib.Sdk.Configuration
                 throw new BusinessException("Configured natural key property names do not match.");
             }
 
-            // TODO (Cameron): Confirm runtime types match?
             // TODO (Cameron): Check natural key property names match.
             // TODO (Cameron): Ensure equality comparers match.
             return new EntityConfiguration
             {
-                RuntimeType = primaryConfiguration.RuntimeType ?? secondaryConfiguration.RuntimeType,
                 NaturalKeyPropertyName = primaryConfiguration.NaturalKeyPropertyName ?? secondaryConfiguration.NaturalKeyPropertyName,
                 NaturalKeyStringEqualityComparer = primaryConfiguration.NaturalKeyStringEqualityComparer ?? secondaryConfiguration.NaturalKeyStringEqualityComparer,
                 Mappings = primaryConfiguration.Mappings ?? secondaryConfiguration.Mappings, // TODO (Cameron): This is wrong.
@@ -81,10 +73,8 @@ namespace dddlib.Sdk.Configuration
             Guard.Against.Null(() => typeConfiguration);
             Guard.Against.Null(() => baseTypeConfiguration);
 
-            // TODO (Cameron): Confirm runtime types match?
             return new EntityConfiguration
             {
-                RuntimeType = typeConfiguration.RuntimeType,
                 NaturalKeyPropertyName = typeConfiguration.NaturalKeyPropertyName ?? baseTypeConfiguration.NaturalKeyPropertyName,
                 NaturalKeyStringEqualityComparer = typeConfiguration.NaturalKeyStringEqualityComparer ?? baseTypeConfiguration.NaturalKeyStringEqualityComparer,
                 Mappings = typeConfiguration.Mappings ?? baseTypeConfiguration.Mappings, // TODO (Cameron): Not right.

@@ -58,7 +58,6 @@ namespace dddlib.Sdk.Configuration
             return new EntityConfiguration
             {
                 NaturalKeyPropertyName = naturalKey.Name,
-                RuntimeType = type,
             };
         }
     }

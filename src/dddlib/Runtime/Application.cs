@@ -117,7 +117,7 @@ namespace dddlib.Runtime
             var bootstrapperProvider = new DefaultBootstrapperProvider();
             var configProvider = new AggregateRootConfigurationProvider(bootstrapperProvider);
             var configuration = configProvider.GetConfiguration(type);
-            return new AggregateRootTypeFactory().Create(configuration);
+            return new AggregateRootTypeFactory().Create(type, configuration);
         }
 
         private static EntityType CreateEntityType(Type type)
@@ -126,7 +126,7 @@ namespace dddlib.Runtime
             var typeAnalyzer = new EntityAnalyzer();
             var configProvider = new EntityConfigurationProvider(bootstrapperProvider, typeAnalyzer);
             var configuration = configProvider.GetConfiguration(type);
-            return new EntityTypeFactory().Create(configuration);
+            return new EntityTypeFactory().Create(type, configuration);
         }
 
         private static ValueObjectType CreateValueObjectType(Type type)
@@ -134,7 +134,7 @@ namespace dddlib.Runtime
             var bootstrapperProvider = new DefaultBootstrapperProvider();
             var configProvider = new ValueObjectConfigurationProvider(bootstrapperProvider);
             var configuration = configProvider.GetConfiguration(type);
-            return new ValueObjectTypeFactory().Create(configuration);
+            return new ValueObjectTypeFactory().Create(type, configuration);
         }
 
         private T GetType<T>(Type type, IDictionary<Type, T> runtimeTypes, Func<Type, T> factory)

@@ -9,13 +9,13 @@ namespace dddlib.Sdk
 
     internal class ValueObjectTypeFactory
     {
-        public ValueObjectType Create(ValueObjectConfiguration configuration)
+        public ValueObjectType Create(Type type, ValueObjectConfiguration configuration)
         {
             Guard.Against.Null(() => configuration);
 
-            var equalityComparer = configuration.EqualityComparer ?? CreateEqualityComparer(configuration.RuntimeType);
+            var equalityComparer = configuration.EqualityComparer ?? CreateEqualityComparer(type);
 
-            return new ValueObjectType(configuration.RuntimeType, equalityComparer, configuration.Mappings ?? new MapperCollection());
+            return new ValueObjectType(type, equalityComparer, configuration.Mappings ?? new MapperCollection());
         }
 
         private static object CreateEqualityComparer(Type type)

@@ -60,10 +60,7 @@ namespace dddlib.Sdk.Configuration
             var typeConfiguration = configuration.GetValueObjectConfiguration(type);
             var baseTypeConfiguration = IsSubclassOfRawGeneric(typeof(ValueObject<>), type.BaseType) ? new ValueObjectConfiguration() : this.GetConfiguration(type.BaseType);
 
-            var config = ValueObjectConfiguration.Merge(typeConfiguration, baseTypeConfiguration);
-            config.RuntimeType = type;
-
-            return config;
+            return ValueObjectConfiguration.Merge(typeConfiguration, baseTypeConfiguration);
         }
     }
 }

@@ -12,12 +12,6 @@ namespace dddlib.Sdk.Configuration
     public class ValueObjectConfiguration
     {
         /// <summary>
-        /// Gets or sets the runtime type of the value object.
-        /// </summary>
-        /// <value>The runtime type of the value object.</value>
-        public Type RuntimeType { get; set; }
-
-        /// <summary>
         /// Gets or sets the equality comparer.
         /// </summary>
         /// <value>The equality comparer.</value>
@@ -41,10 +35,8 @@ namespace dddlib.Sdk.Configuration
             Guard.Against.Null(() => typeConfiguration);
             Guard.Against.Null(() => baseTypeConfiguration);
 
-            // TODO (Cameron): Confirm runtime types match?
             return new ValueObjectConfiguration
             {
-                RuntimeType = typeConfiguration.RuntimeType,
                 EqualityComparer = typeConfiguration.EqualityComparer,
                 Mappings = typeConfiguration.Mappings, // TODO (Cameron): Is this wrong?
             };

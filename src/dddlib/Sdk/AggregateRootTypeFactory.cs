@@ -4,18 +4,18 @@
 
 namespace dddlib.Sdk
 {
-    using dddlib.Runtime;
+    using System;
     using dddlib.Sdk.Configuration;
 
     internal class AggregateRootTypeFactory
     {
-        public AggregateRootType Create(AggregateRootConfiguration configuration)
+        public AggregateRootType Create(Type type, AggregateRootConfiguration configuration)
         {
             Guard.Against.Null(() => configuration);
 
-            var eventDispatcher = new DefaultEventDispatcher(configuration.RuntimeType);
+            var eventDispatcher = new DefaultEventDispatcher(type);
 
-            return new AggregateRootType(configuration.RuntimeType, configuration.UninitializedFactory, eventDispatcher);
+            return new AggregateRootType(type, configuration.UninitializedFactory, eventDispatcher);
         }
     }
 }

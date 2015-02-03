@@ -44,10 +44,7 @@ namespace dddlib.Sdk.Configuration
             var typeConfiguration = configuration.GetAggregateRootConfiguration(type);
             var baseTypeConfiguration = type.BaseType == typeof(AggregateRoot) ? new AggregateRootConfiguration() : this.GetConfiguration(type.BaseType);
 
-            var config = AggregateRootConfiguration.Merge(typeConfiguration, baseTypeConfiguration);
-            config.RuntimeType = type;
-
-            return config;
+            return AggregateRootConfiguration.Merge(typeConfiguration, baseTypeConfiguration);
         }
     }
 }
