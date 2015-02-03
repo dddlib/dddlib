@@ -122,9 +122,9 @@ namespace dddlib.Runtime
 
         private static EntityType CreateEntityType(Type type)
         {
-            var bootstrapper = new Bootstrapper();
+            var bootstrapperProvider = new DefaultBootstrapperProvider();
             var typeAnalyzer = new EntityAnalyzer();
-            var configProvider = new EntityConfigurationProvider(bootstrapper, typeAnalyzer);
+            var configProvider = new EntityConfigurationProvider(bootstrapperProvider, typeAnalyzer);
             var configuration = configProvider.GetConfiguration(type);
             return new EntityTypeFactory().Create(configuration);
         }

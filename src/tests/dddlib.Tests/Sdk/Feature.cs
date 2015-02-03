@@ -30,7 +30,7 @@ namespace dddlib.Tests.Sdk
                     var bootstrapperProvider = new FeatureBootstrapperProvider();
                     new Application(
                         t => CreateAggregateRootType(bootstrapperProvider, t),
-                        t => CreateEntityType(bootstrapperProvider.GetBootstrapper, t),
+                        t => CreateEntityType(bootstrapperProvider, t),
                         t => CreateValueObjectType(bootstrapperProvider, t))
                         .Using();
                 });
@@ -43,11 +43,10 @@ namespace dddlib.Tests.Sdk
             return new AggregateRootTypeFactory().Create(configuration);
         }
 
-        private static EntityType CreateEntityType(Func<Type, Action<IConfiguration>> getBootstrapper, Type type)
+        private static EntityType CreateEntityType(IBootstrapperProvider bootstrapperProvider, Type type)
         {
-            var bootstrapper = new Bootstrapper(getBootstrapper);
             var typeAnalyzer = new EntityAnalyzer();
-            var configProvider = new EntityConfigurationProvider(bootstrapper, typeAnalyzer);
+            var configProvider = new EntityConfigurationProvider(bootstrapperProvider, typeAnalyzer);
             var configuration = configProvider.GetConfiguration(type);
             return new EntityTypeFactory().Create(configuration);
         }

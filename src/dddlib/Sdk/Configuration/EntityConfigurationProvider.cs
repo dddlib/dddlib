@@ -6,20 +6,20 @@ namespace dddlib.Sdk.Configuration
 {
     using System;
     using System.Collections.Generic;
-    using dddlib.Sdk;
 
     internal class EntityConfigurationProvider : IEntityConfigurationProvider
     {
         private readonly Dictionary<Type, EntityConfiguration> config = new Dictionary<Type, EntityConfiguration>();
 
-        private readonly IEntityConfigurationProvider bootstrapper;
-        private readonly IEntityConfigurationProvider typeAnalyzer;
+        private readonly IBootstrapperProvider bootstrapperProvider;
+        private readonly EntityAnalyzer typeAnalyzer;
 
-        public EntityConfigurationProvider(
-            IEntityConfigurationProvider bootstrapper, 
-            IEntityConfigurationProvider typeAnalyzer)
+        public EntityConfigurationProvider(IBootstrapperProvider bootstrapperProvider, EntityAnalyzer typeAnalyzer)
         {
-            this.bootstrapper = bootstrapper;
+            Guard.Against.Null(() => bootstrapperProvider);
+            Guard.Against.Null(() => typeAnalyzer);
+
+            this.bootstrapperProvider = bootstrapperProvider;
             this.typeAnalyzer = typeAnalyzer;
         }
 
@@ -36,6 +36,13 @@ namespace dddlib.Sdk.Configuration
 
         private EntityConfiguration GetRuntimeTypeConfiguration(Type type)
         {
+            var bootstrapper = this.bootstrapperProvider.GetBootstrapper(type);
+
+            // TODO (Cameron): This should be an injected configuration collection.
+            var configuration = new BootstrapperConfiguration();
+
+            bootstrapper.Invoke(configuration);
+
             var typeConfiguration = this.GetTypeConfiguration(type);
             var baseTypeConfiguration = type.BaseType == typeof(Entity) ? new EntityConfiguration() : this.GetConfiguration(type.BaseType);
 
@@ -47,7 +54,14 @@ namespace dddlib.Sdk.Configuration
 
         private EntityConfiguration GetTypeConfiguration(Type type)
         {
-            var bootstrapperConfiguration = this.bootstrapper.GetConfiguration(type);
+            var bootstrapper = this.bootstrapperProvider.GetBootstrapper(type);
+
+            // TODO (Cameron): This should be an injected configuration collection.
+            var configuration = new BootstrapperConfiguration();
+
+            bootstrapper.Invoke(configuration);
+
+            var bootstrapperConfiguration = ((IEntityConfigurationProvider)configuration).GetConfiguration(type);
             var typeAnalyzerConfiguration = this.typeAnalyzer.GetConfiguration(type);
 
             return EntityConfiguration.Combine(bootstrapperConfiguration, typeAnalyzerConfiguration);

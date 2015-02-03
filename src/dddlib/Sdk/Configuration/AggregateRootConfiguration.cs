@@ -24,27 +24,6 @@ namespace dddlib.Sdk.Configuration
         public Delegate UninitializedFactory { get; set; }
 
         /// <summary>
-        /// Combines the specified primary and secondary aggregate root configurations.
-        /// </summary>
-        /// <param name="primaryConfiguration">The primary configuration.</param>
-        /// <param name="secondaryConfiguration">The secondary configuration.</param>
-        /// <returns>The combined aggregate root configuration.</returns>
-        public static AggregateRootConfiguration Combine(
-            AggregateRootConfiguration primaryConfiguration, 
-            AggregateRootConfiguration secondaryConfiguration)
-        {
-            Guard.Against.Null(() => primaryConfiguration);
-            Guard.Against.Null(() => secondaryConfiguration);
-
-            // TODO (Cameron): Confirm runtime types match?
-            return new AggregateRootConfiguration
-            {
-                RuntimeType = primaryConfiguration.RuntimeType ?? secondaryConfiguration.RuntimeType,
-                UninitializedFactory = primaryConfiguration.UninitializedFactory ?? secondaryConfiguration.UninitializedFactory,
-            };
-        }
-
-        /// <summary>
         /// Merges the specified type and base type aggregate root configurations.
         /// </summary>
         /// <param name="typeConfiguration">The type configuration.</param>

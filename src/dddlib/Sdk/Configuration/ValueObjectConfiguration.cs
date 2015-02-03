@@ -31,27 +31,6 @@ namespace dddlib.Sdk.Configuration
         public MapperCollection Mappings { get; set; }
 
         /// <summary>
-        /// Combines the specified primary and secondary value object configurations.
-        /// </summary>
-        /// <param name="primaryConfiguration">The primary configuration.</param>
-        /// <param name="secondaryConfiguration">The secondary configuration.</param>
-        /// <returns>The combined value object configuration.</returns>
-        public static ValueObjectConfiguration Combine(ValueObjectConfiguration primaryConfiguration, ValueObjectConfiguration secondaryConfiguration)
-        {
-            Guard.Against.Null(() => primaryConfiguration);
-            Guard.Against.Null(() => secondaryConfiguration);
-
-            // TODO (Cameron): Confirm runtime types match?
-            // TODO (Cameron): Ensure equality comparers match.
-            return new ValueObjectConfiguration
-            {
-                RuntimeType = primaryConfiguration.RuntimeType ?? secondaryConfiguration.RuntimeType,
-                EqualityComparer = primaryConfiguration.EqualityComparer ?? secondaryConfiguration.EqualityComparer,
-                Mappings = primaryConfiguration.Mappings ?? secondaryConfiguration.Mappings, // TODO (Cameron): This is wrong.
-            };
-        }
-
-        /// <summary>
         /// Merges the specified type and base type value object configurations.
         /// </summary>
         /// <param name="typeConfiguration">The type configuration.</param>
