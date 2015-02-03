@@ -7,7 +7,7 @@ namespace dddlib.Sdk.Configuration
     using System;
     using System.Collections.Generic;
 
-    internal class AggregateRootConfigurationProvider : IAggregateRootConfigurationProvider
+    internal class AggregateRootConfigurationProvider
     {
         private readonly Dictionary<Type, AggregateRootConfiguration> cachedConfiguration = new Dictionary<Type, AggregateRootConfiguration>();
 
@@ -41,7 +41,7 @@ namespace dddlib.Sdk.Configuration
 
             bootstrapper.Invoke(configuration);
 
-            var typeConfiguration = ((IAggregateRootConfigurationProvider)configuration).GetConfiguration(type);
+            var typeConfiguration = configuration.GetAggregateRootConfiguration(type);
             var baseTypeConfiguration = type.BaseType == typeof(AggregateRoot) ? new AggregateRootConfiguration() : this.GetConfiguration(type.BaseType);
 
             var config = AggregateRootConfiguration.Merge(typeConfiguration, baseTypeConfiguration);

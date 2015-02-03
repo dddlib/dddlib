@@ -7,7 +7,7 @@ namespace dddlib.Sdk.Configuration
     using System;
     using System.Collections.Generic;
 
-    internal class ValueObjectConfigurationProvider : IValueObjectConfigurationProvider
+    internal class ValueObjectConfigurationProvider
     {
         private readonly Dictionary<Type, ValueObjectConfiguration> config = new Dictionary<Type, ValueObjectConfiguration>();
 
@@ -57,7 +57,7 @@ namespace dddlib.Sdk.Configuration
 
             bootstrapper.Invoke(configuration);
 
-            var typeConfiguration = ((IValueObjectConfigurationProvider)configuration).GetConfiguration(type);
+            var typeConfiguration = configuration.GetValueObjectConfiguration(type);
             var baseTypeConfiguration = IsSubclassOfRawGeneric(typeof(ValueObject<>), type.BaseType) ? new ValueObjectConfiguration() : this.GetConfiguration(type.BaseType);
 
             var config = ValueObjectConfiguration.Merge(typeConfiguration, baseTypeConfiguration);

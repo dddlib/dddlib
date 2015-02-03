@@ -10,7 +10,7 @@ namespace dddlib.Sdk.Configuration
     using System.Reflection;
     using dddlib.Sdk;
 
-    internal class EntityAnalyzer : IEntityConfigurationProvider
+    internal class EntityAnalyzer
     {
         public EntityConfiguration GetConfiguration(Type type)
         {

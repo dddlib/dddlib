@@ -62,8 +62,6 @@
     <Compile Include="Sdk\DefaultMapperProvider.cs" />
     <Compile Include="Sdk\AggregateRootTypeFactory.cs" />
     <Compile Include="Sdk\EntityTypeFactory.cs" />
-    <Compile Include="Sdk\Configuration\IEntityConfigurationProvider.cs" />
-    <Compile Include="Sdk\Configuration\IAggregateRootConfigurationProvider.cs" />
     <Compile Include="Sdk\Configuration\CustomGuardExtensions.cs" />
     <Compile Include="Sdk\Configuration\ValueObjectConfigurationWrapper.cs" />
     <Compile Include="Configuration\IValueObjectConfigurationWrapper.cs" />
@@ -71,7 +69,6 @@
     <Compile Include="Guard.cs" />
     <Compile Include="GuardExtensions.cs" />
     <Compile Include="Sdk\DefaultValueObjectEqualityComparer.cs" />
-    <Compile Include="Sdk\Configuration\IValueObjectConfigurationProvider.cs" />
     <Compile Include="Sdk\TypeExtensions.cs" />
     <Compile Include="Sdk\Configuration\AggregateRootConfiguration.cs" />
     <Compile Include="Sdk\Configuration\AggregateRootConfigurationProvider.cs" />
@@ -83,7 +80,6 @@
     <Compile Include="Sdk\ValueObjectTypeFactory.cs" />
     <Compile Include="Sdk\ValueObjectType.cs" />
     <Compile Include="Sdk\EntityType.cs" />
-    <Compile Include="Sdk\Configuration\Bootstrapper.cs" />
     <Compile Include="Sdk\Configuration\EntityAnalyzer.cs" />
     <Compile Include="Sdk\Configuration\EntityConfiguration.cs" />
     <Compile Include="Sdk\Configuration\ValueObjectConfiguration.cs" />

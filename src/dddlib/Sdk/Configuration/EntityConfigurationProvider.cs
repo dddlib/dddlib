@@ -7,7 +7,7 @@ namespace dddlib.Sdk.Configuration
     using System;
     using System.Collections.Generic;
 
-    internal class EntityConfigurationProvider : IEntityConfigurationProvider
+    internal class EntityConfigurationProvider
     {
         private readonly Dictionary<Type, EntityConfiguration> config = new Dictionary<Type, EntityConfiguration>();
 
@@ -61,7 +61,7 @@ namespace dddlib.Sdk.Configuration
 
             bootstrapper.Invoke(configuration);
 
-            var bootstrapperConfiguration = ((IEntityConfigurationProvider)configuration).GetConfiguration(type);
+            var bootstrapperConfiguration = configuration.GetEntityConfiguration(type);
             var typeAnalyzerConfiguration = this.typeAnalyzer.GetConfiguration(type);
 
             return EntityConfiguration.Combine(bootstrapperConfiguration, typeAnalyzerConfiguration);

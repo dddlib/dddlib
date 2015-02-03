@@ -10,11 +10,7 @@ namespace dddlib.Sdk.Configuration
     using dddlib.Runtime;
     using dddlib.Sdk;
 
-    internal class BootstrapperConfiguration : 
-        IConfiguration,
-        IAggregateRootConfigurationProvider,
-        IEntityConfigurationProvider,
-        IValueObjectConfigurationProvider
+    internal class BootstrapperConfiguration : IConfiguration
     {
         private Dictionary<Type, AggregateRootConfiguration> aggregateRootConfigurations = new Dictionary<Type, AggregateRootConfiguration>();
         private Dictionary<Type, EntityConfiguration> entityConfigurations = new Dictionary<Type, EntityConfiguration>();
@@ -54,21 +50,21 @@ namespace dddlib.Sdk.Configuration
         }
 
         // TODO (Cameron): Confirm type is valid.
-        AggregateRootConfiguration IAggregateRootConfigurationProvider.GetConfiguration(Type type)
+        public AggregateRootConfiguration GetAggregateRootConfiguration(Type type)
         {
             this.aggregateRootConfigurations.TryGetValue(type, out var configuration);
 
             return configuration ?? new AggregateRootConfiguration();
         }
 
-        EntityConfiguration IEntityConfigurationProvider.GetConfiguration(Type type)
+        public EntityConfiguration GetEntityConfiguration(Type type)
         {
             this.entityConfigurations.TryGetValue(type, out var configuration);
 
             return configuration ?? new EntityConfiguration();
         }
 
-        ValueObjectConfiguration IValueObjectConfigurationProvider.GetConfiguration(Type type)
+        public ValueObjectConfiguration GetValueObjectConfiguration(Type type)
         {
             this.valueObjectConfigurations.TryGetValue(type, out var configuration);
 
