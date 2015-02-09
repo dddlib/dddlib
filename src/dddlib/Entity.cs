@@ -14,7 +14,7 @@ namespace dddlib
     //// TODO (Cameron): Ensure that an entity can be created without a natural key.
     public abstract class Entity
     {
-        private readonly EntityType runtimeType;
+        private readonly IEntityType runtimeType;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Entity"/> class.

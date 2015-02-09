@@ -20,13 +20,13 @@ namespace dddlib.Runtime
         private static readonly List<Application> Applications = new List<Application>();
         private static readonly object SyncLock = new object();
 
-        private readonly Dictionary<Type, AggregateRootType> aggregateRootTypes = new Dictionary<Type, AggregateRootType>();
-        private readonly Dictionary<Type, EntityType> entityTypes = new Dictionary<Type, EntityType>();
-        private readonly Dictionary<Type, ValueObjectType> valueObjectTypes = new Dictionary<Type, ValueObjectType>();
+        private readonly Dictionary<Type, IAggregateRootType> aggregateRootTypes = new Dictionary<Type, IAggregateRootType>();
+        private readonly Dictionary<Type, IEntityType> entityTypes = new Dictionary<Type, IEntityType>();
+        private readonly Dictionary<Type, IValueObjectType> valueObjectTypes = new Dictionary<Type, IValueObjectType>();
 
-        private readonly Func<Type, AggregateRootType> aggregateRootTypeFactory;
-        private readonly Func<Type, EntityType> entityTypeFactory;
-        private readonly Func<Type, ValueObjectType> valueObjectTypeFactory;
+        private readonly Func<Type, IAggregateRootType> aggregateRootTypeFactory;
+        private readonly Func<Type, IEntityType> entityTypeFactory;
+        private readonly Func<Type, IValueObjectType> valueObjectTypeFactory;
 
         private bool isDisposed = false;
 
@@ -39,9 +39,9 @@ namespace dddlib.Runtime
         }
 
         internal Application(
-            Func<Type, AggregateRootType> aggregateRootTypeFactory,
-            Func<Type, EntityType> entityTypeFactory,
-            Func<Type, ValueObjectType> valueObjectTypeFactory)
+            Func<Type, IAggregateRootType> aggregateRootTypeFactory,
+            Func<Type, IEntityType> entityTypeFactory,
+            Func<Type, IValueObjectType> valueObjectTypeFactory)
         {
             Guard.Against.Null(() => aggregateRootTypeFactory);
             Guard.Against.Null(() => entityTypeFactory);
@@ -97,22 +97,22 @@ namespace dddlib.Runtime
             }
         }
 
-        internal AggregateRootType GetAggregateRootType(Type type)
+        internal IAggregateRootType GetAggregateRootType(Type type)
         {
             return this.GetType(type, this.aggregateRootTypes, this.aggregateRootTypeFactory);
         }
 
-        internal EntityType GetEntityType(Type type)
+        internal IEntityType GetEntityType(Type type)
         {
             return this.GetType(type, this.entityTypes, this.entityTypeFactory);
         }
 
-        internal ValueObjectType GetValueObjectType(Type type)
+        internal IValueObjectType GetValueObjectType(Type type)
         {
             return this.GetType(type, this.valueObjectTypes, this.valueObjectTypeFactory);
         }
 
-        private static AggregateRootType CreateAggregateRootType(Type type)
+        private static IAggregateRootType CreateAggregateRootType(Type type)
         {
             var bootstrapperProvider = new DefaultBootstrapperProvider();
             var configProvider = new AggregateRootConfigurationProvider(bootstrapperProvider);
@@ -129,7 +129,7 @@ namespace dddlib.Runtime
             return new EntityTypeFactory().Create(type, configuration);
         }
 
-        private static ValueObjectType CreateValueObjectType(Type type)
+        private static IValueObjectType CreateValueObjectType(Type type)
         {
             var bootstrapperProvider = new DefaultBootstrapperProvider();
             var configProvider = new ValueObjectConfigurationProvider(bootstrapperProvider);

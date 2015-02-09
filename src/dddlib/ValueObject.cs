@@ -23,7 +23,7 @@ namespace dddlib
     public abstract class ValueObject<T> : IEquatable<T>
         where T : ValueObject<T>
     {
-        private readonly ValueObjectType runtimeType;
+        private readonly IValueObjectType runtimeType;
         private readonly IEqualityComparer<T> equalityComparer;
         private readonly T valueObject;
 

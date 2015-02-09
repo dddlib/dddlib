@@ -9,7 +9,7 @@ namespace dddlib.Sdk
     using System.Globalization;
     using dddlib.Runtime;
 
-    internal class ValueObjectType
+    internal class ValueObjectType : IValueObjectType
     {
         public ValueObjectType(Type runtimeType, object equalityComparer, MapperCollection mappings)
         {

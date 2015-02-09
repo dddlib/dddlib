@@ -27,7 +27,7 @@ namespace dddlib
 
         private readonly Lazy<IMapperProvider> mapProvider = new Lazy<IMapperProvider>(() => new DefaultMapperProvider(), true);
         
-        private readonly AggregateRootType runtimeType;
+        private readonly IAggregateRootType runtimeType;
 
         private string state;
         private bool isDestroyed;

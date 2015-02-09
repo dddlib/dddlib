@@ -9,7 +9,7 @@ namespace dddlib.Sdk
     using System.Globalization;
     using dddlib.Runtime;
 
-    internal class EntityType
+    internal class EntityType : IEntityType
     {
         // TODO (Cameron): Mess.
         public EntityType(Type runtimeType, NaturalKeySelector naturalKeySelector, IEqualityComparer<string> naturalKeyStringEqualityComparer, MapperCollection mappings)

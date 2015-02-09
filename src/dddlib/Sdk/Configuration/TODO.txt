@@ -1,0 +1,25 @@
+﻿1. configuration must be cached because we may require the same config twice eg. base class config
+
+
+n. Refactor: runtime type and type config should be the same thing! headfuck.
+
+config domain:
+
+// try get existing cached value (cached inside factory/provider?), else
+var config = new EntityConfig(type);
+
+// pass config to app
+var app = new ConfigSubSystem(); // should maybe be static
+app.Execute(config);
+
+// get config back from app and use in factory (this should all happen in the factory)
+var runtimeType = new EntityType(/* info from config */);
+
+
+config app:
+
+// invoked with config eg. var config = new EntityConfig(type);
+
+// bootstrap
+
+// anything else...?

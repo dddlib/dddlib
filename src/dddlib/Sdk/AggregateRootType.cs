@@ -8,7 +8,7 @@ namespace dddlib.Sdk
     using System.Globalization;
     using dddlib.Runtime;
 
-    internal class AggregateRootType
+    internal class AggregateRootType : IAggregateRootType
     {
         public AggregateRootType(Type runtimeType, Delegate uninitializedFactory, IEventDispatcher eventDispatcher)
         {
