@@ -40,16 +40,13 @@ namespace dddlib.Sdk.Configuration
             }
 
             var parameter = Expression.Parameter(type, "entity");
-            var property = Expression.Property(parameter, naturalKey);
-            var funcType = typeof(Func<,>).MakeGenericType(type, naturalKey.PropertyType);
+            var property = Expression.Convert(Expression.Property(parameter, naturalKey), typeof(object));
+            var funcType = typeof(Func<,>).MakeGenericType(type, typeof(object)); //// naturalKey.PropertyType);
             var lambda = Expression.Lambda(funcType, property, parameter);
 
-            ParameterExpression sourceParameter = Expression.Parameter(typeof(object), "source");
-            var result = Expression.Lambda<Func<object, object>>(
-                Expression.Invoke(
-                    lambda,
-                    Expression.Convert(sourceParameter, type)),
-                sourceParameter);
+            var sourceParameter = Expression.Parameter(typeof(object), "source");
+            var body = Expression.Invoke(lambda, Expression.Convert(sourceParameter, type));
+            var result = Expression.Lambda<Func<object, object>>(body, sourceParameter);
 
             ////var function = Delegate.CreateDelegate(typeof(Func<object, object>), type, naturalKey);;
             var function = result.Compile() as Func<object, object>;

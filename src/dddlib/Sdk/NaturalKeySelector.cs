@@ -49,8 +49,8 @@ namespace dddlib.Sdk
             this.returnType = naturalKey.PropertyType;
 
             var parameter = Expression.Parameter(runtimeType, "entity");
-            var property = Expression.Property(parameter, naturalKey);
-            var funcType = typeof(Func<,>).MakeGenericType(runtimeType, naturalKey.PropertyType);
+            var property = Expression.Convert(Expression.Property(parameter, naturalKey), typeof(object));
+            var funcType = typeof(Func<,>).MakeGenericType(runtimeType, typeof(object)); //// naturalKey.PropertyType);
             var lambda = Expression.Lambda(funcType, property, parameter);
             var sourceParameter = Expression.Parameter(typeof(object), "source");
             var result = Expression.Lambda<Func<object, object>>(

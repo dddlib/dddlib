@@ -120,7 +120,7 @@ namespace dddlib.Runtime
             return new AggregateRootTypeFactory().Create(type, configuration);
         }
 
-        private static EntityType CreateEntityType(Type type)
+        private static IEntityType CreateEntityType(Type type)
         {
             var bootstrapperProvider = new DefaultBootstrapperProvider();
             var typeAnalyzer = new EntityAnalyzer();
