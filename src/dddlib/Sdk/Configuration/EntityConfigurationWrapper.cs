@@ -48,7 +48,7 @@ namespace dddlib.Sdk.Configuration
             return this;
         }
 
-        public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<TEvent, T> mapping)
+        public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping)
         {
             Guard.Against.Null(() => mapping);
 

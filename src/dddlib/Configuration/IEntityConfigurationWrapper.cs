@@ -46,7 +46,7 @@ namespace dddlib.Configuration
         /// <typeparam name="TEvent">The event type to map to.</typeparam>
         /// <param name="mapping">The mapping.</param>
         /// <returns>The configuration.</returns>
-        TConfiguration ToMapToEvent<TEvent>(Action<TEvent, T> mapping);
+        TConfiguration ToMapToEvent<TEvent>(Action<T, TEvent> mapping);
 
         /// <summary>
         /// Configures the runtime to map the entity to the specified event type.
