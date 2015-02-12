@@ -35,11 +35,13 @@ namespace dddlib
         private string state;
         private bool isDestroyed;
 
-        internal AggregateRoot(AggregateRootType aggregateRootType)
+        internal AggregateRoot(IEventDispatcher eventDispatcher, bool dispatchEvents, bool persistEvents)
         {
-            this.eventDispatcher = aggregateRootType.EventDispatcher;
-            this.dispatchEvents = aggregateRootType.Options.DispatchEvents;
-            this.persistEvents = aggregateRootType.Options.PersistEvents;
+            Guard.Against.Null(() => eventDispatcher);
+
+            this.eventDispatcher = eventDispatcher;
+            this.dispatchEvents = dispatchEvents;
+            this.persistEvents = persistEvents;
         }
 
         /// <summary>

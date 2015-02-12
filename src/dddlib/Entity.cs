@@ -18,12 +18,13 @@ namespace dddlib
         private readonly NaturalKeySelector naturalKey;
         private readonly IEqualityComparer<object> naturalKeyEqualityComparer;
 
-        internal Entity(EntityType entityType)
+        internal Entity(NaturalKeySelector naturalKey, IEqualityComparer<object> naturalKeyEqualityComparer)
         {
-            Guard.Against.Null(() => entityType);
+            Guard.Against.Null(() => naturalKey);
+            Guard.Against.Null(() => naturalKeyEqualityComparer);
 
-            this.naturalKey = entityType.NaturalKeySelector;
-            this.naturalKeyEqualityComparer = entityType.NaturalKeyEqualityComparer;
+            this.naturalKey = naturalKey;
+            this.naturalKeyEqualityComparer = naturalKeyEqualityComparer;
         }
 
         /// <summary>

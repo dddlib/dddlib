@@ -26,11 +26,11 @@ namespace dddlib
         private readonly IEqualityComparer<T> equalityComparer;
         private readonly T valueObject;
 
-        internal ValueObject(ValueObjectType valueObjectType)
+        internal ValueObject(IEqualityComparer<T> equalityComparer)
         {
-            Guard.Against.Null(() => valueObjectType);
+            Guard.Against.Null(() => equalityComparer);
 
-            this.equalityComparer = (IEqualityComparer<T>)valueObjectType.EqualityComparer;
+            this.equalityComparer = equalityComparer;
             this.valueObject = (T)this; // NOTE (Cameron): Micro-optimization.
         }
 
