@@ -4,6 +4,7 @@
 
 namespace dddlib
 {
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using dddlib.Runtime;
     using dddlib.Sdk;
@@ -14,14 +15,26 @@ namespace dddlib
     //// TODO (Cameron): Ensure that an entity can be created without a natural key.
     public abstract class Entity
     {
-        private readonly IEntityType runtimeType;
+        private readonly NaturalKeySelector naturalKey;
+        private readonly IEqualityComparer<object> naturalKeyEqualityComparer;
+
+        internal Entity(EntityType entityType)
+        {
+            Guard.Against.Null(() => entityType);
+
+            this.naturalKey = entityType.NaturalKeySelector;
+            this.naturalKeyEqualityComparer = entityType.NaturalKeyEqualityComparer;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Entity"/> class.
         /// </summary>
         protected Entity()
         {
-            this.runtimeType = Application.Current.GetEntityType(this.GetType());
+            var entityType = Application.Current.GetEntityType(this.GetType());
+
+            this.naturalKey = entityType.NaturalKeySelector;
+            this.naturalKeyEqualityComparer = entityType.NaturalKeyEqualityComparer;
         }
 
         [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible anywhere.")]
@@ -52,7 +65,7 @@ namespace dddlib
         /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public sealed override int GetHashCode()
         {
-            var value = this.runtimeType.NaturalKeySelector.Invoke(this);
+            var value = this.naturalKey.Invoke(this);
             return value == null ? 0 : value.GetHashCode();
         }
 
@@ -80,16 +93,16 @@ namespace dddlib
                 return false;
             }
 
-            if (this.runtimeType.NaturalKeySelector == null)
+            if (this.naturalKey == null)
             {
                 // NOTE (Cameron): This entity has no natural key defined and doesn't meet the [previous] criteria for .NET reference equality.
                 return false;
             }
 
-            var thisValue = this.runtimeType.NaturalKeySelector.Invoke(this);
-            var otherValue = this.runtimeType.NaturalKeySelector.Invoke(other);
+            var thisValue = this.naturalKey.Invoke(this);
+            var otherValue = this.naturalKey.Invoke(other);
 
-            return this.runtimeType.NaturalKeyEqualityComparer.Equals(thisValue, otherValue);
+            return this.naturalKeyEqualityComparer.Equals(thisValue, otherValue);
         }
     }
 }

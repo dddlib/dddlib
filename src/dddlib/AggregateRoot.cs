@@ -25,19 +25,33 @@ namespace dddlib
     {
         private readonly List<object> events = new List<object>();
 
+        // TODO (Cameron): Add to configuration.
         private readonly Lazy<IMapperProvider> mapProvider = new Lazy<IMapperProvider>(() => new DefaultMapperProvider(), true);
         
-        private readonly IAggregateRootType runtimeType;
+        private readonly IEventDispatcher eventDispatcher;
+        private readonly bool dispatchEvents;
+        private readonly bool persistEvents;
 
         private string state;
         private bool isDestroyed;
+
+        internal AggregateRoot(AggregateRootType aggregateRootType)
+        {
+            this.eventDispatcher = aggregateRootType.EventDispatcher;
+            this.dispatchEvents = aggregateRootType.Options.DispatchEvents;
+            this.persistEvents = aggregateRootType.Options.PersistEvents;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AggregateRoot"/> class.
         /// </summary>
         protected AggregateRoot()
         {
-            this.runtimeType = Application.Current.GetAggregateRootType(this.GetType());
+            var aggregateRootType = Application.Current.GetAggregateRootType(this.GetType());
+
+            this.eventDispatcher = aggregateRootType.EventDispatcher;
+            this.dispatchEvents = aggregateRootType.Options.DispatchEvents;
+            this.persistEvents = aggregateRootType.Options.PersistEvents;
         }
 
         internal string State
@@ -161,13 +175,13 @@ namespace dddlib
                 return;
             }
 
-            if (this.runtimeType.Options.DispatchEvents)
+            if (this.dispatchEvents)
             {
                 // TODO (Cameron): Add try... catch block.
-                this.runtimeType.EventDispatcher.Dispatch(this, @event);
+                this.eventDispatcher.Dispatch(this, @event);
             }
 
-            if (this.runtimeType.Options.PersistEvents && isNew)
+            if (this.persistEvents && isNew)
             {
                 this.events.Add(@event);
             }

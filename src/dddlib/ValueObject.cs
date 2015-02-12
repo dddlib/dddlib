@@ -23,17 +23,25 @@ namespace dddlib
     public abstract class ValueObject<T> : IEquatable<T>
         where T : ValueObject<T>
     {
-        private readonly IValueObjectType runtimeType;
         private readonly IEqualityComparer<T> equalityComparer;
         private readonly T valueObject;
+
+        internal ValueObject(ValueObjectType valueObjectType)
+        {
+            Guard.Against.Null(() => valueObjectType);
+
+            this.equalityComparer = (IEqualityComparer<T>)valueObjectType.EqualityComparer;
+            this.valueObject = (T)this; // NOTE (Cameron): Micro-optimization.
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ValueObject{T}"/> class.
         /// </summary>
         protected ValueObject()
         {
-            this.runtimeType = Application.Current.GetValueObjectType(this.GetType());
-            this.equalityComparer = (IEqualityComparer<T>)this.runtimeType.EqualityComparer;
+            var valueObjectType = Application.Current.GetValueObjectType(this.GetType());
+
+            this.equalityComparer = (IEqualityComparer<T>)valueObjectType.EqualityComparer;
             this.valueObject = (T)this; // NOTE (Cameron): Micro-optimization.
         }
 
