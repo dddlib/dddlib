@@ -6,69 +6,149 @@ namespace dddlib.Sdk.Configuration
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq.Expressions;
     using dddlib.Configuration;
-    using dddlib.Runtime;
-    using dddlib.Sdk;
+    using dddlib.Sdk.Configuration.Model;
 
+    // TODO (Cameron): I've made a number of changes here that need to get addressed.
+    // 1. The types that we create here will break due to inheritance issues.
+    // 2. The return types can now be null.
     internal class BootstrapperConfiguration : IConfiguration
     {
-        private Dictionary<Type, AggregateRootConfiguration> aggregateRootConfigurations = new Dictionary<Type, AggregateRootConfiguration>();
-        private Dictionary<Type, EntityConfiguration> entityConfigurations = new Dictionary<Type, EntityConfiguration>();
-        private Dictionary<Type, ValueObjectConfiguration> valueObjectConfigurations = new Dictionary<Type, ValueObjectConfiguration>();
+        private readonly AggregateRootType aggregateRootType;
+        private readonly EntityType entityType;
+        private readonly ValueObjectType valueObjectType;
+        private readonly ITypeAnalyzerService typeAnalyzerService;
+
+        public BootstrapperConfiguration(AggregateRootType aggregateRootType, ITypeAnalyzerService typeAnalyzerService)
+        {
+            Guard.Against.Null(() => aggregateRootType);
+            Guard.Against.Null(() => typeAnalyzerService);
+
+            this.aggregateRootType = aggregateRootType;
+            this.entityType = aggregateRootType;
+            this.typeAnalyzerService = typeAnalyzerService;
+        }
+
+        public BootstrapperConfiguration(EntityType entityType, ITypeAnalyzerService typeAnalyzerService)
+        {
+            Guard.Against.Null(() => entityType);
+            Guard.Against.Null(() => typeAnalyzerService);
+
+            this.entityType = entityType;
+            this.typeAnalyzerService = typeAnalyzerService;
+        }
+
+        public BootstrapperConfiguration(ValueObjectType valueObjectType, ITypeAnalyzerService typeAnalyzerService)
+        {
+            Guard.Against.Null(() => valueObjectType);
+            Guard.Against.Null(() => typeAnalyzerService);
+
+            this.valueObjectType = valueObjectType;
+            this.typeAnalyzerService = typeAnalyzerService;
+        }
 
         public IAggregateRootConfigurationWrapper<T> AggregateRoot<T>() where T : AggregateRoot
         {
-            var configuration = default(AggregateRootConfiguration);
-            if (!this.aggregateRootConfigurations.TryGetValue(typeof(T), out configuration))
+            if (this.aggregateRootType != null && this.aggregateRootType.RuntimeType == typeof(T))
             {
-                this.aggregateRootConfigurations.Add(typeof(T), configuration = new AggregateRootConfiguration());
+                return new AggregateRootConfigurationWrapper<T>(this.aggregateRootType, this.Entity<T>());
             }
 
-            return new AggregateRootConfigurationWrapper<T>(configuration, this.Entity<T>());
+            return new EmptyAggregateRootConfigurationWrapper<T>(this.Entity<T>());
         }
 
         public IEntityConfigurationWrapper<T> Entity<T>() where T : Entity
         {
-            var configuration = default(EntityConfiguration);
-            if (!this.entityConfigurations.TryGetValue(typeof(T), out configuration))
+            if (this.entityType != null && this.entityType.RuntimeType == typeof(T))
             {
-                this.entityConfigurations.Add(typeof(T), configuration = new EntityConfiguration());
+                return new EntityConfigurationWrapper<T>(this.entityType, this.typeAnalyzerService);
             }
 
-            return new EntityConfigurationWrapper<T>(configuration);
+            return new EmptyEntityConfigurationWrapper<T>();
         }
 
         public IValueObjectConfigurationWrapper<T> ValueObject<T>() where T : ValueObject<T>
         {
-            var configuration = default(ValueObjectConfiguration);
-            if (!this.valueObjectConfigurations.TryGetValue(typeof(T), out configuration))
+            if (this.valueObjectType != null && this.valueObjectType.RuntimeType == typeof(T))
             {
-                this.valueObjectConfigurations.Add(typeof(T), configuration = new ValueObjectConfiguration());
+                return new ValueObjectConfigurationWrapper<T>(this.valueObjectType);
             }
 
-            return new ValueObjectConfigurationWrapper<T>(configuration);
+            return new EmptyValueObjectConfigurationWrapper<T>();
         }
 
-        // TODO (Cameron): Confirm type is valid.
-        public AggregateRootConfiguration GetAggregateRootConfiguration(Type type)
+        private class EmptyAggregateRootConfigurationWrapper<T> : IAggregateRootConfigurationWrapper<T>
+            where T : AggregateRoot
         {
-            this.aggregateRootConfigurations.TryGetValue(type, out var configuration);
+            private readonly IEntityConfigurationWrapper<T> entityConfigurationWrapper;
 
-            return configuration ?? new AggregateRootConfiguration();
+            public EmptyAggregateRootConfigurationWrapper(IEntityConfigurationWrapper<T> entityConfigurationWrapper)
+            {
+                Guard.Against.Null(() => entityConfigurationWrapper);
+
+                this.entityConfigurationWrapper = entityConfigurationWrapper;
+            }
+
+            public IAggregateRootConfigurationWrapper<T> ToReconstituteUsing(Func<T> uninitializedFactory)
+            {
+                return this;
+            }
+
+            public IAggregateRootConfigurationWrapper<T> ToUseNaturalKey<TKey>(Expression<Func<T, TKey>> naturalKeySelector)
+            {
+                this.entityConfigurationWrapper.ToUseNaturalKey(naturalKeySelector);
+                return this;
+            }
+
+            public IAggregateRootConfigurationWrapper<T> ToUseNaturalKey(Expression<Func<T, string>> naturalKeySelector, IEqualityComparer<string> equalityComparer)
+            {
+                this.entityConfigurationWrapper.ToUseNaturalKey(naturalKeySelector, equalityComparer);
+                return this;
+            }
         }
 
-        public EntityConfiguration GetEntityConfiguration(Type type)
+        private class EmptyEntityConfigurationWrapper<T> : IEntityConfigurationWrapper<T>
+            where T : Entity
         {
-            this.entityConfigurations.TryGetValue(type, out var configuration);
+            public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping)
+            {
+                return this;
+            }
 
-            return configuration ?? new EntityConfiguration();
+            public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping, Func<TEvent, T> reverseMapping)
+            {
+                return this;
+            }
+
+            public IEntityConfigurationWrapper<T> ToUseNaturalKey(Expression<Func<T, string>> naturalKeySelector, IEqualityComparer<string> equalityComparer)
+            {
+                return this;
+            }
+
+            public IEntityConfigurationWrapper<T> ToUseNaturalKey<TKey>(Expression<Func<T, TKey>> naturalKeySelector)
+            {
+                return this;
+            }
         }
 
-        public ValueObjectConfiguration GetValueObjectConfiguration(Type type)
+        private class EmptyValueObjectConfigurationWrapper<T> : IValueObjectConfigurationWrapper<T>
+            where T : ValueObject<T>
         {
-            this.valueObjectConfigurations.TryGetValue(type, out var configuration);
+            public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping)
+            {
+                return this;
+            }
 
-            return configuration ?? new ValueObjectConfiguration();
+            public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping, Func<TEvent, T> reverseMapping)
+            {
+                return this;
+            }
+
+            public IValueObjectConfigurationWrapper<T> ToUseEqualityComparer(IEqualityComparer<T> equalityComparer)
+            {
+                return this;
+            }
         }
     }
 }

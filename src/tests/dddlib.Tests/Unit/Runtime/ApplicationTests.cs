@@ -7,6 +7,7 @@ namespace dddlib.Tests.Unit.Runtime
     using System;
     using dddlib.Runtime;
     using dddlib.Sdk;
+    using dddlib.Sdk.Configuration.Model;
     using FakeItEasy;
     using FluentAssertions;
     using Xunit;
@@ -101,7 +102,18 @@ namespace dddlib.Tests.Unit.Runtime
             // arrange
             var type = typeof(Aggregate);
 
-            var expectedType = new AggregateRootType(type, null, null);
+            var typeAnalyzerService = A.Fake<ITypeAnalyzerService>(o => o.Strict());
+            A.CallTo(() => typeAnalyzerService.IsValidAggregateRoot(type)).Returns(true);
+            A.CallTo(() => typeAnalyzerService.IsValidEntity(type)).Returns(true);
+            A.CallTo(() => typeAnalyzerService.GetNaturalKey(type)).Returns(null);
+            A.CallTo(() => typeAnalyzerService.IsValidAggregateRoot(typeof(AggregateRoot))).Returns(true);
+            A.CallTo(() => typeAnalyzerService.IsValidEntity(typeof(AggregateRoot))).Returns(true);
+            A.CallTo(() => typeAnalyzerService.GetNaturalKey(typeof(AggregateRoot))).Returns(null);
+            A.CallTo(() => typeAnalyzerService.IsValidEntity(typeof(Entity))).Returns(true);
+            A.CallTo(() => typeAnalyzerService.GetNaturalKey(typeof(Entity))).Returns(null);
+            var entityType = new EntityType(typeof(Entity), typeAnalyzerService);
+            var aggregateType = new AggregateRootType(typeof(AggregateRoot), typeAnalyzerService, entityType);
+            var expectedType = new AggregateRootType(type, typeAnalyzerService, aggregateType);
             var factory = A.Fake<Func<Type, AggregateRootType>>(o => o.Strict());
             A.CallTo(() => factory.Invoke(type)).Returns(expectedType);
 

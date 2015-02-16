@@ -10,6 +10,7 @@ namespace dddlib.Runtime
     using System.Linq;
     using dddlib.Sdk;
     using dddlib.Sdk.Configuration;
+    using dddlib.Sdk.Configuration.Model;
 
     /// <summary>
     /// Represents an application.
@@ -20,13 +21,13 @@ namespace dddlib.Runtime
         private static readonly List<Application> Applications = new List<Application>();
         private static readonly object SyncLock = new object();
 
-        private readonly Dictionary<Type, IAggregateRootType> aggregateRootTypes = new Dictionary<Type, IAggregateRootType>();
-        private readonly Dictionary<Type, IEntityType> entityTypes = new Dictionary<Type, IEntityType>();
-        private readonly Dictionary<Type, IValueObjectType> valueObjectTypes = new Dictionary<Type, IValueObjectType>();
+        private readonly Dictionary<Type, AggregateRootType> aggregateRootTypes = new Dictionary<Type, AggregateRootType>();
+        private readonly Dictionary<Type, EntityType> entityTypes = new Dictionary<Type, EntityType>();
+        private readonly Dictionary<Type, ValueObjectType> valueObjectTypes = new Dictionary<Type, ValueObjectType>();
 
-        private readonly Func<Type, IAggregateRootType> aggregateRootTypeFactory;
-        private readonly Func<Type, IEntityType> entityTypeFactory;
-        private readonly Func<Type, IValueObjectType> valueObjectTypeFactory;
+        private readonly Func<Type, AggregateRootType> aggregateRootTypeFactory;
+        private readonly Func<Type, EntityType> entityTypeFactory;
+        private readonly Func<Type, ValueObjectType> valueObjectTypeFactory;
 
         private bool isDisposed = false;
 
@@ -39,9 +40,9 @@ namespace dddlib.Runtime
         }
 
         internal Application(
-            Func<Type, IAggregateRootType> aggregateRootTypeFactory,
-            Func<Type, IEntityType> entityTypeFactory,
-            Func<Type, IValueObjectType> valueObjectTypeFactory)
+            Func<Type, AggregateRootType> aggregateRootTypeFactory,
+            Func<Type, EntityType> entityTypeFactory,
+            Func<Type, ValueObjectType> valueObjectTypeFactory)
         {
             Guard.Against.Null(() => aggregateRootTypeFactory);
             Guard.Against.Null(() => entityTypeFactory);
@@ -97,44 +98,41 @@ namespace dddlib.Runtime
             }
         }
 
-        internal IAggregateRootType GetAggregateRootType(Type type)
+        internal AggregateRootType GetAggregateRootType(Type type)
         {
             return this.GetType(type, this.aggregateRootTypes, this.aggregateRootTypeFactory);
         }
 
-        internal IEntityType GetEntityType(Type type)
+        internal EntityType GetEntityType(Type type)
         {
             return this.GetType(type, this.entityTypes, this.entityTypeFactory);
         }
 
-        internal IValueObjectType GetValueObjectType(Type type)
+        internal ValueObjectType GetValueObjectType(Type type)
         {
             return this.GetType(type, this.valueObjectTypes, this.valueObjectTypeFactory);
         }
 
-        private static IAggregateRootType CreateAggregateRootType(Type type)
+        // TODO (Cameron): If type is in this library then don't bootstrap.
+        private static AggregateRootType CreateAggregateRootType(Type type)
         {
-            var bootstrapperProvider = new DefaultBootstrapperProvider();
-            var configProvider = new AggregateRootConfigurationProvider(bootstrapperProvider);
-            var configuration = configProvider.GetConfiguration(type);
-            return new AggregateRootTypeFactory().Create(type, configuration);
+            var typeAnalyzer = new DefaultTypeAnalyzerService();
+            var bootStrapperProvider = new DefaultBootstrapperProvider();
+            return new AggregateRootTypeFactory(typeAnalyzer, bootStrapperProvider).Create(type);
         }
 
-        private static IEntityType CreateEntityType(Type type)
+        private static EntityType CreateEntityType(Type type)
         {
-            var bootstrapperProvider = new DefaultBootstrapperProvider();
-            var typeAnalyzer = new EntityAnalyzer();
-            var configProvider = new EntityConfigurationProvider(bootstrapperProvider, typeAnalyzer);
-            var configuration = configProvider.GetConfiguration(type);
-            return new EntityTypeFactory().Create(type, configuration);
+            var typeAnalyzer = new DefaultTypeAnalyzerService();
+            var bootStrapperProvider = new DefaultBootstrapperProvider();
+            return new EntityTypeFactory(typeAnalyzer, bootStrapperProvider).Create(type);
         }
 
-        private static IValueObjectType CreateValueObjectType(Type type)
+        private static ValueObjectType CreateValueObjectType(Type type)
         {
-            var bootstrapperProvider = new DefaultBootstrapperProvider();
-            var configProvider = new ValueObjectConfigurationProvider(bootstrapperProvider);
-            var configuration = configProvider.GetConfiguration(type);
-            return new ValueObjectTypeFactory().Create(type, configuration);
+            var typeAnalyzer = new DefaultTypeAnalyzerService();
+            var bootStrapperProvider = new DefaultBootstrapperProvider();
+            return new ValueObjectTypeFactory(typeAnalyzer, bootStrapperProvider).Create(type);
         }
 
         private T GetType<T>(Type type, IDictionary<Type, T> runtimeTypes, Func<Type, T> factory)

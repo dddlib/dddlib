@@ -13,7 +13,7 @@ namespace dddlib
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using dddlib.Runtime;
-    using dddlib.Sdk;
+    using dddlib.Sdk.Configuration.Model;
 
     /// <summary>
     /// Represents a value object.
@@ -27,21 +27,24 @@ namespace dddlib
         private readonly T valueObject;
 
         internal ValueObject(IEqualityComparer<T> equalityComparer)
+            : this(@this => new Config<T> { EqualityComparer = equalityComparer })
         {
-            Guard.Against.Null(() => equalityComparer);
-
-            this.equalityComparer = equalityComparer;
-            this.valueObject = (T)this; // NOTE (Cameron): Micro-optimization.
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ValueObject{T}"/> class.
         /// </summary>
         protected ValueObject()
+            : this(@this => Config<T>.From(Application.Current.GetValueObjectType(@this.GetType())))
         {
-            var valueObjectType = Application.Current.GetValueObjectType(this.GetType());
+        }
 
-            this.equalityComparer = (IEqualityComparer<T>)valueObjectType.EqualityComparer;
+        // LINK (Cameron): http://stackoverflow.com/questions/2287636/pass-current-object-type-into-base-constructor-call
+        private ValueObject(Func<ValueObject<T>, Config<T>> configureValueObject)
+        {
+            var configuration = configureValueObject(this);
+
+            this.equalityComparer = configuration.EqualityComparer;
             this.valueObject = (T)this; // NOTE (Cameron): Micro-optimization.
         }
 
@@ -101,6 +104,16 @@ namespace dddlib
             }
 
             return this.equalityComparer.Equals(this.valueObject, other);
+        }
+
+        private class Config<T1>
+        {
+            public IEqualityComparer<T1> EqualityComparer { get; set; }
+
+            public static Config<T1> From(ValueObjectType valueObjectType)
+            {
+                return new Config<T1> { EqualityComparer = (IEqualityComparer<T1>)valueObjectType.EqualityComparer };
+            }
         }
     }
 }

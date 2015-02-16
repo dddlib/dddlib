@@ -17,6 +17,7 @@ namespace dddlib
     using System.Globalization;
     using dddlib.Runtime;
     using dddlib.Sdk;
+    using dddlib.Sdk.Configuration.Model;
 
     /// <summary>
     /// Represents an aggregate root.
@@ -35,6 +36,7 @@ namespace dddlib
         private string state;
         private bool isDestroyed;
 
+        // TODO (Cameron): Fix.
         internal AggregateRoot(IEventDispatcher eventDispatcher, bool dispatchEvents, bool persistEvents)
         {
             Guard.Against.Null(() => eventDispatcher);
@@ -48,12 +50,18 @@ namespace dddlib
         /// Initializes a new instance of the <see cref="AggregateRoot"/> class.
         /// </summary>
         protected AggregateRoot()
+            : this(@this => Config.From(Application.Current.GetAggregateRootType(@this.GetType())))
         {
-            var aggregateRootType = Application.Current.GetAggregateRootType(this.GetType());
+        }
 
-            this.eventDispatcher = aggregateRootType.EventDispatcher;
-            this.dispatchEvents = aggregateRootType.Options.DispatchEvents;
-            this.persistEvents = aggregateRootType.Options.PersistEvents;
+        // LINK (Cameron): http://stackoverflow.com/questions/2287636/pass-current-object-type-into-base-constructor-call
+        private AggregateRoot(Func<AggregateRoot, Config> configureAggregateRoot)
+        {
+            var configuration = configureAggregateRoot(this);
+
+            this.eventDispatcher = configuration.EventDispatcher;
+            this.dispatchEvents = configuration.DispatchEvents;
+            this.persistEvents = configuration.PersistEvents;
         }
 
         internal string State
@@ -186,6 +194,20 @@ namespace dddlib
             if (this.persistEvents && isNew)
             {
                 this.events.Add(@event);
+            }
+        }
+
+        private class Config
+        {
+            public IEventDispatcher EventDispatcher { get; set; }
+
+            public bool DispatchEvents { get; set; }
+
+            public bool PersistEvents { get; set; }
+
+            public static Config From(AggregateRootType aggregateRootType)
+            {
+                return new Config { EventDispatcher = aggregateRootType.EventDispatcher, DispatchEvents = aggregateRootType.DispatchEvents, PersistEvents = aggregateRootType.PersistEvents };
             }
         }
     }

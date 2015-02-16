@@ -20,6 +20,7 @@ namespace dddlib.Sdk.Configuration
         /// </summary>
         /// <param name="type">The type to bootstrap.</param>
         /// <returns>The bootstrapper.</returns>
+        //// TODO (Cameron): Caching.
         public Action<IConfiguration> GetBootstrapper(Type type)
         {
             var bootstrapperTypes = type.Assembly.GetTypes()

@@ -8,32 +8,33 @@ namespace dddlib.Sdk.Configuration
     using System.Collections.Generic;
     using System.Linq.Expressions;
     using dddlib.Configuration;
+    using dddlib.Sdk.Configuration.Model;
 
     internal class AggregateRootConfigurationWrapper<T> : IAggregateRootConfigurationWrapper<T> 
         where T : AggregateRoot
     {
-        private readonly AggregateRootConfiguration configuration;
-        private readonly IEntityConfigurationWrapper<T> entityConfig;
+        private readonly AggregateRootType aggregateRootType;
+        private readonly IEntityConfigurationWrapper<T> entityConfigurationWrapper;
 
-        public AggregateRootConfigurationWrapper(AggregateRootConfiguration configuration, IEntityConfigurationWrapper<T> entityConfig)
+        public AggregateRootConfigurationWrapper(AggregateRootType aggregateRootType, IEntityConfigurationWrapper<T> entityConfigurationWrapper)
         {
-            Guard.Against.Null(() => configuration);
-            Guard.Against.Null(() => entityConfig);
+            Guard.Against.Null(() => aggregateRootType);
+            Guard.Against.Null(() => entityConfigurationWrapper);
 
-            this.configuration = configuration;
-            this.entityConfig = entityConfig;
+            this.aggregateRootType = aggregateRootType;
+            this.entityConfigurationWrapper = entityConfigurationWrapper;
         }
 
         public IAggregateRootConfigurationWrapper<T> ToReconstituteUsing(Func<T> uninitializedFactory)
         {
-            this.configuration.UninitializedFactory = uninitializedFactory;
+            this.aggregateRootType.ConfigureUnititializedFactory(uninitializedFactory);
 
             return this;
         }
 
         public IAggregateRootConfigurationWrapper<T> ToUseNaturalKey<TKey>(Expression<Func<T, TKey>> naturalKeySelector)
         {
-            this.entityConfig.ToUseNaturalKey(naturalKeySelector);
+            this.entityConfigurationWrapper.ToUseNaturalKey(naturalKeySelector);
 
             return this;
         }
@@ -41,7 +42,7 @@ namespace dddlib.Sdk.Configuration
         public IAggregateRootConfigurationWrapper<T> ToUseNaturalKey(
             Expression<Func<T, string>> naturalKeySelector, IEqualityComparer<string> equalityComparer)
         {
-            this.entityConfig.ToUseNaturalKey(naturalKeySelector, equalityComparer);
+            this.entityConfigurationWrapper.ToUseNaturalKey(naturalKeySelector, equalityComparer);
 
             return this;
         }

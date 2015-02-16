@@ -11,6 +11,7 @@ namespace dddlib.Tests.Sdk
     using dddlib.Runtime;
     using dddlib.Sdk;
     using dddlib.Sdk.Configuration;
+    using dddlib.Sdk.Configuration.Model;
     using FakeItEasy;
     using Xbehave;
 
@@ -27,35 +28,19 @@ namespace dddlib.Tests.Sdk
             "Given a new application"
                 .Given(() =>
                 {
+                    var typeAnalyzerService = new DefaultTypeAnalyzerService();
                     var bootstrapperProvider = new FeatureBootstrapperProvider();
                     new Application(
-                        t => CreateAggregateRootType(bootstrapperProvider, t),
-                        t => CreateEntityType(bootstrapperProvider, t),
-                        t => CreateValueObjectType(bootstrapperProvider, t))
+                        t => new AggregateRootTypeFactory(typeAnalyzerService, bootstrapperProvider).Create(t),
+                        t => new EntityTypeFactory(typeAnalyzerService, bootstrapperProvider).Create(t),
+                        t => new ValueObjectTypeFactory(typeAnalyzerService, bootstrapperProvider).Create(t))
                         .Using();
                 });
         }
 
-        private static AggregateRootType CreateAggregateRootType(IBootstrapperProvider bootstrapperProvider, Type type)
+        private static ValueObjectType CreateValueObjectType(ITypeAnalyzerService typeAnalyzerService, IBootstrapperProvider bootstrapperProvider, Type type)
         {
-            var configProvider = new AggregateRootConfigurationProvider(bootstrapperProvider);
-            var configuration = configProvider.GetConfiguration(type);
-            return new AggregateRootTypeFactory().Create(type, configuration);
-        }
-
-        private static EntityType CreateEntityType(IBootstrapperProvider bootstrapperProvider, Type type)
-        {
-            var typeAnalyzer = new EntityAnalyzer();
-            var configProvider = new EntityConfigurationProvider(bootstrapperProvider, typeAnalyzer);
-            var configuration = configProvider.GetConfiguration(type);
-            return new EntityTypeFactory().Create(type, configuration);
-        }
-
-        private static ValueObjectType CreateValueObjectType(IBootstrapperProvider bootstrapperProvider, Type type)
-        {
-            var configProvider = new ValueObjectConfigurationProvider(bootstrapperProvider);
-            var configuration = configProvider.GetConfiguration(type);
-            return new ValueObjectTypeFactory().Create(type, configuration);
+            return new ValueObjectTypeFactory(typeAnalyzerService, bootstrapperProvider).Create(type);
         }
 
         private class FeatureBootstrapperProvider : IBootstrapperProvider

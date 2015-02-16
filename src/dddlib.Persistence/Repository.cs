@@ -40,10 +40,14 @@ namespace dddlib.Persistence
             var type = aggregateRoot.GetType(); // NOTE (Cameron): Because we can't trust typeof(T) as it may be the base class.
 
             var aggregateRootType = Application.Current.GetAggregateRootType(type);
-            var entityType = Application.Current.GetEntityType(type);
+            if (aggregateRootType.NaturalKey == dddlib.Sdk.Configuration.Model.NaturalKey.Undefined)
+            {
+                // TODO (Cameron): Exception text.
+                throw new RuntimeException("Cannot save an aggregate root without a defined natural key.");
+            }
 
-            var naturalKey = entityType.NaturalKeySelector.Invoke(aggregateRoot);
-            var id = this.identityMap.GetOrAdd(type, naturalKey, entityType.NaturalKeyEqualityComparer);
+            var naturalKey = aggregateRootType.NaturalKey.GetValue(aggregateRoot);
+            var id = this.identityMap.GetOrAdd(type, naturalKey, aggregateRootType.NaturalKeyEqualityComparer);
 
             var memento = aggregateRoot.GetMemento();
             if (memento == null)

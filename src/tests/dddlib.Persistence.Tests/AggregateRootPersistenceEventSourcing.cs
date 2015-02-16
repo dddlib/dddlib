@@ -17,7 +17,7 @@ namespace dddlib.Tests.Features
     {
         public class UndefinedNaturalKey : AggregateRootPersistenceEventSourcing
         {
-            [Scenario]
+            [Scenario(Skip = "Finish writing test.")]
             public void Scenario(EventStoreRepository repository, Subject instance)
             {
                 "Given a repository"

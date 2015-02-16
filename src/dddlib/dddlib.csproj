@@ -50,12 +50,15 @@
     </Compile>
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="BusinessException.cs" />
-    <Compile Include="Sdk\IAggregateRootType.cs" />
-    <Compile Include="Sdk\IValueObjectType.cs" />
+    <Compile Include="Sdk\Configuration\Model\AggregateRootType.cs" />
+    <Compile Include="Sdk\Configuration\Model\EntityType.cs" />
+    <Compile Include="Sdk\Configuration\Model\ITypeAnalyzerService.cs" />
+    <Compile Include="Sdk\Configuration\Model\NaturalKey.cs" />
+    <Compile Include="Sdk\Configuration\Model\DefaultTypeAnalyzerService.cs" />
+    <Compile Include="Sdk\Configuration\Model\ValueObjectType.cs" />
     <Compile Include="Sdk\DefaultEntityMapper.cs" />
     <Compile Include="Sdk\Configuration\DefaultBootstrapperProvider.cs" />
     <Compile Include="Sdk\Configuration\IBootstrapperProvider.cs" />
-    <Compile Include="Sdk\IEntityType.cs" />
     <Compile Include="Sdk\MapperCollection.cs" />
     <Compile Include="Sdk\DefaultEventMapper.cs" />
     <Compile Include="Runtime\IEntityMapper.cs" />
@@ -72,20 +75,11 @@
     <Compile Include="Guard.cs" />
     <Compile Include="GuardExtensions.cs" />
     <Compile Include="Sdk\DefaultValueObjectEqualityComparer.cs" />
+    <Compile Include="Sdk\StringEqualityComparer.cs" />
     <Compile Include="Sdk\TypeExtensions.cs" />
-    <Compile Include="Sdk\Configuration\AggregateRootConfiguration.cs" />
-    <Compile Include="Sdk\Configuration\AggregateRootConfigurationProvider.cs" />
-    <Compile Include="Sdk\AggregateRootType.cs" />
-    <Compile Include="Sdk\Configuration\EntityConfigurationProvider.cs" />
     <Compile Include="Sdk\NaturalKeySelector.cs" />
-    <Compile Include="Sdk\Configuration\ValueObjectConfigurationProvider.cs" />
     <Compile Include="Sdk\DefaultValueObjectMapper.cs" />
-    <Compile Include="Sdk\ValueObjectTypeFactory.cs" />
-    <Compile Include="Sdk\ValueObjectType.cs" />
-    <Compile Include="Sdk\EntityType.cs" />
     <Compile Include="Sdk\Configuration\EntityAnalyzer.cs" />
-    <Compile Include="Sdk\Configuration\EntityConfiguration.cs" />
-    <Compile Include="Sdk\Configuration\ValueObjectConfiguration.cs" />
     <Compile Include="Sdk\Configuration\BootstrapperConfiguration.cs" />
     <Compile Include="Sdk\Configuration\AggregateRootConfigurationWrapper.cs" />
     <Compile Include="Sdk\Configuration\EntityConfigurationWrapper.cs" />
@@ -101,6 +95,7 @@
     <Compile Include="Configuration\IBootstrapper.cs" />
     <Compile Include="Sdk\IEventDispatcher.cs" />
     <Compile Include="Runtime\RuntimeException.cs" />
+    <Compile Include="Sdk\ValueObjectTypeFactory.cs" />
     <Compile Include="ValueObject.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -62,11 +62,11 @@ namespace dddlib.Sdk
         private static Dictionary<Type, List<Action<object, object>>> GetHandlers(Type aggregateRootType)
         {
             var handlerMethods = new[] { aggregateRootType }
-                .Traverse(type => type.BaseType == typeof(AggregateRoot) ? null : new[] { type.BaseType })
+                .Traverse(type => type.BaseType == typeof(Entity) ? null : new[] { type.BaseType })
                 .SelectMany(type => type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic))
                 .Where(method => method.Name.Equals(ApplyMethodName, StringComparison.OrdinalIgnoreCase))
                 .Where(method => method.GetParameters().Count() == 1)
-                .Where(method => method.DeclaringType != typeof(AggregateRoot))
+                .Where(method => method.DeclaringType != typeof(Entity))
                 .Select(methodInfo =>
                     new
                     {

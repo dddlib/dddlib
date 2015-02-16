@@ -44,7 +44,7 @@ namespace dddlib.Persistence
             var aggregateRootType = dddlib.Runtime.Application.Current.GetAggregateRootType(type);
             var entityType = dddlib.Runtime.Application.Current.GetEntityType(type);
 
-            var naturalKey = entityType.NaturalKeySelector.Invoke(aggregateRoot);
+            var naturalKey = entityType.NaturalKey.GetValue(aggregateRoot);
             var id = this.identityMap.GetOrAdd(type, naturalKey, entityType.NaturalKeyEqualityComparer);
 
             ////var memento = aggregateRoot.GetMemento();

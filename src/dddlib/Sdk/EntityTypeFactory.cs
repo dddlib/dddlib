@@ -5,19 +5,45 @@
 namespace dddlib.Sdk
 {
     using System;
+    using System.Linq;
     using dddlib.Sdk.Configuration;
+    using dddlib.Sdk.Configuration.Model;
 
     internal class EntityTypeFactory
     {
-        public EntityType Create(Type type, EntityConfiguration configuration)
+        private readonly ITypeAnalyzerService typeAnalyzerService;
+        private readonly IBootstrapperProvider bootstrapperProvider;
+
+        public EntityTypeFactory(ITypeAnalyzerService typeAnalyzerService, IBootstrapperProvider bootstrapperProvider)
         {
-            Guard.Against.Null(() => configuration);
+            Guard.Against.Null(() => typeAnalyzerService);
+            Guard.Against.Null(() => bootstrapperProvider);
 
-            var naturalKeySelector = string.IsNullOrEmpty(configuration.NaturalKeyPropertyName)
-                ? null
-                : new NaturalKeySelector(type, configuration.NaturalKeyPropertyName);
+            this.typeAnalyzerService = typeAnalyzerService;
+            this.bootstrapperProvider = bootstrapperProvider;
+        }
 
-            return new EntityType(type, naturalKeySelector, configuration.NaturalKeyStringEqualityComparer, configuration.Mappings ?? new MapperCollection());
+        public EntityType Create(Type type)
+        {
+            var entityType = default(EntityType);
+
+            foreach (var subType in new[] { type }.Traverse(t => t.BaseType == typeof(object) ? null : new[] { t.BaseType }).Reverse())
+            {
+                if (entityType == null)
+                {
+                    entityType = new EntityType(subType, this.typeAnalyzerService);
+                    continue;
+                }
+
+                entityType = new EntityType(subType, this.typeAnalyzerService, entityType);
+            }
+
+            var configuration = new BootstrapperConfiguration(entityType, this.typeAnalyzerService);
+            var bootstrapper = this.bootstrapperProvider.GetBootstrapper(type);
+
+            bootstrapper.Invoke(configuration);
+
+            return entityType;
         }
     }
 }

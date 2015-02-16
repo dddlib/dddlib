@@ -8,30 +8,25 @@ namespace dddlib.Sdk.Configuration
     using System.Collections.Generic;
     using dddlib.Configuration;
     using dddlib.Sdk;
+    using dddlib.Sdk.Configuration.Model;
 
     internal class ValueObjectConfigurationWrapper<T> : IValueObjectConfigurationWrapper<T>
         where T : ValueObject<T>
     {
-        private readonly ValueObjectConfiguration configuration;
+        private readonly ValueObjectType valueObjectType;
 
-        public ValueObjectConfigurationWrapper(ValueObjectConfiguration configuration)
+        public ValueObjectConfigurationWrapper(ValueObjectType valueObjectType)
         {
-            Guard.Against.Null(() => configuration);
+            Guard.Against.Null(() => valueObjectType);
 
-            this.configuration = configuration;
-
-            // TODO (Cameron): Not sure this belongs here...
-            if (this.configuration.Mappings == null)
-            {
-                this.configuration.Mappings = new MapperCollection();
-            }
+            this.valueObjectType = valueObjectType;
         }
 
         public IValueObjectConfigurationWrapper<T> ToUseEqualityComparer(IEqualityComparer<T> equalityComparer)
         {
             Guard.Against.Null(() => equalityComparer);
 
-            this.configuration.EqualityComparer = equalityComparer;
+            this.valueObjectType.ConfigureEqualityComparer(equalityComparer);
 
             return this;
         }
@@ -40,7 +35,7 @@ namespace dddlib.Sdk.Configuration
         {
             Guard.Against.Null(() => mapping);
 
-            this.configuration.Mappings.AddOrUpdate(mapping);
+            this.valueObjectType.Mappings.AddOrUpdate(mapping);
 
             return this;
         }
@@ -50,8 +45,8 @@ namespace dddlib.Sdk.Configuration
             Guard.Against.Null(() => mapping);
             Guard.Against.Null(() => reverseMapping);
 
-            this.configuration.Mappings.AddOrUpdate(mapping);
-            this.configuration.Mappings.AddOrUpdate(reverseMapping);
+            this.valueObjectType.Mappings.AddOrUpdate(mapping);
+            this.valueObjectType.Mappings.AddOrUpdate(reverseMapping);
 
             return this;
         }

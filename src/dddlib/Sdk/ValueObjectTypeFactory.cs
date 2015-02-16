@@ -6,21 +6,32 @@ namespace dddlib.Sdk
 {
     using System;
     using dddlib.Sdk.Configuration;
+    using dddlib.Sdk.Configuration.Model;
 
     internal class ValueObjectTypeFactory
     {
-        public ValueObjectType Create(Type type, ValueObjectConfiguration configuration)
+        private readonly ITypeAnalyzerService typeAnalyzerService;
+        private readonly IBootstrapperProvider bootstrapperProvider;
+
+        public ValueObjectTypeFactory(ITypeAnalyzerService typeAnalyzerService, IBootstrapperProvider bootstrapperProvider)
         {
-            Guard.Against.Null(() => configuration);
+            Guard.Against.Null(() => typeAnalyzerService);
+            Guard.Against.Null(() => bootstrapperProvider);
 
-            var equalityComparer = configuration.EqualityComparer ?? CreateEqualityComparer(type);
-
-            return new ValueObjectType(type, equalityComparer, configuration.Mappings ?? new MapperCollection());
+            this.typeAnalyzerService = typeAnalyzerService;
+            this.bootstrapperProvider = bootstrapperProvider;
         }
-
-        private static object CreateEqualityComparer(Type type)
+        
+        public ValueObjectType Create(Type type)
         {
-            return Activator.CreateInstance(typeof(DefaultValueObjectEqualityComparer<>).MakeGenericType(type));
+            var valueObjectType = new ValueObjectType(type, this.typeAnalyzerService);
+
+            var configuration = new BootstrapperConfiguration(valueObjectType, this.typeAnalyzerService);
+            var bootstrapper = this.bootstrapperProvider.GetBootstrapper(type);
+
+            bootstrapper.Invoke(configuration);
+
+            return valueObjectType;
         }
     }
 }

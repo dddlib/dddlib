@@ -7,6 +7,7 @@ namespace dddlib.Tests.Acceptance
     using System.Diagnostics.CodeAnalysis;
     using dddlib.Runtime;
     using dddlib.Sdk;
+    using dddlib.Sdk.Configuration.Model;
     using FluentAssertions;
 
     [SuppressMessage("StyleCop.CSharp.OrderingRules", "SA1201:ElementsMustAppearInTheCorrectOrder", Justification = "Not here.")]
@@ -14,14 +15,14 @@ namespace dddlib.Tests.Acceptance
     {
         private class NaturalKeyTest : AggregateRoot
         {
-            [NaturalKey]
+            [dddlib.NaturalKey]
             public string NaturalKey { get; set; }
         }
 
         private static void AssertNaturalKeyTest(AggregateRootType aggregateRootType)
         {
             // should provide equality comparison
-            aggregateRootType.Options.PersistEvents.Should().BeFalse();
+            aggregateRootType.PersistEvents.Should().BeFalse();
         }
 
         private static void AssertNaturalKeyTest(EntityType entityType)
