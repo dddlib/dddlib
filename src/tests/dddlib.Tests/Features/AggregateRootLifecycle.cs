@@ -14,6 +14,9 @@ namespace dddlib.Tests.Features
     // I need to be able to end the lifecycle of an entity
     public class AggregateRootLifecycle : Feature
     {
+        /*  TODO (Cameron):
+            Needs to support PODO (plain old domain objects)  */
+
         [Scenario]
         public void CanDestroy(Action action)
         {

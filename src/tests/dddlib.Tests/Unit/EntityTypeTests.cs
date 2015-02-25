@@ -4,11 +4,6 @@
 
 namespace dddlib.Tests.Unit
 {
-    using System;
-    using dddlib.Runtime;
-    using dddlib.Sdk;
-    using dddlib.Sdk.Configuration.Model;
-    using FluentAssertions;
     using Xunit;
 
     public class EntityTypeTests
@@ -18,9 +13,9 @@ namespace dddlib.Tests.Unit
         public void EntityTypeTest()
         {
             // arrange
-            var type = typeof(Subject);
-            var naturalKeySelector = new NaturalKeySelector(type, "NaturalKey");
-            var equalityComparer = StringComparer.OrdinalIgnoreCase;
+            ////var type = typeof(Subject);
+            ////var naturalKeySelector = new NaturalKeySelector(type, "NaturalKey");
+            ////var equalityComparer = StringComparer.OrdinalIgnoreCase;
 
             // act (and assert)
             ////var runtimeType = new EntityType(type, naturalKeySelector, equalityComparer, new MapperCollection());
@@ -30,9 +25,9 @@ namespace dddlib.Tests.Unit
         public void InavlidEntityTypeTest()
         {
             // arrange
-            var type = typeof(Subject);
-            var naturalKeySelector = new NaturalKeySelector(typeof(Other), "NaturalKey");
-            var equalityComparer = StringComparer.OrdinalIgnoreCase;
+            ////var type = typeof(Subject);
+            ////var naturalKeySelector = new NaturalKeySelector(typeof(Other), "NaturalKey");
+            ////var equalityComparer = StringComparer.OrdinalIgnoreCase;
 
             // act
             ////Action action = () => new EntityType(type, naturalKeySelector, equalityComparer, new MapperCollection());
@@ -45,9 +40,9 @@ namespace dddlib.Tests.Unit
         public void InvalidENaturalKeySelectorTest()
         {
             // arrange
-            var type = typeof(Subject);
-            var naturalKeySelector = new NaturalKeySelector(typeof(Other), "NaturalKey");
-            var equalityComparer = StringComparer.OrdinalIgnoreCase;
+            ////var type = typeof(Subject);
+            ////var naturalKeySelector = new NaturalKeySelector(typeof(Other), "NaturalKey");
+            ////var equalityComparer = StringComparer.OrdinalIgnoreCase;
 
             // act
             ////Action action = () => new EntityType(type, naturalKeySelector, equalityComparer, new MapperCollection());

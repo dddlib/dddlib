@@ -2,11 +2,11 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Sdk
+namespace dddlib.Sdk.Configuration
 {
     using System;
-    using dddlib.Sdk.Configuration;
     using dddlib.Sdk.Configuration.Model;
+    using dddlib.Sdk.Configuration.Model.BootstrapperService;
 
     internal class ValueObjectTypeFactory
     {

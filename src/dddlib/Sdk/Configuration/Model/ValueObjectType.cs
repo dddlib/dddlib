@@ -7,6 +7,7 @@ namespace dddlib.Sdk.Configuration.Model
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using dddlib.Sdk.Configuration.Model.TypeAnalyzerService;
 
     internal class ValueObjectType : Entity
     {

@@ -9,9 +9,10 @@ namespace dddlib.Tests.Sdk
     using System.Reflection;
     using dddlib.Configuration;
     using dddlib.Runtime;
-    using dddlib.Sdk;
     using dddlib.Sdk.Configuration;
     using dddlib.Sdk.Configuration.Model;
+    using dddlib.Sdk.Configuration.Model.BootstrapperService;
+    using dddlib.Sdk.Configuration.Model.TypeAnalyzerService;
     using FakeItEasy;
     using Xbehave;
 

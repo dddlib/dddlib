@@ -14,8 +14,8 @@ namespace dddlib.Sdk
     internal class DefaultValueObjectEqualityComparer<T> : IEqualityComparer<ValueObject<T>>
         where T : ValueObject<T>
     {
-        private static readonly MethodInfo CastToObjects = typeof(object).MakeEnumerableCastMethod();
-        private static readonly MethodInfo ObjectsEqual = typeof(object).MakeEnumerableSequenceEqualMethod();
+        private static readonly MethodInfo CastToObjects = MakeEnumerableCastMethod(typeof(object));
+        private static readonly MethodInfo ObjectsEqual = MakeEnumerableSequenceEqualMethod(typeof(object));
 
         private readonly Func<ValueObject<T>, ValueObject<T>, bool> equalsMethod;
         private readonly Func<ValueObject<T>, int> hashCodeMethod;
@@ -60,9 +60,18 @@ namespace dddlib.Sdk
 
         private static Expression Generate(Type type, Expression left, Expression right)
         {
-            var equalityOperator = type.GetEqualityOperatorOrDefault();
+            var equalityOperator = GetDeclaredEqualityOperatorOrDefault(typeof(object));
 
-            // TODO (Adam): optimise for IList - see http://stackoverflow.com/a/486781/49241
+            for (; type != typeof(object); type = type.BaseType)
+            {
+                var method = GetDeclaredEqualityOperatorOrDefault(type);
+                if (method != null)
+                {
+                    equalityOperator = method;
+                }
+            }            
+
+            // TODO (Adam): Optimize for IList. See http://stackoverflow.com/a/486781/49241
             if (equalityOperator == null && typeof(IEnumerable).IsAssignableFrom(type))
             {
                 var genericInterfaces = type.GetInterfaces()
@@ -72,7 +81,7 @@ namespace dddlib.Sdk
                 {
                     return genericInterfaces
                         .Select(@interface => Expression.Call(
-                            @interface.GetGenericArguments()[0].MakeEnumerableSequenceEqualMethod(),
+                            MakeEnumerableSequenceEqualMethod(@interface.GetGenericArguments()[0]),
                             Expression.Convert(left, @interface),
                             Expression.Convert(right, @interface)))
                         .Aggregate((Expression)Expression.Constant(true), (current, expression) => Expression.AndAlso(current, expression));
@@ -87,6 +96,40 @@ namespace dddlib.Sdk
         private static int GetHashCodeOrDefault<T1>(T1 value)
         {
             return object.Equals(value, default(T1)) ? 0 : value.GetHashCode();
+        }
+
+        private static MethodInfo MakeEnumerableCastMethod(Type type)
+        {
+            return typeof(EnumerableProxy).GetMethod("Cast").MakeGenericMethod(type);
+        }
+
+        private static MethodInfo MakeEnumerableSequenceEqualMethod(Type type)
+        {
+            return typeof(EnumerableProxy).GetMethod("SequenceEqual").MakeGenericMethod(type);
+        }
+
+        private static MethodInfo GetDeclaredEqualityOperatorOrDefault(Type type)
+        {
+            return type.GetMethods()
+                .Where(candidate => candidate.Name == "op_Equality")
+                .FirstOrDefault(candidate =>
+                {
+                    var parameters = candidate.GetParameters();
+                    return parameters.Length == 2 && parameters[0].ParameterType == type && parameters[1].ParameterType == type;
+                });
+        }
+
+        private static class EnumerableProxy
+        {
+            public static IEnumerable<TResult> Cast<TResult>(IEnumerable source)
+            {
+                return source.Cast<TResult>();
+            }
+
+            public static bool SequenceEqual<TSource>(IEnumerable<TSource> first, IEnumerable<TSource> second)
+            {
+                return first.SequenceEqual(second);
+            }
         }
     }
 }

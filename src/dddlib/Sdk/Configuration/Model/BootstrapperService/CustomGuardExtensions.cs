@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Sdk.Configuration
+namespace dddlib.Sdk.Configuration.Model.BootstrapperService
 {
     using System;
     using System.Linq.Expressions;

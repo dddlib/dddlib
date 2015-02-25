@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Sdk.Configuration.Model
+namespace dddlib.Sdk.Configuration.Model.TypeAnalyzerService
 {
     using System;
     using System.Linq;
