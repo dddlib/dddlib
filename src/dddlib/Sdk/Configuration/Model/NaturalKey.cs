@@ -10,8 +10,6 @@ namespace dddlib.Sdk.Configuration.Model
 
     internal class NaturalKey : ValueObject<NaturalKey>
     {
-        public static readonly NaturalKey Undefined = new NaturalKey();
-
         private static readonly DefaultValueObjectEqualityComparer<NaturalKey> DefaultEqualityComparer = new DefaultValueObjectEqualityComparer<NaturalKey>();
 
         private readonly Func<Entity, object> getValue = entity => null;

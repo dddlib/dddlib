@@ -40,7 +40,7 @@ namespace dddlib.Persistence
             var type = aggregateRoot.GetType(); // NOTE (Cameron): Because we can't trust typeof(T) as it may be the base class.
 
             var aggregateRootType = Application.Current.GetAggregateRootType(type);
-            if (aggregateRootType.NaturalKey == dddlib.Sdk.Configuration.Model.NaturalKey.Undefined)
+            if (aggregateRootType.NaturalKey == null)
             {
                 // TODO (Cameron): Exception text.
                 throw new RuntimeException("Cannot save an aggregate root without a defined natural key.");

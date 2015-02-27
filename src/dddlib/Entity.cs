@@ -103,13 +103,6 @@ namespace dddlib
                 return false;
             }
 
-            // TODO (Cameron): Remove NaturalKey.Undefined in preference of null (see above).
-            if (this.naturalKey == dddlib.Sdk.Configuration.Model.NaturalKey.Undefined &&
-                other.naturalKey == dddlib.Sdk.Configuration.Model.NaturalKey.Undefined)
-            {
-                return false;
-            }
-
             var thisValue = this.naturalKey.GetValue(this);
             var otherValue = this.naturalKey.GetValue(other);
 

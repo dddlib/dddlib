@@ -26,7 +26,7 @@ namespace dddlib.Sdk.Configuration.Model
             }
 
             this.RuntimeType = runtimeType;
-            this.NaturalKey = typeAnalyzerService.GetNaturalKey(runtimeType) ?? NaturalKey.Undefined;
+            this.NaturalKey = typeAnalyzerService.GetNaturalKey(runtimeType);
             this.NaturalKeyEqualityComparer = EqualityComparer<object>.Default;
             this.Mappings = new MapperCollection();
         }
@@ -47,10 +47,7 @@ namespace dddlib.Sdk.Configuration.Model
                         runtimeType.BaseType));
             }
 
-            if (this.NaturalKey == NaturalKey.Undefined)
-            {
-                this.NaturalKey = baseEntity.NaturalKey;
-            }
+            this.NaturalKey = this.NaturalKey ?? baseEntity.NaturalKey;
         }
 
         [dddlib.NaturalKey]
@@ -67,11 +64,6 @@ namespace dddlib.Sdk.Configuration.Model
         {
             Guard.Against.Null(() => naturalKey);
 
-            if (naturalKey == NaturalKey.Undefined)
-            {
-                throw new BusinessException("Cannot configure the natural key to be undefined.");
-            }
-
             if (this.NaturalKey == naturalKey)
             {
                 return;
@@ -86,7 +78,7 @@ namespace dddlib.Sdk.Configuration.Model
                         this.RuntimeType));
             }
 
-            if (this.NaturalKey != NaturalKey.Undefined)
+            if (this.NaturalKey != null)
             {
                 throw new BusinessException(
                     string.Format(

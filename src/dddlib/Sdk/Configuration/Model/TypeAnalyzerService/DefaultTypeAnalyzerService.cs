@@ -16,12 +16,9 @@ namespace dddlib.Sdk.Configuration.Model.TypeAnalyzerService
                 .Where(member => member.GetCustomAttributes(typeof(dddlib.NaturalKey), false).SingleOrDefault() != null)
                 .SingleOrDefault();
 
-            if (naturalKey == null)
-            {
-                return NaturalKey.Undefined;
-            }
-
-            return new NaturalKey(naturalKey.DeclaringType, naturalKey.Name, naturalKey.PropertyType, this);
+            return naturalKey == null
+                ? null
+                : new NaturalKey(naturalKey.DeclaringType, naturalKey.Name, naturalKey.PropertyType, this);
         }
 
         public bool IsValidAggregateRoot(Type runtimeType)
