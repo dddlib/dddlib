@@ -56,11 +56,11 @@
     <Compile Include="Sdk\Configuration\Model\NaturalKey.cs" />
     <Compile Include="Sdk\Configuration\Model\TypeAnalyzerService\DefaultTypeAnalyzerService.cs" />
     <Compile Include="Sdk\Configuration\Model\ValueObjectType.cs" />
-    <Compile Include="Sdk\DefaultEntityMapper.cs" />
+    <Compile Include="Sdk\Mapper\DefaultEntityMapper.cs" />
     <Compile Include="Sdk\Configuration\Model\BootstrapperService\DefaultBootstrapperProvider.cs" />
     <Compile Include="Sdk\Configuration\Model\BootstrapperService\IBootstrapperProvider.cs" />
-    <Compile Include="Sdk\MapperCollection.cs" />
-    <Compile Include="Sdk\DefaultEventMapper.cs" />
+    <Compile Include="Sdk\Mapper\MapperCollection.cs" />
+    <Compile Include="Sdk\Mapper\DefaultEventMapper.cs" />
     <Compile Include="Runtime\IEntityMapper.cs" />
     <Compile Include="Runtime\IEventMapper.cs" />
     <Compile Include="Runtime\IMapperProvider.cs" />
@@ -76,7 +76,7 @@
     <Compile Include="GuardExtensions.cs" />
     <Compile Include="Sdk\DefaultValueObjectEqualityComparer.cs" />
     <Compile Include="Sdk\StringEqualityComparer.cs" />
-    <Compile Include="Sdk\DefaultValueObjectMapper.cs" />
+    <Compile Include="Sdk\Mapper\DefaultValueObjectMapper.cs" />
     <Compile Include="Sdk\Configuration\Model\BootstrapperService\BootstrapperConfiguration.cs" />
     <Compile Include="Sdk\Configuration\Model\BootstrapperService\AggregateRootConfigurationWrapper.cs" />
     <Compile Include="Sdk\Configuration\Model\BootstrapperService\EntityConfigurationWrapper.cs" />
@@ -90,7 +90,7 @@
     <Compile Include="Sdk\DefaultEventDispatcher.cs" />
     <Compile Include="Configuration\IConfiguration.cs" />
     <Compile Include="Configuration\IBootstrapper.cs" />
-    <Compile Include="Sdk\IEventDispatcher.cs" />
+    <Compile Include="Runtime\IEventDispatcher.cs" />
     <Compile Include="Runtime\RuntimeException.cs" />
     <Compile Include="Sdk\Configuration\ValueObjectTypeFactory.cs" />
     <Compile Include="ValueObject.cs" />
