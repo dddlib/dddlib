@@ -26,7 +26,7 @@ namespace dddlib.Sdk
     /// </summary>
     public sealed class DefaultEventDispatcher : IEventDispatcher
     {
-        private static readonly string DefaultTargetMethodName = GetDefaultTargetMethodName();
+        private static readonly string DefaultMethodName = GetDefaultMethodName();
 
         private readonly Dictionary<Type, List<Action<object, object>>> handlers;
 
@@ -35,26 +35,27 @@ namespace dddlib.Sdk
         /// </summary>
         /// <param name="type">The type of the target object.</param>
         public DefaultEventDispatcher(Type type)
-            : this(type, DefaultTargetMethodName)
+            : this(type, DefaultMethodName, BindingFlags.Instance | BindingFlags.NonPublic)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DefaultEventDispatcher"/> class.
+        /// Initializes a new instance of the <see cref="DefaultEventDispatcher" /> class.
         /// </summary>
         /// <param name="type">The type of the target object.</param>
-        /// <param name="targetMethodName">The name of the target method.</param>
-        public DefaultEventDispatcher(Type type, string targetMethodName)
+        /// <param name="methodName">The name of the method.</param>
+        /// <param name="bindingFlags">The binding flags for the method.</param>
+        public DefaultEventDispatcher(Type type, string methodName, BindingFlags bindingFlags)
         {
             Guard.Against.Null(() => type);
-            Guard.Against.NullOrEmpty(() => targetMethodName);
+            Guard.Against.NullOrEmpty(() => methodName);
 
-            if (!CodeGenerator.IsValidLanguageIndependentIdentifier(targetMethodName))
+            if (!CodeGenerator.IsValidLanguageIndependentIdentifier(methodName))
             {
                 throw new ArgumentException("The specified target method name is not a valid language independent identifier.", "targetMethodName");
             }
 
-            this.handlers = GetHandlers(type, targetMethodName);
+            this.handlers = GetHandlers(type, methodName, bindingFlags);
         }
 
         /// <summary>
@@ -77,11 +78,11 @@ namespace dddlib.Sdk
             }
         }
 
-        private static Dictionary<Type, List<Action<object, object>>> GetHandlers(Type type, string targetMethodName)
+        private static Dictionary<Type, List<Action<object, object>>> GetHandlers(Type type, string methodName, BindingFlags bindingFlags)
         {
             var handlerMethods = type.GetTypeHierarchyUntil(typeof(object))
-                .SelectMany(t => t.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic))
-                .Where(method => method.Name.Equals(targetMethodName, StringComparison.OrdinalIgnoreCase))
+                .SelectMany(t => t.GetMethods(bindingFlags))
+                .Where(method => method.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase))
                 .Where(method => method.GetParameters().Count() == 1)
                 .Where(method => method.DeclaringType != typeof(object))
                 .Select(methodInfo =>
@@ -134,7 +135,7 @@ namespace dddlib.Sdk
         }
 
         // LINK (Cameron): http://blog.functionalfun.net/2009/10/getting-methodinfo-of-generic-method.html
-        private static string GetDefaultTargetMethodName()
+        private static string GetDefaultMethodName()
         {
             Expression<Action<DefaultEventDispatcher>> expression = aggregate => aggregate.Handle(default(object));
             var lambda = (LambdaExpression)expression;

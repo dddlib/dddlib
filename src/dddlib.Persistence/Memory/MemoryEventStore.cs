@@ -8,6 +8,7 @@ namespace dddlib.Persistence.Memory
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+    using System.Reflection;
     using dddlib.Sdk;
 
     /// <summary>
@@ -81,7 +82,8 @@ namespace dddlib.Persistence.Memory
                     .OrderBy(e => e.Value.Timestamp)
                     .SelectMany(e => e.Value.Events))
                 {
-                    new DefaultEventDispatcher(view.GetType()).Dispatch(view, @event);
+                    // TODO (Cameron): This is not very sensible.
+                    new DefaultEventDispatcher(view.GetType(), "Handle", BindingFlags.Instance | BindingFlags.Public).Dispatch(view, @event);
                 }
             }
         }

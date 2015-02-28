@@ -2,11 +2,6 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-[module: System.Diagnostics.CodeAnalysis.SuppressMessage(
-    "StyleCop.CSharp.NamingRules",
-    "SA1300:ElementMustBeginWithUpperCaseLetter",
-    Justification = "Noted.")]
-
 namespace dddlib.Persistence
 {
     /*  TODO (Cameron): 
@@ -17,7 +12,6 @@ namespace dddlib.Persistence
     using System.Collections.Generic;
     using System.Globalization;
     using dddlib.Runtime;
-    using dddlib.Sdk;
 
     /// <summary>
     /// Represents the aggregate root factory.

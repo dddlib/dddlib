@@ -4,10 +4,6 @@
 
 namespace dddlib.Persistence
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Globalization;
-
     /// <summary>
     /// Represents the aggregate root repository.
     /// </summary>

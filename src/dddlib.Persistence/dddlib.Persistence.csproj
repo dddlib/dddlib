@@ -54,7 +54,6 @@
     <Compile Include="IEventStoreRepository.cs" />
     <Compile Include="IIdentityMap.cs" />
     <Compile Include="IRepository.cs" />
-    <Compile Include="Memory\RubbishEventDispatcher.cs" />
     <Compile Include="Memory\MemoryEventStore.cs" />
     <Compile Include="Memory\MemoryIdentityMap.cs" />
     <Compile Include="Memory\MemoryRepository.cs" />
