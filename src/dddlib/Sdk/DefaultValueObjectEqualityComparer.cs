@@ -43,7 +43,7 @@ namespace dddlib.Sdk
                 .Aggregate((Expression)Expression.Constant(true), (current, expression) => Expression.AndAlso(current, expression));
 
             this.equalsMethod = Expression.Lambda<Func<ValueObject<T>, ValueObject<T>, bool>>(body, left, right).Compile();
-
+            
             var obj = Expression.Parameter(typeof(object), "obj");
             var body2 = type.GetProperties()
                 .Select(property => Expression.Call(

@@ -79,8 +79,7 @@ namespace dddlib.Sdk
 
         private static Dictionary<Type, List<Action<object, object>>> GetHandlers(Type type, string targetMethodName)
         {
-            var handlerMethods = new[] { type }
-                .Traverse(t => t.BaseType == typeof(object) ? null : new[] { t.BaseType })
+            var handlerMethods = type.GetTypeHierarchyUntil(typeof(object))
                 .SelectMany(t => t.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic))
                 .Where(method => method.Name.Equals(targetMethodName, StringComparison.OrdinalIgnoreCase))
                 .Where(method => method.GetParameters().Count() == 1)

@@ -27,7 +27,7 @@ namespace dddlib.Sdk.Configuration
         {
             var entityType = default(EntityType);
 
-            foreach (var subType in new[] { type }.Traverse(t => t.BaseType == typeof(object) ? null : new[] { t.BaseType }).Reverse())
+            foreach (var subType in type.GetTypeHierarchyUntil(typeof(object)).Reverse())
             {
                 if (entityType == null)
                 {

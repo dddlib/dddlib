@@ -60,8 +60,7 @@ namespace dddlib.Runtime
 
         private static Dictionary<Type, List<Action<object, object>>> GetHandlers(Type aggregateRootType)
         {
-            var handlerMethods = new[] { aggregateRootType }
-                .Traverse(type => type.BaseType == typeof(object) ? null : new[] { type.BaseType })
+            var handlerMethods = aggregateRootType.GetTypeHierarchyUntil(typeof(object))
                 .SelectMany(type => type.GetMethods(BindingFlags.Instance | BindingFlags.Public))
                 .Where(method => method.Name.Equals(ApplyMethodName, StringComparison.OrdinalIgnoreCase))
                 .Where(method => method.GetParameters().Count() == 1)

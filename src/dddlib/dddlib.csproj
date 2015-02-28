@@ -83,7 +83,7 @@
     <Compile Include="Configuration\IAggregateRootConfigurationWrapper.cs" />
     <Compile Include="Configuration\IEntityConfigurationWrapper.cs" />
     <Compile Include="Sdk\IFluentExtensions.cs" />
-    <Compile Include="Sdk\EnumerableExtensions.cs" />
+    <Compile Include="Sdk\TypeExtensions.cs" />
     <Compile Include="NaturalKey.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Runtime\Application.cs" />
