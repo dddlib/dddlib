@@ -90,7 +90,7 @@
     <Compile Include="Sdk\DefaultEventDispatcher.cs" />
     <Compile Include="Configuration\IConfiguration.cs" />
     <Compile Include="Configuration\IBootstrapper.cs" />
-    <Compile Include="Runtime\IEventDispatcher.cs" />
+    <Compile Include="Sdk\IEventDispatcher.cs" />
     <Compile Include="Runtime\RuntimeException.cs" />
     <Compile Include="Sdk\Configuration\ValueObjectTypeFactory.cs" />
     <Compile Include="ValueObject.cs" />

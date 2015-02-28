@@ -12,7 +12,6 @@ namespace dddlib.Sdk
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Reflection.Emit;
-    using dddlib.Runtime;
 
     /*  TODO (Cameron): 
         Any exceptions? - possibly of type RuntimeException (consider).

@@ -67,14 +67,15 @@ namespace dddlib.Sdk.Configuration.Model
 
         private static Func<Entity, object> AssignGetValue(Type runtimeType, string propertyName)
         {
+            var sourceParameter = Expression.Parameter(typeof(object), "source");
             var parameter = Expression.Parameter(runtimeType, "entity");
             var property = Expression.Property(parameter, propertyName);
-            ////var boxedProperty = Expression.Convert(property, typeof(object)); // TODO (Cameron): Only required for structs.
-            var funcType = typeof(Func<,>).MakeGenericType(runtimeType, typeof(object)); //// naturalKey.PropertyType);
+            var functionType = typeof(Func<,>).MakeGenericType(runtimeType, typeof(object));
+
             var lambda = property.Type.IsClass
-                ? Expression.Lambda(funcType, property, parameter)
-                : Expression.Lambda(funcType, Expression.Convert(property, typeof(object)), parameter);
-            var sourceParameter = Expression.Parameter(typeof(object), "source");
+                ? Expression.Lambda(functionType, property, parameter)
+                : Expression.Lambda(functionType, Expression.Convert(property, typeof(object)), parameter);
+
             var result = Expression.Lambda<Func<object, object>>(
                 Expression.Invoke(
                     lambda,
