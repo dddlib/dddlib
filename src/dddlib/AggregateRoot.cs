@@ -30,7 +30,6 @@ namespace dddlib
         private readonly Lazy<IMapperProvider> mapProvider = new Lazy<IMapperProvider>(() => new DefaultMapperProvider(), true);
         
         private readonly IEventDispatcher eventDispatcher;
-        private readonly bool dispatchEvents;
         private readonly bool persistEvents;
 
         private string state;
@@ -42,7 +41,6 @@ namespace dddlib
             Guard.Against.Null(() => eventDispatcher);
 
             this.eventDispatcher = eventDispatcher;
-            this.dispatchEvents = dispatchEvents;
             this.persistEvents = persistEvents;
         }
 
@@ -60,7 +58,6 @@ namespace dddlib
             var configuration = configureAggregateRoot(this);
 
             this.eventDispatcher = configuration.EventDispatcher;
-            this.dispatchEvents = configuration.DispatchEvents;
             this.persistEvents = configuration.PersistEvents;
         }
 
@@ -125,7 +122,7 @@ namespace dddlib
             ////    string.Format(
             ////        CultureInfo.InvariantCulture,
             ////        "The aggregate root of type '{0}' has not been configured to create a memento representing its state.",
-            ////        this.GetType().Name));
+            ////        this.GetType()));
 
             return null;
         }
@@ -140,7 +137,7 @@ namespace dddlib
                 string.Format(
                     CultureInfo.InvariantCulture,
                     "The aggregate root of type '{0}' has not been configured to apply a memento representing its state.",
-                    this.GetType().Name));
+                    this.GetType()));
         }
 
         /// <summary>
@@ -182,13 +179,23 @@ namespace dddlib
 
             if (!@event.GetType().IsClass)
             {
+                // TODO (Cameron): Check - is this possible?
                 return;
             }
 
-            if (this.dispatchEvents)
+            try
             {
-                // TODO (Cameron): Add try... catch block.
                 this.eventDispatcher.Dispatch(this, @event);
+            }
+            catch (Exception ex)
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "The event dispatcher of type '{0}' threw an exception whilst attempting to dispatch an event of type '{1}'.",
+                        this.eventDispatcher.GetType(),
+                        @event.GetType()),
+                    ex);
             }
 
             if (this.persistEvents && isNew)
@@ -201,13 +208,11 @@ namespace dddlib
         {
             public IEventDispatcher EventDispatcher { get; set; }
 
-            public bool DispatchEvents { get; set; }
-
             public bool PersistEvents { get; set; }
 
             public static Config From(AggregateRootType aggregateRootType)
             {
-                return new Config { EventDispatcher = aggregateRootType.EventDispatcher, DispatchEvents = aggregateRootType.DispatchEvents, PersistEvents = aggregateRootType.PersistEvents };
+                return new Config { EventDispatcher = aggregateRootType.EventDispatcher, PersistEvents = aggregateRootType.PersistEvents };
             }
         }
     }

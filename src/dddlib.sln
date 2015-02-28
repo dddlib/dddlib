@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30723.0
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{C23F7A97-EAAF-433E-8FCA-4893C049BA88}"
 	ProjectSection(SolutionItems) = preProject
@@ -21,8 +21,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		dddlib.snk = dddlib.snk
 		nuget.config = nuget.config
 		Settings.StyleCop = Settings.StyleCop
-		TODO.txt = TODO.txt
-		ValueObjectEquality.txt = ValueObjectEquality.txt
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib", "dddlib\dddlib.csproj", "{57610450-0379-472E-B40C-18B11295EEFA}"

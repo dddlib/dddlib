@@ -7,25 +7,22 @@ namespace dddlib.Persistence
     using System;
     using System.Globalization;
     using System.Linq;
+    using dddlib.Persistence.Sdk;
     using dddlib.Runtime;
 
     /// <summary>
     /// Represents the aggregate root repository.
     /// </summary>
     /// <typeparam name="T">The type of aggregate root.</typeparam>
-    public abstract class Repository<T> : IRepository<T> where T : AggregateRoot
+    public abstract class Repository<T> : RepositoryBase, IRepository<T> where T : AggregateRoot
     {
-        private readonly IIdentityMap identityMap;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="Repository{T}"/> class.
         /// </summary>
         /// <param name="identityMap">The identity map.</param>
         public Repository(IIdentityMap identityMap)
+            : base(identityMap)
         {
-            Guard.Against.Null(() => identityMap);
-
-            this.identityMap = identityMap;
         }
 
         /// <summary>
@@ -36,17 +33,7 @@ namespace dddlib.Persistence
         {
             Guard.Against.Null(() => aggregateRoot);
 
-            var type = aggregateRoot.GetType(); // NOTE (Cameron): Because we can't trust typeof(T) as it may be the base class.
-
-            var aggregateRootType = Application.Current.GetAggregateRootType(type);
-            if (aggregateRootType.NaturalKey == null)
-            {
-                // TODO (Cameron): Exception text.
-                throw new RuntimeException("Cannot save an aggregate root without a defined natural key.");
-            }
-
-            var naturalKey = aggregateRootType.NaturalKey.GetValue(aggregateRoot);
-            var id = this.identityMap.GetOrAdd(type, naturalKey, aggregateRootType.NaturalKeyEqualityComparer);
+            var id = this.GetId(aggregateRoot);
 
             var memento = aggregateRoot.GetMemento();
             if (memento == null)
@@ -54,8 +41,8 @@ namespace dddlib.Persistence
                 throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        "The aggregate root of type '{0}' has not been configured to create a memento representing its state.",
-                        type));
+                        "Cannot save aggregate root of type '{0}' as there is no configured memento representing its state.",
+                        aggregateRoot.GetType()));
             }
 
             var state = aggregateRoot.State;
@@ -64,8 +51,8 @@ namespace dddlib.Persistence
                 // NOTE (Cameron): This is the initial commit, for what it's worth.
             }
 
-            // NOTE (Cameron): Save.
-            string newState;
+            // TODO (Cameron): Try catch around save.
+            var newState = default(string);
             this.Save(id, memento, state, out newState);
 
             aggregateRoot.CommitEvents(newState);
@@ -78,14 +65,12 @@ namespace dddlib.Persistence
         /// <returns>The aggregate root.</returns>
         public T Load(object naturalKey)
         {
-            var id = this.identityMap.Get(typeof(T), naturalKey);
+            var id = this.GetId<T>(naturalKey);
 
             var state = default(string);
             var memento = this.Load(id, out state);
             
-            var factory = new AggregateRootFactory();
-            var aggregateRoot = factory.Reconstitute<T>(memento, Enumerable.Empty<object>(), state);
-            return aggregateRoot;
+            return this.Reconstitute<T>(memento, Enumerable.Empty<object>(), state);
         }
 
         /// <summary>

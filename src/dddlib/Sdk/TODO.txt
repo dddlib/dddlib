@@ -1,3 +1,0 @@
-﻿specify defaults in factory
-introduce valueobjectequalitycomparer concreate type (not the existing one) as a property on the runtime type
-make everything public

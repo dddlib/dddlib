@@ -5,9 +5,7 @@
 namespace dddlib.Tests.Unit
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.Serialization;
     using dddlib.Tests.Support.Events;
     using dddlib.Tests.Support.Model;
     using FluentAssertions;

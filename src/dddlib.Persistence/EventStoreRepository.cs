@@ -4,12 +4,13 @@
 
 namespace dddlib.Persistence
 {
+    using dddlib.Persistence.Sdk;
+
     /// <summary>
     /// Represents the aggregate root repository.
     /// </summary>
-    public class EventStoreRepository : IEventStoreRepository
+    public class EventStoreRepository : RepositoryBase, IEventStoreRepository
     {
-        private readonly IIdentityMap identityMap;
         private readonly IEventStore eventStore;
 
         /// <summary>
@@ -18,11 +19,10 @@ namespace dddlib.Persistence
         /// <param name="identityMap">The identity map.</param>
         /// <param name="eventStore">The event store.</param>
         public EventStoreRepository(IIdentityMap identityMap, IEventStore eventStore)
+            : base(identityMap)
         {
-            Guard.Against.Null(() => identityMap);
             Guard.Against.Null(() => eventStore);
 
-            this.identityMap = identityMap;
             this.eventStore = eventStore;
         }
 
@@ -35,13 +35,7 @@ namespace dddlib.Persistence
         {
             Guard.Against.Null(() => aggregateRoot);
 
-            var type = aggregateRoot.GetType(); // NOTE (Cameron): Because we can't trust typeof(T) as it may be the base class.
-
-            var aggregateRootType = dddlib.Runtime.Application.Current.GetAggregateRootType(type);
-            var entityType = dddlib.Runtime.Application.Current.GetEntityType(type);
-
-            var naturalKey = entityType.NaturalKey.GetValue(aggregateRoot);
-            var id = this.identityMap.GetOrAdd(type, naturalKey, entityType.NaturalKeyEqualityComparer);
+            var id = this.GetId(aggregateRoot);
 
             ////var memento = aggregateRoot.GetMemento();
             var events = aggregateRoot.GetUncommittedEvents();
@@ -52,11 +46,11 @@ namespace dddlib.Persistence
                 // NOTE (Cameron): This is the initial commit, for what it's worth.
             }
 
+            // TODO (Cameron): Try catch around commit stream.
             var newState = default(string);
             this.eventStore.CommitStream(id, events, state, out newState);
 
-            // NOTE (Cameron): Save.
-            // save the memento with the new commits if the state is the same as the old state and replace the state with the new state.
+            // TODO (Cameron): Save the memento with the new commits if the state is the same as the old state and replace the state with the new state.
             aggregateRoot.CommitEvents(newState);
         }
 
@@ -68,14 +62,12 @@ namespace dddlib.Persistence
         /// <returns>The aggregate root.</returns>
         public T Load<T>(object naturalKey) where T : AggregateRoot
         {
-            var id = this.identityMap.Get(typeof(T), naturalKey);
+            var id = this.GetId<T>(naturalKey);
 
-            var state = default(string); // get state
+            var state = default(string);
             var events = this.eventStore.GetStream(id, out state);
 
-            var factory = new AggregateRootFactory();
-            var aggregateRoot = factory.Reconstitute<T>(null, events, state);
-            return aggregateRoot;
+            return this.Reconstitute<T>(null, events, state);
         }
     }
 }

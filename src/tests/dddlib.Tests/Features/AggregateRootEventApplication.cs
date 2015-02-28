@@ -11,5 +11,8 @@ namespace dddlib.Tests.Features
     // I need to be able to record changes in state
     public abstract class AggregateRootEventApplication : Feature
     {
+        /*
+            Can change name of aggregate apply method
+        */
     }
 }

@@ -8,7 +8,7 @@ namespace dddlib.Runtime
     using System.Diagnostics.CodeAnalysis;
     using dddlib.Sdk;
 
-    ////[EditorBrowsable(EditorBrowsableState.Never)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible in editor.")]
     public interface IMapperProvider : IFluentExtensions
     {

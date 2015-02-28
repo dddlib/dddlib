@@ -35,13 +35,6 @@ namespace dddlib.Sdk.Configuration.Model
             get { return this.UninitializedFactory != null; }
         }
 
-        // NOTE (Cameron): Only dispatch events IF there is an event dispatcher AND if there are any handler methods?
-        // TODO (Cameron): Check to see if there are any handler methods.
-        public bool DispatchEvents
-        {
-            get { return this.EventDispatcher != null; }
-        }
-
         public void ConfigureUnititializedFactory(Delegate uninitializedFactory)
         {
             Guard.Against.Null(() => uninitializedFactory);

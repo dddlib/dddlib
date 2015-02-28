@@ -4,10 +4,13 @@
 
 namespace dddlib.Tests.Features
 {
+    using System;
     using dddlib.Configuration;
     using dddlib.Persistence;
     using dddlib.Persistence.Memory;
+    using dddlib.Runtime;
     using dddlib.Tests.Sdk;
+    using FluentAssertions;
     using Xbehave;
 
     // As someone who uses dddlib [with event sourcing]
@@ -17,8 +20,8 @@ namespace dddlib.Tests.Features
     {
         public class UndefinedNaturalKey : AggregateRootPersistenceEventSourcing
         {
-            [Scenario(Skip = "Finish writing test.")]
-            public void Scenario(EventStoreRepository repository, Subject instance)
+            [Scenario]
+            public void Scenario(EventStoreRepository repository, Subject instance, Action action)
             {
                 "Given a repository"
                     .Given(() => repository = new EventStoreRepository(new MemoryIdentityMap(), new MemoryEventStore()));
@@ -27,10 +30,10 @@ namespace dddlib.Tests.Features
                     .And(() => instance = new Subject());
 
                 "When that instance is saved to the repository"
-                    .When(() => repository.Save(instance));
+                    .When(() => action = () => repository.Save(instance));
 
                 "Then a runtime exception is thrown"
-                    .Then(() => { /* TODO (Cameron): write this test? */ });
+                    .Then(() => action.ShouldThrow<RuntimeException>());
             }
 
             public class Subject : AggregateRoot
