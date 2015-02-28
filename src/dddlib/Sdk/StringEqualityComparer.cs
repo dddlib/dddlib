@@ -6,6 +6,7 @@ namespace dddlib.Sdk
 {
     using System.Collections.Generic;
 
+    // TODO (Cameron): Is this the best way to do this?
     internal class StringEqualityComparer : IEqualityComparer<object>, IEqualityComparer<string>
     {
         private readonly IEqualityComparer<string> innerComparer;

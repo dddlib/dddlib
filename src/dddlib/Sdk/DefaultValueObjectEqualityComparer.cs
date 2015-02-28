@@ -11,15 +11,23 @@ namespace dddlib.Sdk
     using System.Linq.Expressions;
     using System.Reflection;
 
-    internal class DefaultValueObjectEqualityComparer<T> : IEqualityComparer<ValueObject<T>>
+    /// <summary>
+    /// The default value object equality comparer.
+    /// </summary>
+    /// <typeparam name="T">The type of value object.</typeparam>
+    public sealed class DefaultValueObjectEqualityComparer<T> : IEqualityComparer<ValueObject<T>>
         where T : ValueObject<T>
     {
         private static readonly MethodInfo CastToObjects = MakeEnumerableCastMethod(typeof(object));
         private static readonly MethodInfo ObjectsEqual = MakeEnumerableSequenceEqualMethod(typeof(object));
+        private static readonly MethodInfo ObjectEqualityOperator = GetDeclaredEqualityOperatorOrDefault(typeof(object));
 
         private readonly Func<ValueObject<T>, ValueObject<T>, bool> equalsMethod;
         private readonly Func<ValueObject<T>, int> hashCodeMethod;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DefaultValueObjectEqualityComparer{T}"/> class.
+        /// </summary>
         public DefaultValueObjectEqualityComparer()
         {
             var type = typeof(T);
@@ -48,19 +56,32 @@ namespace dddlib.Sdk
             this.hashCodeMethod = Expression.Lambda<Func<ValueObject<T>, int>>(body2, obj).Compile();
         }
 
+        /// <summary>
+        /// Determines whether the specified value objects are equal.
+        /// </summary>
+        /// <param name="x">The first value object to compare.</param>
+        /// <param name="y">The second value object to compare.</param>
+        /// <returns>Returns <c>true</c> if the specified objects are equal; otherwise, <c>false</c>.</returns>
         public bool Equals(ValueObject<T> x, ValueObject<T> y)
         {
             return this.equalsMethod(x, y);
         }
 
+        /// <summary>
+        /// Returns a hash code for the specified value object.
+        /// </summary>
+        /// <param name="obj">The value object for which a hash code is to be returned.</param>
+        /// <returns>A hash code for the value object, suitable for use in hashing algorithms and data structures like a hash table. </returns>
         public int GetHashCode(ValueObject<T> obj)
         {
+            Guard.Against.Null(() => obj);
+
             return unchecked(this.hashCodeMethod(obj));
         }
 
         private static Expression Generate(Type type, Expression left, Expression right)
         {
-            var equalityOperator = GetDeclaredEqualityOperatorOrDefault(typeof(object));
+            var equalityOperator = ObjectEqualityOperator;
 
             for (; type != typeof(object); type = type.BaseType)
             {

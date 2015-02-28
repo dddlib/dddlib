@@ -5,6 +5,7 @@
 namespace dddlib.Sdk
 {
     using System;
+    using System.CodeDom.Compiler;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
@@ -13,7 +14,6 @@ namespace dddlib.Sdk
     using System.Reflection.Emit;
 
     /*  TODO (Cameron): 
-        Unseal and make methods virtual.
         Any exceptions? - possibly of type RuntimeException (consider).
         Consider what to do with multiple base classes with different dispatchers.
         Add ability to configure method name.
@@ -23,30 +23,47 @@ namespace dddlib.Sdk
     /// <summary>
     /// Represents the default event dispatcher.
     /// </summary>
-    internal sealed class DefaultEventDispatcher : IEventDispatcher
+    public sealed class DefaultEventDispatcher : IEventDispatcher
     {
-        private static readonly string ApplyMethodName = GetApplyMethodName();
+        private static readonly string DefaultTargetMethodName = GetDefaultTargetMethodName();
 
         private readonly Dictionary<Type, List<Action<object, object>>> handlers;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultEventDispatcher"/> class.
         /// </summary>
-        /// <param name="aggregateType">Type of the aggregate.</param>
-        public DefaultEventDispatcher(Type aggregateType)
+        /// <param name="type">The type of the target object.</param>
+        public DefaultEventDispatcher(Type type)
+            : this(type, DefaultTargetMethodName)
         {
-            Guard.Against.Null(() => aggregateType);
-
-            this.handlers = GetHandlers(aggregateType);
         }
 
         /// <summary>
-        /// Dispatches the specified event against the specified target.
+        /// Initializes a new instance of the <see cref="DefaultEventDispatcher"/> class.
         /// </summary>
-        /// <param name="target">The target.</param>
+        /// <param name="type">The type of the target object.</param>
+        /// <param name="targetMethodName">The name of the target method.</param>
+        public DefaultEventDispatcher(Type type, string targetMethodName)
+        {
+            Guard.Against.Null(() => type);
+            Guard.Against.NullOrEmpty(() => targetMethodName);
+
+            if (!CodeGenerator.IsValidLanguageIndependentIdentifier(targetMethodName))
+            {
+                throw new ArgumentException("The specified target method name is not a valid language independent identifier.", "targetMethodName");
+            }
+
+            this.handlers = GetHandlers(type, targetMethodName);
+        }
+
+        /// <summary>
+        /// Dispatches an event to the specified target object.
+        /// </summary>
+        /// <param name="target">The target object.</param>
         /// <param name="event">The event.</param>
         public void Dispatch(object target, object @event)
         {
+            Guard.Against.Null(() => target);
             Guard.Against.Null(() => @event);
 
             var handlerList = default(List<Action<object, object>>);
@@ -59,14 +76,14 @@ namespace dddlib.Sdk
             }
         }
 
-        private static Dictionary<Type, List<Action<object, object>>> GetHandlers(Type aggregateRootType)
+        private static Dictionary<Type, List<Action<object, object>>> GetHandlers(Type type, string targetMethodName)
         {
-            var handlerMethods = new[] { aggregateRootType }
-                .Traverse(type => type.BaseType == typeof(Entity) ? null : new[] { type.BaseType })
-                .SelectMany(type => type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic))
-                .Where(method => method.Name.Equals(ApplyMethodName, StringComparison.OrdinalIgnoreCase))
+            var handlerMethods = new[] { type }
+                .Traverse(t => t.BaseType == typeof(object) ? null : new[] { t.BaseType })
+                .SelectMany(t => t.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic))
+                .Where(method => method.Name.Equals(targetMethodName, StringComparison.OrdinalIgnoreCase))
                 .Where(method => method.GetParameters().Count() == 1)
-                .Where(method => method.DeclaringType != typeof(Entity))
+                .Where(method => method.DeclaringType != typeof(object))
                 .Select(methodInfo =>
                     new
                     {
@@ -83,7 +100,7 @@ namespace dddlib.Sdk
 
             foreach (var handlerMethod in handlerMethods.Except(invalidHandlerMethodTypes))
             {
-                var handler = CreateHandlerDelegate(aggregateRootType, handlerMethod.Info);
+                var handler = CreateHandlerDelegate(type, handlerMethod.Info);
                 var handlerList = default(List<Action<object, object>>);
                 if (!handlers.TryGetValue(handlerMethod.ParameterType, out handlerList))
                 {
@@ -117,7 +134,7 @@ namespace dddlib.Sdk
         }
 
         // LINK (Cameron): http://blog.functionalfun.net/2009/10/getting-methodinfo-of-generic-method.html
-        private static string GetApplyMethodName()
+        private static string GetDefaultTargetMethodName()
         {
             Expression<Action<DefaultEventDispatcher>> expression = aggregate => aggregate.Handle(default(object));
             var lambda = (LambdaExpression)expression;
