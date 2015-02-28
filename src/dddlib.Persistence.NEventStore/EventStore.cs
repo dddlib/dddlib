@@ -7,6 +7,7 @@ namespace dddlib.Persistence.NEventStore
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using dddlib.Sdk;
     using global::NEventStore;
 
     /// <summary>
@@ -86,7 +87,7 @@ namespace dddlib.Persistence.NEventStore
             {
                 foreach (var view in views)
                 {
-                    new Runtime.RubbishEventDispatcher(view.GetType()).Dispatch(view, @event);
+                    new DefaultEventDispatcher(view.GetType()).Dispatch(view, @event);
                 }
             }
         }

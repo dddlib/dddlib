@@ -8,7 +8,7 @@ namespace dddlib.Persistence.Memory
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
-    using dddlib.Runtime;
+    using dddlib.Sdk;
 
     /// <summary>
     /// Represents a memory-based event store.
@@ -81,7 +81,7 @@ namespace dddlib.Persistence.Memory
                     .OrderBy(e => e.Value.Timestamp)
                     .SelectMany(e => e.Value.Events))
                 {
-                    new RubbishEventDispatcher(view.GetType()).Dispatch(view, @event);
+                    new DefaultEventDispatcher(view.GetType()).Dispatch(view, @event);
                 }
             }
         }
