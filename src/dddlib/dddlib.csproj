@@ -51,6 +51,8 @@
     </Compile>
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="BusinessException.cs" />
+    <Compile Include="Guard.cs" />
+    <Compile Include="GuardExtensions.cs" />
     <Compile Include="Sdk\Configuration\Model\AggregateRootType.cs" />
     <Compile Include="Sdk\Configuration\Model\EntityType.cs" />
     <Compile Include="Sdk\Configuration\Model\ITypeAnalyzerService.cs" />
@@ -73,8 +75,6 @@
     <Compile Include="Sdk\Configuration\Model\BootstrapperService\ValueObjectConfigurationWrapper.cs" />
     <Compile Include="Configuration\IValueObjectConfigurationWrapper.cs" />
     <Compile Include="Entity.cs" />
-    <Compile Include="Guard.cs" />
-    <Compile Include="GuardExtensions.cs" />
     <Compile Include="Sdk\DefaultValueObjectEqualityComparer.cs" />
     <Compile Include="Sdk\StringEqualityComparer.cs" />
     <Compile Include="Sdk\Mapper\DefaultValueObjectMapper.cs" />
