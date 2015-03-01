@@ -27,7 +27,7 @@ namespace dddlib.Tests.Sdk
         public void Background()
         {
             "Given a new application"
-                .Given(() =>
+                .Given(context =>
                 {
                     var typeAnalyzerService = new DefaultTypeAnalyzerService();
                     var bootstrapperProvider = new FeatureBootstrapperProvider();
@@ -35,7 +35,7 @@ namespace dddlib.Tests.Sdk
                         t => new AggregateRootTypeFactory(typeAnalyzerService, bootstrapperProvider).Create(t),
                         t => new EntityTypeFactory(typeAnalyzerService, bootstrapperProvider).Create(t),
                         t => new ValueObjectTypeFactory(typeAnalyzerService, bootstrapperProvider).Create(t))
-                        .Using();
+                        .Using(context);
                 });
         }
 

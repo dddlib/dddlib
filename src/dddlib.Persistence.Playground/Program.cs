@@ -33,10 +33,9 @@
                 .UsingInMemoryPersistence()
                 //.UsingSqlPersistence("EventStore") // Connection string is in app.config
                 //.WithDialect(new MsSqlDialect())
-                .EnlistInAmbientTransaction() // two-phase commit
+                .EnlistInAmbientTransaction()
                 .InitializeStorageEngine()
                 .UsingJsonSerialization()
-                .UsingSynchronousDispatchScheduler()
                 //.DispatchTo(new DelegateMessageDispatcher(DispatchCommit))
                 .Build();
         }

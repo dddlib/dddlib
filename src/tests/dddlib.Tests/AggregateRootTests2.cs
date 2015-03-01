@@ -15,7 +15,7 @@ namespace dddlib.Tests.Acceptance
         public void Background()
         {
             "Given a new application"
-                .Given(() => new Application().Using());
+                .Given(context => new Application().Using(context));
         }
 
         [Scenario]
