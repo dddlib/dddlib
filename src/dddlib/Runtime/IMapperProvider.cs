@@ -4,11 +4,12 @@
 
 namespace dddlib.Runtime
 {
-    using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
     using dddlib.Sdk;
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
+    /// <summary>
+    /// Exposes the public members of the mapper provider.
+    /// </summary>
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible in editor.")]
     public interface IMapperProvider : IFluentExtensions
     {

@@ -6,6 +6,7 @@ namespace dddlib.Sdk.Configuration.Model
 {
     using System;
     using System.Globalization;
+    using dddlib.Runtime;
 
     internal class AggregateRootType : EntityType
     {
