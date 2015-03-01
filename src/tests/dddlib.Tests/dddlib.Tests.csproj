@@ -1,0 +1,133 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\..\packages\xunit.runner.visualstudio.2.0.0-rc1-build1030\build\net20\xunit.runner.visualstudio.props" Condition="Exists('..\..\..\packages\xunit.runner.visualstudio.2.0.0-rc1-build1030\build\net20\xunit.runner.visualstudio.props')" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{2B75C09F-7812-4F56-B108-FCCE494F64A5}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>dddlib.Tests</RootNamespace>
+    <AssemblyName>dddlib.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <StyleCopTreatErrorsAsWarnings>false</StyleCopTreatErrorsAsWarnings>
+    <NuGetPackageImportStamp>27e2b0a0</NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <CodeAnalysisRuleSet>..\..\dddlib.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>..\..\dddlib.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Bugs\Bug0001.cs" />
+    <Compile Include="Features\BusinessException.cs" />
+    <Compile Include="Unit\EntityTypeTests.cs" />
+    <Compile Include="Unit\ValueObjectTypeTests.cs" />
+    <None Include="..\..\dddlib.snk">
+      <Link>Properties\dddlib.snk</Link>
+    </None>
+    <Compile Include="Features\AggregateRootEquality.cs" />
+    <Compile Include="Features\AggregateRootEventApplication.cs" />
+    <Compile Include="Features\AggregateRootLifecycle.cs" />
+    <Compile Include="Features\AggregateRootObjectMappingEntities.cs" />
+    <Compile Include="Features\AggregateRootObjectMappingValueObjects.cs" />
+    <Compile Include="Features\EntityEquality.cs" />
+    <Compile Include="Support\Bootstrapper.cs" />
+    <Compile Include="Features\ValueObjectEquality.cs" />
+    <Compile Include="Sdk\Feature.cs" />
+    <Compile Include="RuntimeTests.NaturalKeySerializerTest.cs" />
+    <Compile Include="RuntimeTests.NaturalKeyTest.cs" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Runtime\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AggregateRootTests2.cs" />
+    <Compile Include="RuntimeTests.cs" />
+    <Compile Include="Unit\AggregateRootTests.cs" />
+    <Compile Include="Unit\BusinessExceptionTests.cs" />
+    <Compile Include="Unit\EntityTests.cs" />
+    <Compile Include="Unit\NaturalKeyAttributeTests.cs" />
+    <Compile Include="Support\Car.cs" />
+    <Compile Include="Support\Registration.cs" />
+    <Compile Include="Support\Wheel.cs" />
+    <Compile Include="Unit\Runtime\ApplicationTests.cs" />
+    <Compile Include="Unit\Runtime\Configuration\AssemblyConfigurationTests.cs" />
+    <Compile Include="Unit\Runtime\DefaultEventDispatcherTests.cs" />
+    <Compile Include="Unit\Runtime\DefaultTypeConfigurationProviderTests.cs" />
+    <Compile Include="Unit\Runtime\RuntimeExceptionTests.cs" />
+    <Compile Include="Unit\Runtime\TypeDescriptorTests.cs" />
+    <Compile Include="Unit\ValueObjectTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="FakeItEasy, Version=1.25.2.0, Culture=neutral, PublicKeyToken=eff28e2146d5fd2c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\FakeItEasy.1.25.2\lib\net40\FakeItEasy.dll</HintPath>
+    </Reference>
+    <Reference Include="FluentAssertions, Version=3.3.0.0, Culture=neutral, PublicKeyToken=33f2691a05b67b6a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\FluentAssertions.3.3.0\lib\net45\FluentAssertions.dll</HintPath>
+    </Reference>
+    <Reference Include="FluentAssertions.Core">
+      <HintPath>..\..\..\packages\FluentAssertions.3.3.0\lib\net45\FluentAssertions.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="Xbehave, Version=1.1.0.0, Culture=neutral, PublicKeyToken=e4957f48888f9fe8, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\Xbehave.1.1.0\lib\net45\Xbehave.dll</HintPath>
+    </Reference>
+    <Reference Include="xunit">
+      <HintPath>..\..\..\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
+    </Reference>
+    <Reference Include="xunit.extensions">
+      <HintPath>..\..\..\packages\xunit.extensions.1.9.2\lib\net20\xunit.extensions.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\dddlib\dddlib.csproj">
+      <Project>{57610450-0379-472e-b40c-18b11295eefa}</Project>
+      <Name>dddlib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\dddlib.Tests.Support\dddlib.Tests.Support.csproj">
+      <Project>{6777cb50-8686-4a93-a492-01862e07342c}</Project>
+      <Name>dddlib.Tests.Support</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\..\packages\xunit.runner.visualstudio.2.0.0-rc1-build1030\build\net20\xunit.runner.visualstudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\xunit.runner.visualstudio.2.0.0-rc1-build1030\build\net20\xunit.runner.visualstudio.props'))" />
+    <Error Condition="!Exists('..\..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets'))" />
+  </Target>
+  <Import Project="..\..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets" Condition="Exists('..\..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets')" />
+</Project>
