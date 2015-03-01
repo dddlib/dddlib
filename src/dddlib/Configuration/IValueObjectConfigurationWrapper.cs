@@ -10,6 +10,7 @@ namespace dddlib.Configuration
     using System.Diagnostics.CodeAnalysis;
     using dddlib.Sdk;
 
+#pragma warning disable 1591
     [EditorBrowsable(EditorBrowsableState.Never)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible in editor.")]
     public interface IValueObjectConfigurationWrapper<T> : IValueObjectConfigurationWrapper<IValueObjectConfigurationWrapper<T>, T>, IFluentExtensions
@@ -23,6 +24,7 @@ namespace dddlib.Configuration
         where T : ValueObject<T>
         where TConfiguration : IValueObjectConfigurationWrapper<TConfiguration, T>
     {
+#pragma warning restore 1591
         /// <summary>
         /// Configures the runtime to perform value object equality using the specified equality comparer.
         /// </summary>

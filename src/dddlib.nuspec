@@ -20,5 +20,6 @@ dddlib contributors</authors>
   </metadata>
   <files>
     <file src="dddlib\bin\Release\dddlib.dll" target="lib\net45" />
+    <file src="dddlib\bin\Release\dddlib.xml" target="lib\net45" />
   </files>
 </package>

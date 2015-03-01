@@ -11,6 +11,7 @@ namespace dddlib.Configuration
     using System.Linq.Expressions;
     using dddlib.Sdk;
 
+#pragma warning disable 1591
     [EditorBrowsable(EditorBrowsableState.Never)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible in editor.")]
     public interface IEntityConfigurationWrapper<T> : IEntityConfigurationWrapper<IEntityConfigurationWrapper<T>, T>, IFluentExtensions
@@ -24,6 +25,7 @@ namespace dddlib.Configuration
         where T : Entity
         where TConfiguration : IEntityConfigurationWrapper<TConfiguration, T>
     {
+#pragma warning restore 1591
         /// <summary>
         /// Configures the runtime to assign the natural key of the entity using the specified natural key selector.
         /// </summary>

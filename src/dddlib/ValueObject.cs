@@ -48,6 +48,7 @@ namespace dddlib
             this.valueObject = (T)this; // NOTE (Cameron): Micro-optimization.
         }
 
+#pragma warning disable 1591
         [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible anywhere.")]
         public static bool operator ==(ValueObject<T> first, ValueObject<T> second)
         {
@@ -59,6 +60,7 @@ namespace dddlib
         {
             return !(first == second);
         }
+#pragma warning restore 1591
 
         /// <summary>
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.

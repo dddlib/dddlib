@@ -8,10 +8,12 @@ namespace dddlib.Runtime
     using System.Diagnostics.CodeAnalysis;
     using dddlib.Sdk;
 
+#pragma warning disable 1591
     [EditorBrowsable(EditorBrowsableState.Never)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible in editor.")]
     public interface IEventMapper<TEvent> : IFluentExtensions
     {
+#pragma warning restore 1591
         /// <summary>
         /// Specifies that the event should be mapped to an entity.
         /// </summary>

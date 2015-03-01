@@ -41,6 +41,7 @@ namespace dddlib
             this.naturalKeyEqualityComparer = configuration.NaturalKeyEqualityComparer;
         }
 
+#pragma warning disable 1591
         [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1600:ElementsMustBeDocumented", Justification = "Not visible anywhere.")]
         public static bool operator ==(Entity first, Entity second)
         {
@@ -52,6 +53,7 @@ namespace dddlib
         {
             return !(first == second);
         }
+#pragma warning restore 1591
 
         /// <summary>
         /// Determines whether the specified <see cref="System.Object" /> is equal to this instance.

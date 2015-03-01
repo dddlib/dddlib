@@ -2,6 +2,8 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
+#pragma warning disable 1591
+
 namespace dddlib.Sdk
 {
     using System;
