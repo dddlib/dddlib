@@ -16,18 +16,18 @@
     <NugetPublishApiKey Condition=" '$(Flavour)' == 'beta' Or '$(Flavour)' == 'release' ">$(NugetApiKey)</NugetPublishApiKey>
     <NugetPublishApiKey Condition=" '$(NugetPublishApiKey)' == '' ">$(NugetDevApiKey)</NugetPublishApiKey>
   </PropertyGroup>
+
+  <Target Name="PackageRestore">
+    <Exec Command="$(Nuget) restore $(SolutionName).sln -PackagesDirectory &quot;..\packages&quot;" />
+  </Target>
   
-  <Target Name="UpdateVersion">
+  <Target Name="UpdateVersion;PackageRestore">
    	<ReadLinesFromFile File="Version.txt">
   		<Output TaskParameter="Lines" PropertyName="VersionNumber" />
     </ReadLinesFromFile>
     <SetAssemblyVersion FileName="CommonAssemblyInfo.cs" VersionNumber="$(VersionNumber)" Flavour="$(Flavour)" BuildNumber="$(BuildNumber)">
       <Output TaskParameter="SemanticVersion" PropertyName="SemanticVersion" />
     </SetAssemblyVersion>
-  </Target>
-
-  <Target Name="PackageRestore">
-    <Exec Command="$(Nuget) restore $(SolutionName).sln -PackagesDirectory &quot;..\packages&quot;" />
   </Target>
   
   <Target Name="Build" DependsOnTargets="UpdateVersion;PackageRestore">
