@@ -1,4 +1,5 @@
 /[Pp]ackages/
+!/[Pp]ackages/NuGet.CommandLine.*
 /[Bb]uild/
 [Bb]in/
 [Oo]bj/

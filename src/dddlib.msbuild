@@ -25,8 +25,12 @@
       <Output TaskParameter="SemanticVersion" PropertyName="SemanticVersion" />
     </SetAssemblyVersion>
   </Target>
-    
-  <Target Name="Build" DependsOnTargets="UpdateVersion">
+
+  <Target Name="PackageRestore">
+    <Exec Command="$(Nuget) restore $(SolutionName).sln -PackagesDirectory &quot;..\packages&quot;" />
+  </Target>
+  
+  <Target Name="Build" DependsOnTargets="UpdateVersion;PackageRestore">
     <MSBuild Projects="$(SolutionName).sln" Properties="Configuration=Release" />
   </Target>
 
