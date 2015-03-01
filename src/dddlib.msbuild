@@ -21,7 +21,7 @@
     <Exec Command="$(Nuget) restore $(SolutionName).sln -PackagesDirectory &quot;..\packages&quot;" />
   </Target>
   
-  <Target Name="UpdateVersion;PackageRestore">
+  <Target Name="UpdateVersion" DependsOnTargets="PackageRestore">
    	<ReadLinesFromFile File="Version.txt">
   		<Output TaskParameter="Lines" PropertyName="VersionNumber" />
     </ReadLinesFromFile>
