@@ -1,0 +1,7 @@
+﻿Many failings:
+No business logic - no logic in model at all
+Invalid state possible
+View logic in application itself
+No domain language in code
+
+Base level - no DDD

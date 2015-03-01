@@ -1,0 +1,11 @@
+﻿Much fixes:
+Business logic in model (Woohoo!)
+No invalid model state possible
+No view logic in application
+Language makes sense
+
+This is DDD
+
+Still some failings:
+View logic in model now
+We're using a string as a key for persistence when the natural key is a value object

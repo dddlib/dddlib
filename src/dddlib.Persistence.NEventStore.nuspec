@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>dddlib.Persistence.NEventStore</id>
+    <title>dddlib.Persistence.NEventStore</title>
+    <version>0.0.1</version>
+    <authors>Cameron Fletcher, 
+dddlib contributors</authors>
+    <projectUrl>https://github.com/cameronfletcher/dddlib/wiki</projectUrl>
+    <!--<iconUrl>http://nuget.cameronfletcher.com/icons/dddlib.png</iconUrl>-->
+    <licenseUrl>https://raw.github.com/cameronfletcher/dddlib/master/LICENSE.mit.txt</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>The NEventStore persistence implementation for dddlib, a domain driven design library for .NET</description>
+    <releaseNotes>TBD</releaseNotes>
+    <copyright>Copyright (c) dddlib contributors.</copyright>
+    <tags>domain driven design library dddlib persistence event store eventstore neventstore</tags>
+    <dependencies>
+      <dependency id="dddlib" version="$version$" />
+      <dependency id="dddlib.Persistence" version="$version$" />
+      <dependency id="NEventStore" version="5.0.1.2" />
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System" targetFramework="net45" />
+    </frameworkAssemblies>
+  </metadata>
+  <files>
+    <file src="dddlib.Persistence.NEventStore\bin\Release\dddlib.Persistence.NEventStore.dll" target="lib\net45" />
+  </files>
+</package>

@@ -1,0 +1,4 @@
+﻿Much fixes:
+View logic now in view
+
+This is DDD with Event Sourcing and CQRS
