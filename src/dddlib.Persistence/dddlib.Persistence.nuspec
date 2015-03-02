@@ -22,7 +22,7 @@ dddlib contributors</authors>
     </frameworkAssemblies>
   </metadata>
   <files>
-    <file src="dddlib.Persistence\bin\Release\dddlib.Persistence.dll" target="lib\net45" />
-    <file src="dddlib.Persistence\bin\Release\dddlib.Persistence.xml" target="lib\net45" />
+    <file src="bin\Release\dddlib.Persistence.dll" target="lib\net45" />
+    <file src="bin\Release\dddlib.Persistence.xml" target="lib\net45" />
   </files>
 </package>
