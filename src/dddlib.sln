@@ -18,6 +18,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		dddlib.ruleset = dddlib.ruleset
 		dddlib.snk = dddlib.snk
 		Settings.StyleCop = Settings.StyleCop
+		TODO.txt = TODO.txt
 		Version.txt = Version.txt
 	EndProjectSection
 EndProject
