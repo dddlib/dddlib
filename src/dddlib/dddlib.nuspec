@@ -6,12 +6,12 @@
     <version>0.0.1</version>
     <authors>Cameron Fletcher, 
 dddlib contributors</authors>
-    <projectUrl>https://github.com/cameronfletcher/dddlib/wiki</projectUrl>
+    <projectUrl>https://github.com/dddlib/dddlib/wiki</projectUrl>
     <iconUrl>http://nuget.cameronfletcher.com/icons/dddlib.png</iconUrl>
-    <licenseUrl>https://raw.github.com/cameronfletcher/dddlib/master/LICENSE.mit.txt</licenseUrl>
+    <licenseUrl>https://raw.githubusercontent.com/dddlib/dddlib/dev/LICENSE.mit.txt</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A domain driven design library for .NET</description>
-    <releaseNotes>TBD</releaseNotes>
+    <releaseNotes>Initial release</releaseNotes>
     <copyright>Copyright (c) dddlib contributors.</copyright>
     <tags>domain driven design library dddlib</tags>
     <frameworkAssemblies>
