@@ -5,7 +5,7 @@ VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{C23F7A97-EAAF-433E-8FCA-4893C049BA88}"
 	ProjectSection(SolutionItems) = preProject
-		.nuget\nuget.config = .nuget\nuget.config
+		nuget.config = nuget.config
 		.nuget\packages.config = .nuget\packages.config
 	EndProjectSection
 EndProject
@@ -15,11 +15,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		CommonAssemblyInfo.cs = CommonAssemblyInfo.cs
 		dddlib.dictionary = dddlib.dictionary
 		dddlib.msbuild = dddlib.msbuild
-		dddlib.nuspec = dddlib.nuspec
-		dddlib.Persistence.nuspec = dddlib.Persistence.nuspec
 		dddlib.ruleset = dddlib.ruleset
 		dddlib.snk = dddlib.snk
 		Settings.StyleCop = Settings.StyleCop
+		TODO.txt = TODO.txt
 		Version.txt = Version.txt
 	EndProjectSection
 EndProject

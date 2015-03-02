@@ -27,7 +27,8 @@ namespace dddlib.Sdk.Configuration.Model.BootstrapperService
 
         public IEntityConfigurationWrapper<T> ToUseNaturalKey<TKey>(Expression<Func<T, TKey>> naturalKeySelector)
         {
-            Guard.Against.InvalidMemberExpression(() => naturalKeySelector, out var memberExpression);
+            var memberExpression = default(MemberExpression);
+            Guard.Against.InvalidMemberExpression(() => naturalKeySelector, out memberExpression);
 
             var naturalKey = new NaturalKey(typeof(T), memberExpression.Member.Name, typeof(TKey), this.typeAnalyzerService);
             this.entityType.ConfigureNaturalKey(naturalKey);
@@ -38,7 +39,8 @@ namespace dddlib.Sdk.Configuration.Model.BootstrapperService
         public IEntityConfigurationWrapper<T> ToUseNaturalKey(
             Expression<Func<T, string>> naturalKeySelector, IEqualityComparer<string> equalityComparer)
         {
-            Guard.Against.InvalidMemberExpression(() => naturalKeySelector, out var memberExpression);
+            var memberExpression = default(MemberExpression);
+            Guard.Against.InvalidMemberExpression(() => naturalKeySelector, out memberExpression);
 
             var naturalKey = new NaturalKey(typeof(T), memberExpression.Member.Name, typeof(string), this.typeAnalyzerService);
             this.entityType.ConfigureNaturalKey(naturalKey, equalityComparer);

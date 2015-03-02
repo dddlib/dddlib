@@ -105,6 +105,7 @@
     <None Include="..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
+    <None Include="dddlib.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />
