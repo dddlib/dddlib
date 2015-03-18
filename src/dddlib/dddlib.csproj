@@ -53,17 +53,20 @@
     </Compile>
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="BusinessException.cs" />
+    <Compile Include="Entity.Configuration.cs">
+      <DependentUpon>Entity.cs</DependentUpon>
+    </Compile>
     <Compile Include="Guard.cs" />
     <Compile Include="GuardExtensions.cs" />
     <Compile Include="Sdk\Configuration\Model\AggregateRootType.cs" />
     <Compile Include="Sdk\Configuration\Model\EntityType.cs" />
     <Compile Include="Sdk\Configuration\Model\ITypeAnalyzerService.cs" />
     <Compile Include="Sdk\Configuration\Model\NaturalKey.cs" />
-    <Compile Include="Sdk\Configuration\Model\TypeAnalyzerService\DefaultTypeAnalyzerService.cs" />
+    <Compile Include="Sdk\Configuration\Services\TypeAnalyzer\DefaultTypeAnalyzerService.cs" />
     <Compile Include="Sdk\Configuration\Model\ValueObjectType.cs" />
     <Compile Include="Sdk\Mapper\DefaultEntityMapper.cs" />
-    <Compile Include="Sdk\Configuration\Model\BootstrapperService\DefaultBootstrapperProvider.cs" />
-    <Compile Include="Sdk\Configuration\Model\BootstrapperService\IBootstrapperProvider.cs" />
+    <Compile Include="Sdk\Configuration\Services\Bootstrapper\DefaultBootstrapperProvider.cs" />
+    <Compile Include="Sdk\Configuration\Services\Bootstrapper\IBootstrapperProvider.cs" />
     <Compile Include="Sdk\Mapper\MapperCollection.cs" />
     <Compile Include="Sdk\Mapper\DefaultEventMapper.cs" />
     <Compile Include="Runtime\IEntityMapper.cs" />
@@ -73,16 +76,16 @@
     <Compile Include="Sdk\DefaultMapperProvider.cs" />
     <Compile Include="Sdk\Configuration\AggregateRootTypeFactory.cs" />
     <Compile Include="Sdk\Configuration\EntityTypeFactory.cs" />
-    <Compile Include="Sdk\Configuration\Model\BootstrapperService\CustomGuardExtensions.cs" />
-    <Compile Include="Sdk\Configuration\Model\BootstrapperService\ValueObjectConfigurationWrapper.cs" />
+    <Compile Include="Sdk\Configuration\Services\Bootstrapper\CustomGuardExtensions.cs" />
+    <Compile Include="Sdk\Configuration\Services\Bootstrapper\ValueObjectConfigurationWrapper.cs" />
     <Compile Include="Configuration\IValueObjectConfigurationWrapper.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="Sdk\DefaultValueObjectEqualityComparer.cs" />
     <Compile Include="Sdk\StringEqualityComparer.cs" />
     <Compile Include="Sdk\Mapper\DefaultValueObjectMapper.cs" />
-    <Compile Include="Sdk\Configuration\Model\BootstrapperService\BootstrapperConfiguration.cs" />
-    <Compile Include="Sdk\Configuration\Model\BootstrapperService\AggregateRootConfigurationWrapper.cs" />
-    <Compile Include="Sdk\Configuration\Model\BootstrapperService\EntityConfigurationWrapper.cs" />
+    <Compile Include="Sdk\Configuration\Services\Bootstrapper\BootstrapperConfiguration.cs" />
+    <Compile Include="Sdk\Configuration\Services\Bootstrapper\AggregateRootConfigurationWrapper.cs" />
+    <Compile Include="Sdk\Configuration\Services\Bootstrapper\EntityConfigurationWrapper.cs" />
     <Compile Include="Configuration\IAggregateRootConfigurationWrapper.cs" />
     <Compile Include="Configuration\IEntityConfigurationWrapper.cs" />
     <Compile Include="Sdk\IFluentExtensions.cs" />
@@ -96,6 +99,9 @@
     <Compile Include="Runtime\IEventDispatcher.cs" />
     <Compile Include="Runtime\RuntimeException.cs" />
     <Compile Include="Sdk\Configuration\ValueObjectTypeFactory.cs" />
+    <Compile Include="ValueObject.Configuration.cs">
+      <DependentUpon>ValueObject.cs</DependentUpon>
+    </Compile>
     <Compile Include="ValueObject.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -105,6 +111,9 @@
     <None Include="..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
+    <Compile Include="AggregateRoot.Configuration.cs">
+      <DependentUpon>AggregateRoot.cs</DependentUpon>
+    </Compile>
     <None Include="dddlib.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>

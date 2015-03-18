@@ -8,13 +8,23 @@ namespace dddlib.Sdk.Configuration.Model
     using System.Globalization;
     using System.Linq.Expressions;
 
-    internal class NaturalKey : ValueObject<NaturalKey>
+    /// <summary>
+    /// Represents a natural key.
+    /// </summary>
+    public class NaturalKey : ValueObject<NaturalKey>
     {
         private static readonly DefaultValueObjectEqualityComparer<NaturalKey> DefaultEqualityComparer = new DefaultValueObjectEqualityComparer<NaturalKey>();
 
         private readonly Func<Entity, object> getValue = entity => null;
 
-        // TODO (Cameron): Should there be another overload?
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NaturalKey"/> class.
+        /// </summary>
+        /// <param name="runtimeType">The runtime type.</param>
+        /// <param name="propertyName">The property name.</param>
+        /// <param name="propertyType">The property type.</param>
+        /// <param name="typeAnalyzerService">The type analyzer service.</param>
+        //// TODO (Cameron): Should there be another overload?
         public NaturalKey(Type runtimeType, string propertyName, Type propertyType, ITypeAnalyzerService typeAnalyzerService)
             : base(DefaultEqualityComparer)
         {
@@ -52,12 +62,29 @@ namespace dddlib.Sdk.Configuration.Model
             this.getValue = entity => null;
         }
 
+        /// <summary>
+        /// Gets the runtime type of the entity which has this natural key.
+        /// </summary>
+        /// <value>The runtime type.</value>
         public Type RuntimeType { get; private set; }
 
+        /// <summary>
+        /// Gets the property name.
+        /// </summary>
+        /// <value>The property name.</value>
         public string PropertyName { get; private set; }
 
+        /// <summary>
+        /// Gets the property type.
+        /// </summary>
+        /// <value>The property type.</value>
         public Type PropertyType { get; private set; }
 
+        /// <summary>
+        /// Gets the value of the natural key from the specified entity.
+        /// </summary>
+        /// <param name="entity">The entity.</param>
+        /// <returns>The natural key value.</returns>
         public object GetValue(Entity entity)
         {
             Guard.Against.Null(() => entity);

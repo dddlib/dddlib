@@ -10,8 +10,8 @@ namespace dddlib.Runtime
     using System.Linq;
     using dddlib.Sdk.Configuration;
     using dddlib.Sdk.Configuration.Model;
-    using dddlib.Sdk.Configuration.Model.BootstrapperService;
-    using dddlib.Sdk.Configuration.Model.TypeAnalyzerService;
+    using dddlib.Sdk.Configuration.Services.Bootstrapper;
+    using dddlib.Sdk.Configuration.Services.TypeAnalyzer;
 
     /// <summary>
     /// Represents an application.

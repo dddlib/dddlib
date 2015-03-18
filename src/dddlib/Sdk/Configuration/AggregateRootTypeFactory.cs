@@ -7,7 +7,7 @@ namespace dddlib.Sdk.Configuration
     using System;
     using System.Linq;
     using dddlib.Sdk.Configuration.Model;
-    using dddlib.Sdk.Configuration.Model.BootstrapperService;
+    using dddlib.Sdk.Configuration.Services.Bootstrapper;
 
     internal class AggregateRootTypeFactory
     {

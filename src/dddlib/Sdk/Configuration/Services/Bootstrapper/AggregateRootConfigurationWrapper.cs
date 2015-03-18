@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Sdk.Configuration.Model.BootstrapperService
+namespace dddlib.Sdk.Configuration.Services.Bootstrapper
 {
     using System;
     using System.Collections.Generic;
@@ -27,7 +27,7 @@ namespace dddlib.Sdk.Configuration.Model.BootstrapperService
 
         public IAggregateRootConfigurationWrapper<T> ToReconstituteUsing(Func<T> uninitializedFactory)
         {
-            this.aggregateRootType.ConfigureUnititializedFactory(uninitializedFactory);
+            this.aggregateRootType.ConfigureUninitializedFactory(uninitializedFactory);
 
             return this;
         }
