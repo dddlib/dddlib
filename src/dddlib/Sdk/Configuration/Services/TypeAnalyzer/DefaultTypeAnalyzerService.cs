@@ -2,11 +2,12 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Sdk.Configuration.Model.TypeAnalyzerService
+namespace dddlib.Sdk.Configuration.Services.TypeAnalyzer
 {
     using System;
     using System.Linq;
     using System.Reflection;
+    using dddlib.Sdk.Configuration.Model;
 
     internal class DefaultTypeAnalyzerService : ITypeAnalyzerService
     {

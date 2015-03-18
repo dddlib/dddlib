@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Sdk.Configuration.Model.BootstrapperService
+namespace dddlib.Sdk.Configuration.Services.Bootstrapper
 {
     using System;
     using dddlib.Configuration;

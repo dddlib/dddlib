@@ -8,9 +8,9 @@ namespace dddlib
     using System.Collections.Generic;
     using dddlib.Sdk.Configuration.Model;
 
-    /// <summary>
+    /// <content>
     /// Represents an entity.
-    /// </summary>
+    /// </content>
     public abstract partial class Entity
     {
         internal Entity(dddlib.Sdk.Configuration.Model.NaturalKey naturalKey, IEqualityComparer<object> naturalKeyEqualityComparer)
@@ -22,6 +22,8 @@ namespace dddlib
         {
             public TypeInformation(EntityType entityType)
             {
+                Guard.Against.Null(() => entityType);
+
                 this.GetNaturalKeyValue = entityType.NaturalKey == null ? (Func<Entity, object>)null : entity => entityType.NaturalKey.GetValue(entity);
                 this.NaturalKeyEqualityComparer = entityType.NaturalKeyEqualityComparer;
             }

@@ -7,12 +7,20 @@ namespace dddlib.Sdk.Configuration.Model
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-    using dddlib.Sdk.Configuration.Model.TypeAnalyzerService;
+    using dddlib.Sdk.Configuration.Services.TypeAnalyzer;
 
-    internal class ValueObjectType : Entity
+    /// <summary>
+    /// Represents a value object type.
+    /// </summary>
+    public class ValueObjectType : Entity
     {
         private static readonly ITypeAnalyzerService DefaultTypeAnalyzerService = new DefaultTypeAnalyzerService();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ValueObjectType"/> class.
+        /// </summary>
+        /// <param name="runtimeType">Type of the runtime.</param>
+        /// <param name="typeAnalyzerService">The type analyzer service.</param>
         public ValueObjectType(Type runtimeType, ITypeAnalyzerService typeAnalyzerService)
               : base(new NaturalKey(typeof(ValueObjectType), "RuntimeType", typeof(Type), DefaultTypeAnalyzerService), EqualityComparer<object>.Default)
         {
@@ -30,14 +38,31 @@ namespace dddlib.Sdk.Configuration.Model
             this.Mappings = new MapperCollection();
         }
 
+        /// <summary>
+        /// Gets the runtime type for this value object type.
+        /// </summary>
+        /// <value>The runtime type.</value>
         [dddlib.NaturalKey]
         public Type RuntimeType { get; private set; }
 
+        /// <summary>
+        /// Gets the equality comparer for this value object type.
+        /// </summary>
+        /// <value>The equality comparer.</value>
         public object EqualityComparer { get; private set; }
 
-        // TODO (Cameron): This is not right. Law of Dementer and all that.
+        /// <summary>
+        /// Gets the mappings.
+        /// </summary>
+        /// <value>The mappings.</value>
+        //// TODO (Cameron): This is not right. Law of Dementer and all that.
         public MapperCollection Mappings { get; private set; }
 
+        /// <summary>
+        /// Configures the equality comparer for this value object type.
+        /// </summary>
+        /// <typeparam name="T">The value object type.</typeparam>
+        /// <param name="equalityComparer">The equality comparer.</param>
         public void ConfigureEqualityComparer<T>(IEqualityComparer<T> equalityComparer)
         {
             Guard.Against.Null(() => equalityComparer);

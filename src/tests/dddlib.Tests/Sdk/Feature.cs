@@ -11,8 +11,8 @@ namespace dddlib.Tests.Sdk
     using dddlib.Runtime;
     using dddlib.Sdk.Configuration;
     using dddlib.Sdk.Configuration.Model;
-    using dddlib.Sdk.Configuration.Model.BootstrapperService;
-    using dddlib.Sdk.Configuration.Model.TypeAnalyzerService;
+    using dddlib.Sdk.Configuration.Services.Bootstrapper;
+    using dddlib.Sdk.Configuration.Services.TypeAnalyzer;
     using FakeItEasy;
     using Xbehave;
 
