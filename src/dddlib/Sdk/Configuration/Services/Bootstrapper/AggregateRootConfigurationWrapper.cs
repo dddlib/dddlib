@@ -27,7 +27,7 @@ namespace dddlib.Sdk.Configuration.Services.Bootstrapper
 
         public IAggregateRootConfigurationWrapper<T> ToReconstituteUsing(Func<T> uninitializedFactory)
         {
-            this.aggregateRootType.ConfigureUnititializedFactory(uninitializedFactory);
+            this.aggregateRootType.ConfigureUninitializedFactory(uninitializedFactory);
 
             return this;
         }

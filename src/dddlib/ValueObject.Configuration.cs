@@ -4,7 +4,6 @@
 
 namespace dddlib
 {
-    using System;
     using System.Collections.Generic;
     using dddlib.Sdk.Configuration.Model;
 

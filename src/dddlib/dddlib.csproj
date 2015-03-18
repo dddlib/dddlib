@@ -111,6 +111,9 @@
     <None Include="..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
+    <Compile Include="AggregateRoot.Configuration.cs">
+      <DependentUpon>AggregateRoot.cs</DependentUpon>
+    </Compile>
     <None Include="dddlib.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>

@@ -19,7 +19,7 @@ namespace dddlib.Sdk.Configuration.Model
         /// <summary>
         /// Initializes a new instance of the <see cref="ValueObjectType"/> class.
         /// </summary>
-        /// <param name="runtimeType">Type of the runtime.</param>
+        /// <param name="runtimeType">The runtime type.</param>
         /// <param name="typeAnalyzerService">The type analyzer service.</param>
         public ValueObjectType(Type runtimeType, ITypeAnalyzerService typeAnalyzerService)
               : base(new NaturalKey(typeof(ValueObjectType), "RuntimeType", typeof(Type), DefaultTypeAnalyzerService), EqualityComparer<object>.Default)
