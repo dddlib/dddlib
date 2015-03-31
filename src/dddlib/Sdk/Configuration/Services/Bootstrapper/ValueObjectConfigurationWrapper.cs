@@ -7,7 +7,7 @@ namespace dddlib.Sdk.Configuration.Services.Bootstrapper
     using System;
     using System.Collections.Generic;
     using dddlib.Configuration;
-    using dddlib.Sdk;
+    using dddlib.Runtime;
     using dddlib.Sdk.Configuration.Model;
 
     internal class ValueObjectConfigurationWrapper<T> : IValueObjectConfigurationWrapper<T>
@@ -24,11 +24,22 @@ namespace dddlib.Sdk.Configuration.Services.Bootstrapper
 
         public IValueObjectConfigurationWrapper<T> ToUseEqualityComparer(IEqualityComparer<T> equalityComparer)
         {
-            Guard.Against.Null(() => equalityComparer);
-
             this.valueObjectType.ConfigureEqualityComparer(equalityComparer);
 
             return this;
+        }
+
+        public IValueObjectConfigurationWrapper<T> ToSerializeUsing(IValueObjectSerializer valueObjectSerializer)
+        {
+            this.valueObjectType.ConfigureSerializer(valueObjectSerializer);
+
+            return this;
+        }
+
+        public IValueObjectConfigurationWrapper<T> ToSerializeUsing(Func<T, string> serialize, Func<string, T> deserialize)
+        {
+            // TODO (Cameron): fix?
+            return this.ToSerializeUsing(new CustomValueObjectSerializer<T>(serialize, deserialize));
         }
 
         public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping)

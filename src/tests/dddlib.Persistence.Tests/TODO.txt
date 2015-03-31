@@ -1,0 +1,23 @@
+﻿Aggregate Root Persistence
+- indexer (in memory)
+- conventional (in memory)
+- event sourcing (in memory)
+- snapshotting (in memory)
+- dispatcher
+
+- indexer (sql server)
+- conventional (sql server)
+- event sourcing (sql server)
+- snapshotting (sql server)
+
+- conventional (in memory)
+- event sourcing (in memory)
+- snapshotting (in memory)
+- indexer (in memory)
+
+
+
+
+
+
+Make snapshotting and conventional persistence the same

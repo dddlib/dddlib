@@ -7,6 +7,7 @@ namespace dddlib.Sdk.Configuration.Model
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using dddlib.Runtime;
     using dddlib.Sdk.Configuration.Services.TypeAnalyzer;
 
     /// <summary>
@@ -35,6 +36,7 @@ namespace dddlib.Sdk.Configuration.Model
 
             this.RuntimeType = runtimeType;
             this.EqualityComparer = Activator.CreateInstance(typeof(DefaultValueObjectEqualityComparer<>).MakeGenericType(runtimeType));
+            this.Serializer = (IValueObjectSerializer)Activator.CreateInstance(typeof(DefaultValueObjectSerializer<>).MakeGenericType(runtimeType));
             this.Mappings = new MapperCollection();
         }
 
@@ -50,6 +52,12 @@ namespace dddlib.Sdk.Configuration.Model
         /// </summary>
         /// <value>The equality comparer.</value>
         public object EqualityComparer { get; private set; }
+
+        /// <summary>
+        /// Gets the serializer for this value object type.
+        /// </summary>
+        /// <value>The serializer.</value>
+        public IValueObjectSerializer Serializer { get; private set; }
 
         /// <summary>
         /// Gets the mappings.
@@ -79,6 +87,28 @@ namespace dddlib.Sdk.Configuration.Model
             }
 
             this.EqualityComparer = equalityComparer;
+        }
+
+        /// <summary>
+        /// Configures the serializer for this value object type.
+        /// </summary>
+        /// <param name="valueObjectSerializer">The value object serializer.</param>
+        public void ConfigureSerializer(IValueObjectSerializer valueObjectSerializer)
+        {
+            Guard.Against.Null(() => valueObjectSerializer);
+
+            ////var equalityComparerType = typeof(IEqualityComparer<>).MakeGenericType(this.RuntimeType);
+            ////if (!equalityComparerType.IsAssignableFrom(equalityComparer.GetType()))
+            ////{
+            ////    throw new BusinessException(
+            ////        string.Format(
+            ////            CultureInfo.InvariantCulture,
+            ////            "Invalid equality comparer. The specified equality comparer of type '{0}' does not match the required type of '{1}'.",
+            ////            equalityComparer.GetType(),
+            ////            equalityComparerType));
+            ////}
+
+            this.Serializer = valueObjectSerializer;
         }
     }
 }

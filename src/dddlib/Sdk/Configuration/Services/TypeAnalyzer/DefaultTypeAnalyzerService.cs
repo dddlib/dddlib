@@ -34,7 +34,7 @@ namespace dddlib.Sdk.Configuration.Services.TypeAnalyzer
 
         public bool IsValidValueObject(Type runtimeType)
         {
-            return IsSubclassOfRawGeneric(typeof(ValueObject<>), runtimeType);
+            return runtimeType.IsSubclassOfRawGeneric(typeof(ValueObject<>));
         }
 
         public bool IsValidProperty(Type runtimeType, string propertyName, Type propertyType)
@@ -45,22 +45,6 @@ namespace dddlib.Sdk.Configuration.Services.TypeAnalyzer
                 .SingleOrDefault();
 
             return property != null;
-        }
-
-        private static bool IsSubclassOfRawGeneric(Type generic, Type type)
-        {
-            while (type != null && type != typeof(object))
-            {
-                var cur = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
-                if (generic == cur)
-                {
-                    return true;
-                }
-
-                type = type.BaseType;
-            }
-
-            return false;
         }
     }
 }

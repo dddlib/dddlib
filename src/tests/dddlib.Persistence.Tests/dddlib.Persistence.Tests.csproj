@@ -39,7 +39,9 @@
     </None>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="TODO.txt" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="FakeItEasy, Version=1.25.2.0, Culture=neutral, PublicKeyToken=eff28e2146d5fd2c, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -53,6 +55,7 @@
       <HintPath>..\..\..\packages\FluentAssertions.3.3.0\lib\net45\FluentAssertions.Core.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="Xbehave, Version=1.1.0.0, Culture=neutral, PublicKeyToken=e4957f48888f9fe8, processorArchitecture=MSIL">
@@ -70,9 +73,12 @@
     <Compile Include="..\dddlib.Tests\Sdk\Feature.cs">
       <Link>Sdk\Feature.cs</Link>
     </Compile>
-    <Compile Include="AggregateRootPersistence.cs" />
-    <Compile Include="AggregateRootPersistenceEventSourcing.cs" />
-    <Compile Include="AggregateRootSnapshotting.cs" />
+    <Compile Include="Features\MemoryPersistence.cs" />
+    <Compile Include="Features\MemoryEventStorePersistence.cs" />
+    <Compile Include="Features\MemoryEventStoreSnapshotting.cs" />
+    <Compile Include="Storage\SqlServerIdentityMapTests.cs" />
+    <Compile Include="Storage\Version01.cs" />
+    <Compile Include="UnitTests\JsonSerializer.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\dddlib.Persistence\dddlib.Persistence.csproj">
@@ -86,6 +92,9 @@
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Bugs\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

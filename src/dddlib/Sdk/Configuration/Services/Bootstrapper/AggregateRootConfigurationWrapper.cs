@@ -5,7 +5,6 @@
 namespace dddlib.Sdk.Configuration.Services.Bootstrapper
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq.Expressions;
     using dddlib.Configuration;
     using dddlib.Sdk.Configuration.Model;

@@ -46,6 +46,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Web.Extensions" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\CommonAssemblyInfo.cs">
@@ -53,17 +54,21 @@
     </Compile>
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="BusinessException.cs" />
+    <Compile Include="Sdk\CustomValueObjectSerializer.cs" />
     <Compile Include="Entity.Configuration.cs">
       <DependentUpon>Entity.cs</DependentUpon>
     </Compile>
     <Compile Include="Guard.cs" />
     <Compile Include="GuardExtensions.cs" />
+    <Compile Include="Runtime\IValueObjectSerializer.cs" />
     <Compile Include="Sdk\Configuration\Model\AggregateRootType.cs" />
     <Compile Include="Sdk\Configuration\Model\EntityType.cs" />
     <Compile Include="Sdk\Configuration\Model\ITypeAnalyzerService.cs" />
     <Compile Include="Sdk\Configuration\Model\NaturalKey.cs" />
     <Compile Include="Sdk\Configuration\Services\TypeAnalyzer\DefaultTypeAnalyzerService.cs" />
     <Compile Include="Sdk\Configuration\Model\ValueObjectType.cs" />
+    <Compile Include="Sdk\DefaultNaturalKeySerializer.cs" />
+    <Compile Include="Sdk\DefaultValueObjectSerializer.cs" />
     <Compile Include="Sdk\Mapper\DefaultEntityMapper.cs" />
     <Compile Include="Sdk\Configuration\Services\Bootstrapper\DefaultBootstrapperProvider.cs" />
     <Compile Include="Sdk\Configuration\Services\Bootstrapper\IBootstrapperProvider.cs" />
@@ -81,7 +86,6 @@
     <Compile Include="Configuration\IValueObjectConfigurationWrapper.cs" />
     <Compile Include="Entity.cs" />
     <Compile Include="Sdk\DefaultValueObjectEqualityComparer.cs" />
-    <Compile Include="Sdk\StringEqualityComparer.cs" />
     <Compile Include="Sdk\Mapper\DefaultValueObjectMapper.cs" />
     <Compile Include="Sdk\Configuration\Services\Bootstrapper\BootstrapperConfiguration.cs" />
     <Compile Include="Sdk\Configuration\Services\Bootstrapper\AggregateRootConfigurationWrapper.cs" />

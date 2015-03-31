@@ -1,4 +1,4 @@
-﻿// <copyright file="AggregateRootPersistenceEventSourcing.cs" company="dddlib contributors">
+﻿// <copyright file="MemoryEventStorePersistence.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -16,9 +16,9 @@ namespace dddlib.Tests.Features
     // As someone who uses dddlib [with event sourcing]
     // In order save state
     // I need to be able to persist an aggregate root
-    public abstract class AggregateRootPersistenceEventSourcing : Feature
+    public abstract class MemoryEventStorePersistence : Feature
     {
-        public class UndefinedNaturalKey : AggregateRootPersistenceEventSourcing
+        public class UndefinedNaturalKey : MemoryEventStorePersistence
         {
             [Scenario]
             public void Scenario(EventStoreRepository repository, Subject instance, Action action)

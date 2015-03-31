@@ -7,7 +7,7 @@ namespace dddlib.Persistence
     using dddlib.Persistence.Sdk;
 
     /// <summary>
-    /// Represents the aggregate root repository.
+    /// Represents an event store repository.
     /// </summary>
     public class EventStoreRepository : RepositoryBase, IEventStoreRepository
     {
