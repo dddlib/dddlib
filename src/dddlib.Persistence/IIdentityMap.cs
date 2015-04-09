@@ -17,9 +17,8 @@ namespace dddlib.Persistence
         /// </summary>
         /// <param name="aggregateRootType">Type of the aggregate root.</param>
         /// <param name="naturalKey">The natural key.</param>
-        /// <param name="naturalKeyEqualityComparer">The natural key equality comparer.</param>
         /// <returns>A stream id.</returns>
-        Guid GetOrAdd(Type aggregateRootType, object naturalKey, IEqualityComparer<object> naturalKeyEqualityComparer);
+        Guid GetOrAdd(Type aggregateRootType, object naturalKey);
 
         /// <summary>
         /// Gets the specified type.

@@ -5,7 +5,6 @@
 namespace dddlib.Sdk.Configuration.Model
 {
     using System;
-    using System.Collections.Generic;
     using System.Globalization;
     using dddlib.Sdk.Configuration.Services.TypeAnalyzer;
 
@@ -22,7 +21,7 @@ namespace dddlib.Sdk.Configuration.Model
         /// <param name="runtimeType">The runtime type.</param>
         /// <param name="typeAnalyzerService">The type analyzer service.</param>
         public EntityType(Type runtimeType, ITypeAnalyzerService typeAnalyzerService)
-             : base(new NaturalKey(typeof(EntityType), "RuntimeType", typeof(Type), DefaultTypeAnalyzerService), EqualityComparer<object>.Default)
+             : base(new NaturalKey(typeof(EntityType), "RuntimeType", typeof(Type), DefaultTypeAnalyzerService))
         {
             Guard.Against.Null(() => runtimeType);
             Guard.Against.Null(() => typeAnalyzerService);
@@ -35,7 +34,6 @@ namespace dddlib.Sdk.Configuration.Model
 
             this.RuntimeType = runtimeType;
             this.NaturalKey = typeAnalyzerService.GetNaturalKey(runtimeType);
-            this.NaturalKeyEqualityComparer = EqualityComparer<object>.Default;
             this.Mappings = new MapperCollection();
         }
 
@@ -78,12 +76,6 @@ namespace dddlib.Sdk.Configuration.Model
         public NaturalKey NaturalKey { get; private set; }
 
         /// <summary>
-        /// Gets the natural key equality comparer for this entity type.
-        /// </summary>
-        /// <value>The natural key equality comparer.</value>
-        public IEqualityComparer<object> NaturalKeyEqualityComparer { get; private set; }
-
-        /// <summary>
         /// Gets the mappings.
         /// </summary>
         /// <value>The mappings.</value>
@@ -124,26 +116,6 @@ namespace dddlib.Sdk.Configuration.Model
             }
 
             this.NaturalKey = naturalKey;
-        }
-
-        /// <summary>
-        /// Configures the natural key for this entity type.
-        /// </summary>
-        /// <param name="naturalKey">The natural key.</param>
-        /// <param name="naturalKeyEqualityComparer">The natural key equality comparer.</param>
-        public void ConfigureNaturalKey(NaturalKey naturalKey, IEqualityComparer<string> naturalKeyEqualityComparer)
-        {
-            Guard.Against.Null(() => naturalKey);
-            Guard.Against.Null(() => naturalKeyEqualityComparer);
-
-            if (naturalKey.PropertyType != typeof(string))
-            {
-                throw new BusinessException("Cannot configure the equality comparer for a natural key with a return type other than 'System.String'.");
-            }
-
-            this.ConfigureNaturalKey(naturalKey);
-
-            this.NaturalKeyEqualityComparer = new StringEqualityComparer(naturalKeyEqualityComparer);
         }
     }
 }

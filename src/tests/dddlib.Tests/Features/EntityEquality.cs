@@ -5,6 +5,7 @@
 namespace dddlib.Tests.Features
 {
     using System;
+    using System.Collections.Generic;
     using dddlib.Configuration;
     using dddlib.Runtime;
     using dddlib.Tests.Sdk;
@@ -232,7 +233,7 @@ namespace dddlib.Tests.Features
             }
         }
 
-        public class CaseSensitiveEqualityComparerDefinedInBootstrapper : EntityEquality
+        public class CaseInsensitiveEqualityComparerDefinedInBootstrapper : EntityEquality
         {
             [Scenario]
             public void Scenario(Subject instance1, Subject instance2, string naturalKey)
@@ -246,24 +247,43 @@ namespace dddlib.Tests.Features
                 "When two instances of that value object that are instantiated with different values"
                     .When(() =>
                     {
-                        instance1 = new Subject { NaturalKey = naturalKey.ToUpperInvariant() };
-                        instance2 = new Subject { NaturalKey = naturalKey.ToLowerInvariant() };
+                        instance1 = new Subject { NaturalKey = new Key { Value = naturalKey.ToUpperInvariant() } };
+                        instance2 = new Subject { NaturalKey = new Key { Value = naturalKey.ToLowerInvariant() } };
                     });
 
                 "Then the first instance is equal to the second instance"
                     .Then(() => instance1.Should().Be(instance2));
             }
 
-            public class Subject : Entity
+            public class Key : ValueObject<Key>
             {
-                public string NaturalKey { get; set; }
+                public string Value { get; set; }
             }
 
-            private class BootStrapper : IBootstrap<Subject>
+            public class Subject : Entity
+            {
+                public Key NaturalKey { get; set; }
+            }
+
+            private class BootStrapper : IBootstrap<Subject>, IBootstrap<Key>
             {
                 public void Bootstrap(IConfiguration configure)
                 {
-                    configure.Entity<Subject>().ToUseNaturalKey(subject => subject.NaturalKey, StringComparer.OrdinalIgnoreCase);
+                    configure.Entity<Subject>().ToUseNaturalKey(subject => subject.NaturalKey);
+                    configure.ValueObject<Key>().ToUseEqualityComparer(new KeyEqualityComparer());
+                }
+
+                private class KeyEqualityComparer : IEqualityComparer<Key>
+                {
+                    public bool Equals(Key x, Key y)
+                    {
+                        return string.Equals(x.Value, y.Value, StringComparison.OrdinalIgnoreCase);
+                    }
+
+                    public int GetHashCode(Key obj)
+                    {
+                        return obj.GetHashCode();
+                    }
                 }
             }
         }

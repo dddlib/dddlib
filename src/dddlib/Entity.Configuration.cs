@@ -5,7 +5,6 @@
 namespace dddlib
 {
     using System;
-    using System.Collections.Generic;
     using dddlib.Sdk.Configuration.Model;
 
     /// <content>
@@ -13,8 +12,8 @@ namespace dddlib
     /// </content>
     public abstract partial class Entity
     {
-        internal Entity(dddlib.Sdk.Configuration.Model.NaturalKey naturalKey, IEqualityComparer<object> naturalKeyEqualityComparer)
-            : this(@this => new TypeInformation(naturalKey, naturalKeyEqualityComparer))
+        internal Entity(dddlib.Sdk.Configuration.Model.NaturalKey naturalKey)
+            : this(@this => new TypeInformation(naturalKey))
         {
         }
 
@@ -25,13 +24,11 @@ namespace dddlib
                 Guard.Against.Null(() => entityType);
 
                 this.GetNaturalKeyValue = entityType.NaturalKey == null ? (Func<Entity, object>)null : entity => entityType.NaturalKey.GetValue(entity);
-                this.NaturalKeyEqualityComparer = entityType.NaturalKeyEqualityComparer;
             }
 
-            public TypeInformation(dddlib.Sdk.Configuration.Model.NaturalKey naturalKey, IEqualityComparer<object> naturalKeyEqualityComparer)
+            public TypeInformation(dddlib.Sdk.Configuration.Model.NaturalKey naturalKey)
             {
                 this.GetNaturalKeyValue = entity => naturalKey.GetValue(entity);
-                this.NaturalKeyEqualityComparer = naturalKeyEqualityComparer;
             }
 
             public bool HasNaturalKey
@@ -40,8 +37,6 @@ namespace dddlib
             }
 
             public Func<Entity, object> GetNaturalKeyValue { get; set; }
-
-            public IEqualityComparer<object> NaturalKeyEqualityComparer { get; set; }
         }
     }
 }

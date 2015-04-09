@@ -100,12 +100,6 @@ namespace dddlib.Sdk.Configuration.Services.Bootstrapper
                 this.entityConfigurationWrapper.ToUseNaturalKey(naturalKeySelector);
                 return this;
             }
-
-            public IAggregateRootConfigurationWrapper<T> ToUseNaturalKey(Expression<Func<T, string>> naturalKeySelector, IEqualityComparer<string> equalityComparer)
-            {
-                this.entityConfigurationWrapper.ToUseNaturalKey(naturalKeySelector, equalityComparer);
-                return this;
-            }
         }
 
         private class EmptyEntityConfigurationWrapper<T> : IEntityConfigurationWrapper<T>
@@ -117,11 +111,6 @@ namespace dddlib.Sdk.Configuration.Services.Bootstrapper
             }
 
             public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping, Func<TEvent, T> reverseMapping)
-            {
-                return this;
-            }
-
-            public IEntityConfigurationWrapper<T> ToUseNaturalKey(Expression<Func<T, string>> naturalKeySelector, IEqualityComparer<string> equalityComparer)
             {
                 return this;
             }
