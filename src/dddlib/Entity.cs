@@ -107,7 +107,7 @@ namespace dddlib
             var thisValue = this.typeInformation.GetNaturalKeyValue(this);
             var otherValue = this.typeInformation.GetNaturalKeyValue(other);
 
-            return this.typeInformation.NaturalKeyEqualityComparer.Equals(thisValue, otherValue);
+            return object.Equals(thisValue, otherValue);
         }
     }
 }

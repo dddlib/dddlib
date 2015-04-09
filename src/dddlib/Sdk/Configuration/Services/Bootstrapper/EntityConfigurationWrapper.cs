@@ -5,7 +5,6 @@
 namespace dddlib.Sdk.Configuration.Services.Bootstrapper
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq.Expressions;
     using dddlib.Configuration;
     using dddlib.Sdk.Configuration.Model;
@@ -32,18 +31,6 @@ namespace dddlib.Sdk.Configuration.Services.Bootstrapper
 
             var naturalKey = new NaturalKey(typeof(T), memberExpression.Member.Name, typeof(TKey), this.typeAnalyzerService);
             this.entityType.ConfigureNaturalKey(naturalKey);
-
-            return this;
-        }
-
-        public IEntityConfigurationWrapper<T> ToUseNaturalKey(
-            Expression<Func<T, string>> naturalKeySelector, IEqualityComparer<string> equalityComparer)
-        {
-            var memberExpression = default(MemberExpression);
-            Guard.Against.InvalidMemberExpression(() => naturalKeySelector, out memberExpression);
-
-            var naturalKey = new NaturalKey(typeof(T), memberExpression.Member.Name, typeof(string), this.typeAnalyzerService);
-            this.entityType.ConfigureNaturalKey(naturalKey, equalityComparer);
 
             return this;
         }

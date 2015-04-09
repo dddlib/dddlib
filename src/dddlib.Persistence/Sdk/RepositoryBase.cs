@@ -51,7 +51,7 @@ namespace dddlib.Persistence.Sdk
             }
 
             var naturalKey = aggregateRootType.NaturalKey.GetValue(aggregateRoot);
-            return this.identityMap.GetOrAdd(type, naturalKey, aggregateRootType.NaturalKeyEqualityComparer);
+            return this.identityMap.GetOrAdd(type, naturalKey);
         }
 
         /// <summary>

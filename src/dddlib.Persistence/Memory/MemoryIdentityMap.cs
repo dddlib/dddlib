@@ -21,13 +21,12 @@ namespace dddlib.Persistence.Memory
         /// </summary>
         /// <param name="aggregateRootType">Type of the aggregate root.</param>
         /// <param name="naturalKey">The natural key.</param>
-        /// <param name="naturalKeyEqualityComparer">The natural key equality comparer.</param>
         /// <returns>
         /// A stream id.
         /// </returns>
-        public Guid GetOrAdd(Type aggregateRootType, object naturalKey, IEqualityComparer<object> naturalKeyEqualityComparer)
+        public Guid GetOrAdd(Type aggregateRootType, object naturalKey)
         {
-            var typeMappings = this.store.GetOrAdd(aggregateRootType, e => naturalKeyEqualityComparer == null ? new ConcurrentDictionary<object, Guid>() : new ConcurrentDictionary<object, Guid>(naturalKeyEqualityComparer));
+            var typeMappings = this.store.GetOrAdd(aggregateRootType, e => new ConcurrentDictionary<object, Guid>());
             var id = typeMappings.GetOrAdd(naturalKey, Guid.NewGuid());
 
             return id;

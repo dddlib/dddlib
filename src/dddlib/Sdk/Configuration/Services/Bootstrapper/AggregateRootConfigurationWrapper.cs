@@ -38,13 +38,5 @@ namespace dddlib.Sdk.Configuration.Services.Bootstrapper
 
             return this;
         }
-
-        public IAggregateRootConfigurationWrapper<T> ToUseNaturalKey(
-            Expression<Func<T, string>> naturalKeySelector, IEqualityComparer<string> equalityComparer)
-        {
-            this.entityConfigurationWrapper.ToUseNaturalKey(naturalKeySelector, equalityComparer);
-
-            return this;
-        }
     }
 }
