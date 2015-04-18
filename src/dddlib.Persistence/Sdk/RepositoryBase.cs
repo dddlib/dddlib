@@ -62,7 +62,14 @@ namespace dddlib.Persistence.Sdk
         /// <returns>The identifier for the aggregate root.</returns>
         protected Guid GetId<T>(object naturalKey) where T : AggregateRoot
         {
-            return this.identityMap.Get(typeof(T), naturalKey);
+            var identity = default(Guid);
+            if (!this.identityMap.TryGet(typeof(T), naturalKey, out identity))
+            {
+                // aggregate root not found?
+                throw new AggregateRootNotFoundException();
+            }
+
+            return identity;
         }
 
         /// <summary>

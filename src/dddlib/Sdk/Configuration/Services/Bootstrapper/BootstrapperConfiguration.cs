@@ -8,6 +8,7 @@ namespace dddlib.Sdk.Configuration.Services.Bootstrapper
     using System.Collections.Generic;
     using System.Linq.Expressions;
     using dddlib.Configuration;
+    using dddlib.Runtime;
     using dddlib.Sdk.Configuration.Model;
 
     // TODO (Cameron): I've made a number of changes here that need to get addressed.
@@ -130,6 +131,16 @@ namespace dddlib.Sdk.Configuration.Services.Bootstrapper
             }
 
             public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping, Func<TEvent, T> reverseMapping)
+            {
+                return this;
+            }
+
+            public IValueObjectConfigurationWrapper<T> ToSerializeUsing(IValueObjectSerializer valueObjectSerializer)
+            {
+                return this;
+            }
+
+            public IValueObjectConfigurationWrapper<T> ToSerializeUsing(Func<T, string> serialize, Func<string, T> deserialize)
             {
                 return this;
             }
