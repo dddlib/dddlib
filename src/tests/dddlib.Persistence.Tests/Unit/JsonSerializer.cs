@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Persistence.Tests.UnitTests
+namespace dddlib.Persistence.Tests.Unit
 {
     using System;
     using dddlib.Persistence.Sdk;
@@ -18,8 +18,8 @@ namespace dddlib.Persistence.Tests.UnitTests
             var naturalKey = "Key";
 
             // act
-            var serializedNaturalKey = serializer.Serialize(naturalKey);
-            var deserializedNaturalKey = serializer.Deserialize<string>(serializedNaturalKey);
+            var serializedNaturalKey = serializer.Serialize(typeof(string), naturalKey);
+            var deserializedNaturalKey = serializer.Deserialize(typeof(string), serializedNaturalKey);
 
             // assert
             Assert.Equal(naturalKey, deserializedNaturalKey);
@@ -33,8 +33,8 @@ namespace dddlib.Persistence.Tests.UnitTests
             var naturalKey = Guid.NewGuid();
 
             // act
-            var serializedNaturalKey = serializer.Serialize(naturalKey);
-            var deserializedNaturalKey = serializer.Deserialize<Guid>(serializedNaturalKey);
+            var serializedNaturalKey = serializer.Serialize(typeof(Guid), naturalKey);
+            var deserializedNaturalKey = serializer.Deserialize(typeof(Guid), serializedNaturalKey);
 
             // assert
             Assert.Equal(naturalKey, deserializedNaturalKey);
@@ -48,8 +48,8 @@ namespace dddlib.Persistence.Tests.UnitTests
             var naturalKey = new SillyValueObject { Value = "Key" };
 
             // act
-            var serializedNaturalKey = serializer.Serialize(naturalKey);
-            var deserializedNaturalKey = serializer.Deserialize<SillyValueObject>(serializedNaturalKey);
+            var serializedNaturalKey = serializer.Serialize(typeof(SillyValueObject), naturalKey);
+            var deserializedNaturalKey = serializer.Deserialize(typeof(SillyValueObject), serializedNaturalKey);
 
             // assert
             Assert.Equal(naturalKey, deserializedNaturalKey);
@@ -63,8 +63,8 @@ namespace dddlib.Persistence.Tests.UnitTests
             var naturalKey = new SensibleValueObject("Key");
 
             // act
-            var serializedNaturalKey = serializer.Serialize(naturalKey);
-            var deserializedNaturalKey = serializer.Deserialize<SensibleValueObject>(serializedNaturalKey);
+            var serializedNaturalKey = serializer.Serialize(typeof(SensibleValueObject), naturalKey);
+            var deserializedNaturalKey = serializer.Deserialize(typeof(SensibleValueObject), serializedNaturalKey);
 
             // assert
             Assert.Equal(naturalKey, deserializedNaturalKey);

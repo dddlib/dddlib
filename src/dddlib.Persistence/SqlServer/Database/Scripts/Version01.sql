@@ -1,4 +1,5 @@
-IF EXISTS (SELECT * FROM sysobjects WHERE name='DatabaseVersion' AND xtype = 'U') SET NOEXEC ON
+-- NOTE (Cameron): The SQL comments are required for the alternate execution method for this script (via .NET)
+IF EXISTS (SELECT * FROM information_schema.tables WHERE table_name='DatabaseVersion' AND table_schema = 'dbo') SET NOEXEC ON
 
 -- LINK (Cameron): http://stackoverflow.com/questions/4443262/tsql-add-column-to-table-and-then-update-it-inside-transaction-go
 SET XACT_ABORT ON
@@ -7,6 +8,7 @@ GO
 BEGIN TRANSACTION
 GO
 
+-- SQL: Creating the 'database version' table
 CREATE TABLE [dbo].[DatabaseVersion]
 (
     [Version] [int] NOT NULL,
@@ -19,6 +21,7 @@ GO
 IF XACT_STATE() < 1 SET NOEXEC ON
 GO
 
+-- SQL: Creating the 'aggregate root type' table
 CREATE TABLE [dbo].[AggregateRootType]
 (
     [Id] [int] IDENTITY NOT NULL,
@@ -30,6 +33,7 @@ GO
 IF XACT_STATE() < 1 SET NOEXEC ON
 GO
 
+-- SQL: Creating the 'natural key' table
 CREATE TABLE [dbo].[NaturalKey]
 (
     [AggregateRootTypeId] [int] NOT NULL,
@@ -44,6 +48,7 @@ GO
 IF XACT_STATE() < 1 SET NOEXEC ON
 GO
 
+-- SQL: Creating the 'get natural keys' stored procedure
 CREATE PROCEDURE [dbo].[GetNaturalKeys]
     @AggregateRootTypeName varchar(511),
     @Checkpoint bigint
@@ -60,6 +65,7 @@ GO
 IF XACT_STATE() < 1 SET NOEXEC ON
 GO
 
+-- SQL: Creating the 'try add natural key' stored procedure
 CREATE PROCEDURE [dbo].[TryAddNaturalKey]
     @AggregateRootTypeName varchar(511),
     @Value varchar(MAX),
@@ -93,6 +99,7 @@ GO
 
 SET NOCOUNT ON;
 
+-- SQL: Assigning the database version as the initial version
 INSERT INTO [dbo].[DatabaseVersion] ([Version], [Description])
 SELECT 1, 'Initial version';
 GO

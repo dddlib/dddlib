@@ -51,7 +51,7 @@ namespace dddlib.Persistence.Sdk
             }
 
             var naturalKey = aggregateRootType.NaturalKey.GetValue(aggregateRoot);
-            return this.identityMap.GetOrAdd(type, naturalKey);
+            return this.identityMap.GetOrAdd(aggregateRootType.RuntimeType, aggregateRootType.NaturalKey.PropertyType, naturalKey);
         }
 
         /// <summary>
@@ -62,8 +62,10 @@ namespace dddlib.Persistence.Sdk
         /// <returns>The identifier for the aggregate root.</returns>
         protected Guid GetId<T>(object naturalKey) where T : AggregateRoot
         {
+            var aggregateRootType = Application.Current.GetAggregateRootType(typeof(T));
+
             var identity = default(Guid);
-            if (!this.identityMap.TryGet(typeof(T), naturalKey, out identity))
+            if (!this.identityMap.TryGet(aggregateRootType.RuntimeType, aggregateRootType.NaturalKey.PropertyType, naturalKey, out identity))
             {
                 // aggregate root not found?
                 throw new AggregateRootNotFoundException();

@@ -8,20 +8,20 @@ namespace dddlib.Persistence.SqlServer
     using System.Collections.Generic;
     using System.Data;
     using System.Data.SqlClient;
-    using System.Linq;
-    using System.Text.RegularExpressions;
     using System.Transactions;
     using dddlib.Persistence.Sdk;
+    using dddlib.Persistence.SqlServer.Database;
 
     /// <summary>
     /// Represents the SQL Server natural key repository.
     /// </summary>
     public class SqlServerNaturalKeyRepository : INaturalKeyRepository
     {
+        // NOTE (Cameron): This is the only place we specify the version of the SQL database code that this repository is designed to work with.
+        private static readonly int StorageVersion = 1;
+
         private readonly string connectionString;
         private readonly string schema;
-
-        private bool isInitialized;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlServerNaturalKeyRepository"/> class.
@@ -30,13 +30,10 @@ namespace dddlib.Persistence.SqlServer
         /// <param name="schema">The schema.</param>
         public SqlServerNaturalKeyRepository(string connectionString, string schema)
         {
-            Guard.Against.InvalidConnectionString(() => connectionString);
-            Guard.Against.NullOrEmpty(() => schema);
+            new Storage(connectionString, schema).Initialize(StorageVersion);
 
             this.connectionString = connectionString;
             this.schema = schema;
-
-            // TODO (Cameron): Check the database version is valid.
         }
 
         /// <summary>
@@ -48,11 +45,6 @@ namespace dddlib.Persistence.SqlServer
         public IEnumerable<NaturalKeyRecord> GetNaturalKeys(Type aggregateRootType, long checkpoint)
         {
             Guard.Against.Null(() => aggregateRootType);
-
-            if (!this.isInitialized)
-            {
-                this.InitializeStorage();
-            }
 
             using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
@@ -93,11 +85,6 @@ namespace dddlib.Persistence.SqlServer
             Guard.Against.Null(() => aggregateRootType);
             Guard.Against.Null(() => serializedNaturalKey);
 
-            if (!this.isInitialized)
-            {
-                this.InitializeStorage();
-            }
-
             using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
             using (var command = connection.CreateCommand())
@@ -128,21 +115,6 @@ namespace dddlib.Persistence.SqlServer
                     return true;
                 }
             }
-        }
-
-        private void InitializeStorage()
-        {
-            ////using (new TransactionScope(TransactionScopeOption.Suppress))
-            ////using (var connection = new SqlConnection(this.connectionString))
-            ////using (var command = connection.CreateCommand())
-            ////{
-            ////    connection.Open();
-
-            ////    command.CommandText = Storage.Version01.Replace("[dbo]", string.Concat("[", this.schema, "]"));
-            ////    command.ExecuteNonQuery();
-            ////}
-
-            this.isInitialized = true;
         }
     }
 }

@@ -14,20 +14,20 @@ namespace dddlib.Persistence
         /// <summary>
         /// Gets the mapped identity for the specified natural key. If a mapping does not exist then one is created.
         /// </summary>
-        /// <typeparam name="T">The type of natural key.</typeparam>
         /// <param name="aggregateRootType">Type of the aggregate root.</param>
+        /// <param name="naturalKeyType">Type of the natural key.</param>
         /// <param name="naturalKey">The natural key.</param>
         /// <returns>The mapped identity.</returns>
-        Guid GetOrAdd<T>(Type aggregateRootType, T naturalKey);
+        Guid GetOrAdd(Type aggregateRootType, Type naturalKeyType, object naturalKey);
 
         /// <summary>
         /// Attempts to get the mapped identity for the specified natural key.
         /// </summary>
-        /// <typeparam name="T">The type of natural key.</typeparam>
         /// <param name="aggregateRootType">Type of the aggregate root.</param>
+        /// <param name="naturalKeyType">Type of the natural key.</param>
         /// <param name="naturalKey">The natural key.</param>
         /// <param name="identity">The mapped identity.</param>
         /// <returns>Returns <c>true</c> if the mapping exists; otherwise <c>false</c>.</returns>
-        bool TryGet<T>(Type aggregateRootType, T naturalKey, out Guid identity);
+        bool TryGet(Type aggregateRootType, Type naturalKeyType, object naturalKey, out Guid identity);
     }
 }

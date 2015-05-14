@@ -20,10 +20,20 @@ namespace dddlib.Persistence.SqlServer
                 catch (SqlException ex)
                 {
                     throw new ArgumentException(
-                        "Value must be a valid connection string. See inner exception for details.", 
+                        "Value must be a valid connection string. See inner exception for details.",
                         Guard.Expression.Parse(expression),
                         ex);
                 }
+            }
+        }
+
+        public static void NegativeOrZero(this Guard guard, Func<int> expression)
+        {
+            var value = expression();
+
+            if (value <= 0)
+            {
+                throw new ArgumentOutOfRangeException(Guard.Expression.Parse(expression), value, "Value has to be positive.");
             }
         }
     }

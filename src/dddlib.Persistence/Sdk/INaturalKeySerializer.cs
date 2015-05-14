@@ -4,6 +4,8 @@
 
 namespace dddlib.Persistence.Sdk
 {
+    using System;
+
     /// <summary>
     /// Exposes the public members of the natural key serializer.
     /// </summary>
@@ -12,17 +14,17 @@ namespace dddlib.Persistence.Sdk
         /// <summary>
         /// Serializes the specified natural key.
         /// </summary>
-        /// <typeparam name="T">The type of natural key.</typeparam>
+        /// <param name="naturalKeyType">The type of natural key.</param>
         /// <param name="naturalKey">The natural key.</param>
         /// <returns>The serialized natural key.</returns>
-        string Serialize<T>(T naturalKey);
+        string Serialize(Type naturalKeyType, object naturalKey);
 
         /// <summary>
         /// Deserializes the specified serialized natural key.
         /// </summary>
-        /// <typeparam name="T">The type of natural key.</typeparam>
+        /// <param name="naturalKeyType">The type of natural key.</param>
         /// <param name="serializedNaturalKey">The serialized natural key.</param>
         /// <returns>The natural key.</returns>
-        T Deserialize<T>(string serializedNaturalKey);
+        object Deserialize(Type naturalKeyType, string serializedNaturalKey);
     }
 }

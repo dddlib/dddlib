@@ -20,7 +20,16 @@ namespace dddlib.Persistence.Memory
         /// Initializes a new instance of the <see cref="MemoryRepository{T}"/> class.
         /// </summary>
         public MemoryRepository()
-            : base(new MemoryIdentityMap())
+            : this(new MemoryIdentityMap())
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MemoryRepository{T}"/> class.
+        /// </summary>
+        /// <param name="identityMap">The identity map.</param>
+        public MemoryRepository(IIdentityMap identityMap)
+            : base(identityMap)
         {
         }
 

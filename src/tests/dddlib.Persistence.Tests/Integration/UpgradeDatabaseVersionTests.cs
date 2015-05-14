@@ -1,4 +1,4 @@
-﻿// <copyright file="Version01.cs" company="dddlib contributors">
+﻿// <copyright file="UpgradeDatabaseVersionTests.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -8,7 +8,7 @@ namespace dddlib.Persistence.Tests.Storage
     using dddlib.Persistence.SqlServer;
     using Xunit;
 
-    public class Version01
+    public class UpgradeDatabaseVersionTests
     {
         [Fact(Skip = "Not ready.")]
         public void CanInitializeStorage()

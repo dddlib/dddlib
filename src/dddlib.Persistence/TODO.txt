@@ -2,38 +2,3 @@
 ability to specify schema for DDL statements
 introduce concept of Applications into Schema
 introduce tests for SQL whereby the data is "upgraded" between versions
-
-
-
-/*
-drop procedure [dbo].[GetNaturalKeys];
-drop procedure [dbo].[TryAddNaturalKey];
-drop table [dbo].[NaturalKey];
-drop table [dbo].[AggregateRootType];
-drop table [dbo].[DatabaseVersion];
-*/
-
--- command
-DECLARE @Payload varbinary(MAX);
-SET @Payload = CAST('NaturalKey1' as varbinary(MAX));
-EXEC [dbo].[TryAddNaturalKey] 'Type1', @Payload, 0
-
-DECLARE @Payload2 varbinary(MAX);
-SET @Payload2 = CAST('NaturalKey2' as varbinary(MAX));
-EXEC [dbo].[TryAddNaturalKey] 'Type1', @Payload2, 2
-
-DECLARE @Payload3 varbinary(MAX);
-SET @Payload3 = CAST('NaturalKey1' as varbinary(MAX));
-EXEC [dbo].[TryAddNaturalKey] 'Type2', @Payload3, 0
-
-DECLARE @Payload4 varbinary(MAX);
-SET @Payload4 = CAST('NaturalKey2' as varbinary(MAX));
-EXEC [dbo].[TryAddNaturalKey] 'Type1', @Payload4, 1
-
-DECLARE @Payload5 varbinary(MAX);
-SET @Payload5 = CAST('NaturalKey1' as varbinary(MAX));
-EXEC [dbo].[TryAddNaturalKey] 'Type2', @Payload5, 1
-
--- query
-EXEC [dbo].[GetNaturalKeys] 'Type1', 0
-EXEC [dbo].[GetNaturalKeys] 'Type2', 0

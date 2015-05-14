@@ -37,21 +37,21 @@ namespace dddlib.Persistence.Sdk
         /// <summary>
         /// Gets the mapped identity for the specified natural key. If a mapping does not exist then one is created.
         /// </summary>
-        /// <typeparam name="T">The type of natural key.</typeparam>
         /// <param name="aggregateRootType">Type of the aggregate root.</param>
+        /// <param name="naturalKeyType">Type of the natural key.</param>
         /// <param name="naturalKey">The natural key.</param>
         /// <returns>The mapped identity.</returns>
-        public Guid GetOrAdd<T>(Type aggregateRootType, T naturalKey)
+        public Guid GetOrAdd(Type aggregateRootType, Type naturalKeyType, object naturalKey)
         {
             Guard.Against.Null(() => aggregateRootType);
 
             var mappings = this.store.GetOrAdd(aggregateRootType, _ => new ConcurrentDictionary<object, Guid>());
 
             var identity = default(Guid);
-            while (!this.TryGet(aggregateRootType, naturalKey, out identity))
+            while (!this.TryGet(aggregateRootType, naturalKeyType, naturalKey, out identity))
             {
                 var naturalKeyRecord = default(NaturalKeyRecord);
-                if (this.repository.TryAddNaturalKey(aggregateRootType, this.serializer.Serialize(naturalKey), this.checkpoint, out naturalKeyRecord))
+                if (this.repository.TryAddNaturalKey(aggregateRootType, this.serializer.Serialize(naturalKeyType, naturalKey), this.checkpoint, out naturalKeyRecord))
                 {
                     // TODO (Cameron): Confirm that this is what we want to do here.
                     mappings.TryAdd(naturalKey, naturalKeyRecord.Identity);
@@ -65,12 +65,12 @@ namespace dddlib.Persistence.Sdk
         /// <summary>
         /// Attempts to get the mapped identity for the specified natural key.
         /// </summary>
-        /// <typeparam name="T">The type of natural key.</typeparam>
         /// <param name="aggregateRootType">Type of the aggregate root.</param>
+        /// <param name="naturalKeyType">Type of the natural key.</param>
         /// <param name="naturalKey">The natural key.</param>
         /// <param name="identity">The mapped identity.</param>
         /// <returns>Returns <c>true</c> if the mapping exists; otherwise <c>false</c>.</returns>
-        public bool TryGet<T>(Type aggregateRootType, T naturalKey, out Guid identity)
+        public bool TryGet(Type aggregateRootType, Type naturalKeyType, object naturalKey, out Guid identity)
         {
             Guard.Against.Null(() => aggregateRootType);
 
@@ -81,7 +81,7 @@ namespace dddlib.Persistence.Sdk
                 return true;
             }
 
-            while (this.Synchronize<T>(aggregateRootType, mappings))
+            while (this.Synchronize(aggregateRootType, naturalKeyType, mappings))
             {
                 if (mappings.TryGetValue(naturalKey, out identity))
                 {
@@ -92,12 +92,12 @@ namespace dddlib.Persistence.Sdk
             return false;
         }
 
-        private bool Synchronize<T>(Type aggregateRootType, ConcurrentDictionary<object, Guid> mappings)
+        private bool Synchronize(Type aggregateRootType, Type naturalKeyType, ConcurrentDictionary<object, Guid> mappings)
         {
             var startCheckpoint = this.checkpoint;
             foreach (var naturalKeyRecord in this.repository.GetNaturalKeys(aggregateRootType, startCheckpoint))
             {
-                var naturalKey = this.serializer.Deserialize<T>(naturalKeyRecord.SerializedValue);
+                var naturalKey = this.serializer.Deserialize(naturalKeyType, naturalKeyRecord.SerializedValue);
 
                 // TODO (Cameron): Verify that no if clause is required here.
                 mappings.TryAdd(naturalKey, naturalKeyRecord.Identity);
