@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-////namespace dddlib.Tests.Bugs
+////namespace dddlib.Persistence.Tests.Bug
 ////{
 ////    using System;
 ////    using Xunit;

@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Tests.Features
+namespace dddlib.Tests.Feature
 {
     using dddlib.Tests.Sdk;
 

@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Persistence.Tests.Storage
+namespace dddlib.Persistence.Tests.Integration
 {
     using System.Linq;
     using dddlib.Persistence.SqlServer;

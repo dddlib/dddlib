@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Tests.Features
+namespace dddlib.Persistence.Tests.Feature
 {
     using System;
     using dddlib.Configuration;

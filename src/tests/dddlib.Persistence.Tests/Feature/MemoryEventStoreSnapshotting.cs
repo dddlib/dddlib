@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Persistence.Tests
+namespace dddlib.Persistence.Tests.Feature
 {
     using dddlib.Tests.Sdk;
 

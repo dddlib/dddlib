@@ -1,4 +1,4 @@
-﻿// <copyright file="JsonSerializer.cs" company="dddlib contributors">
+﻿// <copyright file="JsonSerializerTests.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -8,7 +8,7 @@ namespace dddlib.Persistence.Tests.Unit
     using dddlib.Persistence.Sdk;
     using Xunit;
 
-    public class JsonSerializer
+    public class JsonSerializerTests
     {
         [Fact]
         public void TestString()

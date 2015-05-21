@@ -92,14 +92,14 @@
     <Compile Include="..\dddlib.Tests\Sdk\Feature.cs">
       <Link>Sdk\Feature.cs</Link>
     </Compile>
-    <Compile Include="Bugs\Bug0002.cs" />
-    <Compile Include="Features\MemoryPersistence.cs" />
-    <Compile Include="Features\MemoryEventStorePersistence.cs" />
-    <Compile Include="Features\MemoryEventStoreSnapshotting.cs" />
+    <Compile Include="Bug\Bug0002.cs" />
+    <Compile Include="Feature\MemoryPersistence.cs" />
+    <Compile Include="Feature\MemoryEventStorePersistence.cs" />
+    <Compile Include="Feature\MemoryEventStoreSnapshotting.cs" />
     <Compile Include="Integration\IntegrationDatabase.cs" />
     <Compile Include="Integration\SqlServerIdentityMapTests.cs" />
     <Compile Include="Integration\UpgradeDatabaseVersionTests.cs" />
-    <Compile Include="Unit\JsonSerializer.cs" />
+    <Compile Include="Unit\JsonSerializerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\dddlib.Persistence\dddlib.Persistence.csproj">
