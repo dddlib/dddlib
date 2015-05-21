@@ -1,8 +1,8 @@
-﻿// <copyright file="IntegrationDatabase.cs" company="dddlib contributors">
+﻿// <copyright file="SqlDatabaseFixture.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Persistence.Tests.Integration
+namespace dddlib.Persistence.Tests.Sdk
 {
     using System;
     using System.Configuration;
@@ -10,13 +10,14 @@ namespace dddlib.Persistence.Tests.Integration
     using Microsoft.SqlServer.Management.Common;
     using Microsoft.SqlServer.Management.Smo;
 
-    public class IntegrationDatabase : IDisposable
+    public class SqlDatabaseFixture : IDisposable
     {
         private readonly string databaseName = Guid.NewGuid().ToString("N");
+        private readonly string connectionString = ConfigurationManager.ConnectionStrings["SqlDatabase"].ConnectionString;
 
-        public IntegrationDatabase()
+        public SqlDatabaseFixture()
         {
-            using (var connection = new SqlConnection(ConfigurationManager.ConnectionStrings["TestDB"].ConnectionString))
+            using (var connection = new SqlConnection(this.connectionString))
             {
                 var serverConnection = new ServerConnection(connection);
                 var server = new Server(serverConnection);
@@ -26,14 +27,19 @@ namespace dddlib.Persistence.Tests.Integration
             }
         }
 
-        public string Name
+        public string ConnectionString
+        {
+            get { return this.connectionString; }
+        }
+
+        public string DatabaseName
         {
             get { return this.databaseName; }
         }
 
         public void Dispose()
         {
-            using (var connection = new SqlConnection(ConfigurationManager.ConnectionStrings["TestDB"].ConnectionString))
+            using (var connection = new SqlConnection(this.connectionString))
             {
                 var serverConnection = new ServerConnection(connection);
                 var server = new Server(serverConnection);

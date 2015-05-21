@@ -5,20 +5,18 @@
 namespace dddlib.Persistence.Tests.Integration
 {
     using System;
-    using System.Configuration;
     using dddlib.Persistence.SqlServer;
+    using dddlib.Persistence.Tests.Sdk;
     using FluentAssertions;
     using Xunit;
 
-    public class SqlServerIdentityMapTests : IUseFixture<IntegrationDatabase>
+    public class SqlServerIdentityMapTests : Integration.Database
     {
-        private string connectionString;
-
         [Fact]
         public void TryGetWhenIdentityMapDoesNotContainNaturalKey()
         {
             // arrange
-            var identityMap = new SqlServerIdentityMap(this.connectionString);
+            var identityMap = new SqlServerIdentityMap(this.ConnectionString);
             var registration = new Registration(Guid.NewGuid().ToString("N"));
             var identity = default(Guid);
 
@@ -33,8 +31,8 @@ namespace dddlib.Persistence.Tests.Integration
         public void TryGetWhenIdentityMapDoesContainNaturalKey()
         {
             // arrange
-            var identityMap = new SqlServerIdentityMap(this.connectionString);
-            var otherIdentityMap = new SqlServerIdentityMap(this.connectionString);
+            var identityMap = new SqlServerIdentityMap(this.ConnectionString);
+            var otherIdentityMap = new SqlServerIdentityMap(this.ConnectionString);
             var registration = new Registration(Guid.NewGuid().ToString("N"));
             var actualIdentity = default(Guid);
             var sameIdentity = default(Guid);
@@ -55,7 +53,7 @@ namespace dddlib.Persistence.Tests.Integration
         public void GetOrAddWhenIdentityMapDoesNotContainNaturalKey()
         {
             // arrange
-            var identityMap = new SqlServerIdentityMap(this.connectionString);
+            var identityMap = new SqlServerIdentityMap(this.ConnectionString);
             var registration = new Registration(Guid.NewGuid().ToString("N"));
 
             // act
@@ -70,8 +68,8 @@ namespace dddlib.Persistence.Tests.Integration
         public void GetOrAddWhenIdentityMapDoesContainNaturalKey()
         {
             // arrange
-            var identityMap = new SqlServerIdentityMap(this.connectionString);
-            var otherIdentityMap = new SqlServerIdentityMap(this.connectionString);
+            var identityMap = new SqlServerIdentityMap(this.ConnectionString);
+            var otherIdentityMap = new SqlServerIdentityMap(this.ConnectionString);
             var registration = new Registration(Guid.NewGuid().ToString("N"));
 
             // act
@@ -86,7 +84,7 @@ namespace dddlib.Persistence.Tests.Integration
         public void UseAlternateSchema()
         {
             // arrange
-            var identityMap = new SqlServerIdentityMap(this.connectionString, "alternate");
+            var identityMap = new SqlServerIdentityMap(this.ConnectionString, "alternate");
             var registration = new Registration(Guid.NewGuid().ToString("N"));
             var actualIdentity = default(Guid);
 
@@ -99,12 +97,6 @@ namespace dddlib.Persistence.Tests.Integration
             initialSuccess.Should().BeFalse();
             subsequentSuccess.Should().BeTrue();
             actualIdentity.Should().Be(expectedIdentity);
-        }
-
-        public void SetFixture(IntegrationDatabase database)
-        {
-            this.connectionString = 
-                ConfigurationManager.ConnectionStrings["TestDB"].ConnectionString.Replace("=master;", string.Concat("=", database.Name, ";"));
         }
 
         private class Registration : ValueObject<Registration>

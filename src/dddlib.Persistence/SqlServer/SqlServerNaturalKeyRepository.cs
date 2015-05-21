@@ -52,7 +52,7 @@ namespace dddlib.Persistence.SqlServer
             {
                 command.CommandType = CommandType.StoredProcedure;
                 command.CommandText = string.Concat(this.schema, ".GetNaturalKeys");
-                command.Parameters.Add("@AggregateRootTypeName", SqlDbType.VarChar, 511).Value = aggregateRootType.Name;
+                command.Parameters.Add("@AggregateRootTypeName", SqlDbType.VarChar, 511).Value = aggregateRootType.FullName;
                 command.Parameters.Add("@Checkpoint", SqlDbType.BigInt).Value = checkpoint;
 
                 connection.Open();
@@ -91,7 +91,7 @@ namespace dddlib.Persistence.SqlServer
             {
                 command.CommandType = CommandType.StoredProcedure;
                 command.CommandText = string.Concat(this.schema, ".TryAddNaturalKey");
-                command.Parameters.Add("@AggregateRootTypeName", SqlDbType.VarChar, 511).Value = aggregateRootType.Name;
+                command.Parameters.Add("@AggregateRootTypeName", SqlDbType.VarChar, 511).Value = aggregateRootType.FullName;
                 command.Parameters.Add("@Value", SqlDbType.VarChar).Value = serializedNaturalKey;
                 command.Parameters.Add("@Checkpoint", SqlDbType.BigInt).Value = checkpoint;
 

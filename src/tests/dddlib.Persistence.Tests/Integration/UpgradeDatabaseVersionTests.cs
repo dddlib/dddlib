@@ -6,9 +6,10 @@ namespace dddlib.Persistence.Tests.Integration
 {
     using System.Linq;
     using dddlib.Persistence.SqlServer;
+    using dddlib.Persistence.Tests.Sdk;
     using Xunit;
 
-    public class UpgradeDatabaseVersionTests
+    public class UpgradeDatabaseVersionTests // : Integration
     {
         [Fact(Skip = "Not ready.")]
         public void CanInitializeStorage()

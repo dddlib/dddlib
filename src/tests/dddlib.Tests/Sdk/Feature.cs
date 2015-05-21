@@ -2,7 +2,11 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
+#if dddlibTests
 namespace dddlib.Tests.Sdk
+#else
+namespace dddlib.Persistence.Tests.Sdk
+#endif
 {
     using System;
     using System.Linq;

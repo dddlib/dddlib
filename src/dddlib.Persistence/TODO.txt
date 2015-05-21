@@ -1,4 +1,4 @@
 ﻿EntityConfigurationWrapperExtension for UseNaturalKey to specify serialization somehow - maybe as some sort of extension?
-ability to specify schema for DDL statements
 introduce concept of Applications into Schema
+introduce type forwarding into sql identity map
 introduce tests for SQL whereby the data is "upgraded" between versions

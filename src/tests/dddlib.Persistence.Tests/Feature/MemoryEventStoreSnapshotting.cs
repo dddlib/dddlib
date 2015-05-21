@@ -4,7 +4,7 @@
 
 namespace dddlib.Persistence.Tests.Feature
 {
-    using dddlib.Tests.Sdk;
+    using dddlib.Persistence.Tests.Sdk;
 
     // As someone who uses dddlib
     // In order reduce the overhead associated with reconstitution

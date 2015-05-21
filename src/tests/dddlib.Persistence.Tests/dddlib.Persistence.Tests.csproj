@@ -96,9 +96,10 @@
     <Compile Include="Feature\MemoryPersistence.cs" />
     <Compile Include="Feature\MemoryEventStorePersistence.cs" />
     <Compile Include="Feature\MemoryEventStoreSnapshotting.cs" />
-    <Compile Include="Integration\IntegrationDatabase.cs" />
+    <Compile Include="Sdk\Integration.cs" />
     <Compile Include="Integration\SqlServerIdentityMapTests.cs" />
     <Compile Include="Integration\UpgradeDatabaseVersionTests.cs" />
+    <Compile Include="Sdk\SqlDatabaseFixture.cs" />
     <Compile Include="Unit\JsonSerializerTests.cs" />
   </ItemGroup>
   <ItemGroup>
