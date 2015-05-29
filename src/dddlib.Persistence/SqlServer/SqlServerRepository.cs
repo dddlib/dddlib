@@ -12,6 +12,8 @@ namespace dddlib.Persistence.SqlServer
     /// <typeparam name="T">The type of aggregate root.</typeparam>
     public abstract class SqlServerRepository<T> : Repository<T> where T : AggregateRoot
     {
+        private readonly string connectionString;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlServerRepository{T}"/> class.
         /// </summary>
@@ -19,6 +21,7 @@ namespace dddlib.Persistence.SqlServer
         public SqlServerRepository(string connectionString)
             : base(new SqlServerIdentityMap(connectionString))
         {
+            this.connectionString = connectionString;
         }
 
         /// <summary>
@@ -29,6 +32,16 @@ namespace dddlib.Persistence.SqlServer
         public SqlServerRepository(string connectionString, string schema)
             : base(new SqlServerIdentityMap(connectionString, schema))
         {
+            this.connectionString = connectionString;
+        }
+
+        /// <summary>
+        /// Gets the connection string.
+        /// </summary>
+        /// <value>The connection string.</value>
+        protected string ConnectionString
+        {
+            get { return this.connectionString; }
         }
     }
 }

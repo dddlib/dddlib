@@ -1,11 +1,14 @@
-﻿// <copyright file="MemoryPersistence.cs" company="dddlib contributors">
+﻿// <copyright file="SqlServerPersistence.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
 namespace dddlib.Persistence.Tests.Feature
 {
+    using System;
+    using System.Data;
+    using System.Data.SqlClient;
     using dddlib.Configuration;
-    using dddlib.Persistence.Memory;
+    using dddlib.Persistence.SqlServer;
     using dddlib.Persistence.Tests.Sdk;
     using FluentAssertions;
     using Xbehave;
@@ -13,7 +16,7 @@ namespace dddlib.Persistence.Tests.Feature
     // As someone who uses dddlib
     // In order save state
     // I need to be able to persist an aggregate root
-    public abstract class MemoryPersistence : Feature
+    public abstract class SqlServerPersistence : SqlServerFeature
     {
         /*
             AggregateRoot Persistence (Guid)
@@ -37,13 +40,22 @@ namespace dddlib.Persistence.Tests.Feature
             AND MORE?
         */
 
-        public class DefinedInBootstrapper : MemoryPersistence
+        public class DefinedInBootstrapper : SqlServerPersistence
         {
             [Scenario]
             public void Scenario(IRepository<Subject> repository, Subject instance, Subject otherInstance, string naturalKey)
             {
-                "Given a repository"
-                    .Given(() => repository = new MemoryRepository<Subject>());
+                "Given a SQL database"
+                    .Given(() => this.ExecuteSql(@"CREATE TABLE [dbo].[Subjects]
+(
+    [Id] [uniqueidentifier] NOT NULL,
+    [NaturalKey] [varchar](MAX) NOT NULL,
+    [State] [varchar](20) NOT NULL,
+    CONSTRAINT [PK_Id] PRIMARY KEY CLUSTERED ([Id])
+);"));
+
+                "And a repository"
+                    .And(() => repository = new SubjectRepository(this.ConnectionString));
 
                 "And a natural key value"
                     .And(() => naturalKey = "key");
@@ -93,6 +105,69 @@ namespace dddlib.Persistence.Tests.Feature
             public class NewSubject
             {
                 public string NaturalKey { get; set; }
+            }
+
+            public class SubjectRepository : SqlServerRepository<Subject>
+            {
+                public SubjectRepository(string connectionString)
+                    : base(connectionString)
+                {
+                }
+
+                protected override void Save(Guid id, object memento, string oldState, out string newState)
+                {
+                    using (var connection = new SqlConnection(this.ConnectionString))
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandType = CommandType.Text;
+                        command.CommandText = @"MERGE dbo.Subjects AS [Target]
+USING (select '" + id.ToString() + "' as [Id], '" + memento.ToString() + "' as [NaturalKey], " + (string.IsNullOrEmpty(oldState) ? "NULL" : "'" + oldState + "'") + @" as [State]) AS [Source]
+ON [Target].[Id] = [Source].[Id]
+WHEN MATCHED AND [Target].[State] = [Source].[State] THEN  
+  UPDATE SET 
+    [Target].[NaturalKey] = [Source].[NaturalKey], 
+    [Target].[State] = LEFT(CAST(NEWID() AS NVARCHAR(36)), 8)
+WHEN NOT MATCHED AND [Source].[State] IS NULL THEN  
+  INSERT ([Id], [NaturalKey], [State]) 
+  VALUES ([Source].[Id], [Source].[NaturalKey], LEFT(CAST(NEWID() AS NVARCHAR(36)), 8))
+OUTPUT [Inserted].[State];";
+
+                        connection.Open();
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (!reader.Read())
+                            {
+                                throw new ConcurrencyException("Concurrency!");
+                            }
+
+                            newState = Convert.ToString(reader["State"]);
+                        }
+                    }
+                }
+
+                protected override object Load(Guid id, out string state)
+                {
+                    using (var connection = new SqlConnection(this.ConnectionString))
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandType = CommandType.Text;
+                        command.CommandText = "SELECT [NaturalKey], [State] FROM [dbo].[Subjects] WHERE [Id] = '" + id.ToString() + "'";
+
+                        connection.Open();
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (!reader.Read())
+                            {
+                                throw new AggregateRootNotFoundException("Not found!");
+                            }
+
+                            state = Convert.ToString(reader["State"]);
+                            return Convert.ToString(reader["NaturalKey"]);
+                        }
+                    }
+                }
             }
 
             private class BootStrapper : IBootstrap<Subject>

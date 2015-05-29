@@ -1,4 +1,4 @@
-﻿// <copyright file="SqlDatabaseFixture.cs" company="dddlib contributors">
+﻿// <copyright file="SqlServerFixture.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -10,12 +10,12 @@ namespace dddlib.Persistence.Tests.Sdk
     using Microsoft.SqlServer.Management.Common;
     using Microsoft.SqlServer.Management.Smo;
 
-    public class SqlDatabaseFixture : IDisposable
+    public class SqlServerFixture : IDisposable
     {
         private readonly string databaseName = Guid.NewGuid().ToString("N");
         private readonly string connectionString = ConfigurationManager.ConnectionStrings["SqlDatabase"].ConnectionString;
 
-        public SqlDatabaseFixture()
+        public SqlServerFixture()
         {
             using (var connection = new SqlConnection(this.connectionString))
             {

@@ -93,13 +93,15 @@
       <Link>Sdk\Feature.cs</Link>
     </Compile>
     <Compile Include="Bug\Bug0002.cs" />
+    <Compile Include="Feature\SqlServerPersistence.cs" />
     <Compile Include="Feature\MemoryPersistence.cs" />
     <Compile Include="Feature\MemoryEventStorePersistence.cs" />
     <Compile Include="Feature\MemoryEventStoreSnapshotting.cs" />
     <Compile Include="Sdk\Integration.cs" />
     <Compile Include="Integration\SqlServerIdentityMapTests.cs" />
     <Compile Include="Integration\UpgradeDatabaseVersionTests.cs" />
-    <Compile Include="Sdk\SqlDatabaseFixture.cs" />
+    <Compile Include="Sdk\SqlServerFeature.cs" />
+    <Compile Include="Sdk\SqlServerFixture.cs" />
     <Compile Include="Unit\JsonSerializerTests.cs" />
   </ItemGroup>
   <ItemGroup>
