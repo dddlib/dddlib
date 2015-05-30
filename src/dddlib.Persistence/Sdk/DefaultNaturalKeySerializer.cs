@@ -4,6 +4,7 @@
 
 namespace dddlib.Persistence.Sdk
 {
+    using System;
     using System.Web.Script.Serialization;
     using dddlib.Runtime;
     using dddlib.Sdk;
@@ -18,12 +19,13 @@ namespace dddlib.Persistence.Sdk
         /// <summary>
         /// Serializes the specified natural key.
         /// </summary>
-        /// <typeparam name="T">The type of natural key.</typeparam>
+        /// <param name="naturalKeyType">The type of natural key.</param>
         /// <param name="naturalKey">The natural key.</param>
         /// <returns>The serialized natural key.</returns>
-        public string Serialize<T>(T naturalKey)
+        public string Serialize(Type naturalKeyType, object naturalKey)
         {
-            var naturalKeyType = naturalKey.GetType();
+            Guard.Against.Null(() => naturalKeyType);
+
             if (naturalKeyType.IsSubclassOfRawGeneric(typeof(ValueObject<>)))
             {
                 var runtimeType = Application.Current.GetValueObjectType(naturalKeyType);
@@ -36,18 +38,20 @@ namespace dddlib.Persistence.Sdk
         /// <summary>
         /// Deserializes the specified serialized natural key.
         /// </summary>
-        /// <typeparam name="T">The type of natural key.</typeparam>
+        /// <param name="naturalKeyType">The type of natural key.</param>
         /// <param name="serializedNaturalKey">The serialized natural key.</param>
         /// <returns>The natural key.</returns>
-        public T Deserialize<T>(string serializedNaturalKey)
+        public object Deserialize(Type naturalKeyType, string serializedNaturalKey)
         {
-            if (typeof(T).IsSubclassOfRawGeneric(typeof(ValueObject<>)))
+            Guard.Against.Null(() => naturalKeyType);
+
+            if (naturalKeyType.IsSubclassOfRawGeneric(typeof(ValueObject<>)))
             {
-                var runtimeType = Application.Current.GetValueObjectType(typeof(T));
-                return (T)runtimeType.Serializer.Deserialize(serializedNaturalKey);
+                var runtimeType = Application.Current.GetValueObjectType(naturalKeyType);
+                return runtimeType.Serializer.Deserialize(serializedNaturalKey);
             }
 
-            return Serializer.Deserialize<T>(serializedNaturalKey);
+            return Serializer.Deserialize(serializedNaturalKey, naturalKeyType);
         }
     }
 }

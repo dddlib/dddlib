@@ -37,6 +37,7 @@
     <None Include="..\..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -54,7 +55,25 @@
     <Reference Include="FluentAssertions.Core">
       <HintPath>..\..\..\packages\FluentAssertions.3.3.0\lib\net45\FluentAssertions.Core.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.SqlServer.ConnectionInfo, Version=12.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\Microsoft.SqlServer.ConnectionInfo.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.SqlServer.Management.Sdk.Sfc, Version=12.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\Microsoft.SqlServer.Management.Sdk.Sfc.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.SqlServer.Smo, Version=12.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\Microsoft.SqlServer.Smo.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.SqlServer.SqlEnum, Version=12.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\Microsoft.SqlServer.SqlEnum.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
@@ -73,12 +92,17 @@
     <Compile Include="..\dddlib.Tests\Sdk\Feature.cs">
       <Link>Sdk\Feature.cs</Link>
     </Compile>
-    <Compile Include="Features\MemoryPersistence.cs" />
-    <Compile Include="Features\MemoryEventStorePersistence.cs" />
-    <Compile Include="Features\MemoryEventStoreSnapshotting.cs" />
-    <Compile Include="Storage\SqlServerIdentityMapTests.cs" />
-    <Compile Include="Storage\Version01.cs" />
-    <Compile Include="UnitTests\JsonSerializer.cs" />
+    <Compile Include="Bug\Bug0002.cs" />
+    <Compile Include="Feature\SqlServerPersistence.cs" />
+    <Compile Include="Feature\MemoryPersistence.cs" />
+    <Compile Include="Feature\MemoryEventStorePersistence.cs" />
+    <Compile Include="Feature\MemoryEventStoreSnapshotting.cs" />
+    <Compile Include="Sdk\Integration.cs" />
+    <Compile Include="Integration\SqlServerIdentityMapTests.cs" />
+    <Compile Include="Integration\UpgradeDatabaseVersionTests.cs" />
+    <Compile Include="Sdk\SqlServerFeature.cs" />
+    <Compile Include="Sdk\SqlServerFixture.cs" />
+    <Compile Include="Unit\JsonSerializerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\dddlib.Persistence\dddlib.Persistence.csproj">
@@ -93,9 +117,7 @@
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Bugs\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -38,6 +38,7 @@ namespace dddlib.Configuration
         /// </summary>
         /// <param name="valueObjectSerializer">The value object serializer.</param>
         /// <returns>The configuration.</returns>
+        //// NOTE (Cameron): Value object serialization is a necessity because we don't control usage of a value object as a natural key.
         TConfiguration ToSerializeUsing(IValueObjectSerializer valueObjectSerializer);
 
         /// <summary>

@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;dddlibTests</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -34,44 +34,44 @@
     <AssemblyOriginatorKeyFile>..\..\dddlib.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Bugs\Bug0001.cs" />
-    <Compile Include="Features\BusinessException.cs" />
-    <Compile Include="UnitTests\EntityTypeTests.cs" />
-    <Compile Include="UnitTests\ValueObjectTypeTests.cs" />
+    <Compile Include="Bug\Bug0001.cs" />
+    <Compile Include="Feature\BusinessException.cs" />
+    <Compile Include="Unit\EntityTypeTests.cs" />
+    <Compile Include="Unit\ValueObjectTypeTests.cs" />
     <None Include="..\..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
-    <Compile Include="Features\AggregateRootEquality.cs" />
-    <Compile Include="Features\AggregateRootEventApplication.cs" />
-    <Compile Include="Features\AggregateRootLifecycle.cs" />
-    <Compile Include="Features\AggregateRootObjectMappingEntities.cs" />
-    <Compile Include="Features\AggregateRootObjectMappingValueObjects.cs" />
-    <Compile Include="Features\EntityEquality.cs" />
+    <Compile Include="Feature\AggregateRootEquality.cs" />
+    <Compile Include="Feature\AggregateRootEventApplication.cs" />
+    <Compile Include="Feature\AggregateRootLifecycle.cs" />
+    <Compile Include="Feature\AggregateRootObjectMappingEntities.cs" />
+    <Compile Include="Feature\AggregateRootObjectMappingValueObjects.cs" />
+    <Compile Include="Feature\EntityEquality.cs" />
     <Compile Include="Support\Bootstrapper.cs" />
-    <Compile Include="Features\ValueObjectEquality.cs" />
+    <Compile Include="Feature\ValueObjectEquality.cs" />
     <Compile Include="Sdk\Feature.cs" />
-    <Compile Include="RuntimeTests.NaturalKeySerializerTest.cs" />
-    <Compile Include="RuntimeTests.NaturalKeyTest.cs" />
+    <Compile Include="Unit\RuntimeTests.NaturalKeySerializerTest.cs" />
+    <Compile Include="Unit\RuntimeTests.NaturalKeyTest.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <Compile Include="AggregateRootTests2.cs" />
-    <Compile Include="RuntimeTests.cs" />
-    <Compile Include="UnitTests\AggregateRootTests.cs" />
-    <Compile Include="UnitTests\BusinessExceptionTests.cs" />
-    <Compile Include="UnitTests\EntityTests.cs" />
-    <Compile Include="UnitTests\NaturalKeyAttributeTests.cs" />
+    <Compile Include="Unit\AggregateRootTests2.cs" />
+    <Compile Include="Unit\RuntimeTests.cs" />
+    <Compile Include="Unit\AggregateRootTests.cs" />
+    <Compile Include="Unit\BusinessExceptionTests.cs" />
+    <Compile Include="Unit\EntityTests.cs" />
+    <Compile Include="Unit\NaturalKeyAttributeTests.cs" />
     <Compile Include="Support\Car.cs" />
     <Compile Include="Support\Registration.cs" />
     <Compile Include="Support\Wheel.cs" />
-    <Compile Include="UnitTests\Runtime\ApplicationTests.cs" />
-    <Compile Include="UnitTests\Runtime\Configuration\AssemblyConfigurationTests.cs" />
-    <Compile Include="UnitTests\Runtime\DefaultEventDispatcherTests.cs" />
-    <Compile Include="UnitTests\Runtime\DefaultTypeConfigurationProviderTests.cs" />
-    <Compile Include="UnitTests\Runtime\RuntimeExceptionTests.cs" />
-    <Compile Include="UnitTests\Runtime\TypeDescriptorTests.cs" />
-    <Compile Include="UnitTests\ValueObjectTests.cs" />
+    <Compile Include="Unit\Runtime\ApplicationTests.cs" />
+    <Compile Include="Unit\Runtime\Configuration\AssemblyConfigurationTests.cs" />
+    <Compile Include="Unit\Runtime\DefaultEventDispatcherTests.cs" />
+    <Compile Include="Unit\Runtime\DefaultTypeConfigurationProviderTests.cs" />
+    <Compile Include="Unit\Runtime\RuntimeExceptionTests.cs" />
+    <Compile Include="Unit\Runtime\TypeDescriptorTests.cs" />
+    <Compile Include="Unit\ValueObjectTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FakeItEasy, Version=1.25.2.0, Culture=neutral, PublicKeyToken=eff28e2146d5fd2c, processorArchitecture=MSIL">
