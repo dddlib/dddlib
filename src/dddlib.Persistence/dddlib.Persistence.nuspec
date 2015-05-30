@@ -18,7 +18,7 @@ dddlib contributors</authors>
       <dependency id="dddlib" version="$version$" />
     </dependencies>
     <frameworkAssemblies>
-      <frameworkAssembly assemblyName="System" targetFramework="net45" />
+      <frameworkAssembly assemblyName="System.Data" targetFramework="net45" />
     </frameworkAssemblies>
   </metadata>
   <!--<files>
