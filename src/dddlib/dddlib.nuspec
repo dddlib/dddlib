@@ -18,8 +18,8 @@ dddlib contributors</authors>
       <frameworkAssembly assemblyName="System" targetFramework="net45" />
     </frameworkAssemblies>
   </metadata>
-  <files>
+  <!--<files>
     <file src="bin\Release\dddlib.dll" target="lib\net45" />
     <file src="bin\Release\dddlib.xml" target="lib\net45" />
-  </files>
+  </files>-->
 </package>

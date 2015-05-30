@@ -43,6 +43,7 @@ namespace dddlib.Persistence.Memory
             var typeMappings = default(ConcurrentDictionary<object, Guid>);
             if (!this.store.TryGetValue(aggregateRootType, out typeMappings))
             {
+                identity = Guid.Empty;
                 return false;
             }
 
