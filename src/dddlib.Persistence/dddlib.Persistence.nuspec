@@ -21,8 +21,8 @@ dddlib contributors</authors>
       <frameworkAssembly assemblyName="System.Data" targetFramework="net45" />
     </frameworkAssemblies>
   </metadata>
-  <!--<files>
-    <file src="bin\Release\dddlib.Persistence.dll" target="lib\net45" />
-    <file src="bin\Release\dddlib.Persistence.xml" target="lib\net45" />
-  </files>-->
+  <files>
+    <file src="bin\Release\dddlib.Persistence.pdb" target="lib\net45" />
+    <file src="SqlServer\Database\Scripts\Version*.sql" target="sql" />
+  </files>
 </package>
