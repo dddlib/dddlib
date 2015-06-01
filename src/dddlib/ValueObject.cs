@@ -85,7 +85,7 @@ namespace dddlib
         /// <param name="other">The object to compare with this instance.</param>
         /// <returns>Returns <c>true</c> if the specified object is equal to this instance; otherwise, <c>false</c>.</returns>
         //// LINK (Cameron): http://www.infoq.com/articles/Equality-Overloading-DotNET
-        public virtual bool Equals(T other)
+        public bool Equals(T other)
         {
             if (object.ReferenceEquals(other, null))
             {
