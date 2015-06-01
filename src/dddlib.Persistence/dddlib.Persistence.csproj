@@ -101,7 +101,7 @@
   <ItemGroup>
     <EmbeddedResource Include="SqlServer\Database\Scripts\Version01.sql" />
     <EmbeddedResource Include="SqlServer\Database\Scripts\CreateSchema.sql" />
-    <Content Include="TODO.txt" />
+    <None Include="TODO.txt" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
