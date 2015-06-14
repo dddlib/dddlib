@@ -15,7 +15,7 @@ namespace dddlib.Tests.Acceptance
         public void Background()
         {
             "Given a new application"
-                .Given(context => new Application().Using(context));
+                .f(context => new Application().Using(context));
         }
 
         [Scenario]
@@ -24,16 +24,16 @@ namespace dddlib.Tests.Acceptance
             var aggregateRoot = default(TestAggregateRoot);
 
             "Given a natural key value"
-                .Given(() => naturalKeyValue = "key");
+                .f(() => naturalKeyValue = "key");
 
             "When an aggregate root is instantiated with the natural key value"
-                .When(() => aggregateRoot = new TestAggregateRoot(new Key { Value = naturalKeyValue }));
+                .f(() => aggregateRoot = new TestAggregateRoot(new Key { Value = naturalKeyValue }));
 
             "Then the aggregate root key should be the natural key value"
-                .Then(() => aggregateRoot.Key.Should().Be(naturalKeyValue));
+                .f(() => aggregateRoot.Key.Should().Be(naturalKeyValue));
 
             "And"
-                .And(() => aggregateRoot.GetUncommittedEvents().Should().ContainSingle(x => x.As<Key>().Value == naturalKeyValue));
+                .f(() => aggregateRoot.GetUncommittedEvents().Should().ContainSingle(x => x.As<Key>().Value == naturalKeyValue));
         }
 
         private class Bootstrapper : IBootstrapper

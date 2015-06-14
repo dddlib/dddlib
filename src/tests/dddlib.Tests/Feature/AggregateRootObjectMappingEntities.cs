@@ -21,16 +21,16 @@ namespace dddlib.Tests.Feature
             public void Scenario(Subject instance, Thing thing)
             {
                 "Given a some thing that is an entity"
-                    .Given(() => thing = new Thing("naturalKey"));
+                    .f(() => thing = new Thing("naturalKey"));
 
                 "When an instance of an aggregate root is created with that thing"
-                    .When(() => instance = new Subject(thing));
+                    .f(() => instance = new Subject(thing));
 
                 "Then the thing of that instance should be the original thing"
-                    .Then(() => instance.Thing.Should().Be(thing));
+                    .f(() => instance.Thing.Should().Be(thing));
 
                 "And the instance should contain a single uncommitted 'NewSubject' event with a thing value matching the original thing value"
-                    .And(() => instance.GetUncommittedEvents().Should().ContainSingle(
+                    .f(() => instance.GetUncommittedEvents().Should().ContainSingle(
                         @event => @event is NewSubject && ((NewSubject)@event).ThingValue == thing.Value));
             }
 
@@ -90,19 +90,19 @@ namespace dddlib.Tests.Feature
             public void Scenario(Subject instance, Data data)
             {
                 "Given an instance of an aggregate root with an identifier"
-                    .Given(() => instance = new Subject { Id = "subjectId" });
+                    .f(() => instance = new Subject { Id = "subjectId" });
 
                 "And some data that is an entity"
-                    .And(() => data = new Data("dataValue"));
+                    .f(() => data = new Data("dataValue"));
 
                 "When the instance processes that data"
-                    .When(() => instance.Process(data));
+                    .f(() => instance.Process(data));
 
                 "Then the processed data for the instance should be the original data"
-                    .Then(() => instance.ProcessedData.Should().Be(data));
+                    .f(() => instance.ProcessedData.Should().Be(data));
 
                 "And the instance should contain a single uncommitted 'DataProcessed' event with a data value matching the original data value"
-                    .And(() => instance.GetUncommittedEvents().Should().ContainSingle(
+                    .f(() => instance.GetUncommittedEvents().Should().ContainSingle(
                         @event => @event is DataProcessed && ((DataProcessed)@event).DataValue == data.Value));
             }
 

@@ -12,12 +12,18 @@ namespace dddlib.Persistence.Tests.Feature
     using dddlib.Persistence.Tests.Sdk;
     using FluentAssertions;
     using Xbehave;
+    using Xunit;
 
     // As someone who uses dddlib
     // In order save state
     // I need to be able to persist an aggregate root
     public abstract class SqlServerPersistence : SqlServerFeature
     {
+        public SqlServerPersistence(SqlServerFixture fixture)
+            : base(fixture)
+        {
+        }
+
         /*
             AggregateRoot Persistence (Guid)
             --------------------------------
@@ -40,13 +46,18 @@ namespace dddlib.Persistence.Tests.Feature
             AND MORE?
         */
 
-        public class DefinedInBootstrapper : SqlServerPersistence
+        public class DefaultSqlServerPersistence : SqlServerPersistence
         {
+            public DefaultSqlServerPersistence(SqlServerFixture fixture)
+                : base(fixture)
+            {
+            }
+
             [Scenario]
             public void Scenario(IRepository<Subject> repository, Subject instance, Subject otherInstance, string naturalKey)
             {
                 "Given a SQL database"
-                    .Given(() => this.ExecuteSql(@"CREATE TABLE [dbo].[Subjects]
+                    .f(() => this.ExecuteSql(@"CREATE TABLE [dbo].[Subjects]
 (
     [Id] [uniqueidentifier] NOT NULL,
     [NaturalKey] [varchar](MAX) NOT NULL,
@@ -55,22 +66,22 @@ namespace dddlib.Persistence.Tests.Feature
 );"));
 
                 "And a repository"
-                    .And(() => repository = new SubjectRepository(this.ConnectionString));
+                    .f(() => repository = new SubjectRepository(this.ConnectionString));
 
                 "And a natural key value"
-                    .And(() => naturalKey = "key");
+                    .f(() => naturalKey = "key");
 
                 "And an instance of an entity with that natural key"
-                    .And(() => instance = new Subject(naturalKey));
+                    .f(() => instance = new Subject(naturalKey));
 
                 "When that instance is saved to the repository"
-                    .When(() => repository.Save(instance));
+                    .f(() => repository.Save(instance));
 
                 "And an other instance is loaded from the repository"
-                    .And(() => otherInstance = repository.Load(instance.NaturalKey));
+                    .f(() => otherInstance = repository.Load(instance.NaturalKey));
 
                 "Then that instance should be the other instance"
-                    .Then(() => instance.Should().Be(otherInstance));
+                    .f(() => instance.Should().Be(otherInstance));
             }
 
             public class Subject : AggregateRoot

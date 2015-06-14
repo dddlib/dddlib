@@ -1,13 +1,6 @@
 ﻿Requirements:
 
-Must be able to map a GUID to a serializable type eg. string
-Must be able to map a GUID to a ValueObject
-Must be able to map a GUID to a ValueObject with custom equality
-
 Must be able to map a GUID to another version of the identifier
-
-
-
 
 Example Table:
 Version, SerializedValue, GUID
@@ -23,3 +16,41 @@ What happens if just the serialization changes? Version change?
 
 API:
 GUID Map(object naturalKey)
+
+
+---------------------------------------
+
+
+Aggregate Root Persistence
+- indexer (in memory)
+- conventional (in memory)
+- event sourcing (in memory)
+- snapshotting (in memory)
+- dispatcher
+
+- indexer (sql server)
+- conventional (sql server)
+- event sourcing (sql server)
+- snapshotting (sql server)
+
+- conventional (in memory)
+- event sourcing (in memory)
+- snapshotting (in memory)
+- indexer (in memory)
+
+Make snapshotting and conventional persistence the same [test?]
+
+
+---------------------------------------
+
+
+EntityConfigurationWrapperExtension for UseNaturalKey to specify serialization somehow - maybe as some sort of extension?
+introduce concept of Applications into Schema
+introduce type forwarding into sql identity map
+introduce tests for SQL whereby the data is "upgraded" between versions
+
+STORAGE:
+Split into separate source file nuget?
+Add ability to apply versions in most recent order (to skip bad updates) - is this really sensible?
+Add ability to check storage version for potential upgrade on error.
+Add semver for non-mandatory upgrades.

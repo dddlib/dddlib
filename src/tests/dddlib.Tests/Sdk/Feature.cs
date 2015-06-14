@@ -2,6 +2,10 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
+// LINK (Cameron): https://github.com/dddlib/dddlib/issues/40
+// NOTE (Cameron): There is an issue in dddlib with parallelization in the tests. Specifically, the Application creation.
+[assembly: Xunit.CollectionBehavior(DisableTestParallelization = true)]
+
 #if dddlibTests
 namespace dddlib.Tests.Sdk
 #else
@@ -31,7 +35,7 @@ namespace dddlib.Persistence.Tests.Sdk
         public void Background()
         {
             "Given a new application"
-                .Given(context =>
+                .f(context =>
                 {
                     var typeAnalyzerService = new DefaultTypeAnalyzerService();
                     var bootstrapperProvider = new FeatureBootstrapperProvider();

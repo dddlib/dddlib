@@ -15,14 +15,6 @@ namespace dddlib.Tests.Feature
     public abstract class AggregateRootObjectMappingValueObjects : Feature
     {
         /*
-            TODO (Cameron):
-            So...
-            You have an aggregate with a natural key value object
-            You recreate the value object in the event handler
-            The logic for the value object changes over time
-            The re-creation fails upon reconstitution because the logic has changed
-            The solution is... some sort of mapping...?
-
             1. ensure invalid (eg. throws exception) configuration is handled correctly.
             2. ensure missing mappings are handled correctly.
          */
@@ -33,16 +25,16 @@ namespace dddlib.Tests.Feature
             public void Scenario(Subject instance, NaturalKey naturalKey)
             {
                 "Given a natural key that is a value object"
-                    .Given(() => naturalKey = new NaturalKey("naturalKey"));
+                    .f(() => naturalKey = new NaturalKey("naturalKey"));
 
                 "When an instance of an aggregate root is created with that natural key"
-                    .When(() => instance = new Subject(naturalKey));
+                    .f(() => instance = new Subject(naturalKey));
 
                 "Then the natural key of that instance should be the original natural key"
-                    .Then(() => instance.NaturalKey.Should().Be(naturalKey));
+                    .f(() => instance.NaturalKey.Should().Be(naturalKey));
 
                 "And the instance should contain a single uncommitted 'NewSubject' event with a natural key value matching the original natural key value"
-                    .And(() => instance.GetUncommittedEvents().Should().ContainSingle(
+                    .f(() => instance.GetUncommittedEvents().Should().ContainSingle(
                         @event => @event is NewSubject && ((NewSubject)@event).NaturalKeyValue == naturalKey.Value));
             }
 
@@ -101,19 +93,19 @@ namespace dddlib.Tests.Feature
             public void Scenario(Subject instance, Data data)
             {
                 "Given an instance of an aggregate root with an identifier"
-                    .Given(() => instance = new Subject { Id = "subjectId" });
+                    .f(() => instance = new Subject { Id = "subjectId" });
 
                 "And some data that is a value object"
-                    .And(() => data = new Data("dataValue"));
+                    .f(() => data = new Data("dataValue"));
 
                 "When the instance processes that data"
-                    .When(() => instance.Process(data));
+                    .f(() => instance.Process(data));
 
                 "Then the processed data for the instance should be the original data"
-                    .Then(() => instance.ProcessedData.Should().Be(data));
+                    .f(() => instance.ProcessedData.Should().Be(data));
 
                 "And the instance should contain a single uncommitted 'DataProcessed' event with a data value matching the original data value"
-                    .And(() => instance.GetUncommittedEvents().Should().ContainSingle(
+                    .f(() => instance.GetUncommittedEvents().Should().ContainSingle(
                         @event => @event is DataProcessed && ((DataProcessed)@event).DataValue == data.Value));
             }
 

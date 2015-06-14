@@ -8,14 +8,14 @@ namespace dddlib.Persistence.Tests.Sdk
 
     public static class Integration
     {
-        public class Database : IUseFixture<SqlServerFixture>
+        public class Database : IClassFixture<SqlServerFixture>
         {
-            public string ConnectionString { get; set; }
-
-            public void SetFixture(SqlServerFixture fixture)
+            public Database(SqlServerFixture fixture)
             {
                 this.ConnectionString = fixture.ConnectionString.Replace("=master;", string.Concat("=", fixture.DatabaseName, ";"));
             }
+
+            public string ConnectionString { get; set; }
         }
     }
 }

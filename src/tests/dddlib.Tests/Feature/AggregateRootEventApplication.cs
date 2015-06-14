@@ -13,6 +13,7 @@ namespace dddlib.Tests.Feature
     {
         /*
             Can change name of aggregate apply method
+            Can inherit from assembly where aggregate apply method is different
         */
     }
 }

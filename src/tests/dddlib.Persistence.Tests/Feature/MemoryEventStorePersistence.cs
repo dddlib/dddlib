@@ -24,16 +24,16 @@ namespace dddlib.Persistence.Tests.Feature
             public void Scenario(EventStoreRepository repository, Subject instance, Action action)
             {
                 "Given a repository"
-                    .Given(() => repository = new EventStoreRepository(new MemoryIdentityMap(), new MemoryEventStore()));
+                    .f(() => repository = new EventStoreRepository(new MemoryIdentityMap(), new MemoryEventStore()));
 
                 "And an instance of an aggregate root"
-                    .And(() => instance = new Subject());
+                    .f(() => instance = new Subject());
 
                 "When that instance is saved to the repository"
-                    .When(() => action = () => repository.Save(instance));
+                    .f(() => action = () => repository.Save(instance));
 
                 "Then a runtime exception is thrown"
-                    .Then(() => action.ShouldThrow<RuntimeException>());
+                    .f(() => action.ShouldThrow<RuntimeException>());
             }
 
             public class Subject : AggregateRoot

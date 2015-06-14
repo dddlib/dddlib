@@ -23,19 +23,19 @@ namespace dddlib.Tests.Feature
             var subject = default(Subject);
 
             "Given a subject"
-                .Given(() => subject = new Subject());
+                .f(() => subject = new Subject());
 
             "And the subject is updated"
-                .And(() => subject.Update());
+                .f(() => subject.Update());
 
             "And the subject is destroyed"
-                .And(() => subject.Destroy());
+                .f(() => subject.Destroy());
 
             "When the subject is updated again"
-                .When(() => action = () => subject.Update());
+                .f(() => action = () => subject.Update());
 
             "Then that action should throw an exception"
-                .Then(() => action.ShouldThrow<dddlib.BusinessException>());
+                .f(() => action.ShouldThrow<dddlib.BusinessException>());
         }
 
         private class Subject : AggregateRoot
