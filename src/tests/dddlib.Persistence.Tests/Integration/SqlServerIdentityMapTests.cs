@@ -12,6 +12,11 @@ namespace dddlib.Persistence.Tests.Integration
 
     public class SqlServerIdentityMapTests : Integration.Database
     {
+        public SqlServerIdentityMapTests(SqlServerFixture fixture)
+            : base(fixture)
+        {
+        }
+
         [Fact]
         public void TryGetWhenIdentityMapDoesNotContainNaturalKey()
         {

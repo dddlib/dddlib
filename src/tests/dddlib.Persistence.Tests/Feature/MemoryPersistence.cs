@@ -37,28 +37,28 @@ namespace dddlib.Persistence.Tests.Feature
             AND MORE?
         */
 
-        public class DefinedInBootstrapper : MemoryPersistence
+        public class DefaultMemoryPersistence : MemoryPersistence
         {
             [Scenario]
             public void Scenario(IRepository<Subject> repository, Subject instance, Subject otherInstance, string naturalKey)
             {
                 "Given a repository"
-                    .Given(() => repository = new MemoryRepository<Subject>());
+                    .f(() => repository = new MemoryRepository<Subject>());
 
                 "And a natural key value"
-                    .And(() => naturalKey = "key");
+                    .f(() => naturalKey = "key");
 
                 "And an instance of an entity with that natural key"
-                    .And(() => instance = new Subject(naturalKey));
+                    .f(() => instance = new Subject(naturalKey));
 
                 "When that instance is saved to the repository"
-                    .When(() => repository.Save(instance));
+                    .f(() => repository.Save(instance));
 
                 "And an other instance is loaded from the repository"
-                    .And(() => otherInstance = repository.Load(instance.NaturalKey));
+                    .f(() => otherInstance = repository.Load(instance.NaturalKey));
 
                 "Then that instance should be the other instance"
-                    .Then(() => instance.Should().Be(otherInstance));
+                    .f(() => instance.Should().Be(otherInstance));
             }
 
             public class Subject : AggregateRoot

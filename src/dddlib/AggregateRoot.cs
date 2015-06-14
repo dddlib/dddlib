@@ -72,6 +72,15 @@ namespace dddlib
             get { return this.mapProvider.Value; }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this instance has been destroyed.
+        /// </summary>
+        /// <value>Returns <c>true</c> if the lifecycle of this instance has ended; otherwise, <c>false</c>.</value>
+        protected bool IsDestroyed
+        {
+            get { return this.isDestroyed; }
+        }
+
         internal void Initialize(object memento, IEnumerable<object> events, string state)
         {
             Guard.Against.Null(() => events);

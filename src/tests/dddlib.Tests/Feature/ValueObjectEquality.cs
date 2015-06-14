@@ -19,15 +19,6 @@ namespace dddlib.Tests.Feature
         /*
             Value Object Equality
             ---------------------
-          X with equality comparer (undefined)
-          X with equality comparer (defined in bootstrapper)
-            with equality comparer (defined in metadata)
-            with equality comparer (defined in both bootstrapper and metadata - same)
-            with equality comparer (defined in both bootstrapper and metadata - different)
-            
-            CONSIDER:
-          X Case sensitive string value comparison.
-          X Case insensitive string value comparison.
             Inheritance.
         */
 
@@ -37,20 +28,20 @@ namespace dddlib.Tests.Feature
             public void Scenario(Subject instance1, Subject instance2, string value)
             {
                 "Given a value object with an undefined equality comparer"
-                    .Given(() => { });
+                    .f(() => { });
 
                 "And a value"
-                    .And(() => value = "key");
+                    .f(() => value = "key");
 
                 "When two instances of that value object that are instantiated with the same value"
-                    .When(() =>
+                    .f(() =>
                     {
                         instance1 = new Subject { Value = value };
                         instance2 = new Subject { Value = value };
                     });
 
                 "Then the first instance is equal to the second instance"
-                    .Then(() => instance1.Should().Be(instance2));
+                    .f(() => instance1.Should().Be(instance2));
             }
 
             public class Subject : ValueObject<Subject>
@@ -65,17 +56,17 @@ namespace dddlib.Tests.Feature
             public void Scenario(Subject instance1, Subject instance2)
             {
                 "Given a value object with an equality comparer defined in the bootstrapper"
-                    .Given(() => { });
+                    .f(() => { });
 
                 "When two instances of that value object that are instantiated with the 'same' value"
-                    .When(() =>
+                    .f(() =>
                     {
                         instance1 = new Subject { Value = "a" };
                         instance2 = new Subject { Value = "b" };
                     });
 
                 "Then the first instance is equal to the second instance"
-                    .Then(() => instance1.Should().Be(instance2));
+                    .f(() => instance1.Should().Be(instance2));
             }
 
             public class Subject : ValueObject<Subject>
@@ -100,7 +91,7 @@ namespace dddlib.Tests.Feature
 
                 public int GetHashCode(Subject obj)
                 {
-                    return 0;
+                    return obj.Value.GetHashCode();
                 }
             }
         }
@@ -111,17 +102,17 @@ namespace dddlib.Tests.Feature
             public void Scenario(Subject instance1, Subject instance2, string value)
             {
                 "Given a value object with an undefined equality comparer"
-                    .Given(() => { });
+                    .f(() => { });
 
                 "When two instances of that value object that are instantiated with different values"
-                    .When(() =>
+                    .f(() =>
                     {
                         instance1 = new Subject { Value = "CASE" };
                         instance2 = new Subject { Value = "case" };
                     });
 
                 "Then the first instance is equal to the second instance"
-                    .Then(() => instance1.Should().NotBe(instance2));
+                    .f(() => instance1.Should().NotBe(instance2));
             }
 
             public class Subject : ValueObject<Subject>
@@ -136,17 +127,17 @@ namespace dddlib.Tests.Feature
             public void Scenario(Subject instance1, Subject instance2)
             {
                 "Given a value object with an equality comparer defined in the bootstrapper"
-                    .Given(() => { });
+                    .f(() => { });
 
                 "When two instances of that value object that are instantiated with the 'same' value"
-                    .When(() =>
+                    .f(() =>
                     {
                         instance1 = new Subject { Value = "CASE" };
                         instance2 = new Subject { Value = "case" };
                     });
 
                 "Then the first instance is equal to the second instance"
-                    .Then(() => instance1.Should().Be(instance2));
+                    .f(() => instance1.Should().Be(instance2));
             }
 
             public class Subject : ValueObject<Subject>
@@ -171,7 +162,7 @@ namespace dddlib.Tests.Feature
 
                 public int GetHashCode(Subject obj)
                 {
-                    return 0;
+                    return obj.Value.GetHashCode();
                 }
             }
         }

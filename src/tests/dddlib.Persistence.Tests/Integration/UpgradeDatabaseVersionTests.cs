@@ -15,6 +15,11 @@ namespace dddlib.Persistence.Tests.Integration
 
     public class UpgradeDatabaseVersionTests : Integration.Database
     {
+        public UpgradeDatabaseVersionTests(SqlServerFixture fixture)
+            : base(fixture)
+        {
+        }
+
         [Fact(Skip = "Not ready.")]
         public void CanUpdateToVersion2Functionality()
         {

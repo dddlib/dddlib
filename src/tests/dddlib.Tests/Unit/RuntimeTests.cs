@@ -17,7 +17,7 @@ namespace dddlib.Tests.Acceptance
         public void Background()
         {
             "Given a new ambient application"
-                .Given(context => new Application().Using(context));
+                .f(context => new Application().Using(context));
         }
 
         [Scenario]
@@ -28,13 +28,13 @@ namespace dddlib.Tests.Acceptance
             var aggregateRootType = default(AggregateRootType);
 
             "Given a type of {0}"
-                .Given(() => { });
+                .f(() => { });
 
             "When the ambient application is used to get the aggregate root type"
-                .When(() => aggregateRootType = Application.Current.GetAggregateRootType(type));
+                .f(() => aggregateRootType = Application.Current.GetAggregateRootType(type));
 
             "Then {0} should be represented by the aggregate root type"
-                .Then(() => type.ShouldBeRepresentedBy(aggregateRootType));
+                .f(() => type.ShouldBeRepresentedBy(aggregateRootType));
         }
 
         [Scenario]
@@ -44,13 +44,13 @@ namespace dddlib.Tests.Acceptance
             var entityType = default(EntityType);
 
             "Given a type of {0}"
-                .Given(() => { });
+                .f(() => { });
 
             "When the ambient application is used to get the entity type"
-                .When(() => entityType = Application.Current.GetEntityType(type));
+                .f(() => entityType = Application.Current.GetEntityType(type));
 
             "Then {0} should be represented by the entity type"
-                .Then(() => type.ShouldBeRepresentedBy(entityType));
+                .f(() => type.ShouldBeRepresentedBy(entityType));
         }
     }
 
