@@ -5,21 +5,35 @@
 namespace dddlib.Sdk.Configuration.Services.TypeAnalyzer
 {
     using System;
+    using System.Globalization;
     using System.Linq;
     using System.Reflection;
+    using dddlib.Runtime;
     using dddlib.Sdk.Configuration.Model;
 
     internal class DefaultTypeAnalyzerService : ITypeAnalyzerService
     {
         public NaturalKey GetNaturalKey(Type runtimeType)
         {
-            var naturalKey = runtimeType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
+            var naturalKeys = runtimeType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
                 .Where(member => member.GetCustomAttributes(typeof(dddlib.NaturalKey), false).SingleOrDefault() != null)
-                .SingleOrDefault();
+                .ToArray();
 
-            return naturalKey == null
-                ? null
-                : new NaturalKey(naturalKey.DeclaringType, naturalKey.Name, naturalKey.PropertyType, this);
+            if (naturalKeys.Length > 1)
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Entity of type '{0}' has more than one natural key defined.",
+                        runtimeType));
+            }
+
+            if (naturalKeys.Length == 0)
+            {
+                return null;
+            }
+
+            return new NaturalKey(naturalKeys[0].DeclaringType, naturalKeys[0].Name, naturalKeys[0].PropertyType, this);
         }
 
         public bool IsValidAggregateRoot(Type runtimeType)

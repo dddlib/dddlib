@@ -37,6 +37,7 @@
     <AssemblyOriginatorKeyFile>..\..\dddlib.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Bug\Bug0017.cs" />
     <Compile Include="Bug\Bug0001.cs" />
     <Compile Include="Feature\BusinessException.cs" />
     <Compile Include="Feature\ValueObjectSerialization.cs" />
