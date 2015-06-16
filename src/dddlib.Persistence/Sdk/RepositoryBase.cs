@@ -62,7 +62,29 @@ namespace dddlib.Persistence.Sdk
         /// <returns>The identifier for the aggregate root.</returns>
         protected Guid GetId<T>(object naturalKey) where T : AggregateRoot
         {
+            Guard.Against.Null(() => naturalKey);
+
             var aggregateRootType = Application.Current.GetAggregateRootType(typeof(T));
+            if (aggregateRootType.NaturalKey == null)
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Cannot load aggregate root of type '{0}' as there is no natural key defined.",
+                        typeof(T)));
+            }
+
+            if (aggregateRootType.NaturalKey.PropertyType != naturalKey.GetType())
+            {
+                throw new ArgumentException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Invalid value for aggregate root of type '{0}'. Value type must match natural key type of '{1}' but is type of '{2}'.",
+                        typeof(T),
+                        aggregateRootType.NaturalKey.PropertyType,
+                        naturalKey.GetType()),
+                    "naturalKey");
+            }
 
             var identity = default(Guid);
             if (!this.identityMap.TryGet(aggregateRootType.RuntimeType, aggregateRootType.NaturalKey.PropertyType, naturalKey, out identity))
