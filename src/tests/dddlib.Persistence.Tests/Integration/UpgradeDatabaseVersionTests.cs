@@ -13,6 +13,7 @@ namespace dddlib.Persistence.Tests.Integration
     using Microsoft.SqlServer.Management.Common;
     using Xunit;
 
+    // TODO (Cameron): Move to StorageTests.cs.
     public class UpgradeDatabaseVersionTests : Integration.Database
     {
         public UpgradeDatabaseVersionTests(SqlServerFixture fixture)

@@ -4,8 +4,6 @@
 
 namespace dddlib.Persistence.SqlServer
 {
-    using System;
-
     /// <summary>
     /// Represents a SQL Server repository.
     /// </summary>

@@ -17,6 +17,8 @@ namespace dddlib
     {
         private readonly TypeInformation typeInformation;
 
+        private bool isDestroyed;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Entity"/> class.
         /// </summary>
@@ -38,6 +40,15 @@ namespace dddlib
         private Entity(Func<Entity, TypeInformation> getTypeInformation)
         {
             this.typeInformation = getTypeInformation(this);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance has been destroyed.
+        /// </summary>
+        /// <value>Returns <c>true</c> if the lifecycle of this instance has ended; otherwise, <c>false</c>.</value>
+        protected bool IsDestroyed
+        {
+            get { return this.isDestroyed; }
         }
 
 #pragma warning disable 1591
@@ -108,6 +119,14 @@ namespace dddlib
             var otherValue = this.typeInformation.GetNaturalKeyValue(other);
 
             return object.Equals(thisValue, otherValue);
+        }
+
+        /// <summary>
+        /// Ends the lifecycle of this instance.
+        /// </summary>
+        protected void EndLifecycle()
+        {
+            this.isDestroyed = true;
         }
     }
 }

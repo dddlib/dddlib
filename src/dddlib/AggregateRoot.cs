@@ -32,7 +32,6 @@ namespace dddlib
         private readonly TypeInformation typeInformation;
 
         private string state;
-        private bool isDestroyed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AggregateRoot"/> class.
@@ -70,15 +69,6 @@ namespace dddlib
         protected IMapperProvider Map
         {
             get { return this.mapProvider.Value; }
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether this instance has been destroyed.
-        /// </summary>
-        /// <value>Returns <c>true</c> if the lifecycle of this instance has ended; otherwise, <c>false</c>.</value>
-        protected bool IsDestroyed
-        {
-            get { return this.isDestroyed; }
         }
 
         internal void Initialize(object memento, IEnumerable<object> events, string state)
@@ -146,14 +136,6 @@ namespace dddlib
         }
 
         /// <summary>
-        /// Ends the lifecycle of this instance of the aggregate root.
-        /// </summary>
-        protected void EndLifecycle()
-        {
-            this.isDestroyed = true;
-        }
-
-        /// <summary>
         /// Applies the specified event to the aggregate root.
         /// </summary>
         /// <typeparam name="T">The type of event.</typeparam>
@@ -163,7 +145,7 @@ namespace dddlib
         {
             Guard.Against.Null(() => @event);
 
-            if (this.isDestroyed)
+            if (this.IsDestroyed)
             {
                 // TODO (Cameron): Use the natural key and type.
                 // maybe: Unable to change Bob because a Person with that name no longer exists.

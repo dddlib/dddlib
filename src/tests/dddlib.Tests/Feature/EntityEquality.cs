@@ -17,7 +17,7 @@ namespace dddlib.Tests.Feature
     // I need to be able to perform equality operations against entities (as an aggregate root is an entity)
     public abstract class EntityEquality : Feature
     {
-         public class UndefinedNaturalKeySelector : EntityEquality
+        public class UndefinedNaturalKeySelector : EntityEquality
         {
             [Scenario]
             public void Scenario(Subject instance1, Subject instance2)
