@@ -98,7 +98,7 @@
     <Compile Include="..\dddlib.Tests\Sdk\Feature.cs">
       <Link>Sdk\Feature.cs</Link>
     </Compile>
-    <Compile Include="Bug\Bug0002.cs" />
+    <Compile Include="Bug\Bug0043.cs" />
     <Compile Include="Feature\SqlServerPersistence.cs" />
     <Compile Include="Feature\MemoryPersistence.cs" />
     <Compile Include="Feature\MemoryEventStorePersistence.cs" />
