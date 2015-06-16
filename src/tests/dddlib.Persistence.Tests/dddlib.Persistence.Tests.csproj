@@ -103,6 +103,7 @@
     <Compile Include="Feature\MemoryPersistence.cs" />
     <Compile Include="Feature\MemoryEventStorePersistence.cs" />
     <Compile Include="Feature\MemoryEventStoreSnapshotting.cs" />
+    <Compile Include="Integration\StorageTests.cs" />
     <Compile Include="Sdk\Integration.cs" />
     <Compile Include="Integration\SqlServerIdentityMapTests.cs" />
     <Compile Include="Integration\UpgradeDatabaseVersionTests.cs" />
