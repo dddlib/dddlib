@@ -41,18 +41,6 @@
     <Compile Include="Bug\Bug0001.cs" />
     <Compile Include="Feature\BusinessException.cs" />
     <Compile Include="Feature\ValueObjectSerialization.cs" />
-    <Compile Include="Support\Events\LifecycleEnded.cs" />
-    <Compile Include="Support\Events\SomethingElseHappened.cs" />
-    <Compile Include="Support\Events\SomethingHappened.cs" />
-    <Compile Include="Support\Events\SomethingNeverHappened.cs" />
-    <Compile Include="Support\Events\SomethingWierdHappened.cs" />
-    <Compile Include="Support\Model\BadAggregate.cs" />
-    <Compile Include="Support\Model\ChangeableAggregate.cs" />
-    <Compile Include="Support\Model\EmptyAggregate.cs" />
-    <Compile Include="Support\Model\LifecycleAggregate.cs" />
-    <Compile Include="Support\Model\MoreChangeableAggregate.cs" />
-    <Compile Include="Support\Model\OverridingAggregate.cs" />
-    <Compile Include="Support\Model\PersistedAggregate.cs" />
     <Compile Include="Unit\EntityTypeTests.cs" />
     <Compile Include="Unit\ValueObjectTypeTests.cs" />
     <None Include="..\..\dddlib.snk">
@@ -64,7 +52,6 @@
     <Compile Include="Feature\AggregateRootEntityMapping.cs" />
     <Compile Include="Feature\AggregateRootValueObjectMapping.cs" />
     <Compile Include="Feature\EntityEquality.cs" />
-    <Compile Include="Support\Bootstrapper.cs" />
     <Compile Include="Feature\ValueObjectEquality.cs" />
     <Compile Include="Sdk\Feature.cs" />
     <Compile Include="Unit\RuntimeTests.NaturalKeySerializerTest.cs" />
@@ -79,9 +66,6 @@
     <Compile Include="Unit\BusinessExceptionTests.cs" />
     <Compile Include="Unit\EntityTests.cs" />
     <Compile Include="Unit\NaturalKeyAttributeTests.cs" />
-    <Compile Include="Support\Car.cs" />
-    <Compile Include="Support\Registration.cs" />
-    <Compile Include="Support\Wheel.cs" />
     <Compile Include="Unit\Runtime\ApplicationTests.cs" />
     <Compile Include="Unit\Runtime\Configuration\AssemblyConfigurationTests.cs" />
     <Compile Include="Unit\Runtime\DefaultEventDispatcherTests.cs" />

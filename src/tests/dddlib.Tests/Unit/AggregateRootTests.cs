@@ -5,13 +5,10 @@
 namespace dddlib.Tests.Unit
 {
     using System;
-    using System.Diagnostics.CodeAnalysis;
-    using dddlib.Tests.Support.Events;
-    using dddlib.Tests.Support.Model;
+    using System.Collections.Generic;
     using FluentAssertions;
     using Xunit;
 
-    [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1124:DoNotUseRegions", Justification = "It's OK here.")]
     public class AggregateRootTests
     {
         [Fact]
@@ -20,8 +17,6 @@ namespace dddlib.Tests.Unit
             // act
             new EmptyAggregate();
         }
-
-        #region Handler Apply Method(s)
 
         [Fact]
         public void CanApplyHandledChangeToAggregate()
@@ -136,17 +131,6 @@ namespace dddlib.Tests.Unit
             aggregate.Change.Should().BeNull();
         }
 
-        #endregion
-
-        #region Check Instantiation
-
-        //// TODO: reconstitute
-        //// check apply still works
-        //// check read only private member variable instantiation
-        //// check base constructor instantiation
-
-        #endregion
-
         [Fact]
         public void CanEndLifecycle()
         {
@@ -176,6 +160,168 @@ namespace dddlib.Tests.Unit
 
             // assert
             aggregateRoot.ThingsThatHappened.Should().HaveCount(2);
+        }
+
+        public class SomethingHappened
+        {
+        }
+
+        public class SomethingElseHappened
+        {
+        }
+
+        public class SomethingWierdHappened : SomethingHappened
+        {
+        }
+
+        public class SomethingNeverHappened
+        {
+        }
+
+        public class LifecycleEnded
+        {
+        }
+
+        public class ChangeableAggregate : AggregateRoot
+        {
+            [NaturalKey]
+            public string NaturalKey
+            {
+                get { return string.Empty; }
+            }
+
+            public object Change { get; private set; }
+
+            public void ApplyEvent(object change)
+            {
+                this.Apply(change);
+            }
+
+            private void Handle(SomethingHappened @event)
+            {
+                this.Change = @event;
+            }
+
+            private void Handle(SomethingElseHappened @event, int count)
+            {
+                this.Change = @event;
+            }
+        }
+
+        public class BadAggregate : ChangeableAggregate
+        {
+            public object BadChange { get; private set; }
+
+            private void Handle(int @event)
+            {
+                this.BadChange = @event;
+            }
+
+            private void Handle(int? @event)
+            {
+                this.BadChange = @event;
+            }
+        }
+
+        public class EmptyAggregate : AggregateRoot
+        {
+            [NaturalKey]
+            public string NaturalKey
+            {
+                get { return string.Empty; }
+            }
+        }
+
+        public class LifecycleAggregate : AggregateRoot
+        {
+            [NaturalKey]
+            public string NaturalKey
+            {
+                get { return string.Empty; }
+            }
+
+            public void Destroy()
+            {
+                this.Apply(new LifecycleEnded());
+            }
+
+            public void DoSomething()
+            {
+                this.Apply(new SomethingHappened());
+            }
+
+            private void Handle(LifecycleEnded @event)
+            {
+                this.EndLifecycle();
+            }
+        }
+
+        public class MoreChangeableAggregate : ChangeableAggregate
+        {
+            public object OtherChange { get; private set; }
+
+            private void Handle(SomethingHappened @event)
+            {
+                this.OtherChange = @event;
+            }
+        }
+
+        // TODO (Cameron): Ensure that overriding routes ALL Apply calls through the overridden method.
+        // TODO (Cameron): Ensure that base overrides of the method continue to get called without base.Apply().
+        // TODO (Cameron): Consider usage - especially in sub-classing scenarios.
+        // TODO (Cameron): An event should only be handled (privately) inside of the class where it is raised.
+        public class OverridingAggregate : ChangeableAggregate
+        {
+            private void Apply(SomethingWierdHappened @event)
+            {
+                ////this.Change = @event;
+            }
+
+            ////public object Change { get; protected set; }
+
+            ////public void ApplyEvent(object change)
+            ////{
+            ////    this.ApplyChange(change);
+            ////}
+
+            ////protected override void Apply(dynamic @event)
+            ////{
+            ////    switch ((string)@event.GetType().Name)
+            ////    {
+            ////        case "SomethingHappened":
+            ////        case "SomethingElseHappened":
+            ////            this.Change = @event;
+            ////            break;
+            ////    }
+
+            ////    base.Apply((object)@event);
+            ////}
+        }
+
+        public class PersistedAggregate : AggregateRoot
+        {
+            private readonly List<object> thingsThatHappened = new List<object>();
+
+            [NaturalKey]
+            public string NaturalKey
+            {
+                get { return string.Empty; }
+            }
+
+            public object[] ThingsThatHappened
+            {
+                get { return this.thingsThatHappened.ToArray(); }
+            }
+
+            public void MakeSomethingHappen()
+            {
+                this.Apply(new SomethingHappened());
+            }
+
+            private void Handle(SomethingHappened @event)
+            {
+                this.thingsThatHappened.Add(@event);
+            }
         }
     }
 }

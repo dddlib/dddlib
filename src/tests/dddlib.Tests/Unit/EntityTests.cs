@@ -4,7 +4,6 @@
 
 namespace dddlib.Tests.Unit
 {
-    using dddlib.Tests.Acceptnace.Support;
     using FluentAssertions;
     using Xunit;
 
@@ -19,6 +18,31 @@ namespace dddlib.Tests.Unit
 
             (car == car2).Should().BeTrue();
             (car == car3).Should().BeFalse();
+        }
+
+        public sealed class Registration : ValueObject<Registration>
+        {
+            public Registration(string number)
+            {
+                Guard.Against.Null(() => number);
+
+                this.Number = number;
+            }
+
+            public string Number { get; private set; }
+        }
+
+        public class Car : AggregateRoot
+        {
+            public Car(Registration registration)
+            {
+                Guard.Against.Null(() => registration);
+
+                this.Registration = registration;
+            }
+
+            [NaturalKey]
+            public Registration Registration { get; private set; }
         }
     }
 }
