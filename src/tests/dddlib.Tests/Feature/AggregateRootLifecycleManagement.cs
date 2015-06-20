@@ -11,7 +11,7 @@ namespace dddlib.Tests.Feature
 
     // As someone who uses dddlib
     // In order to model destruction as a concept
-    // I need to be able to end the lifecycle of an entity
+    // I need to be able to end the lifecycle of an aggregate root
     public class AggregateRootLifecycleManagement : Feature
     {
         /*  TODO (Cameron): Split into Entity lifecycle management.  */
@@ -58,11 +58,6 @@ namespace dddlib.Tests.Feature
                 {
                     this.EndLifecycle();
                 }
-            }
-
-            private class SubjectUpdated
-            {
-                public int Version { get; set; }
             }
         }
 
