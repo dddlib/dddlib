@@ -99,10 +99,9 @@
       <Link>Sdk\Feature.cs</Link>
     </Compile>
     <Compile Include="Bug\Bug0043.cs" />
-    <Compile Include="Feature\SqlServerPersistence.cs" />
-    <Compile Include="Feature\MemoryPersistence.cs" />
-    <Compile Include="Feature\MemoryEventStorePersistence.cs" />
-    <Compile Include="Feature\MemoryEventStoreSnapshotting.cs" />
+    <Compile Include="Feature\SqlServerMementoPersistence.cs" />
+    <Compile Include="Feature\MemoryMementoPersistence.cs" />
+    <Compile Include="Feature\MemoryEventPersistence.cs" />
     <Compile Include="Integration\StorageTests.cs" />
     <Compile Include="Sdk\Integration.cs" />
     <Compile Include="Integration\SqlServerIdentityMapTests.cs" />

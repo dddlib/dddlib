@@ -1,4 +1,4 @@
-﻿// <copyright file="MemoryPersistence.cs" company="dddlib contributors">
+﻿// <copyright file="MemoryMementoPersistence.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -13,7 +13,7 @@ namespace dddlib.Persistence.Tests.Feature
     // As someone who uses dddlib
     // In order save state
     // I need to be able to persist an aggregate root
-    public abstract class MemoryPersistence : Feature
+    public abstract class MemoryMementoPersistence : Feature
     {
         /*
             AggregateRoot Persistence (Guid)
@@ -37,7 +37,7 @@ namespace dddlib.Persistence.Tests.Feature
             AND MORE?
         */
 
-        public class DefaultMemoryPersistence : MemoryPersistence
+        public class DefaultMemoryPersistence : MemoryMementoPersistence
         {
             [Scenario]
             public void Scenario(IRepository<Subject> repository, Subject instance, Subject otherInstance, string naturalKey)

@@ -1,4 +1,4 @@
-﻿// <copyright file="AggregateRootObjectMappingValueObjects.cs" company="dddlib contributors">
+﻿// <copyright file="AggregateRootValueObjectMapping.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -12,14 +12,14 @@ namespace dddlib.Tests.Feature
     // As someone who uses dddlib
     // In order to create events from domain objects passed to [command] methods [on an aggregate root]
     // I need to be able to map between value objects and DTO's (to and from)
-    public abstract class AggregateRootObjectMappingValueObjects : Feature
+    public abstract class AggregateRootValueObjectMapping : Feature
     {
         /*
             1. ensure invalid (eg. throws exception) configuration is handled correctly.
             2. ensure missing mappings are handled correctly.
          */
 
-        public class ValueObjectMappingWithEventCreation : AggregateRootObjectMappingValueObjects
+        public class ValueObjectMappingWithEventCreation : AggregateRootValueObjectMapping
         {
             [Scenario]
             public void Scenario(Subject instance, NaturalKey naturalKey)
@@ -87,7 +87,7 @@ namespace dddlib.Tests.Feature
             }
         }
 
-        public class ValueObjectMappingWithEventMutation : AggregateRootObjectMappingValueObjects
+        public class ValueObjectMappingWithEventMutation : AggregateRootValueObjectMapping
         {
             [Scenario]
             public void Scenario(Subject instance, Data data)

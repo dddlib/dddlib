@@ -1,4 +1,4 @@
-﻿// <copyright file="SqlServerPersistence.cs" company="dddlib contributors">
+﻿// <copyright file="SqlServerMementoPersistence.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -17,9 +17,9 @@ namespace dddlib.Persistence.Tests.Feature
     // As someone who uses dddlib
     // In order save state
     // I need to be able to persist an aggregate root
-    public abstract class SqlServerPersistence : SqlServerFeature
+    public abstract class SqlServerMementoPersistence : SqlServerFeature
     {
-        public SqlServerPersistence(SqlServerFixture fixture)
+        public SqlServerMementoPersistence(SqlServerFixture fixture)
             : base(fixture)
         {
         }
@@ -46,7 +46,7 @@ namespace dddlib.Persistence.Tests.Feature
             AND MORE?
         */
 
-        public class DefaultSqlServerPersistence : SqlServerPersistence
+        public class DefaultSqlServerPersistence : SqlServerMementoPersistence
         {
             public DefaultSqlServerPersistence(SqlServerFixture fixture)
                 : base(fixture)

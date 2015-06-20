@@ -1,4 +1,8 @@
-﻿namespace dddlib.Tests.Support.Model
+﻿// <copyright file="MoreChangeableAggregate.cs" company="dddlib contributors">
+//  Copyright (c) dddlib contributors. All rights reserved.
+// </copyright>
+
+namespace dddlib.Tests.Support.Model
 {
     using dddlib.Tests.Support.Events;
 

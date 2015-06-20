@@ -1,4 +1,4 @@
-﻿// <copyright file="AggregateRootObjectMappingEntities.cs" company="dddlib contributors">
+﻿// <copyright file="AggregateRootEntityMapping.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -13,9 +13,9 @@ namespace dddlib.Tests.Feature
     // As someone who uses dddlib
     // In order to create events from domain objects passed to [command] methods [on an aggregate root]
     // I need to be able to map between entities and DTO's (to and from)
-    public abstract class AggregateRootObjectMappingEntities : Feature
+    public abstract class AggregateRootEntityMapping : Feature
     {
-        public class EntityMappingWithEventCreation : AggregateRootObjectMappingEntities
+        public class EntityMappingWithEventCreation : AggregateRootEntityMapping
         {
             [Scenario]
             public void Scenario(Subject instance, Thing thing)
@@ -84,7 +84,7 @@ namespace dddlib.Tests.Feature
             }
         }
 
-        public class EntityMappingWithEventMutation : AggregateRootObjectMappingEntities
+        public class EntityMappingWithEventMutation : AggregateRootEntityMapping
         {
             [Scenario]
             public void Scenario(Subject instance, Data data)

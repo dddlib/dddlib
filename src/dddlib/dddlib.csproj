@@ -67,7 +67,6 @@
     <Compile Include="Sdk\Configuration\Model\NaturalKey.cs" />
     <Compile Include="Sdk\Configuration\Services\TypeAnalyzer\DefaultTypeAnalyzerService.cs" />
     <Compile Include="Sdk\Configuration\Model\ValueObjectType.cs" />
-    <Compile Include="Sdk\DefaultNaturalKeySerializer.cs" />
     <Compile Include="Sdk\DefaultValueObjectSerializer.cs" />
     <Compile Include="Sdk\Mapper\DefaultEntityMapper.cs" />
     <Compile Include="Sdk\Configuration\Services\Bootstrapper\DefaultBootstrapperProvider.cs" />
