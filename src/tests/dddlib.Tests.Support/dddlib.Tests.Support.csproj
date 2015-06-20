@@ -36,8 +36,10 @@
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="Guard.cs" />
     <Compile Include="IRegistrationService.cs" />
+    <Compile Include="NewVehicle.cs" />
     <Compile Include="Registration.cs" />
     <Compile Include="Vehicle.cs" />
+    <Compile Include="Wheel.cs" />
     <None Include="..\..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
@@ -51,9 +53,7 @@
   <ItemGroup>
     <Reference Include="System" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>

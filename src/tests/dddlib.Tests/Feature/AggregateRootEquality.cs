@@ -15,7 +15,7 @@ namespace dddlib.Tests.Feature
 
     // As someone who uses dddlib
     // In order to persist an aggregate root
-    // I need to be able to perform equality operations against entities (as an aggregate root is an entity)
+    // I need to be able to perform equality operations against entities (as an aggregate root is an aggregate root)
     public abstract class AggregateRootEquality : Feature
     {
         public class UndefinedNaturalKeySelector : AggregateRootEquality
@@ -23,10 +23,10 @@ namespace dddlib.Tests.Feature
             [Scenario]
             public void Scenario(Subject instance1, Subject instance2)
             {
-                "Given an entity with an undefined natural key selector"
+                "Given an aggregate root with an undefined natural key selector"
                     .f(() => { });
 
-                "When two instances of that entity are instantiated"
+                "When two instances of that aggregate root are instantiated"
                     .f(() =>
                     {
                         instance1 = new Subject();
@@ -47,13 +47,13 @@ namespace dddlib.Tests.Feature
             [Scenario]
             public void Scenario(Subject instance1, Subject instance2, string naturalKey)
             {
-                "Given an entity with a natural key selector defined in metadata"
+                "Given an aggregate root with a natural key selector defined in metadata"
                     .f(() => { });
 
                 "And a natural key value"
                     .f(() => naturalKey = "key");
 
-                "When two instances of that entity are instantiated with that natural key value assigned"
+                "When two instances of that aggregate root are instantiated with that natural key value assigned"
                     .f(() =>
                     {
                         instance1 = new Subject { NaturalKey = naturalKey };
@@ -76,13 +76,13 @@ namespace dddlib.Tests.Feature
             [Scenario]
             public void Scenario(Subject instance1, Subject instance2, string naturalKey)
             {
-                "Given an entity with a natural key selector defined in the bootstrapper"
+                "Given an aggregate root with a natural key selector defined in the bootstrapper"
                     .f(() => { });
 
                 "And a natural key value"
                     .f(() => naturalKey = "key");
 
-                "When two instances of that entity are instantiated with that natural key value assigned"
+                "When two instances of that aggregate root are instantiated with that natural key value assigned"
                     .f(() =>
                     {
                         instance1 = new Subject { NaturalKey = naturalKey };
@@ -112,13 +112,13 @@ namespace dddlib.Tests.Feature
             [Scenario]
             public void Scenario(Subject instance1, Subject instance2, string naturalKey)
             {
-                "Given an entity with non-conflicting natural key selectors defined in both metadata and the bootstrapper"
+                "Given an aggregate root with non-conflicting natural key selectors defined in both metadata and the bootstrapper"
                     .f(() => { });
 
                 "And a natural key value"
                     .f(() => naturalKey = "key");
 
-                "When two instances of that entity are instantiated with that natural key value assigned"
+                "When two instances of that aggregate root are instantiated with that natural key value assigned"
                     .f(() =>
                     {
                         instance1 = new Subject { NaturalKey = naturalKey };
@@ -149,10 +149,10 @@ namespace dddlib.Tests.Feature
             [Scenario]
             public void Scenario(Type type, Action action)
             {
-                "Given an entity with conflicting natural key selectors defined in both metadata and the bootstrapper"
+                "Given an aggregate root with conflicting natural key selectors defined in both metadata and the bootstrapper"
                     .f(() => { });
 
-                "When an instance of that entity is instantiated"
+                "When an instance of that aggregate root is instantiated"
                     .f(() => action = () => new Subject());
 
                 "Then a runtime exception should be thrown" // and the runtime exception should state that the natural key is defined twice
@@ -310,10 +310,10 @@ namespace dddlib.Tests.Feature
             [Scenario]
             public void Scenario(SuperSubject instance1, SuperSubject instance2)
             {
-                "Given an entity with an undefined natural key selector"
+                "Given an aggregate root with an undefined natural key selector"
                     .f(() => { });
 
-                "When two instances of that entity are instantiated"
+                "When two instances of that aggregate root are instantiated"
                     .f(() =>
                     {
                         instance1 = new SuperSubject();
@@ -338,13 +338,13 @@ namespace dddlib.Tests.Feature
             [Scenario]
             public void Scenario(Subject instance1, Subject instance2, string naturalKey)
             {
-                "Given an entity with a natural key selector defined in the base class"
+                "Given an aggregate root with a natural key selector defined in the base class"
                     .f(() => { });
 
                 "And a natural key value"
                     .f(() => naturalKey = "key");
 
-                "When two instances of that entity are instantiated with that natural key value assigned"
+                "When two instances of that aggregate root are instantiated with that natural key value assigned"
                     .f(() =>
                     {
                         instance1 = new SuperSubject { NaturalKey = naturalKey };
@@ -371,13 +371,13 @@ namespace dddlib.Tests.Feature
             [Scenario]
             public void Scenario(Subject instance1, Subject instance2, string naturalKey)
             {
-                "Given an entity with a natural key selector defined in the subclass"
+                "Given an aggregate root with a natural key selector defined in the subclass"
                     .f(() => { });
 
                 "And a natural key value"
                     .f(() => naturalKey = "key");
 
-                "When two instances of that entity are instantiated with that natural key value assigned"
+                "When two instances of that aggregate root are instantiated with that natural key value assigned"
                     .f(() =>
                     {
                         instance1 = new SuperSubject { NaturalKey = naturalKey };
@@ -404,13 +404,13 @@ namespace dddlib.Tests.Feature
             [Scenario]
             public void Scenario(Subject instance1, Subject instance2, string naturalKey)
             {
-                "Given an entity with a natural key selector defined in the base class and the subclass"
+                "Given an aggregate root with a natural key selector defined in the base class and the subclass"
                     .f(() => { });
 
                 "And a natural key value"
                     .f(() => naturalKey = "key");
 
-                "When two instances of that entity are instantiated with the subclass natural key value assigned"
+                "When two instances of that aggregate root are instantiated with the subclass natural key value assigned"
                     .f(() =>
                     {
                         instance1 = new SuperSubject { NaturalKey = "unequalValue", NaturalKey2 = naturalKey };
@@ -515,6 +515,59 @@ namespace dddlib.Tests.Feature
                 public bool ConfirmValid(string registrationNumber)
                 {
                     return true;
+                }
+            }
+        }
+
+        public class InheritedNaturalKeySelectorOveriddenInBootstrapper : AggregateRootEquality
+        {
+            [Scenario]
+            public void Scenario(Registration registration, Registration otherRegistration, Car car, Car otherCar, IRegistrationService registrationService)
+            {
+                "Given a registration service"
+                    .f(() => registrationService = new RegistrationService());
+
+                "And a registration"
+                    .f(() => registration = new Registration("abc", registrationService));
+
+                "And a registration with a number that differs by case"
+                    .f(() => otherRegistration = new Registration("ABC", registrationService));
+
+                "When two cars are instantiated with those registrations"
+                    .f(() =>
+                    {
+                        car = new Car(registration);
+                        otherCar = new Car(otherRegistration);
+                    });
+
+                "Then the cars are equal"
+                    .f(() => car.Should().NotBe(otherCar));
+            }
+
+            public class Car : Vehicle
+            {
+                public Car(Registration registration)
+                    : base(registration)
+                {
+                    this.OtherRegistration = registration.Number;
+                }
+
+                public string OtherRegistration { get; set; }
+            }
+
+            public class RegistrationService : IRegistrationService
+            {
+                public bool ConfirmValid(string registrationNumber)
+                {
+                    return true;
+                }
+            }
+
+            private class BootStrapper : IBootstrap<Car>
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.AggregateRoot<Car>().ToUseNaturalKey(car => car.OtherRegistration);
                 }
             }
         }

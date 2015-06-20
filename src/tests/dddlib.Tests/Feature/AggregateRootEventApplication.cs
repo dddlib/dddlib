@@ -4,8 +4,10 @@
 
 namespace dddlib.Tests.Feature
 {
+    using System;
     using dddlib.Configuration;
     using dddlib.Tests.Sdk;
+    using dddlib.Tests.Support;
     using FluentAssertions;
     using Xbehave;
 
@@ -15,14 +17,15 @@ namespace dddlib.Tests.Feature
     public abstract class AggregateRootEventApplication : Feature
     {
         /*
+            TODO (Cameron):
             Can change name of aggregate apply method
             Can inherit from assembly where aggregate apply method is different
         */
 
-        public class UndefinedNaturalKeySelector : AggregateRootEventApplication
+        public class EventsAreStoredOnAggregate : AggregateRootEventApplication
         {
             [Scenario]
-            public void CanInstantiate(string naturalKey)
+            public void Scenario(string naturalKey)
             {
                 var aggregateRoot = default(Subject);
 
@@ -65,7 +68,121 @@ namespace dddlib.Tests.Feature
             {
                 public void Bootstrap(IConfiguration configure)
                 {
+                    // TODO (Cameron): This is required in order to check the persisted events. Maybe give this some thought...?
                     configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+                }
+            }
+        }
+
+        public class EventsAreStoredOnInheritedAggregate : AggregateRootEventApplication
+        {
+            [Scenario]
+            public void Scenario(IRegistrationService registrationService, Registration registration, Van van)
+            {
+                "Given a registration service"
+                    .f(() => registrationService = new RegistrationService());
+
+                "And a registration"
+                    .f(() => registration = new Registration("abc", registrationService));
+
+                "When a van is instantiated with that registration"
+                    .f(() => van = new Van(registration));
+
+                "Then an event is raised for the new vehicle"
+                    .f(() => van.GetUncommittedEvents().Should().Contain(@event => @event.As<NewVehicle>().RegistrationNumber == registration.Number));
+
+                "And an event is raised for the new van"
+                    .f(() => van.GetUncommittedEvents().Should().Contain(@event => (@event.As<NewVan>() ?? new NewVan()).RegistrationNumber == registration.Number));
+            }
+
+            public class Van : Vehicle
+            {
+                public Van(Registration registration)
+                    : base(registration)
+                {
+                    this.Apply(new NewVan { RegistrationNumber = registration.Number });
+                }
+
+                protected internal Van()
+                {
+                }
+            }
+
+            public class NewVan
+            {
+                public string RegistrationNumber { get; set; }
+            }
+
+            public class RegistrationService : IRegistrationService
+            {
+                public bool ConfirmValid(string registrationNumber)
+                {
+                    return true;
+                }
+            }
+
+            private class Bootstrapper : IBootstrap<Van>
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    // TODO (Cameron): This is required in order to check the persisted events. Maybe give this some thought...?
+                    configure.AggregateRoot<Van>().ToReconstituteUsing(() => new Van());
+                }
+            }
+        }
+
+        public class InheritedEventsAreStoredOnInheritedAggregate : AggregateRootEventApplication
+        {
+            [Scenario]
+            public void Scenario(IRegistrationService registrationService, Registration registration, Van van)
+            {
+                "Given a registration service"
+                    .f(() => registrationService = new RegistrationService());
+
+                "And a registration"
+                    .f(() => registration = new Registration("abc", registrationService));
+
+                "When a van is instantiated with that registration"
+                    .f(() => van = new Van(registration));
+
+                "Then an event is raised for the new vehicle"
+                    .f(() => van.GetUncommittedEvents().Should().Contain(@event => @event.As<NewVehicle>().RegistrationNumber == registration.Number));
+
+                "And an event is raised for the new van"
+                    .f(() => van.GetUncommittedEvents().Should().Contain(@event => (@event.As<NewVan>() ?? new NewVan()).RegistrationNumber == registration.Number));
+            }
+
+            public class Van : Vehicle
+            {
+                public Van(Registration registration)
+                    : base(registration)
+                {
+                    this.Apply(new NewVan { RegistrationNumber = registration.Number });
+                }
+
+                protected internal Van()
+                {
+                }
+            }
+
+            public class NewVan : NewVehicle
+            {
+            }
+
+            public class RegistrationService : IRegistrationService
+            {
+                public bool ConfirmValid(string registrationNumber)
+                {
+                    return true;
+                }
+            }
+
+            private class Bootstrapper : IBootstrap<Van>
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    // TODO (Cameron): This is required in order to check the persisted events. Maybe give this some thought...?
+                    configure.AggregateRoot<Van>().ToReconstituteUsing(() => new Van());
                 }
             }
         }

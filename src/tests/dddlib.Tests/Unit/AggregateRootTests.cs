@@ -138,7 +138,7 @@ namespace dddlib.Tests.Unit
             var aggregate = new LifecycleAggregate();
 
             // act
-            aggregate.DoSomething(); // NOTE (Cameron): Proves we can do before we destroy.
+            aggregate.DoSomething(); // NOTE (Cameron): Proves we can do something before we destroy.
             aggregate.Destroy();
             Action action = () => aggregate.DoSomething();
 
@@ -266,36 +266,11 @@ namespace dddlib.Tests.Unit
             }
         }
 
-        // TODO (Cameron): Ensure that overriding routes ALL Apply calls through the overridden method.
-        // TODO (Cameron): Ensure that base overrides of the method continue to get called without base.Apply().
-        // TODO (Cameron): Consider usage - especially in sub-classing scenarios.
-        // TODO (Cameron): An event should only be handled (privately) inside of the class where it is raised.
         public class OverridingAggregate : ChangeableAggregate
         {
             private void Apply(SomethingWierdHappened @event)
             {
-                ////this.Change = @event;
             }
-
-            ////public object Change { get; protected set; }
-
-            ////public void ApplyEvent(object change)
-            ////{
-            ////    this.ApplyChange(change);
-            ////}
-
-            ////protected override void Apply(dynamic @event)
-            ////{
-            ////    switch ((string)@event.GetType().Name)
-            ////    {
-            ////        case "SomethingHappened":
-            ////        case "SomethingElseHappened":
-            ////            this.Change = @event;
-            ////            break;
-            ////    }
-
-            ////    base.Apply((object)@event);
-            ////}
         }
 
         public class PersistedAggregate : AggregateRoot
