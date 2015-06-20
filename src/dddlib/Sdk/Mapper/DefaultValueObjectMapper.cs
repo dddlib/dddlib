@@ -26,7 +26,7 @@ namespace dddlib.Runtime
             return @event;
         }
 
-        public void ToEvent<T>(T @event)
+        public T ToEvent<T>(T @event)
         {
             var runtimeType = Application.Current.GetValueObjectType(this.source.GetType());
 
@@ -55,6 +55,8 @@ namespace dddlib.Runtime
                         typeof(T)),
                     ex);
             }
+
+            return @event;
         }
     }
 }

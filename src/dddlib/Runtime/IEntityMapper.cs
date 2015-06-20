@@ -27,6 +27,7 @@ namespace dddlib.Runtime
         /// </summary>
         /// <typeparam name="T">The type of event.</typeparam>
         /// <param name="event">The event to map the entity to.</param>
-        void ToEvent<T>(T @event);
+        /// <returns>The event.</returns>
+        T ToEvent<T>(T @event);
     }
 }

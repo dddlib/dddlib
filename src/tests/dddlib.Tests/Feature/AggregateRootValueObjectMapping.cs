@@ -120,9 +120,7 @@ namespace dddlib.Tests.Feature
 
                 public void Process(Data data)
                 {
-                    var @event = new DataProcessed { SubjectId = this.Id };
-
-                    Map.ValueObject(data).ToEvent(@event);
+                    var @event = Map.ValueObject(data).ToEvent(new DataProcessed { SubjectId = this.Id });
 
                     this.Apply(@event);
                 }
