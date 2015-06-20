@@ -6,7 +6,8 @@ namespace dddlib.Tests.Support
 {
     using System.Globalization;
 
-    public class Registration : ValueObject<Registration>
+    // NOTE (Cameron): Value objects should be sealed to take advantage of the ValueObject<T> base class.
+    public sealed class Registration : ValueObject<Registration>
     {
         internal Registration(string number)
         {
