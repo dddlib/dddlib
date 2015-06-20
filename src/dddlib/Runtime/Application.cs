@@ -163,13 +163,12 @@ namespace dddlib.Runtime
                 {
                     runtimeType = factory.Invoke(type);
                 }
+                catch (RuntimeException)
+                {
+                    throw;
+                }
                 catch (Exception ex)
                 {
-                    if (ex is RuntimeException)
-                    {
-                        throw;
-                    }
-
                     throw new RuntimeException(
                         string.Format(
                             CultureInfo.InvariantCulture,

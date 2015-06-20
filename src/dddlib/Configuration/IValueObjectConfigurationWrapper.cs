@@ -39,7 +39,7 @@ namespace dddlib.Configuration
         /// <param name="valueObjectSerializer">The value object serializer.</param>
         /// <returns>The configuration.</returns>
         //// NOTE (Cameron): Value object serialization is a necessity because we don't control usage of a value object as a natural key.
-        TConfiguration ToSerializeUsing(IValueObjectSerializer valueObjectSerializer);
+        TConfiguration ToUseValueObjectSerializer(IValueObjectSerializer valueObjectSerializer);
 
         /// <summary>
         /// Configures the runtime to perform value object serialization using the specified serializer delegates.
@@ -47,7 +47,7 @@ namespace dddlib.Configuration
         /// <param name="serialize">The serialization delegate.</param>
         /// <param name="deserialize">The deserialization delegate.</param>
         /// <returns>The configuration.</returns>
-        TConfiguration ToSerializeUsing(Func<T, string> serialize, Func<string, T> deserialize);
+        TConfiguration ToUseValueObjectSerializer(Func<T, string> serialize, Func<string, T> deserialize);
 
         /// <summary>
         /// Configures the runtime to map the value object to the specified event type.

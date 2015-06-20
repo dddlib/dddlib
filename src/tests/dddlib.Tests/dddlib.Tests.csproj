@@ -39,44 +39,26 @@
   <ItemGroup>
     <Compile Include="Bug\Bug0017.cs" />
     <Compile Include="Bug\Bug0001.cs" />
+    <Compile Include="Feature\EntityLifecycleManagement.cs" />
     <Compile Include="Feature\BusinessException.cs" />
     <Compile Include="Feature\ValueObjectSerialization.cs" />
-    <Compile Include="Unit\EntityTypeTests.cs" />
-    <Compile Include="Unit\ValueObjectTypeTests.cs" />
     <None Include="..\..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
     <Compile Include="Feature\AggregateRootEquality.cs" />
     <Compile Include="Feature\AggregateRootEventApplication.cs" />
-    <Compile Include="Feature\AggregateRootLifecycle.cs" />
-    <Compile Include="Feature\AggregateRootObjectMappingEntities.cs" />
-    <Compile Include="Feature\AggregateRootObjectMappingValueObjects.cs" />
+    <Compile Include="Feature\AggregateRootLifecycleManagement.cs" />
+    <Compile Include="Feature\AggregateRootEntityMapping.cs" />
+    <Compile Include="Feature\AggregateRootValueObjectMapping.cs" />
     <Compile Include="Feature\EntityEquality.cs" />
-    <Compile Include="Support\Bootstrapper.cs" />
     <Compile Include="Feature\ValueObjectEquality.cs" />
     <Compile Include="Sdk\Feature.cs" />
-    <Compile Include="Unit\RuntimeTests.NaturalKeySerializerTest.cs" />
-    <Compile Include="Unit\RuntimeTests.NaturalKeyTest.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <Compile Include="Unit\AggregateRootTests2.cs" />
-    <Compile Include="Unit\RuntimeTests.cs" />
     <Compile Include="Unit\AggregateRootTests.cs" />
-    <Compile Include="Unit\BusinessExceptionTests.cs" />
-    <Compile Include="Unit\EntityTests.cs" />
-    <Compile Include="Unit\NaturalKeyAttributeTests.cs" />
-    <Compile Include="Support\Car.cs" />
-    <Compile Include="Support\Registration.cs" />
-    <Compile Include="Support\Wheel.cs" />
-    <Compile Include="Unit\Runtime\ApplicationTests.cs" />
-    <Compile Include="Unit\Runtime\Configuration\AssemblyConfigurationTests.cs" />
-    <Compile Include="Unit\Runtime\DefaultEventDispatcherTests.cs" />
-    <Compile Include="Unit\Runtime\DefaultTypeConfigurationProviderTests.cs" />
-    <Compile Include="Unit\Runtime\RuntimeExceptionTests.cs" />
-    <Compile Include="Unit\Runtime\TypeDescriptorTests.cs" />
-    <Compile Include="Unit\ValueObjectTests.cs" />
+    <Compile Include="Unit\ApplicationTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FakeItEasy, Version=1.25.2.0, Culture=neutral, PublicKeyToken=eff28e2146d5fd2c, processorArchitecture=MSIL">
@@ -119,7 +101,7 @@
       <Name>dddlib</Name>
     </ProjectReference>
     <ProjectReference Include="..\dddlib.Tests.Support\dddlib.Tests.Support.csproj">
-      <Project>{6777cb50-8686-4a93-a492-01862e07342c}</Project>
+      <Project>{1662fa00-a222-4f06-8b5e-4c09dcc0ea78}</Project>
       <Name>dddlib.Tests.Support</Name>
     </ProjectReference>
   </ItemGroup>

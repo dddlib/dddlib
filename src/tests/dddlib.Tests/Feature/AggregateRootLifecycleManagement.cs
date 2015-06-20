@@ -1,4 +1,4 @@
-﻿// <copyright file="AggregateRootLifecycle.cs" company="dddlib contributors">
+﻿// <copyright file="AggregateRootLifecycleManagement.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -11,10 +11,12 @@ namespace dddlib.Tests.Feature
 
     // As someone who uses dddlib
     // In order to model destruction as a concept
-    // I need to be able to end the lifecycle of an entity
-    public class AggregateRootLifecycle : Feature
+    // I need to be able to end the lifecycle of an aggregate root
+    public class AggregateRootLifecycleManagement : Feature
     {
-        public class DefaultLifecycle : AggregateRootLifecycle
+        /*  TODO (Cameron): Split into Entity lifecycle management.  */
+
+        public class DefaultLifecycle : AggregateRootLifecycleManagement
         {
             [Scenario]
             public void Scenario(Action action)
@@ -57,14 +59,9 @@ namespace dddlib.Tests.Feature
                     this.EndLifecycle();
                 }
             }
-
-            private class SubjectUpdated
-            {
-                public int Version { get; set; }
-            }
         }
 
-        public class EventBasedLifecycle : AggregateRootLifecycle
+        public class EventBasedLifecycle : AggregateRootLifecycleManagement
         {
             [Scenario]
             public void Scenario(Action action)

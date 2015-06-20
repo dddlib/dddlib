@@ -50,7 +50,7 @@ namespace dddlib.Runtime
                 throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        "An exception occurred when mapping entity of type '{0}' to event of type '{1}'.",
+                        "An exception occurred when mapping an entity of type '{0}' to event of type '{1}'.",
                         this.source.GetType(),
                         typeof(T)),
                     ex);

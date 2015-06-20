@@ -15,6 +15,10 @@ namespace dddlib.Sdk.Configuration.Model
     {
         private static readonly ITypeAnalyzerService DefaultTypeAnalyzerService = new DefaultTypeAnalyzerService();
 
+        private readonly NaturalKey baseEntityNaturalKey;
+
+        private NaturalKey entityNaturalKey;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="EntityType"/> class.
         /// </summary>
@@ -33,7 +37,7 @@ namespace dddlib.Sdk.Configuration.Model
             }
 
             this.RuntimeType = runtimeType;
-            this.NaturalKey = typeAnalyzerService.GetNaturalKey(runtimeType);
+            this.entityNaturalKey = typeAnalyzerService.GetNaturalKey(runtimeType);
             this.Mappings = new MapperCollection();
         }
 
@@ -59,7 +63,7 @@ namespace dddlib.Sdk.Configuration.Model
                         runtimeType.BaseType));
             }
 
-            this.NaturalKey = this.NaturalKey ?? baseEntity.NaturalKey;
+            this.baseEntityNaturalKey = baseEntity.NaturalKey;
         }
 
         /// <summary>
@@ -73,7 +77,10 @@ namespace dddlib.Sdk.Configuration.Model
         /// Gets the natural key for this entity type.
         /// </summary>
         /// <value>The natural key.</value>
-        public NaturalKey NaturalKey { get; private set; }
+        public NaturalKey NaturalKey
+        {
+            get { return this.entityNaturalKey ?? this.baseEntityNaturalKey; }
+        }
 
         /// <summary>
         /// Gets the mappings.
@@ -90,7 +97,7 @@ namespace dddlib.Sdk.Configuration.Model
         {
             Guard.Against.Null(() => naturalKey);
 
-            if (this.NaturalKey == naturalKey)
+            if (this.entityNaturalKey == naturalKey)
             {
                 return;
             }
@@ -104,7 +111,7 @@ namespace dddlib.Sdk.Configuration.Model
                         this.RuntimeType));
             }
 
-            if (this.NaturalKey != null)
+            if (this.entityNaturalKey != null)
             {
                 throw new BusinessException(
                     string.Format(
@@ -115,7 +122,7 @@ namespace dddlib.Sdk.Configuration.Model
                         this.NaturalKey.PropertyName));
             }
 
-            this.NaturalKey = naturalKey;
+            this.entityNaturalKey = naturalKey;
         }
     }
 }

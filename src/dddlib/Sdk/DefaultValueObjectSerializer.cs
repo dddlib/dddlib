@@ -11,9 +11,9 @@ namespace dddlib.Sdk
     using dddlib.Runtime;
 
     /// <summary>
-    /// Represents a delegate based natural key serializer.
+    /// Represents the default value object serializer.
     /// </summary>
-    /// <typeparam name="T">The type of natural key.</typeparam>
+    /// <typeparam name="T">The type of value object.</typeparam>
     public class DefaultValueObjectSerializer<T> : IValueObjectSerializer
         where T : ValueObject<T>
     {
