@@ -6,6 +6,7 @@ namespace dddlib.Tests.Feature
 {
     using System;
     using dddlib.Configuration;
+    using dddlib.Runtime;
     using dddlib.Tests.Sdk;
     using FluentAssertions;
     using Xbehave;
@@ -154,6 +155,92 @@ namespace dddlib.Tests.Feature
 
                     configure.Entity<Data>()
                         .ToMapToEvent<DataProcessed>((data, @event) => @event.DataValue = data.Value, @event => new Data(@event.DataValue));
+                }
+            }
+        }
+
+        public class EntityMappingUndefined : AggregateRootValueObjectMapping
+        {
+            [Scenario]
+            public void Scenario(SomeThing subjectId, Action action)
+            {
+                "Given a subject identifier"
+                    .f(() => subjectId = new SomeThing { Value = "subjectId" });
+
+                "When a subject is created with that identifier"
+                    .f(() => action = () => new Subject(subjectId));
+
+                "Then that actions should throw an exception"
+                    .f(() => action.ShouldThrow<RuntimeException>());
+            }
+
+            public class Subject : AggregateRoot
+            {
+                public Subject(SomeThing someThing)
+                {
+                    this.Apply(Map.Entity(someThing).ToEvent<NewSubject>());
+                }
+
+                public string SomeThing { get; set; }
+            }
+
+            public class SomeThing : Entity
+            {
+                public string Value { get; set; }
+            }
+
+            public class NewSubject
+            {
+                public string SomeThing { get; set; }
+            }
+        }
+
+        public class EntityMappingPartiallyUndefined : AggregateRootValueObjectMapping
+        {
+            [Scenario]
+            public void Scenario(SomeThing subjectId, Action action)
+            {
+                "Given a subject identifier"
+                    .f(() => subjectId = new SomeThing { Value = "subjectId" });
+
+                "When a subject is created with that identifier"
+                    .f(() => action = () => new Subject(subjectId));
+
+                "Then that actions should throw an exception"
+                    .f(() => action.ShouldThrow<RuntimeException>());
+            }
+
+            public class Subject : AggregateRoot
+            {
+                public Subject(SomeThing someThing)
+                {
+                    this.Apply(Map.Entity(someThing).ToEvent<NewSubject>());
+                }
+
+                public SomeThing SomeThing { get; set; }
+
+                private void Handle(NewSubject @event)
+                {
+                    this.SomeThing = Map.Event(@event).ToEntity<SomeThing>();
+                }
+            }
+
+            public class SomeThing : Entity
+            {
+                public string Value { get; set; }
+            }
+
+            public class NewSubject
+            {
+                public string SomeThing { get; set; }
+            }
+
+            private class BootStrapper : IBootstrap<SomeThing>
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.Entity<SomeThing>()
+                        .ToMapToEvent<NewSubject>((subjectId, @event) => @event.SomeThing = subjectId.Value);
                 }
             }
         }

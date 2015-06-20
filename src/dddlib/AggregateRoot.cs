@@ -174,6 +174,10 @@ namespace dddlib
             {
                 this.typeInformation.EventDispatcher.Dispatch(this, @event);
             }
+            catch (RuntimeException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 throw new RuntimeException(
