@@ -33,8 +33,8 @@ namespace dddlib.Runtime
                     string.Format(
                         CultureInfo.InvariantCulture,
                         "The entity of type '{0}' has not been configured to reverse map from an event of type '{1}'.",
-                        this.source.GetType(),
-                        typeof(T)));
+                        typeof(T),
+                        this.source.GetType()));
             }
 
             try
@@ -64,8 +64,8 @@ namespace dddlib.Runtime
                     string.Format(
                         CultureInfo.InvariantCulture,
                         "The value object of type '{0}' has not been configured to reverse map from an event of type '{1}'.",
-                        this.source.GetType(),
-                        typeof(T)));
+                        typeof(T),
+                        this.source.GetType()));
             }
 
             try

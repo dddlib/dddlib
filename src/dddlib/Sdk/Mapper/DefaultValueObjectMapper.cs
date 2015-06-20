@@ -26,7 +26,7 @@ namespace dddlib.Runtime
             return @event;
         }
 
-        public void ToEvent<T>(T @event)
+        public T ToEvent<T>(T @event)
         {
             var runtimeType = Application.Current.GetValueObjectType(this.source.GetType());
 
@@ -50,11 +50,13 @@ namespace dddlib.Runtime
                 throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture, 
-                        "An exception occurred when mapping value object of type '{0}' to event of type '{1}'.", 
+                        "An exception occurred when mapping a value object of type '{0}' to event of type '{1}'.", 
                         this.source.GetType(), 
                         typeof(T)),
                     ex);
             }
+
+            return @event;
         }
     }
 }

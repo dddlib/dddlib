@@ -22,43 +22,38 @@ namespace dddlib
     /// <summary>
     /// Represents an aggregate root.
     /// </summary>
-    public abstract class AggregateRoot : Entity
+    public abstract partial class AggregateRoot : Entity
     {
         private readonly List<object> events = new List<object>();
 
         // TODO (Cameron): Add to configuration.
         private readonly Lazy<IMapperProvider> mapProvider = new Lazy<IMapperProvider>(() => new DefaultMapperProvider(), true);
-        
-        private readonly IEventDispatcher eventDispatcher;
-        private readonly bool persistEvents;
+
+        private readonly TypeInformation typeInformation;
 
         private string state;
-        private bool isDestroyed;
-
-        // TODO (Cameron): Fix.
-        internal AggregateRoot(IEventDispatcher eventDispatcher, bool dispatchEvents, bool persistEvents)
-        {
-            Guard.Against.Null(() => eventDispatcher);
-
-            this.eventDispatcher = eventDispatcher;
-            this.persistEvents = persistEvents;
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AggregateRoot"/> class.
         /// </summary>
         protected AggregateRoot()
-            : this(@this => Config.From(Application.Current.GetAggregateRootType(@this.GetType())))
+            : this(@this => new TypeInformation(Application.Current.GetAggregateRootType(@this.GetType())))
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AggregateRoot"/> class.
+        /// </summary>
+        /// <param name="aggregateRootType">The aggregate root type.</param>
+        protected AggregateRoot(AggregateRootType aggregateRootType)
+            : this(@this => new TypeInformation(aggregateRootType))
         {
         }
 
         // LINK (Cameron): http://stackoverflow.com/questions/2287636/pass-current-object-type-into-base-constructor-call
-        private AggregateRoot(Func<AggregateRoot, Config> configureAggregateRoot)
+        private AggregateRoot(Func<AggregateRoot, TypeInformation> getTypeInformation)
         {
-            var configuration = configureAggregateRoot(this);
-
-            this.eventDispatcher = configuration.EventDispatcher;
-            this.persistEvents = configuration.PersistEvents;
+            this.typeInformation = getTypeInformation(this);
         }
 
         internal string State
@@ -141,14 +136,6 @@ namespace dddlib
         }
 
         /// <summary>
-        /// Ends the lifecycle of this instance of the aggregate root.
-        /// </summary>
-        protected void EndLifecycle()
-        {
-            this.isDestroyed = true;
-        }
-
-        /// <summary>
         /// Applies the specified event to the aggregate root.
         /// </summary>
         /// <typeparam name="T">The type of event.</typeparam>
@@ -158,7 +145,7 @@ namespace dddlib
         {
             Guard.Against.Null(() => @event);
 
-            if (this.isDestroyed)
+            if (this.IsDestroyed)
             {
                 // TODO (Cameron): Use the natural key and type.
                 // maybe: Unable to change Bob because a Person with that name no longer exists.
@@ -185,7 +172,11 @@ namespace dddlib
 
             try
             {
-                this.eventDispatcher.Dispatch(this, @event);
+                this.typeInformation.EventDispatcher.Dispatch(this, @event);
+            }
+            catch (RuntimeException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -193,26 +184,14 @@ namespace dddlib
                     string.Format(
                         CultureInfo.InvariantCulture,
                         "The event dispatcher of type '{0}' threw an exception whilst attempting to dispatch an event of type '{1}'.",
-                        this.eventDispatcher.GetType(),
+                        this.typeInformation.EventDispatcher.GetType(),
                         @event.GetType()),
                     ex);
             }
 
-            if (this.persistEvents && isNew)
+            if (this.typeInformation.PersistEvents && isNew)
             {
                 this.events.Add(@event);
-            }
-        }
-
-        private class Config
-        {
-            public IEventDispatcher EventDispatcher { get; set; }
-
-            public bool PersistEvents { get; set; }
-
-            public static Config From(AggregateRootType aggregateRootType)
-            {
-                return new Config { EventDispatcher = aggregateRootType.EventDispatcher, PersistEvents = aggregateRootType.PersistEvents };
             }
         }
     }

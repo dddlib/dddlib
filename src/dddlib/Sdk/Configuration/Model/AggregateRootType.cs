@@ -6,10 +6,20 @@ namespace dddlib.Sdk.Configuration.Model
 {
     using System;
     using System.Globalization;
+    using System.Linq;
     using dddlib.Runtime;
 
-    internal class AggregateRootType : EntityType
+    /// <summary>
+    /// Represents an aggregate root type.
+    /// </summary>
+    public class AggregateRootType : EntityType
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AggregateRootType"/> class.
+        /// </summary>
+        /// <param name="runtimeType">The runtime type.</param>
+        /// <param name="typeAnalyzerService">The type analyzer service.</param>
+        /// <param name="baseEntity">The base entity.</param>
         public AggregateRootType(Type runtimeType, ITypeAnalyzerService typeAnalyzerService, EntityType baseEntity)
             : base(runtimeType, typeAnalyzerService, baseEntity)
         {
@@ -26,17 +36,39 @@ namespace dddlib.Sdk.Configuration.Model
             this.EventDispatcher = new DefaultEventDispatcher(runtimeType);
         }
 
+        /// <summary>
+        /// Gets the uninitialized factory.
+        /// </summary>
+        /// <value>The uninitialized factory.</value>
         public Delegate UninitializedFactory { get; private set; }
 
+        /// <summary>
+        /// Gets the event dispatcher.
+        /// </summary>
+        /// <value>The event dispatcher.</value>
         public IEventDispatcher EventDispatcher { get; private set; }
 
-        // NOTE (Cameron): Only persist events if there is a way to reconstitute the persisted object.
+        /// <summary>
+        /// Gets the natural key serializer.
+        /// </summary>
+        /// <value>The natural key serializer.</value>
+        public object NaturalKeySerializer { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether events should be persisted.
+        /// </summary>
+        /// <value>Returns <c>true</c> if events should be persisted; otherwise, <c>false</c>.</value>
+        //// NOTE (Cameron): Only persist events if there is a way to reconstitute the persisted object.
         public bool PersistEvents
         {
             get { return this.UninitializedFactory != null; }
         }
 
-        public void ConfigureUnititializedFactory(Delegate uninitializedFactory)
+        /// <summary>
+        /// Configures the uninitialized factory.
+        /// </summary>
+        /// <param name="uninitializedFactory">The uninitialized factory.</param>
+        public void ConfigureUninitializedFactory(Delegate uninitializedFactory)
         {
             Guard.Against.Null(() => uninitializedFactory);
 

@@ -8,6 +8,7 @@ namespace dddlib.Configuration
     using System.Collections.Generic;
     using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
+    using dddlib.Runtime;
     using dddlib.Sdk;
 
 #pragma warning disable 1591
@@ -31,6 +32,22 @@ namespace dddlib.Configuration
         /// <param name="equalityComparer">The equality comparer.</param>
         /// <returns>The configuration.</returns>
         TConfiguration ToUseEqualityComparer(IEqualityComparer<T> equalityComparer);
+
+        /// <summary>
+        /// Configures the runtime to perform value object serialization using the specified serializer.
+        /// </summary>
+        /// <param name="valueObjectSerializer">The value object serializer.</param>
+        /// <returns>The configuration.</returns>
+        //// NOTE (Cameron): Value object serialization is a necessity because we don't control usage of a value object as a natural key.
+        TConfiguration ToUseValueObjectSerializer(IValueObjectSerializer valueObjectSerializer);
+
+        /// <summary>
+        /// Configures the runtime to perform value object serialization using the specified serializer delegates.
+        /// </summary>
+        /// <param name="serialize">The serialization delegate.</param>
+        /// <param name="deserialize">The deserialization delegate.</param>
+        /// <returns>The configuration.</returns>
+        TConfiguration ToUseValueObjectSerializer(Func<T, string> serialize, Func<string, T> deserialize);
 
         /// <summary>
         /// Configures the runtime to map the value object to the specified event type.

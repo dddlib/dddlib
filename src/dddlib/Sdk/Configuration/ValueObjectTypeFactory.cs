@@ -6,7 +6,7 @@ namespace dddlib.Sdk.Configuration
 {
     using System;
     using dddlib.Sdk.Configuration.Model;
-    using dddlib.Sdk.Configuration.Model.BootstrapperService;
+    using dddlib.Sdk.Configuration.Services.Bootstrapper;
 
     internal class ValueObjectTypeFactory
     {

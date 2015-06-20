@@ -1,6 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\..\packages\xunit.runner.visualstudio.2.0.0-rc1-build1030\build\net20\xunit.runner.visualstudio.props" Condition="Exists('..\..\..\packages\xunit.runner.visualstudio.2.0.0-rc1-build1030\build\net20\xunit.runner.visualstudio.props')" />
+  <Import Project="..\..\..\packages\xunit.runner.msbuild.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.runner.msbuild.props" Condition="Exists('..\..\..\packages\xunit.runner.msbuild.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.runner.msbuild.props')" />
+  <Import Project="..\..\..\packages\xunit.runner.visualstudio.2.0.0\build\net20\xunit.runner.visualstudio.props" Condition="Exists('..\..\..\packages\xunit.runner.visualstudio.2.0.0\build\net20\xunit.runner.visualstudio.props')" />
+  <Import Project="..\..\..\packages\Xbehave.Core.2.0.0-rc003-build581\build\portable-net45\Xbehave.Core.props" Condition="Exists('..\..\..\packages\Xbehave.Core.2.0.0-rc003-build581\build\portable-net45\Xbehave.Core.props')" />
+  <Import Project="..\..\..\packages\xunit.core.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props" Condition="Exists('..\..\..\packages\xunit.core.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -13,14 +16,14 @@
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <StyleCopTreatErrorsAsWarnings>false</StyleCopTreatErrorsAsWarnings>
-    <NuGetPackageImportStamp>27e2b0a0</NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>83fe6d52</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;dddlibTests</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -34,46 +37,28 @@
     <AssemblyOriginatorKeyFile>..\..\dddlib.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Bugs\Bug0001.cs" />
-    <Compile Include="Features\BusinessException.cs" />
-    <Compile Include="Unit\EntityTypeTests.cs" />
-    <Compile Include="Unit\ValueObjectTypeTests.cs" />
+    <Compile Include="Bug\Bug0017.cs" />
+    <Compile Include="Bug\Bug0001.cs" />
+    <Compile Include="Feature\EntityLifecycleManagement.cs" />
+    <Compile Include="Feature\BusinessException.cs" />
+    <Compile Include="Feature\ValueObjectSerialization.cs" />
     <None Include="..\..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
-    <Compile Include="Features\AggregateRootEquality.cs" />
-    <Compile Include="Features\AggregateRootEventApplication.cs" />
-    <Compile Include="Features\AggregateRootLifecycle.cs" />
-    <Compile Include="Features\AggregateRootObjectMappingEntities.cs" />
-    <Compile Include="Features\AggregateRootObjectMappingValueObjects.cs" />
-    <Compile Include="Features\EntityEquality.cs" />
-    <Compile Include="Support\Bootstrapper.cs" />
-    <Compile Include="Features\ValueObjectEquality.cs" />
+    <Compile Include="Feature\AggregateRootEquality.cs" />
+    <Compile Include="Feature\AggregateRootEventApplication.cs" />
+    <Compile Include="Feature\AggregateRootLifecycleManagement.cs" />
+    <Compile Include="Feature\AggregateRootEntityMapping.cs" />
+    <Compile Include="Feature\AggregateRootValueObjectMapping.cs" />
+    <Compile Include="Feature\EntityEquality.cs" />
+    <Compile Include="Feature\ValueObjectEquality.cs" />
     <Compile Include="Sdk\Feature.cs" />
-    <Compile Include="RuntimeTests.NaturalKeySerializerTest.cs" />
-    <Compile Include="RuntimeTests.NaturalKeyTest.cs" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <Folder Include="Runtime\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AggregateRootTests2.cs" />
-    <Compile Include="RuntimeTests.cs" />
     <Compile Include="Unit\AggregateRootTests.cs" />
-    <Compile Include="Unit\BusinessExceptionTests.cs" />
-    <Compile Include="Unit\EntityTests.cs" />
-    <Compile Include="Unit\NaturalKeyAttributeTests.cs" />
-    <Compile Include="Support\Car.cs" />
-    <Compile Include="Support\Registration.cs" />
-    <Compile Include="Support\Wheel.cs" />
-    <Compile Include="Unit\Runtime\ApplicationTests.cs" />
-    <Compile Include="Unit\Runtime\Configuration\AssemblyConfigurationTests.cs" />
-    <Compile Include="Unit\Runtime\DefaultEventDispatcherTests.cs" />
-    <Compile Include="Unit\Runtime\DefaultTypeConfigurationProviderTests.cs" />
-    <Compile Include="Unit\Runtime\RuntimeExceptionTests.cs" />
-    <Compile Include="Unit\Runtime\TypeDescriptorTests.cs" />
-    <Compile Include="Unit\ValueObjectTests.cs" />
+    <Compile Include="Unit\ApplicationTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FakeItEasy, Version=1.25.2.0, Culture=neutral, PublicKeyToken=eff28e2146d5fd2c, processorArchitecture=MSIL">
@@ -90,15 +75,21 @@
     <Reference Include="System" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="Xbehave, Version=1.1.0.0, Culture=neutral, PublicKeyToken=e4957f48888f9fe8, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\packages\Xbehave.1.1.0\lib\net45\Xbehave.dll</HintPath>
+    <Reference Include="Xbehave.Core, Version=2.0.0.0, Culture=neutral, PublicKeyToken=e4957f48888f9fe8, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Xbehave.Core.2.0.0-rc003-build581\lib\portable-net45\Xbehave.Core.dll</HintPath>
+      <Private>True</Private>
     </Reference>
-    <Reference Include="xunit">
-      <HintPath>..\..\..\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
+    <Reference Include="xunit.abstractions, Version=2.0.0.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\xunit.abstractions.2.0.0\lib\net35\xunit.abstractions.dll</HintPath>
+      <Private>True</Private>
     </Reference>
-    <Reference Include="xunit.extensions">
-      <HintPath>..\..\..\packages\xunit.extensions.1.9.2\lib\net20\xunit.extensions.dll</HintPath>
+    <Reference Include="xunit.assert, Version=2.0.0.2929, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\xunit.assert.2.0.0\lib\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.assert.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="xunit.core, Version=2.0.0.2929, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\xunit.extensibility.core.2.0.0\lib\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.dll</HintPath>
+      <Private>True</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -110,7 +101,7 @@
       <Name>dddlib</Name>
     </ProjectReference>
     <ProjectReference Include="..\dddlib.Tests.Support\dddlib.Tests.Support.csproj">
-      <Project>{6777cb50-8686-4a93-a492-01862e07342c}</Project>
+      <Project>{1662fa00-a222-4f06-8b5e-4c09dcc0ea78}</Project>
       <Name>dddlib.Tests.Support</Name>
     </ProjectReference>
   </ItemGroup>
@@ -126,8 +117,11 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\..\packages\xunit.runner.visualstudio.2.0.0-rc1-build1030\build\net20\xunit.runner.visualstudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\xunit.runner.visualstudio.2.0.0-rc1-build1030\build\net20\xunit.runner.visualstudio.props'))" />
     <Error Condition="!Exists('..\..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets'))" />
+    <Error Condition="!Exists('..\..\..\packages\xunit.core.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\xunit.core.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.core.props'))" />
+    <Error Condition="!Exists('..\..\..\packages\Xbehave.Core.2.0.0-rc003-build581\build\portable-net45\Xbehave.Core.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\Xbehave.Core.2.0.0-rc003-build581\build\portable-net45\Xbehave.Core.props'))" />
+    <Error Condition="!Exists('..\..\..\packages\xunit.runner.visualstudio.2.0.0\build\net20\xunit.runner.visualstudio.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\xunit.runner.visualstudio.2.0.0\build\net20\xunit.runner.visualstudio.props'))" />
+    <Error Condition="!Exists('..\..\..\packages\xunit.runner.msbuild.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.runner.msbuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\..\packages\xunit.runner.msbuild.2.0.0\build\portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS\xunit.runner.msbuild.props'))" />
   </Target>
   <Import Project="..\..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets" Condition="Exists('..\..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets')" />
 </Project>

@@ -6,7 +6,6 @@ namespace dddlib.Persistence.Memory
 {
     using System;
     using System.Collections.Concurrent;
-    using System.Collections.Generic;
 
     /// <summary>
     /// Represents a memory-based identity map.
@@ -17,50 +16,38 @@ namespace dddlib.Persistence.Memory
             new ConcurrentDictionary<Type, ConcurrentDictionary<object, Guid>>();
 
         /// <summary>
-        /// Maps the specified key.
+        /// Gets the mapped identity for the specified natural key. If a mapping does not exist then one is created.
         /// </summary>
         /// <param name="aggregateRootType">Type of the aggregate root.</param>
+        /// <param name="naturalKeyType">Type of the natural key.</param>
         /// <param name="naturalKey">The natural key.</param>
-        /// <param name="naturalKeyEqualityComparer">The natural key equality comparer.</param>
-        /// <returns>
-        /// A stream id.
-        /// </returns>
-        public Guid GetOrAdd(Type aggregateRootType, object naturalKey, IEqualityComparer<object> naturalKeyEqualityComparer)
+        /// <returns>The mapped identity.</returns>
+        public Guid GetOrAdd(Type aggregateRootType, Type naturalKeyType, object naturalKey)
         {
-            var typeMappings = this.store.GetOrAdd(aggregateRootType, e => naturalKeyEqualityComparer == null ? new ConcurrentDictionary<object, Guid>() : new ConcurrentDictionary<object, Guid>(naturalKeyEqualityComparer));
-            var id = typeMappings.GetOrAdd(naturalKey, Guid.NewGuid());
+            var mappings = this.store.GetOrAdd(aggregateRootType, _ => new ConcurrentDictionary<object, Guid>());
+            var id = mappings.GetOrAdd(naturalKey, Guid.NewGuid());
 
             return id;
         }
 
         /// <summary>
-        /// Gets the specified key.
+        /// Attempts to get the mapped identity for the specified natural key.
         /// </summary>
         /// <param name="aggregateRootType">Type of the aggregate root.</param>
+        /// <param name="naturalKeyType">Type of the natural key.</param>
         /// <param name="naturalKey">The natural key.</param>
-        /// <returns>
-        /// A stream id.
-        /// </returns>
-        /// <exception cref="System.Exception">
-        /// No such identity mapping type.
-        /// or
-        /// No such identity mapping ID.
-        /// </exception>
-        public Guid Get(Type aggregateRootType, object naturalKey)
+        /// <param name="identity">The mapped identity.</param>
+        /// <returns>Returns <c>true</c> if the mapping exists; otherwise <c>false</c>.</returns>
+        public bool TryGet(Type aggregateRootType, Type naturalKeyType, object naturalKey, out Guid identity)
         {
             var typeMappings = default(ConcurrentDictionary<object, Guid>);
             if (!this.store.TryGetValue(aggregateRootType, out typeMappings))
             {
-                throw new Exception("No such identity mapping type.");
+                identity = Guid.Empty;
+                return false;
             }
 
-            var id = default(Guid);
-            if (!typeMappings.TryGetValue(naturalKey, out id))
-            {
-                throw new Exception("No such identity mapping ID.");
-            }
-
-            return id;
+            return typeMappings.TryGetValue(naturalKey, out identity);
         }
     }
 }

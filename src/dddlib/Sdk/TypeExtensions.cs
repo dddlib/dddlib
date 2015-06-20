@@ -29,5 +29,27 @@ namespace dddlib.Sdk
             }
             while ((sourceType = sourceType.BaseType) != type && sourceType != null);
         }
+
+        /// <summary>
+        /// Determines whether the type is a subclass of the specified raw generic type.
+        /// </summary>
+        /// <param name="sourceType">The source type.</param>
+        /// <param name="genericType">The raw generic type.</param>
+        /// <returns>Returns <c>true</c> if the type is a subclass of the specified raw generic type.</returns>
+        public static bool IsSubclassOfRawGeneric(this Type sourceType, Type genericType)
+        {
+            while (sourceType != null && sourceType != typeof(object))
+            {
+                var currentType = sourceType.IsGenericType ? sourceType.GetGenericTypeDefinition() : sourceType;
+                if (currentType == genericType)
+                {
+                    return true;
+                }
+
+                sourceType = sourceType.BaseType;
+            }
+
+            return false;
+        }
     }
 }

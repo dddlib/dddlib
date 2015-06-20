@@ -5,7 +5,7 @@
 namespace dddlib.Persistence
 {
     /// <summary>
-    /// Exposes the public members of an event store repository.
+    /// Exposes the public members of the event store repository.
     /// </summary>
     public interface IEventStoreRepository
     {

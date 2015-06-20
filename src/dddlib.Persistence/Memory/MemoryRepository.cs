@@ -20,7 +20,16 @@ namespace dddlib.Persistence.Memory
         /// Initializes a new instance of the <see cref="MemoryRepository{T}"/> class.
         /// </summary>
         public MemoryRepository()
-            : base(new MemoryIdentityMap())
+            : this(new MemoryIdentityMap())
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MemoryRepository{T}"/> class.
+        /// </summary>
+        /// <param name="identityMap">The identity map.</param>
+        public MemoryRepository(IIdentityMap identityMap)
+            : base(identityMap)
         {
         }
 
@@ -38,13 +47,13 @@ namespace dddlib.Persistence.Memory
             {
                 if (data.State != oldState)
                 {
-                    throw new Exception("Invalid state");
+                    throw new ConcurrencyException("Invalid state");
                 }
             }
             else if (oldState != null)
             {
                 // TODO (Cameron): Not sure if this should be here...
-                throw new Exception("Invalid state #2");
+                throw new ConcurrencyException("Invalid state #2");
             }
 
             data = data ?? new Data();
@@ -66,7 +75,7 @@ namespace dddlib.Persistence.Memory
             var data = default(Data);
             if (!this.store.TryGetValue(id, out data))
             {
-                throw new Exception("Invalid state #2");
+                throw new ConcurrencyException("Invalid state #2");
             }
 
             state = data.State;

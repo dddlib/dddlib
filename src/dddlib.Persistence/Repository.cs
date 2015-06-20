@@ -8,10 +8,9 @@ namespace dddlib.Persistence
     using System.Globalization;
     using System.Linq;
     using dddlib.Persistence.Sdk;
-    using dddlib.Runtime;
 
     /// <summary>
-    /// Represents the aggregate root repository.
+    /// Represents an aggregate root repository.
     /// </summary>
     /// <typeparam name="T">The type of aggregate root.</typeparam>
     public abstract class Repository<T> : RepositoryBase, IRepository<T> where T : AggregateRoot
@@ -38,7 +37,7 @@ namespace dddlib.Persistence
             var memento = aggregateRoot.GetMemento();
             if (memento == null)
             {
-                throw new RuntimeException(
+                throw new PersistenceException(
                     string.Format(
                         CultureInfo.InvariantCulture,
                         "Cannot save aggregate root of type '{0}' as there is no configured memento representing its state.",

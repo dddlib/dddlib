@@ -51,7 +51,7 @@ namespace dddlib.Persistence.Sdk
             }
 
             var naturalKey = aggregateRootType.NaturalKey.GetValue(aggregateRoot);
-            return this.identityMap.GetOrAdd(type, naturalKey, aggregateRootType.NaturalKeyEqualityComparer);
+            return this.identityMap.GetOrAdd(aggregateRootType.RuntimeType, aggregateRootType.NaturalKey.PropertyType, naturalKey);
         }
 
         /// <summary>
@@ -62,7 +62,38 @@ namespace dddlib.Persistence.Sdk
         /// <returns>The identifier for the aggregate root.</returns>
         protected Guid GetId<T>(object naturalKey) where T : AggregateRoot
         {
-            return this.identityMap.Get(typeof(T), naturalKey);
+            Guard.Against.Null(() => naturalKey);
+
+            var aggregateRootType = Application.Current.GetAggregateRootType(typeof(T));
+            if (aggregateRootType.NaturalKey == null)
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Cannot load aggregate root of type '{0}' as there is no natural key defined.",
+                        typeof(T)));
+            }
+
+            if (aggregateRootType.NaturalKey.PropertyType != naturalKey.GetType())
+            {
+                throw new ArgumentException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Invalid value for aggregate root of type '{0}'. Value type must match natural key type of '{1}' but is type of '{2}'.",
+                        typeof(T),
+                        aggregateRootType.NaturalKey.PropertyType,
+                        naturalKey.GetType()),
+                    "naturalKey");
+            }
+
+            var identity = default(Guid);
+            if (!this.identityMap.TryGet(aggregateRootType.RuntimeType, aggregateRootType.NaturalKey.PropertyType, naturalKey, out identity))
+            {
+                // aggregate root not found?
+                throw new AggregateRootNotFoundException();
+            }
+
+            return identity;
         }
 
         /// <summary>

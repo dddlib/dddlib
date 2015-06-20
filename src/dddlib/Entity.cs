@@ -5,7 +5,6 @@
 namespace dddlib
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using dddlib.Runtime;
     using dddlib.Sdk.Configuration.Model;
@@ -14,31 +13,42 @@ namespace dddlib
     /// Represents an entity.
     /// </summary>
     //// TODO (Cameron): Ensure that an entity can be created without a natural key.
-    public abstract class Entity
+    public abstract partial class Entity
     {
-        private readonly dddlib.Sdk.Configuration.Model.NaturalKey naturalKey;
-        private readonly IEqualityComparer<object> naturalKeyEqualityComparer;
+        private readonly TypeInformation typeInformation;
 
-        internal Entity(dddlib.Sdk.Configuration.Model.NaturalKey naturalKey, IEqualityComparer<object> naturalKeyEqualityComparer)
-            : this(@this => new Config { NaturalKey = naturalKey, NaturalKeyEqualityComparer = naturalKeyEqualityComparer })
+        private bool isDestroyed;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Entity"/> class.
+        /// </summary>
+        protected Entity()
+            : this(@this => new TypeInformation(Application.Current.GetEntityType(@this.GetType())))
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Entity"/> class.
         /// </summary>
-        protected Entity()
-            : this(@this => Config.From(Application.Current.GetEntityType(@this.GetType())))
+        /// <param name="entityType">The entity type.</param>
+        protected Entity(EntityType entityType)
+            : this(@this => new TypeInformation(entityType))
         {
         }
 
         // LINK (Cameron): http://stackoverflow.com/questions/2287636/pass-current-object-type-into-base-constructor-call
-        private Entity(Func<Entity, Config> configureEntity)
+        private Entity(Func<Entity, TypeInformation> getTypeInformation)
         {
-            var configuration = configureEntity(this);
+            this.typeInformation = getTypeInformation(this);
+        }
 
-            this.naturalKey = configuration.NaturalKey;
-            this.naturalKeyEqualityComparer = configuration.NaturalKeyEqualityComparer;
+        /// <summary>
+        /// Gets a value indicating whether this instance has been destroyed.
+        /// </summary>
+        /// <value>Returns <c>true</c> if the lifecycle of this instance has ended; otherwise, <c>false</c>.</value>
+        protected bool IsDestroyed
+        {
+            get { return this.isDestroyed; }
         }
 
 #pragma warning disable 1591
@@ -71,7 +81,7 @@ namespace dddlib
         /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public sealed override int GetHashCode()
         {
-            var value = this.naturalKey.GetValue(this);
+            var value = this.typeInformation.GetNaturalKeyValue(this);
             return value == null ? 0 : value.GetHashCode();
         }
 
@@ -99,33 +109,24 @@ namespace dddlib
                 return false;
             }
 
-            if (this.naturalKey == null)
+            if (!this.typeInformation.HasNaturalKey)
             {
                 // NOTE (Cameron): This entity has no natural key defined and doesn't meet the [previous] criteria for .NET reference equality.
                 return false;
             }
 
-            var thisValue = this.naturalKey.GetValue(this);
-            var otherValue = this.naturalKey.GetValue(other);
+            var thisValue = this.typeInformation.GetNaturalKeyValue(this);
+            var otherValue = this.typeInformation.GetNaturalKeyValue(other);
 
-            return this.naturalKeyEqualityComparer.Equals(thisValue, otherValue);
+            return object.Equals(thisValue, otherValue);
         }
 
-        private static EntityType GetEntityType(Entity @this)
+        /// <summary>
+        /// Ends the lifecycle of this instance.
+        /// </summary>
+        protected void EndLifecycle()
         {
-            return Application.Current.GetEntityType(@this.GetType());
-        }
-
-        private class Config
-        {
-            public dddlib.Sdk.Configuration.Model.NaturalKey NaturalKey { get; set; }
-
-            public IEqualityComparer<object> NaturalKeyEqualityComparer { get; set; }
-
-            public static Config From(EntityType entityType)
-            {
-                return new Config { NaturalKey = entityType.NaturalKey, NaturalKeyEqualityComparer = entityType.NaturalKeyEqualityComparer };
-            }
+            this.isDestroyed = true;
         }
     }
 }
