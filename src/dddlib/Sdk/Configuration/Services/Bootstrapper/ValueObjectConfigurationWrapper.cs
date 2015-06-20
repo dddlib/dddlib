@@ -29,17 +29,17 @@ namespace dddlib.Sdk.Configuration.Services.Bootstrapper
             return this;
         }
 
-        public IValueObjectConfigurationWrapper<T> ToSerializeUsing(IValueObjectSerializer valueObjectSerializer)
+        public IValueObjectConfigurationWrapper<T> ToUseValueObjectSerializer(IValueObjectSerializer valueObjectSerializer)
         {
             this.valueObjectType.ConfigureSerializer(valueObjectSerializer);
 
             return this;
         }
 
-        public IValueObjectConfigurationWrapper<T> ToSerializeUsing(Func<T, string> serialize, Func<string, T> deserialize)
+        public IValueObjectConfigurationWrapper<T> ToUseValueObjectSerializer(Func<T, string> serialize, Func<string, T> deserialize)
         {
             // TODO (Cameron): fix?
-            return this.ToSerializeUsing(new CustomValueObjectSerializer<T>(serialize, deserialize));
+            return this.ToUseValueObjectSerializer(new CustomValueObjectSerializer<T>(serialize, deserialize));
         }
 
         public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping)

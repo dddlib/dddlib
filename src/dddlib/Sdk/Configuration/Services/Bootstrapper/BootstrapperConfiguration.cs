@@ -135,12 +135,12 @@ namespace dddlib.Sdk.Configuration.Services.Bootstrapper
                 return this;
             }
 
-            public IValueObjectConfigurationWrapper<T> ToSerializeUsing(IValueObjectSerializer valueObjectSerializer)
+            public IValueObjectConfigurationWrapper<T> ToUseValueObjectSerializer(IValueObjectSerializer valueObjectSerializer)
             {
                 return this;
             }
 
-            public IValueObjectConfigurationWrapper<T> ToSerializeUsing(Func<T, string> serialize, Func<string, T> deserialize)
+            public IValueObjectConfigurationWrapper<T> ToUseValueObjectSerializer(Func<T, string> serialize, Func<string, T> deserialize)
             {
                 return this;
             }
