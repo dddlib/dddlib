@@ -115,6 +115,10 @@
       <Project>{57610450-0379-472e-b40c-18b11295eefa}</Project>
       <Name>dddlib</Name>
     </ProjectReference>
+    <ProjectReference Include="..\dddlib.Tests.Support\dddlib.Tests.Support.csproj">
+      <Project>{1662fa00-a222-4f06-8b5e-4c09dcc0ea78}</Project>
+      <Name>dddlib.Tests.Support</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

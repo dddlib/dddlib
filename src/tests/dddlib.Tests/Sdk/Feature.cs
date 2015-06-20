@@ -57,6 +57,11 @@ namespace dddlib.Persistence.Tests.Sdk
             // TODO (Cameron): This is all a bit of a hack.
             public Action<IConfiguration> GetBootstrapper(Type type)
             {
+                if (type.Assembly != typeof(Feature).Assembly)
+                {
+                    return new DefaultBootstrapperProvider().GetBootstrapper(type);
+                }
+
                 var bootstrappers = type.DeclaringType == null
                     ? new Type[0]
                     : type.DeclaringType.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)

@@ -9,6 +9,7 @@ namespace dddlib.Tests.Feature
     using dddlib.Configuration;
     using dddlib.Runtime;
     using dddlib.Tests.Sdk;
+    using dddlib.Tests.Support;
     using FluentAssertions;
     using Xbehave;
 
@@ -430,6 +431,144 @@ namespace dddlib.Tests.Feature
             {
                 [NaturalKey]
                 public string NaturalKey2 { get; set; }
+            }
+        }
+
+        public class InheritedNaturalKeySelector : EntityEquality
+        {
+            [Scenario]
+            public void Scenario(Registration registration, Car car, Car otherCar, IRegistrationService registrationService)
+            {
+                "Given a registration service"
+                    .f(() => registrationService = new RegistrationService());
+
+                "And a registration"
+                    .f(() => registration = new Registration("abc", registrationService));
+
+                "When two cars are instantiated with that registration"
+                    .f(() =>
+                    {
+                        car = new Car(registration);
+                        otherCar = new Car(registration);
+                    });
+
+                "Then the cars are equal"
+                    .f(() => car.Should().Be(otherCar));
+            }
+
+            public class Car : Vehicle
+            {
+                public Car(Registration registration)
+                    : base(registration)
+                {
+                }
+            }
+
+            public class RegistrationService : IRegistrationService
+            {
+                public bool ConfirmValid(string registrationNumber)
+                {
+                    return true;
+                }
+            }
+        }
+
+        public class InheritedNaturalKeySelectorOveriddenInSubclass : EntityEquality
+        {
+            [Scenario]
+            public void Scenario(Registration registration, Registration otherRegistration, Car car, Car otherCar, IRegistrationService registrationService)
+            {
+                "Given a registration service"
+                    .f(() => registrationService = new RegistrationService());
+
+                "And a registration"
+                    .f(() => registration = new Registration("abc", registrationService));
+
+                "And a registration with a number that differs by case"
+                    .f(() => otherRegistration = new Registration("ABC", registrationService));
+
+                "When two cars are instantiated with those registrations"
+                    .f(() =>
+                    {
+                        car = new Car(registration);
+                        otherCar = new Car(otherRegistration);
+                    });
+
+                "Then the cars are equal"
+                    .f(() => car.Should().NotBe(otherCar));
+            }
+
+            public class Car : Vehicle
+            {
+                public Car(Registration registration)
+                    : base(registration)
+                {
+                    this.OtherRegistration = registration.Number;
+                }
+
+                [NaturalKey]
+                public string OtherRegistration { get; set; }
+            }
+
+            public class RegistrationService : IRegistrationService
+            {
+                public bool ConfirmValid(string registrationNumber)
+                {
+                    return true;
+                }
+            }
+        }
+
+        public class InheritedNaturalKeySelectorOveriddenInBootstrapper : EntityEquality
+        {
+            [Scenario]
+            public void Scenario(Registration registration, Registration otherRegistration, Car car, Car otherCar, IRegistrationService registrationService)
+            {
+                "Given a registration service"
+                    .f(() => registrationService = new RegistrationService());
+
+                "And a registration"
+                    .f(() => registration = new Registration("abc", registrationService));
+
+                "And a registration with a number that differs by case"
+                    .f(() => otherRegistration = new Registration("ABC", registrationService));
+
+                "When two cars are instantiated with those registrations"
+                    .f(() =>
+                    {
+                        car = new Car(registration);
+                        otherCar = new Car(otherRegistration);
+                    });
+
+                "Then the cars are equal"
+                    .f(() => car.Should().NotBe(otherCar));
+            }
+
+            public class Car : Vehicle
+            {
+                public Car(Registration registration)
+                    : base(registration)
+                {
+                    this.OtherRegistration = registration.Number;
+                }
+
+                public string OtherRegistration { get; set; }
+            }
+
+            public class RegistrationService : IRegistrationService
+            {
+                public bool ConfirmValid(string registrationNumber)
+                {
+                    return true;
+                }
+            }
+
+            private class BootStrapper : IBootstrap<Car>
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.Entity<Car>().ToUseNaturalKey(car => car.OtherRegistration);
+                }
             }
         }
     }
