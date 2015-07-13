@@ -6,6 +6,9 @@ namespace dddlib.Persistence.Sdk
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
+    using dddlib.Runtime;
 
     /// <summary>
     /// Represents the default identity map.
@@ -45,13 +48,19 @@ namespace dddlib.Persistence.Sdk
         {
             Guard.Against.Null(() => aggregateRootType);
 
+            this.Validate(aggregateRootType, naturalKeyType, naturalKey);
+
             var mappings = this.store.GetOrAdd(aggregateRootType, _ => new ConcurrentDictionary<object, Guid>());
 
             var identity = default(Guid);
             while (!this.TryGet(aggregateRootType, naturalKeyType, naturalKey, out identity))
             {
                 var naturalKeyRecord = default(NaturalKeyRecord);
-                if (this.repository.TryAddNaturalKey(aggregateRootType, this.serializer.Serialize(naturalKeyType, naturalKey), this.checkpoint, out naturalKeyRecord))
+                if (this.repository.TryAddNaturalKey(
+                    aggregateRootType, 
+                    this.serializer.Serialize(naturalKeyType, naturalKey), 
+                    this.checkpoint, 
+                    out naturalKeyRecord))
                 {
                     // TODO (Cameron): Confirm that this is what we want to do here.
                     mappings.TryAdd(naturalKey, naturalKeyRecord.Identity);
@@ -73,6 +82,8 @@ namespace dddlib.Persistence.Sdk
         public bool TryGet(Type aggregateRootType, Type naturalKeyType, object naturalKey, out Guid identity)
         {
             Guard.Against.Null(() => aggregateRootType);
+
+            this.Validate(aggregateRootType, naturalKeyType, naturalKey);
 
             var mappings = this.store.GetOrAdd(aggregateRootType, _ => new ConcurrentDictionary<object, Guid>());
 
@@ -106,6 +117,32 @@ namespace dddlib.Persistence.Sdk
             }
 
             return this.checkpoint != startCheckpoint;
+        }
+
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
+        private void Validate(Type aggregateRootType, Type naturalKeyType, object naturalKey)
+        {
+            if (this.store.ContainsKey(aggregateRootType))
+            {
+                // NOTE (Cameron): We must have already performed validation for this aggregate root type.
+                return;
+            }
+
+            var serializedNaturalKey = this.serializer.Serialize(naturalKeyType, naturalKey);
+            var deserializedNaturalKey = this.serializer.Deserialize(naturalKeyType, serializedNaturalKey);
+
+            if (object.Equals(naturalKey, deserializedNaturalKey))
+            {
+                return;
+            }
+
+            throw new RuntimeException(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    @"The natural key of type '{0}' defined for aggregate root of type '{1}' does not meet equality expectations following identity map serialization.
+Please confirm that the natural key is correctly defined and implements value object equality.",
+                    naturalKeyType,
+                    aggregateRootType));
         }
     }
 }

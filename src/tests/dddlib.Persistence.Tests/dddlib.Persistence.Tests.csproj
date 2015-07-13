@@ -99,6 +99,7 @@
       <Link>Sdk\Feature.cs</Link>
     </Compile>
     <Compile Include="Bug\Bug0043.cs" />
+    <Compile Include="Bug\Bug0064.cs" />
     <Compile Include="Feature\SqlServerMementoPersistence.cs" />
     <Compile Include="Feature\MemoryMementoPersistence.cs" />
     <Compile Include="Feature\MemoryEventPersistence.cs" />

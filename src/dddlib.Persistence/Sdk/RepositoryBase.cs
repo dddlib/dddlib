@@ -51,6 +51,13 @@ namespace dddlib.Persistence.Sdk
             }
 
             var naturalKey = aggregateRootType.NaturalKey.GetValue(aggregateRoot);
+            if (naturalKey == null)
+            {
+                throw new ArgumentException(
+                    "Value cannot be null.", 
+                    string.Concat(Guard.Expression.Parse(() => aggregateRoot), ".", aggregateRootType.NaturalKey.PropertyName));
+            }
+
             return this.identityMap.GetOrAdd(aggregateRootType.RuntimeType, aggregateRootType.NaturalKey.PropertyType, naturalKey);
         }
 
