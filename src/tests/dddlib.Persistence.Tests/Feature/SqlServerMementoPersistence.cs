@@ -12,7 +12,6 @@ namespace dddlib.Persistence.Tests.Feature
     using dddlib.Persistence.Tests.Sdk;
     using FluentAssertions;
     using Xbehave;
-    using Xunit;
 
     // As someone who uses dddlib
     // In order save state

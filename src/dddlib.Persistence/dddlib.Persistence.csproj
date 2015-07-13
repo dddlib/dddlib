@@ -60,6 +60,7 @@
     <Compile Include="IEventStoreRepository.cs" />
     <Compile Include="IIdentityMap.cs" />
     <Compile Include="ConcurrencyException.cs" />
+    <Compile Include="Memory\MemoryNaturalKeyRepository.cs" />
     <Compile Include="Sdk\DefaultIdentityMap.cs" />
     <Compile Include="PersistenceException.cs" />
     <Compile Include="Sdk\INaturalKeyRepository.cs" />
