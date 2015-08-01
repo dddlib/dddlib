@@ -11,10 +11,10 @@ GO
 -- SQL: Creating the 'database version' table
 CREATE TABLE [dbo].[DatabaseVersion]
 (
-    [Version] [int] NOT NULL,
+    [Id] [int] NOT NULL,
     [Description] [varchar](MAX) NOT NULL CHECK (DATALENGTH([Description]) > 0),
     [Timestamp] [datetime2] NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT [PK_DatabaseVersion] PRIMARY KEY CLUSTERED ([Version])
+    CONSTRAINT [PK_DatabaseVersion] PRIMARY KEY CLUSTERED ([Id])
 );
 GO
 
@@ -36,10 +36,10 @@ GO
 -- SQL: Creating the 'natural key' table
 CREATE TABLE [dbo].[NaturalKey]
 (
+    [Id] [uniqueidentifier] NOT NULL CHECK ([Id] != 0x0) DEFAULT NEWSEQUENTIALID(),
     [AggregateRootTypeId] [int] NOT NULL,
     [Checkpoint] [bigint] NOT NULL,
-    [Identity] [uniqueidentifier] NOT NULL CHECK ([Identity] != 0x0) DEFAULT NEWID(),
-    [Value] [varchar](MAX) NOT NULL CHECK (DATALENGTH([Value]) > 0),
+    [SerializedValue] [varchar](MAX) NOT NULL CHECK (DATALENGTH([SerializedValue]) > 0),
     CONSTRAINT [PK_NaturalKey] PRIMARY KEY CLUSTERED ([AggregateRootTypeId], [Checkpoint]),
     CONSTRAINT [FK_NaturalKey_AggregateRootTypeId] FOREIGN KEY ([AggregateRootTypeId]) REFERENCES [dbo].[AggregateRootType] ([Id])
 );
@@ -55,7 +55,7 @@ CREATE PROCEDURE [dbo].[GetNaturalKeys]
 AS
 SET NOCOUNT ON;
 
-SELECT [dbo].[NaturalKey].[Identity], [dbo].[NaturalKey].[Value], [dbo].[NaturalKey].[Checkpoint]
+SELECT [dbo].[NaturalKey].[Id], [dbo].[NaturalKey].[SerializedValue], [dbo].[NaturalKey].[Checkpoint]
 FROM [dbo].[NaturalKey] INNER JOIN [dbo].[AggregateRootType] on [dbo].[NaturalKey].[AggregateRootTypeId] = [dbo].[AggregateRootType].[Id]
 WHERE [dbo].[NaturalKey].[Checkpoint] > @Checkpoint AND [dbo].[AggregateRootType].[Name] = @AggregateRootTypeName
 ORDER BY [dbo].[NaturalKey].[Checkpoint];
@@ -68,7 +68,7 @@ GO
 -- SQL: Creating the 'try add natural key' stored procedure
 CREATE PROCEDURE [dbo].[TryAddNaturalKey]
     @AggregateRootTypeName varchar(511),
-    @Value varchar(MAX),
+    @SerializedValue varchar(MAX),
     @Checkpoint bigint
 AS
 SET NOCOUNT ON;
@@ -82,12 +82,12 @@ SELECT @AggregateRootTypeId = [Id]
 FROM [dbo].[AggregateRootType]
 WHERE [Name] = @AggregateRootTypeName;
 
-DECLARE @NaturalKey TABLE ([Identity] uniqueidentifier, [Checkpoint] bigint);
+DECLARE @NaturalKey TABLE ([Id] uniqueidentifier, [Checkpoint] bigint);
 
 IF ((SELECT ISNULL(MAX([Checkpoint]), 0) AS [Checkpoint] FROM [dbo].[NaturalKey] WHERE [AggregateRootTypeId] = @AggregateRootTypeId) = @Checkpoint)
-INSERT INTO [dbo].[NaturalKey] ([AggregateRootTypeId], [Checkpoint], [Value])
-OUTPUT inserted.[Identity], inserted.[Checkpoint] INTO @NaturalKey
-SELECT @AggregateRootTypeId, @Checkpoint + CONVERT(bigint, 1), @Value;
+INSERT INTO [dbo].[NaturalKey] ([AggregateRootTypeId], [Checkpoint], [SerializedValue])
+OUTPUT inserted.[Id], inserted.[Checkpoint] INTO @NaturalKey
+SELECT @AggregateRootTypeId, @Checkpoint + CONVERT(bigint, 1), @SerializedValue;
 
 SELECT *
 FROM @NaturalKey;
@@ -100,7 +100,7 @@ GO
 SET NOCOUNT ON;
 
 -- SQL: Assigning the database version as the initial version
-INSERT INTO [dbo].[DatabaseVersion] ([Version], [Description])
+INSERT INTO [dbo].[DatabaseVersion] ([Id], [Description])
 SELECT 1, 'Initial version';
 GO
 
