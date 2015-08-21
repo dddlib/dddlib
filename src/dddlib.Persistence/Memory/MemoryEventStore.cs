@@ -90,11 +90,7 @@ namespace dddlib.Persistence.Memory
         /// <returns>The events.</returns>
         public IEnumerable<object> GetAll()
         {
-            return this.eventStore.Values
-                .SelectMany(comittedEvents => comittedEvents)
-                .OrderBy(@event => @event.Id)
-                .Select(@event => @event.Payload)
-                .ToList();
+            return this.GetEvents(0, null);
         }
 
         /// <summary>
@@ -106,12 +102,7 @@ namespace dddlib.Persistence.Memory
         {
             Guard.Against.NullOrEmptyOrNullElements(() => eventTypes);
 
-            return this.eventStore.Values
-                .SelectMany(comittedEvents => comittedEvents)
-                .Where(@event => eventTypes.Contains(@event.Type))
-                .OrderBy(@event => @event.Id)
-                .Select(@event => @event.Payload)
-                .ToList();
+            return this.GetEvents(0, eventTypes);
         }
 
         /// <summary>
@@ -121,12 +112,7 @@ namespace dddlib.Persistence.Memory
         /// <returns>The events.</returns>
         public IEnumerable<object> GetFrom(long eventId)
         {
-            return this.eventStore.Values
-                .SelectMany(comittedEvents => comittedEvents)
-                .Where(@event => @event.Id >= eventId)
-                .OrderBy(@event => @event.Id)
-                .Select(@event => @event.Payload)
-                .ToList();
+            return this.GetEvents(eventId, null);
         }
 
         /// <summary>
@@ -138,6 +124,13 @@ namespace dddlib.Persistence.Memory
         public IEnumerable<object> GetFrom(long eventId, IEnumerable<Type> eventTypes)
         {
             Guard.Against.NullOrEmptyOrNullElements(() => eventTypes);
+
+            return this.GetEvents(eventId, eventTypes);
+        }
+
+        private IEnumerable<object> GetEvents(long eventId, IEnumerable<Type> eventTypes)
+        {
+            Guard.Against.Negative(() => eventId);
 
             return this.eventStore.Values
                 .SelectMany(comittedEvents => comittedEvents)
