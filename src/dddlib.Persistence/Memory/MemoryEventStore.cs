@@ -16,85 +16,163 @@ namespace dddlib.Persistence.Memory
     /// </summary>
     public class MemoryEventStore : IEventStore
     {
-        private readonly Dictionary<Guid, Data> store = new Dictionary<Guid, Data>();
+        private readonly Dictionary<Guid, List<Event>> eventStore = new Dictionary<Guid, List<Event>>();
+
+        private long currentEventId;
 
         /// <summary>
-        /// Commits the specified identifier.
+        /// Commits the events to a stream.
         /// </summary>
-        /// <param name="id">The identifier.</param>
-        /// <param name="events">The events.</param>
-        /// <param name="state">The state.</param>
-        /// <param name="newState">The new state.</param>
-        public void CommitStream(Guid id, IEnumerable<object> events, string state, out string newState)
+        /// <param name="streamId">The stream identifier.</param>
+        /// <param name="events">The events to commit.</param>
+        /// <param name="preCommitState">The pre-commit state of the stream.</param>
+        /// <param name="postCommitState">The post-commit state of stream.</param>
+        public void Commit(Guid streamId, IEnumerable<object> events, string preCommitState, out string postCommitState)
         {
-            var data = default(Data);
-            if (this.store.TryGetValue(id, out data))
+            var comittedEvents = default(List<Event>);
+            if (this.eventStore.TryGetValue(streamId, out comittedEvents))
             {
-                if (data.State != state)
+                if (comittedEvents.Last().State != preCommitState)
                 {
                     throw new Exception("Invalid state");
                 }
             }
-            else if (state != null)
+            else if (preCommitState != null)
             {
                 // TODO (Cameron): Not sure if this should be here...
                 throw new Exception("Invalid state #2");
             }
+            else
+            {
+                comittedEvents = new List<Event>();
+                this.eventStore.Add(streamId, comittedEvents);
+            }
 
-            data = data ?? new Data();
+            var commitTimestamp = DateTime.UtcNow;
 
-            data.Events = data.Events ?? new List<object>();
-            data.Events.AddRange(events);
-            data.State = newState = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
-            data.Timestamp = DateTime.Now;
+            comittedEvents.AddRange(
+                events.Select(
+                    @event => 
+                    new Event
+                    {
+                        Id = ++this.currentEventId,
+                        Type = @event.GetType(),
+                        Payload = @event,
+                        State = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture),
+                        CommitTimestamp = commitTimestamp,
+                    }));
 
-            this.store[id] = data;
+            postCommitState = comittedEvents.Last().State;
         }
 
         /// <summary>
-        /// Gets the stream.
+        /// Gets the events for a stream.
         /// </summary>
-        /// <param name="id">The identifier.</param>
-        /// <param name="state">The state.</param>
+        /// <param name="streamId">The stream identifier.</param>
+        /// <param name="state">The state of the steam.</param>
         /// <returns>The events.</returns>
-        public IEnumerable<object> GetStream(Guid id, out string state)
+        public IEnumerable<object> Get(Guid streamId, out string state)
         {
-            var data = default(Data);
-            if (!this.store.TryGetValue(id, out data))
+            var comittedEvents = default(List<Event>);
+            if (!this.eventStore.TryGetValue(streamId, out comittedEvents))
             {
                 throw new Exception("Invalid state #2");
             }
 
-            state = data.State;
+            state = comittedEvents.Last().State;
 
-            return data.Events.ToArray();
+            return comittedEvents.Select(@event => @event.Payload).ToList();
         }
 
         /// <summary>
-        /// Replays the events to.
+        /// Gets all the events.
         /// </summary>
-        /// <param name="views">The views.</param>
-        public void ReplayEventsTo(params object[] views)
+        /// <returns>The events.</returns>
+        public IEnumerable<object> GetAll()
         {
-            foreach (var view in views)
-            {
-                foreach (var @event in this.store
-                    .OrderBy(e => e.Value.Timestamp)
-                    .SelectMany(e => e.Value.Events))
-                {
-                    // TODO (Cameron): This is not very sensible.
-                    new DefaultEventDispatcher(view.GetType(), "Handle", BindingFlags.Instance | BindingFlags.Public).Dispatch(view, @event);
-                }
-            }
+            return this.eventStore.Values
+                .SelectMany(comittedEvents => comittedEvents)
+                .OrderBy(@event => @event.Id)
+                .Select(@event => @event.Payload)
+                .ToList();
         }
 
-        private class Data
+        /// <summary>
+        /// Gets all the events of the specified event types.
+        /// </summary>
+        /// <param name="eventTypes">The event types.</param>
+        /// <returns>The events.</returns>
+        public IEnumerable<object> GetAll(IEnumerable<Type> eventTypes)
         {
-            public List<object> Events { get; set; }
+            Guard.Against.NullOrEmptyOrNullElements(() => eventTypes);
+
+            return this.eventStore.Values
+                .SelectMany(comittedEvents => comittedEvents)
+                .Where(@event => eventTypes.Contains(@event.Type))
+                .OrderBy(@event => @event.Id)
+                .Select(@event => @event.Payload)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Gets the events from the specified event identifier.
+        /// </summary>
+        /// <param name="eventId">The event identifier.</param>
+        /// <returns>The events.</returns>
+        public IEnumerable<object> GetFrom(long eventId)
+        {
+            return this.eventStore.Values
+                .SelectMany(comittedEvents => comittedEvents)
+                .Where(@event => @event.Id >= eventId)
+                .OrderBy(@event => @event.Id)
+                .Select(@event => @event.Payload)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Gets the events from the specified event identifier of the specified event types.
+        /// </summary>
+        /// <param name="eventId">The event identifier.</param>
+        /// <param name="eventTypes">The event types.</param>
+        /// <returns>The events.</returns>
+        public IEnumerable<object> GetFrom(long eventId, IEnumerable<Type> eventTypes)
+        {
+            Guard.Against.NullOrEmptyOrNullElements(() => eventTypes);
+
+            return this.eventStore.Values
+                .SelectMany(comittedEvents => comittedEvents)
+                .Where(@event => eventTypes.Contains(@event.Type))
+                .Where(@event => @event.Id >= eventId)
+                .OrderBy(@event => @event.Id)
+                .Select(@event => @event.Payload)
+                .ToList();
+        }
+
+        ////public void ReplayEventsTo(params object[] views)
+        ////{
+        ////    foreach (var view in views)
+        ////    {
+        ////        foreach (var @event in this.store
+        ////            .OrderBy(e => e.Value.Timestamp)
+        ////            .SelectMany(e => e.Value.Events))
+        ////        {
+        ////            // TODO (Cameron): This is not very sensible.
+        ////            new DefaultEventDispatcher(view.GetType(), "Handle", BindingFlags.Instance | BindingFlags.Public).Dispatch(view, @event);
+        ////        }
+        ////    }
+        ////}
+
+        private class Event
+        {
+            public long Id { get; set; }
+
+            public Type Type { get; set; }
+
+            public object Payload { get; set; }
 
             public string State { get; set; }
 
-            public DateTime Timestamp { get; set; }
+            public DateTime CommitTimestamp { get; set; }
         }
     }
 }
