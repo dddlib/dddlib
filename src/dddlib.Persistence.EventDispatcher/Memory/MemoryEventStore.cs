@@ -1,4 +1,8 @@
-﻿namespace dddlib.Persistence.EventDispatcher.Memory
+﻿// <copyright file="MemoryEventStore.cs" company="dddlib contributors">
+//  Copyright (c) dddlib contributors. All rights reserved.
+// </copyright>
+
+namespace dddlib.Persistence.EventDispatcher.Memory
 {
     using dddlib.Persistence.EventDispatcher.Sdk;
 

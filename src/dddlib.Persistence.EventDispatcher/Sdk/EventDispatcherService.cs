@@ -1,4 +1,8 @@
-﻿namespace dddlib.Persistence.EventDispatcher.Sdk
+﻿// <copyright file="EventDispatcherService.cs" company="dddlib contributors">
+//  Copyright (c) dddlib contributors. All rights reserved.
+// </copyright>
+
+namespace dddlib.Persistence.EventDispatcher.Sdk
 {
     using System;
     using System.Threading;
@@ -32,12 +36,16 @@
             INotificationService notificationService, 
             int batchSize)
         {
+            Guard.Against.Null(() => eventStore);
+            Guard.Against.Null(() => eventDispatcher);
+            Guard.Against.Null(() => notificationService);
+
             this.eventStore = eventStore;
             this.eventDispatcher = eventDispatcher;
             this.notificationService = notificationService;
             this.batchSize = batchSize;
 
-            this.timer = new Timer(OnTimeout, null, Timeout.Infinite, Timeout.Infinite);
+            this.timer = new Timer(this.OnTimeout, null, Timeout.Infinite, Timeout.Infinite);
         }
 
         /// <summary>
@@ -65,6 +73,14 @@
             }
         }
 
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            this.Stop();
+        }
+
         private void OnEventComitted(object sender, EventCommittedEventArgs e)
         {
             Console.WriteLine("Notify (Event Committed): {0}", e.EventId);
@@ -79,7 +95,7 @@
             this.ProcessBatch(e.BatchId);
         }
 
-        private void OnTimeout(Object state)
+        private void OnTimeout(object state)
         {
             Console.WriteLine("Buffer (Timeout)");
 
@@ -162,19 +178,6 @@
                 this.eventDispatcher.Dispatch(@event.Id, @event.Payload);
                 this.eventStore.MarkEventAsDispatched(@event.Id);
             }
-        }
-
-        //private void OnTimer(/* batchId */)
-        //{
-        //    this.TryRemoveFromBuffer();
-        //}
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
-        public void Dispose()
-        {
-            this.Stop();
         }
     }
 }

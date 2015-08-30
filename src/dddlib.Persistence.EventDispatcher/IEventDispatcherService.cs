@@ -1,4 +1,8 @@
-﻿namespace dddlib.Persistence.EventDispatcher
+﻿// <copyright file="IEventDispatcherService.cs" company="dddlib contributors">
+//  Copyright (c) dddlib contributors. All rights reserved.
+// </copyright>
+
+namespace dddlib.Persistence.EventDispatcher
 {
     /// <summary>
     /// Exposes the public members of the event dispatcher service.

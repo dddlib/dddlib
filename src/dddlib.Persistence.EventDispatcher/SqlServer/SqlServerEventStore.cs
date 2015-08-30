@@ -1,4 +1,8 @@
-﻿namespace dddlib.Persistence.EventDispatcher.SqlServer
+﻿// <copyright file="SqlServerEventStore.cs" company="dddlib contributors">
+//  Copyright (c) dddlib contributors. All rights reserved.
+// </copyright>
+
+namespace dddlib.Persistence.EventDispatcher.SqlServer
 {
     using System;
     using System.Collections.Generic;
@@ -19,6 +23,7 @@
         /// <param name="connectionString">The connection string.</param>
         public SqlServerEventStore(string connectionString)
         {
+            // TODO (Cameron): Implement the storage solution to catch invalid connection string and database setup.
             this.connectionString = connectionString;
         }
 
@@ -29,7 +34,7 @@
         /// <returns>The events batch.</returns>
         public Batch GetNextUndispatchedEventsBatch(int batchSize)
         {
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = new SqlConnection(this.connectionString))
             using (var command = new SqlCommand("dbo.GetUndispatchedEvents", connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
@@ -72,7 +77,7 @@
         /// <param name="eventId">The event identifier.</param>
         public void MarkEventAsDispatched(long eventId)
         {
-            using (var connection = new SqlConnection(connectionString))
+            using (var connection = new SqlConnection(this.connectionString))
             using (var command = new SqlCommand("dbo.MarkEventAsDispatched", connection))
             {
                 command.CommandType = CommandType.StoredProcedure;

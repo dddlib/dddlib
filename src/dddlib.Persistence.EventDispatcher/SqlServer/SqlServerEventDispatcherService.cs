@@ -1,4 +1,8 @@
-﻿namespace dddlib.Persistence.EventDispatcher.SqlServer
+﻿// <copyright file="SqlServerEventDispatcherService.cs" company="dddlib contributors">
+//  Copyright (c) dddlib contributors. All rights reserved.
+// </copyright>
+
+namespace dddlib.Persistence.EventDispatcher.SqlServer
 {
     using dddlib.Persistence.EventDispatcher.Sdk;
 
