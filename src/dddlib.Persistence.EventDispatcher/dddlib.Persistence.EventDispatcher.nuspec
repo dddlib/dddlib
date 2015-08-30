@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>dddlib.Persistence.EventDispatcher</id>
+    <title>dddlib.Persistence.EventDispatcher</title>
+    <version>0.0.1</version>
+    <authors>Cameron Fletcher, 
+dddlib contributors</authors>
+    <projectUrl>https://github.com/dddlib/dddlib/wiki</projectUrl>
+    <iconUrl>http://nuget.cameronfletcher.com/icons/dddlib.png</iconUrl>
+    <licenseUrl>https://raw.githubusercontent.com/dddlib/dddlib/dev/LICENSE.mit.txt</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>The persistence companion (event dispatcher) for dddlib, a domain driven design library for .NET</description>
+    <releaseNotes>TBD</releaseNotes>
+    <copyright>Copyright (c) dddlib contributors.</copyright>
+    <tags>domain driven design library dddlib persistence event dispatcher</tags>
+    <dependencies></dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System" targetFramework="net45" />
+      <frameworkAssembly assemblyName="System.Data" targetFramework="net45" />
+    </frameworkAssemblies>
+  </metadata>
+  <files>
+    <file src="bin\Release\dddlib.Persistence.EventDispatcher.pdb" target="lib\net45" />
+    <file src="SqlServer\Database\Scripts\Version*.sql" target="sql" />
+  </files>
+</package>
