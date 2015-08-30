@@ -35,18 +35,23 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         public Batch GetNextUndispatchedEventsBatch(int batchSize)
         {
             using (var connection = new SqlConnection(this.connectionString))
-            using (var command = new SqlCommand("dbo.GetUndispatchedEvents", connection))
+            using (var command = new SqlCommand("dbo.GetNextUndispatchedEventsBatch", connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
                 command.Parameters.Add("MaxBatchSize", SqlDbType.Int).Value = batchSize;
 
                 connection.Open();
 
-                var batch = new Batch();
-                var events = new List<Event>();
-
                 using (var reader = command.ExecuteReader())
                 {
+                    if (!reader.HasRows)
+                    {
+                        return null;
+                    }
+
+                    var batch = new Batch();
+                    var events = new List<Event>();
+
                     while (reader.Read())
                     {
                         batch.Id = Convert.ToInt64(reader["BatchId"]);
@@ -63,11 +68,11 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
                                 Payload = reader["Payload"].ToString(),
                             });
                     }
+
+                    batch.Events = events.ToArray();
+
+                    return batch;
                 }
-
-                batch.Events = events.ToArray();
-
-                return batch;
             }
         }
 
