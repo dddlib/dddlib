@@ -66,9 +66,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="SqlServer\Database\Scripts\SqlDependency.sql" />
-    <Content Include="SqlServer\Database\Scripts\SQLQuery1.sql" />
-    <Content Include="SqlServer\Database\Scripts\Version01.sql" />
+    <None Include="SqlServer\Database\Scripts\SQLQuery1.sql" />
+    <EmbeddedResource Include="SqlServer\Database\Scripts\Version01.sql" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
