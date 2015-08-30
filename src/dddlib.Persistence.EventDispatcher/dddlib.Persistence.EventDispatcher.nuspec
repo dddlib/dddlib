@@ -15,13 +15,9 @@ dddlib contributors</authors>
     <copyright>Copyright (c) dddlib contributors.</copyright>
     <tags>domain driven design library dddlib persistence event dispatcher</tags>
     <dependencies></dependencies>
-    <frameworkAssemblies>
-      <frameworkAssembly assemblyName="System" targetFramework="net45" />
-      <frameworkAssembly assemblyName="System.Data" targetFramework="net45" />
-    </frameworkAssemblies>
+    <frameworkAssemblies></frameworkAssemblies>
   </metadata>
   <files>
     <file src="bin\Release\dddlib.Persistence.EventDispatcher.pdb" target="lib\net45" />
-    <file src="SqlServer\Database\Scripts\Version*.sql" target="sql" />
   </files>
 </package>
