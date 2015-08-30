@@ -56,10 +56,10 @@
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="AggregateRootNotFoundException.cs" />
-    <Compile Include="EventStoreRepository.cs" />
-    <Compile Include="IEventStore.cs" />
+    <Compile Include="Sdk\EventStoreRepository.cs" />
+    <Compile Include="Sdk\IEventStore.cs" />
     <Compile Include="IEventStoreRepository.cs" />
-    <Compile Include="IIdentityMap.cs" />
+    <Compile Include="Sdk\IIdentityMap.cs" />
     <Compile Include="ConcurrencyException.cs" />
     <Compile Include="Memory\MemoryNaturalKeyRepository.cs" />
     <Compile Include="Sdk\AggregateRootFactory.cs" />
