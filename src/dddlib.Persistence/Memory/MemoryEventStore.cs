@@ -27,7 +27,7 @@ namespace dddlib.Persistence.Memory
         /// <param name="events">The events to commit.</param>
         /// <param name="preCommitState">The pre-commit state of the stream.</param>
         /// <param name="postCommitState">The post-commit state of stream.</param>
-        public void Commit(Guid streamId, IEnumerable<object> events, string preCommitState, out string postCommitState)
+        public void CommitStream(Guid streamId, IEnumerable<object> events, string preCommitState, out string postCommitState)
         {
             var comittedEvents = default(List<Event>);
             if (this.eventStore.TryGetValue(streamId, out comittedEvents))
@@ -71,7 +71,7 @@ namespace dddlib.Persistence.Memory
         /// <param name="streamId">The stream identifier.</param>
         /// <param name="state">The state of the steam.</param>
         /// <returns>The events.</returns>
-        public IEnumerable<object> Get(Guid streamId, out string state)
+        public IEnumerable<object> GetStream(Guid streamId, out string state)
         {
             var comittedEvents = default(List<Event>);
             if (!this.eventStore.TryGetValue(streamId, out comittedEvents))
@@ -84,6 +84,7 @@ namespace dddlib.Persistence.Memory
             return comittedEvents.Select(@event => @event.Payload).ToList();
         }
 
+        /*
         /// <summary>
         /// Gets all the events.
         /// </summary>
@@ -154,6 +155,7 @@ namespace dddlib.Persistence.Memory
         ////        }
         ////    }
         ////}
+        */
 
         private class Event
         {

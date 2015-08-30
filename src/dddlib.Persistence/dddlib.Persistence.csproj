@@ -75,7 +75,7 @@
     <Compile Include="Memory\MemoryIdentityMap.cs" />
     <Compile Include="Memory\MemoryRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Repository.cs" />
+    <Compile Include="Sdk\Repository.cs" />
     <Compile Include="Sdk\RepositoryBase.cs" />
     <Compile Include="Sdk\NaturalKeyRecord.cs" />
     <Compile Include="SqlServer\Database\Scripts.cs" />

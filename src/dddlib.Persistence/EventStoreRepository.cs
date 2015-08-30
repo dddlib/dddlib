@@ -48,7 +48,7 @@ namespace dddlib.Persistence
 
             // TODO (Cameron): Try catch around commit stream.
             var newState = default(string);
-            this.eventStore.Commit(id, events, state, out newState);
+            this.eventStore.CommitStream(id, events, state, out newState);
 
             // TODO (Cameron): Save the memento with the new commits if the state is the same as the old state and replace the state with the new state.
             aggregateRoot.CommitEvents(newState);
@@ -65,7 +65,7 @@ namespace dddlib.Persistence
             var id = this.GetId<T>(naturalKey);
 
             var state = default(string);
-            var events = this.eventStore.Get(id, out state);
+            var events = this.eventStore.GetStream(id, out state);
 
             return this.Reconstitute<T>(null, events, state);
         }

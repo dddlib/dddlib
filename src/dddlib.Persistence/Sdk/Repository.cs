@@ -2,12 +2,11 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Persistence
+namespace dddlib.Persistence.Sdk
 {
     using System;
     using System.Globalization;
     using System.Linq;
-    using dddlib.Persistence.Sdk;
 
     /// <summary>
     /// Represents an aggregate root repository.
