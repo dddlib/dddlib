@@ -1,4 +1,4 @@
-﻿// <copyright file="BatchPrearedEventArgs.cs" company="dddlib contributors">
+﻿// <copyright file="BatchPreparedEventArgs.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -9,13 +9,13 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
     /// <summary>
     /// Represents the set of arguments passed to the batch prepared event handler.
     /// </summary>
-    public class BatchPrearedEventArgs : EventArgs
+    public class BatchPreparedEventArgs : EventArgs
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="BatchPrearedEventArgs"/> class.
+        /// Initializes a new instance of the <see cref="BatchPreparedEventArgs"/> class.
         /// </summary>
         /// <param name="batchId">The batch identifier.</param>
-        public BatchPrearedEventArgs(long batchId)
+        public BatchPreparedEventArgs(long batchId)
         {
             this.BatchId = batchId;
         }

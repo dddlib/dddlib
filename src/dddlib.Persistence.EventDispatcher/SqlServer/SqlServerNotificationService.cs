@@ -42,7 +42,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <summary>
         /// Occurs when a batch is prepared.
         /// </summary>
-        public event EventHandler<BatchPrearedEventArgs> OnBatchPrepared;
+        public event EventHandler<BatchPreparedEventArgs> OnBatchPrepared;
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
@@ -115,7 +115,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
 
                         if (this.OnBatchPrepared != null)
                         {
-                            this.OnBatchPrepared.Invoke(this, new BatchPrearedEventArgs(this.currentBatchId));
+                            this.OnBatchPrepared.Invoke(this, new BatchPreparedEventArgs(this.currentBatchId));
                         }
                     }
                 }

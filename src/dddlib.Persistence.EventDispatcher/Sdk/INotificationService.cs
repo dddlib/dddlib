@@ -19,6 +19,6 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
         /// <summary>
         /// Occurs when a batch is prepared.
         /// </summary>
-        event EventHandler<BatchPrearedEventArgs> OnBatchPrepared;
+        event EventHandler<BatchPreparedEventArgs> OnBatchPrepared;
     }
 }

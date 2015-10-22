@@ -88,7 +88,7 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
             this.BufferNextBatch();
         }
 
-        private void OnBatchPrepared(object sender, BatchPrearedEventArgs e)
+        private void OnBatchPrepared(object sender, BatchPreparedEventArgs e)
         {
             Console.WriteLine("Notify (Batch Prepared): {0}", e.BatchId);
 
@@ -175,7 +175,20 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
 
             foreach (var @event in batch.Events)
             {
-                this.eventDispatcher.Dispatch(@event.Id, @event.Payload);
+                try
+                {
+                    this.eventDispatcher.Dispatch(@event.Id, @event.Payload);
+                }
+                catch (Exception)
+                {
+                    // NOTE (Cameron): Something went wrong in the dispatcher implementation.
+                    // TODO (Cameron): Log?
+                    // TODO (Cameron): Consider retry?
+                    break;
+                }
+
+                // NOTE (Cameron): If this fails we will likely double dispatch.
+                // TODO (Cameron): Retry? Fall over?
                 this.eventStore.MarkEventAsDispatched(@event.Id);
             }
         }
