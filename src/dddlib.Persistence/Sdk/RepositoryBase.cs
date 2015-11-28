@@ -14,6 +14,8 @@ namespace dddlib.Persistence.Sdk
     /// </summary>
     public abstract class RepositoryBase
     {
+        // NOTE (Cameron): The aggregate root factory used to be part of this class but I've split out for reuse. Not sure it's worth injecting.
+        private readonly AggregateRootFactory factory = new AggregateRootFactory();
         private readonly IIdentityMap identityMap;
 
         /// <summary>
@@ -50,11 +52,21 @@ namespace dddlib.Persistence.Sdk
                         type));
             }
 
+            if (aggregateRootType.UninitializedFactory == null)
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Cannot save aggregate root of type '{0}' as there is no uninitialized factory defined for reconstitution.", 
+                        type));
+            }
+
             var naturalKey = aggregateRootType.NaturalKey.GetValue(aggregateRoot);
             if (naturalKey == null)
             {
+                // NOTE (Cameron): This mimics the Guard clause functionality by design.
                 throw new ArgumentException(
-                    "Value cannot be null.", 
+                    "Value cannot be null.",
                     string.Concat(Guard.Expression.Parse(() => aggregateRoot), ".", aggregateRootType.NaturalKey.PropertyName));
             }
 
@@ -86,7 +98,7 @@ namespace dddlib.Persistence.Sdk
                 throw new ArgumentException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        "Invalid value for aggregate root of type '{0}'. Value type must match natural key type of '{1}' but is type of '{2}'.",
+                        "Invalid value for aggregate root of type '{0}'. That value type must match natural key type of '{1}' but is type of '{2}'.",
                         typeof(T),
                         aggregateRootType.NaturalKey.PropertyType,
                         naturalKey.GetType()),
@@ -114,21 +126,7 @@ namespace dddlib.Persistence.Sdk
         protected T Reconstitute<T>(object memento, IEnumerable<object> events, string state)
             where T : AggregateRoot
         {
-            // TODO (Cameron): Make this more performant. Consider using some type of IL instantiation.
-            var runtimeType = Application.Current.GetAggregateRootType(typeof(T));
-            if (runtimeType.UninitializedFactory == null)
-            {
-                throw new RuntimeException(
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "The aggregate root of type '{0}' does not have a factory method registered with the runtime.",
-                        typeof(T)));
-            }
-
-            var uninitializedFactory = (Func<T>)runtimeType.UninitializedFactory;
-            var aggregateRoot = uninitializedFactory.Invoke();
-            aggregateRoot.Initialize(memento, events, state);
-            return aggregateRoot;
+            return this.factory.Create<T>(memento, events, state);
         }
     }
 }

@@ -98,6 +98,7 @@
     <Compile Include="..\dddlib.Tests\Sdk\Feature.cs">
       <Link>Sdk\Feature.cs</Link>
     </Compile>
+    <Compile Include="Bug\BugConfiguration.cs" />
     <Compile Include="Bug\Bug0043.cs" />
     <Compile Include="Bug\Bug0064.cs" />
     <Compile Include="Feature\SqlServerEventPersistence.cs" />
@@ -105,7 +106,6 @@
     <Compile Include="Feature\MemoryMementoPersistence.cs" />
     <Compile Include="Feature\MemoryEventPersistence.cs" />
     <Compile Include="Integration\StorageTests.cs" />
-    <Compile Include="Sdk\EventPersistenceFeature.cs" />
     <Compile Include="Sdk\Integration.cs" />
     <Compile Include="Integration\SqlServerIdentityMapTests.cs" />
     <Compile Include="Integration\UpgradeDatabaseVersionTests.cs" />

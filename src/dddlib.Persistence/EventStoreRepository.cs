@@ -54,9 +54,19 @@ namespace dddlib.Persistence
 
             ////if (heuristic.ShouldSaveSnapshot)
             ////{
-            ////    int streamRevision;
-            ////    var memento = aggregateRoot.GetMemento(out streamRevision);
-            ////    this.eventStore.AddSnapshot(streamId, streamRevision, memento);
+            ////    ////// option 1. simple
+            ////    ////var memento = aggregateRoot.GetMemento(out streamRevision);
+            ////    ////this.eventStore.AddSnapshot(streamId, aggregateRoot.Revision, memento);
+
+            ////    // option 2. complex
+            ////    var memento = aggregateRoot.GetMemento();
+            ////    var recycledMemento = new AggregateRootFactory().Create<T>(memento, new object[0], "test").GetMemento();
+            ////    if (memento != recycledMemento)
+            ////    {
+            ////        throw new Exception("Memento implementation is wrong!");
+            ////    }
+
+            ////    this.eventStore.AddSnapshot(streamId, aggregateRoot.Revision, memento);
             ////}
         }
 

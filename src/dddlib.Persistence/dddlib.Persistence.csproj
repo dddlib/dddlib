@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;GUARD_STRICT</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -37,6 +37,7 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <CodeAnalysisRuleSet>..\dddlib.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>bin\Release\dddlib.Persistence.xml</DocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -61,6 +62,7 @@
     <Compile Include="IIdentityMap.cs" />
     <Compile Include="ConcurrencyException.cs" />
     <Compile Include="Memory\MemoryNaturalKeyRepository.cs" />
+    <Compile Include="Sdk\AggregateRootFactory.cs" />
     <Compile Include="Sdk\DefaultIdentityMap.cs" />
     <Compile Include="PersistenceException.cs" />
     <Compile Include="Sdk\INaturalKeyRepository.cs" />
