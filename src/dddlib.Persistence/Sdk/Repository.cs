@@ -68,7 +68,7 @@ namespace dddlib.Persistence.Sdk
             var state = default(string);
             var memento = this.Load(id, out state);
             
-            return this.Reconstitute<T>(memento, Enumerable.Empty<object>(), state);
+            return this.Reconstitute<T>(memento, 0, Enumerable.Empty<object>(), state);
         }
 
         /// <summary>

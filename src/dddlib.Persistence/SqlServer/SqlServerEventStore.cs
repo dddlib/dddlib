@@ -6,6 +6,7 @@ namespace dddlib.Persistence.SqlServer
 {
     using System;
     using System.Collections.Generic;
+    using dddlib.Persistence.Sdk;
 
     // TODO (Cameron): Make public. Implement.
     internal class SqlServerEventStore : IEventStore
@@ -20,12 +21,12 @@ namespace dddlib.Persistence.SqlServer
             throw new NotImplementedException();
         }
 
-        public void AddSnapshot(Guid streamId, int streamRevision, object memento)
+        public void AddSnapshot(Guid streamId, Snapshot snapshot)
         {
             throw new NotImplementedException();
         }
 
-        public object GetSnapshot(Guid streamId, out int streamRevision)
+        public Snapshot GetSnapshot(Guid streamId)
         {
             throw new NotImplementedException();
         }

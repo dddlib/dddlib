@@ -106,6 +106,7 @@
     <Compile Include="Feature\MemoryMementoPersistence.cs" />
     <Compile Include="Feature\MemoryEventPersistence.cs" />
     <Compile Include="Integration\StorageTests.cs" />
+    <Compile Include="Sdk\AssertionExtensions.cs" />
     <Compile Include="Sdk\Integration.cs" />
     <Compile Include="Integration\SqlServerIdentityMapTests.cs" />
     <Compile Include="Integration\UpgradeDatabaseVersionTests.cs" />

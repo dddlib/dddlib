@@ -68,13 +68,15 @@ namespace dddlib
             get { return this.mapProvider.Value; }
         }
 
-        internal void Initialize(object memento, IEnumerable<object> events, string state)
+        internal void Initialize(object memento, int revision, IEnumerable<object> events, string state)
         {
             Guard.Against.Null(() => events);
+            Guard.Against.Negative(() => revision);
 
             if (memento != null)
             {
                 this.SetState(memento);
+                this.Revision = revision;
             }
 
             foreach (var @event in events)

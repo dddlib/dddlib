@@ -6,6 +6,7 @@ namespace dddlib.Persistence
 {
     using System;
     using System.Collections.Generic;
+    using dddlib.Persistence.Sdk;
 
     /// <summary>
     /// Exposes the public members of the event store.
@@ -34,16 +35,14 @@ namespace dddlib.Persistence
         /// Adds a snapshot for a stream.
         /// </summary>
         /// <param name="streamId">The stream identifier.</param>
-        /// <param name="streamRevision">The stream revision.</param>
-        /// <param name="memento">The memento for the snapshot.</param>
-        void AddSnapshot(Guid streamId, int streamRevision, object memento);
+        /// <param name="snapshot">The snapshot.</param>
+        void AddSnapshot(Guid streamId, Snapshot snapshot);
 
         /// <summary>
         /// Gets the latest snapshot for a stream.
         /// </summary>
         /// <param name="streamId">The stream identifier.</param>
-        /// <param name="streamRevision">The stream revision.</param>
-        /// <returns>The memento for the snapshot.</returns>
-        object GetSnapshot(Guid streamId, out int streamRevision);
+        /// <returns>The snapshot.</returns>
+        Snapshot GetSnapshot(Guid streamId);
     }
 }

@@ -156,7 +156,7 @@ namespace dddlib.Tests.Unit
             
             // act
             var aggregateRoot = Activator.CreateInstance(typeof(PersistedAggregate), true) as PersistedAggregate;
-            aggregateRoot.Initialize(memento, events, "state");
+            aggregateRoot.Initialize(memento, 0, events, "state");
             aggregateRoot.MakeSomethingHappen();
 
             // assert

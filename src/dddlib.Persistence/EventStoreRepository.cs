@@ -4,7 +4,10 @@
 
 namespace dddlib.Persistence
 {
+    using System.Globalization;
+    using System.Linq;
     using dddlib.Persistence.Sdk;
+    using dddlib.Runtime;
 
     /// <summary>
     /// Represents an event store repository.
@@ -40,9 +43,20 @@ namespace dddlib.Persistence
             var events = aggregateRoot.GetUncommittedEvents();
 
             var state = aggregateRoot.State;
-            if (state == null)
+            if (state == null && !events.Any())
             {
-                // NOTE (Cameron): This is the initial commit, for what it's worth.
+                // NOTE (Cameron): This is the initial commit so there should be events.
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Cannot save initial commit for aggregate root of type '{0}' as it has no events.",
+                        aggregateRoot.GetType()));
+            }
+
+            if (!events.Any())
+            {
+                // TODO (Cameron): Nothing to commit. Log info?
+                return;
             }
 
             // TODO (Cameron): Try catch around commit stream.
@@ -80,13 +94,11 @@ namespace dddlib.Persistence
         {
             var streamId = this.GetId<T>(naturalKey);
 
-            int streamRevision;
-            var memento = this.eventStore.GetSnapshot(streamId, out streamRevision);
-
             var state = default(string);
-            var events = this.eventStore.GetStream(streamId, streamRevision, out state);
+            var snapshot = this.eventStore.GetSnapshot(streamId) ?? new Snapshot();
+            var events = this.eventStore.GetStream(streamId, snapshot.StreamRevision, out state);
 
-            return this.Reconstitute<T>(memento, events, state);
+            return this.Reconstitute<T>(snapshot.Memento, snapshot.StreamRevision, events, state);
         }
     }
 }

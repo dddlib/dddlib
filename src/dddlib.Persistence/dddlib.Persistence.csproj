@@ -68,6 +68,7 @@
     <Compile Include="Sdk\INaturalKeyRepository.cs" />
     <Compile Include="Sdk\DefaultNaturalKeySerializer.cs" />
     <Compile Include="Sdk\INaturalKeySerializer.cs" />
+    <Compile Include="Sdk\Snapshot.cs" />
     <Compile Include="SqlServer\SqlServerGuardExtensions.cs" />
     <Compile Include="SqlServer\SqlServerEventStore.cs" />
     <Compile Include="SqlServer\SqlServerIdentityMap.cs" />

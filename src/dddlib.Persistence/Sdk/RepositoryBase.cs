@@ -119,14 +119,15 @@ namespace dddlib.Persistence.Sdk
         /// Reconstitutes the specified aggregate root.
         /// </summary>
         /// <typeparam name="T">The type of aggregate root.</typeparam>
-        /// <param name="memento">The memento, or null.</param>
+        /// <param name="memento">The memento.</param>
+        /// <param name="revision">The revision.</param>
         /// <param name="events">The events that contain the state of the aggregate root.</param>
         /// <param name="state">A checksum that correlates to the state of the aggregate root in the persistence layer for the given events.</param>
         /// <returns>The specified aggregate root.</returns>
-        protected T Reconstitute<T>(object memento, IEnumerable<object> events, string state)
+        protected T Reconstitute<T>(object memento, int revision, IEnumerable<object> events, string state)
             where T : AggregateRoot
         {
-            return this.factory.Create<T>(memento, events, state);
+            return this.factory.Create<T>(memento, revision, events, state);
         }
     }
 }

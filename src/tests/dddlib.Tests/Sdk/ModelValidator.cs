@@ -27,7 +27,7 @@ namespace dddlib.Tests.Sdk
                 throw new Exception("No memento defined!");
             }
 
-            var sameAggregate = Factory.Create<T>(memento, Enumerable.Empty<object>(), "test");
+            var sameAggregate = Factory.Create<T>(memento, aggregate.Revision, Enumerable.Empty<object>(), "test");
             var sameMemento = sameAggregate.GetMemento();
 
             var expected = Serializer.Serialize(memento);

@@ -23,10 +23,11 @@ namespace dddlib.Persistence.Sdk
         /// </summary>
         /// <typeparam name="T">The type of aggregate root.</typeparam>
         /// <param name="memento">The memento.</param>
+        /// <param name="revision">The revision.</param>
         /// <param name="events">The events.</param>
         /// <param name="state">The state.</param>
         /// <returns>The aggregate root.</returns>
-        public T Create<T>(object memento, IEnumerable<object> events, string state)
+        public T Create<T>(object memento, int revision, IEnumerable<object> events, string state)
             where T : AggregateRoot
         {
             var runtimeType = Application.Current.GetAggregateRootType(typeof(T));
@@ -41,7 +42,7 @@ namespace dddlib.Persistence.Sdk
 
             var uninitializedFactory = (Func<T>)runtimeType.UninitializedFactory;
             var aggregateRoot = uninitializedFactory.Invoke();
-            aggregateRoot.Initialize(memento, events, state);
+            aggregateRoot.Initialize(memento, revision, events, state);
             return aggregateRoot;
         }
     }

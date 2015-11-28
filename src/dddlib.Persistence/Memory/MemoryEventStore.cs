@@ -9,6 +9,7 @@ namespace dddlib.Persistence.Memory
     using System.Globalization;
     using System.Linq;
     using System.Reflection;
+    using dddlib.Persistence.Sdk;
     using dddlib.Sdk;
 
     /// <summary>
@@ -17,7 +18,7 @@ namespace dddlib.Persistence.Memory
     public class MemoryEventStore : IEventStore
     {
         private readonly Dictionary<Guid, List<Event>> eventStreams = new Dictionary<Guid, List<Event>>();
-        private readonly Dictionary<Guid, Dictionary<int, object>> snapshots = new Dictionary<Guid, Dictionary<int, object>>();
+        private readonly Dictionary<Guid, List<Snapshot>> snapshots = new Dictionary<Guid, List<Snapshot>>();
 
         private long currentEventId;
 
@@ -85,48 +86,48 @@ namespace dddlib.Persistence.Memory
 
             state = eventStream.Last().State;
 
-            return eventStream.Skip(streamRevision + 1).Select(@event => @event.Payload).ToList();
+            return eventStream.Skip(streamRevision).Select(@event => @event.Payload).ToList();
         }
 
         /// <summary>
         /// Adds a snapshot for a stream.
         /// </summary>
         /// <param name="streamId">The stream identifier.</param>
-        /// <param name="streamRevision">The stream revision.</param>
-        /// <param name="memento">The memento for the snapshot.</param>
-        public void AddSnapshot(Guid streamId, int streamRevision, object memento)
+        /// <param name="snapshot">The snapshot.</param>
+        public void AddSnapshot(Guid streamId, Snapshot snapshot)
         {
-            Guard.Against.Null(() => memento);
+            Guard.Against.Null(() => snapshot);
 
-            var streamSnapshots = default(Dictionary<int, object>);
+            var streamSnapshots = default(List<Snapshot>);
             if (!this.snapshots.TryGetValue(streamId, out streamSnapshots))
             {
-                streamSnapshots = new Dictionary<int, object>();
+                streamSnapshots = new List<Snapshot>();
                 this.snapshots.Add(streamId, streamSnapshots);
             }
 
-            streamSnapshots.Add(streamRevision, memento);
+            if (streamSnapshots.Any(streamSnapshot => streamSnapshot.StreamRevision == snapshot.StreamRevision))
+            {
+                throw new PersistenceException("Snapshot already exists for this revision.");
+            }
+
+            streamSnapshots.Add(snapshot);
         }
 
         /// <summary>
         /// Gets the latest snapshot for a stream.
         /// </summary>
         /// <param name="streamId">The stream identifier.</param>
-        /// <param name="streamRevision">The stream revision.</param>
-        /// <returns>The memento for the snapshot.</returns>
-        public object GetSnapshot(Guid streamId, out int streamRevision)
+        /// <returns>The snapshot.</returns>
+        public Snapshot GetSnapshot(Guid streamId)
         {
-            var streamSnapshots = default(Dictionary<int, object>);
+            var streamSnapshots = default(List<Snapshot>);
             if (!this.snapshots.TryGetValue(streamId, out streamSnapshots))
             {
                 // NOTE (Cameron): There are no saved snapshots for this stream.
-                streamRevision = 0;
                 return null;
             }
 
-            streamRevision = streamSnapshots.Max(snapshot => snapshot.Key);
-
-            return streamSnapshots[streamRevision];
+            return streamSnapshots.Single(x => x.StreamRevision == streamSnapshots.Max(y => y.StreamRevision));
         }
 
         private class Event
