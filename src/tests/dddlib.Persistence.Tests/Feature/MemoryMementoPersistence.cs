@@ -12,7 +12,7 @@ namespace dddlib.Persistence.Tests.Feature
 
     // As someone who uses dddlib
     // In order save state
-    // I need to be able to persist an aggregate root
+    // I need to be able to persist an aggregate root (in memory)
     public abstract class MemoryMementoPersistence : Feature
     {
         /*

@@ -35,9 +35,8 @@ namespace dddlib.Persistence
         {
             Guard.Against.Null(() => aggregateRoot);
 
-            var id = this.GetId(aggregateRoot);
+            var streamId = this.GetId(aggregateRoot);
 
-            ////var memento = aggregateRoot.GetMemento();
             var events = aggregateRoot.GetUncommittedEvents();
 
             var state = aggregateRoot.State;
@@ -48,10 +47,17 @@ namespace dddlib.Persistence
 
             // TODO (Cameron): Try catch around commit stream.
             var newState = default(string);
-            this.eventStore.CommitStream(id, events, state, out newState);
+            this.eventStore.CommitStream(streamId, events, state, out newState);
 
             // TODO (Cameron): Save the memento with the new commits if the state is the same as the old state and replace the state with the new state.
             aggregateRoot.CommitEvents(newState);
+
+            ////if (heuristic.ShouldSaveSnapshot)
+            ////{
+            ////    int streamRevision;
+            ////    var memento = aggregateRoot.GetMemento(out streamRevision);
+            ////    this.eventStore.AddSnapshot(streamId, streamRevision, memento);
+            ////}
         }
 
         /// <summary>
@@ -62,12 +68,15 @@ namespace dddlib.Persistence
         /// <returns>The aggregate root.</returns>
         public T Load<T>(object naturalKey) where T : AggregateRoot
         {
-            var id = this.GetId<T>(naturalKey);
+            var streamId = this.GetId<T>(naturalKey);
+
+            int streamRevision;
+            var memento = this.eventStore.GetSnapshot(streamId, out streamRevision);
 
             var state = default(string);
-            var events = this.eventStore.GetStream(id, out state);
+            var events = this.eventStore.GetStream(streamId, streamRevision, out state);
 
-            return this.Reconstitute<T>(null, events, state);
+            return this.Reconstitute<T>(memento, events, state);
         }
     }
 }

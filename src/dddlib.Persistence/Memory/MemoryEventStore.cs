@@ -16,7 +16,8 @@ namespace dddlib.Persistence.Memory
     /// </summary>
     public class MemoryEventStore : IEventStore
     {
-        private readonly Dictionary<Guid, List<Event>> eventStore = new Dictionary<Guid, List<Event>>();
+        private readonly Dictionary<Guid, List<Event>> eventStreams = new Dictionary<Guid, List<Event>>();
+        private readonly Dictionary<Guid, Dictionary<int, object>> snapshots = new Dictionary<Guid, Dictionary<int, object>>();
 
         private long currentEventId;
 
@@ -29,10 +30,10 @@ namespace dddlib.Persistence.Memory
         /// <param name="postCommitState">The post-commit state of stream.</param>
         public void CommitStream(Guid streamId, IEnumerable<object> events, string preCommitState, out string postCommitState)
         {
-            var comittedEvents = default(List<Event>);
-            if (this.eventStore.TryGetValue(streamId, out comittedEvents))
+            var eventStream = default(List<Event>);
+            if (this.eventStreams.TryGetValue(streamId, out eventStream))
             {
-                if (comittedEvents.Last().State != preCommitState)
+                if (eventStream.Last().State != preCommitState)
                 {
                     throw new Exception("Invalid state");
                 }
@@ -44,13 +45,13 @@ namespace dddlib.Persistence.Memory
             }
             else
             {
-                comittedEvents = new List<Event>();
-                this.eventStore.Add(streamId, comittedEvents);
+                eventStream = new List<Event>();
+                this.eventStreams.Add(streamId, eventStream);
             }
 
             var commitTimestamp = DateTime.UtcNow;
 
-            comittedEvents.AddRange(
+            eventStream.AddRange(
                 events.Select(
                     @event => 
                     new Event
@@ -62,100 +63,71 @@ namespace dddlib.Persistence.Memory
                         CommitTimestamp = commitTimestamp,
                     }));
 
-            postCommitState = comittedEvents.Last().State;
+            postCommitState = eventStream.Last().State;
         }
 
         /// <summary>
         /// Gets the events for a stream.
         /// </summary>
         /// <param name="streamId">The stream identifier.</param>
+        /// <param name="streamRevision">The stream revision to get the events from.</param>
         /// <param name="state">The state of the steam.</param>
         /// <returns>The events.</returns>
-        public IEnumerable<object> GetStream(Guid streamId, out string state)
+        public IEnumerable<object> GetStream(Guid streamId, int streamRevision, out string state)
         {
-            var comittedEvents = default(List<Event>);
-            if (!this.eventStore.TryGetValue(streamId, out comittedEvents))
+            Guard.Against.Negative(() => streamRevision);
+
+            var eventStream = default(List<Event>);
+            if (!this.eventStreams.TryGetValue(streamId, out eventStream))
             {
                 throw new Exception("Invalid state #2");
             }
 
-            state = comittedEvents.Last().State;
+            state = eventStream.Last().State;
 
-            return comittedEvents.Select(@event => @event.Payload).ToList();
-        }
-
-        /*
-        /// <summary>
-        /// Gets all the events.
-        /// </summary>
-        /// <returns>The events.</returns>
-        public IEnumerable<object> GetAll()
-        {
-            return this.GetEvents(0, null);
+            return eventStream.Skip(streamRevision + 1).Select(@event => @event.Payload).ToList();
         }
 
         /// <summary>
-        /// Gets all the events of the specified event types.
+        /// Adds a snapshot for a stream.
         /// </summary>
-        /// <param name="eventTypes">The event types.</param>
-        /// <returns>The events.</returns>
-        public IEnumerable<object> GetAll(IEnumerable<Type> eventTypes)
+        /// <param name="streamId">The stream identifier.</param>
+        /// <param name="streamRevision">The stream revision.</param>
+        /// <param name="memento">The memento for the snapshot.</param>
+        public void AddSnapshot(Guid streamId, int streamRevision, object memento)
         {
-            Guard.Against.NullOrEmptyOrNullElements(() => eventTypes);
+            Guard.Against.Null(() => memento);
 
-            return this.GetEvents(0, eventTypes);
+            var streamSnapshots = default(Dictionary<int, object>);
+            if (!this.snapshots.TryGetValue(streamId, out streamSnapshots))
+            {
+                streamSnapshots = new Dictionary<int, object>();
+                this.snapshots.Add(streamId, streamSnapshots);
+            }
+
+            streamSnapshots.Add(streamRevision, memento);
         }
 
         /// <summary>
-        /// Gets the events from the specified event identifier.
+        /// Gets the latest snapshot for a stream.
         /// </summary>
-        /// <param name="eventId">The event identifier.</param>
-        /// <returns>The events.</returns>
-        public IEnumerable<object> GetFrom(long eventId)
+        /// <param name="streamId">The stream identifier.</param>
+        /// <param name="streamRevision">The stream revision.</param>
+        /// <returns>The memento for the snapshot.</returns>
+        public object GetSnapshot(Guid streamId, out int streamRevision)
         {
-            return this.GetEvents(eventId, null);
+            var streamSnapshots = default(Dictionary<int, object>);
+            if (!this.snapshots.TryGetValue(streamId, out streamSnapshots))
+            {
+                // NOTE (Cameron): There are no saved snapshots for this stream.
+                streamRevision = 0;
+                return null;
+            }
+
+            streamRevision = streamSnapshots.Max(snapshot => snapshot.Key);
+
+            return streamSnapshots[streamRevision];
         }
-
-        /// <summary>
-        /// Gets the events from the specified event identifier of the specified event types.
-        /// </summary>
-        /// <param name="eventId">The event identifier.</param>
-        /// <param name="eventTypes">The event types.</param>
-        /// <returns>The events.</returns>
-        public IEnumerable<object> GetFrom(long eventId, IEnumerable<Type> eventTypes)
-        {
-            Guard.Against.NullOrEmptyOrNullElements(() => eventTypes);
-
-            return this.GetEvents(eventId, eventTypes);
-        }
-
-        private IEnumerable<object> GetEvents(long eventId, IEnumerable<Type> eventTypes)
-        {
-            Guard.Against.Negative(() => eventId);
-
-            return this.eventStore.Values
-                .SelectMany(comittedEvents => comittedEvents)
-                .Where(@event => eventTypes.Contains(@event.Type))
-                .Where(@event => @event.Id >= eventId)
-                .OrderBy(@event => @event.Id)
-                .Select(@event => @event.Payload)
-                .ToList();
-        }
-
-        ////public void ReplayEventsTo(params object[] views)
-        ////{
-        ////    foreach (var view in views)
-        ////    {
-        ////        foreach (var @event in this.store
-        ////            .OrderBy(e => e.Value.Timestamp)
-        ////            .SelectMany(e => e.Value.Events))
-        ////        {
-        ////            // TODO (Cameron): This is not very sensible.
-        ////            new DefaultEventDispatcher(view.GetType(), "Handle", BindingFlags.Instance | BindingFlags.Public).Dispatch(view, @event);
-        ////        }
-        ////    }
-        ////}
-        */
 
         private class Event
         {

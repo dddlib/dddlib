@@ -32,7 +32,7 @@ namespace dddlib.Persistence.Tests.Sdk
         }
 
         [Background]
-        public void Background()
+        public virtual void Background()
         {
             "Given a new application"
                 .f(context =>

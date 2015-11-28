@@ -15,7 +15,17 @@ namespace dddlib.Persistence.SqlServer
             throw new NotImplementedException();
         }
 
-        public IEnumerable<object> GetStream(Guid streamId, out string state)
+        public IEnumerable<object> GetStream(Guid streamId, int streamRevision, out string state)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddSnapshot(Guid streamId, int streamRevision, object memento)
+        {
+            throw new NotImplementedException();
+        }
+
+        public object GetSnapshot(Guid streamId, out int streamRevision)
         {
             throw new NotImplementedException();
         }

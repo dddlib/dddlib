@@ -1,4 +1,4 @@
-﻿// <copyright file="MemoryEventPersistence.cs" company="dddlib contributors">
+﻿// <copyright file="SqlServerEventPersistence.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -15,15 +15,15 @@ namespace dddlib.Persistence.Tests.Feature
 
     // As someone who uses dddlib [with event sourcing]
     // In order save state
-    // I need to be able to persist an aggregate root (in memory)
-    public abstract class MemoryEventPersistence : EventPersistenceFeature
+    // I need to be able to persist an aggregate root (in SQL Server)
+    public abstract class SqlServerEventPersistence : EventPersistenceFeature
     {
-        public MemoryEventPersistence()
+        public SqlServerEventPersistence()
             : base(new EventStoreRepository(new MemoryIdentityMap(), new MemoryEventStore()))
         {
         }
 
-        public class UndefinedNaturalKey : MemoryEventPersistence
+        public class UndefinedNaturalKey : SqlServerEventPersistence
         {
             [Scenario]
             public void Scenario(Subject instance, Action action)

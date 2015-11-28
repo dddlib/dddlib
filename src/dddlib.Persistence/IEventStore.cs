@@ -25,8 +25,25 @@ namespace dddlib.Persistence
         /// Gets the events for a stream.
         /// </summary>
         /// <param name="streamId">The stream identifier.</param>
+        /// <param name="streamRevision">The stream revision to get the events from.</param>
         /// <param name="state">The state of the steam.</param>
         /// <returns>The events.</returns>
-        IEnumerable<object> GetStream(Guid streamId, out string state);
+        IEnumerable<object> GetStream(Guid streamId, int streamRevision, out string state);
+
+        /// <summary>
+        /// Adds a snapshot for a stream.
+        /// </summary>
+        /// <param name="streamId">The stream identifier.</param>
+        /// <param name="streamRevision">The stream revision.</param>
+        /// <param name="memento">The memento for the snapshot.</param>
+        void AddSnapshot(Guid streamId, int streamRevision, object memento);
+
+        /// <summary>
+        /// Gets the latest snapshot for a stream.
+        /// </summary>
+        /// <param name="streamId">The stream identifier.</param>
+        /// <param name="streamRevision">The stream revision.</param>
+        /// <returns>The memento for the snapshot.</returns>
+        object GetSnapshot(Guid streamId, out int streamRevision);
     }
 }
