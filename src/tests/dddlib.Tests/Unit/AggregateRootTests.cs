@@ -8,6 +8,7 @@ namespace dddlib.Tests.Unit
     using System.Collections.Generic;
     using dddlib.Runtime;
     using FluentAssertions;
+    using Sdk;
     using Xunit;
 
     public class AggregateRootTests
@@ -153,10 +154,10 @@ namespace dddlib.Tests.Unit
             // arrange
             var memento = (object)null;
             var events = new[] { new SomethingHappened() };
+            var factory = new AggregateRootFactory();
             
             // act
-            var aggregateRoot = Activator.CreateInstance(typeof(PersistedAggregate), true) as PersistedAggregate;
-            aggregateRoot.Initialize(memento, 0, events, "state");
+            var aggregateRoot = factory.Create<PersistedAggregate>(memento, 0, events, "state");
             aggregateRoot.MakeSomethingHappen();
 
             // assert

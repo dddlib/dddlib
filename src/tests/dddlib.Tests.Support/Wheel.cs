@@ -12,7 +12,7 @@ namespace dddlib.Tests.Support
         {
             if (id.Equals(Guid.Empty))
             {
-                throw new ArgumentException("Id cannot be an empty GUID.","id");
+                throw new ArgumentException("Id cannot be an empty GUID.", "id");
             }
 
             this.Id = id;

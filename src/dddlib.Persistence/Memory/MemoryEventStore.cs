@@ -8,9 +8,7 @@ namespace dddlib.Persistence.Memory
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
-    using System.Reflection;
     using dddlib.Persistence.Sdk;
-    using dddlib.Sdk;
 
     /// <summary>
     /// Represents a memory-based event store.

@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Persistence.Tests.Sdk
+namespace dddlib.Tests.Sdk
 {
     using System;
     using System.Configuration;

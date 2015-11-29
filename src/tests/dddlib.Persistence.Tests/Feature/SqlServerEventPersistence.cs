@@ -9,14 +9,16 @@ namespace dddlib.Persistence.Tests.Feature
     using System.Linq;
     using dddlib.Configuration;
     using dddlib.Persistence.Sdk;
-    using dddlib.Persistence.Tests.Sdk;
+    using dddlib.Tests.Sdk;
     using FluentAssertions;
     using SqlServer;
     using Xbehave;
+    using Xunit;
 
     // As someone who uses dddlib [with event sourcing]
     // In order save state
     // I need to be able to persist an aggregate root (in SQL Server)
+    [Collection("SQL Server Collection")]
     public abstract class SqlServerEventPersistence : SqlServerFeature
     {
         private IIdentityMap identityMap;
@@ -169,7 +171,7 @@ namespace dddlib.Persistence.Tests.Feature
                     .f(() => loaded.Should().Be(saved));
 
                 "And their revisions should be equal"
-                    .f(() => loaded.Revision.Should().Be(saved.Revision));
+                    .f(() => loaded.GetRevision().Should().Be(saved.GetRevision()));
 
                 "And their mementos should match"
                     .f(() => loaded.GetMemento().ShouldMatch(saved.GetMemento()));
@@ -248,7 +250,7 @@ namespace dddlib.Persistence.Tests.Feature
                     .f(() => loaded.Should().Be(saved));
 
                 "And their revisions should be equal"
-                    .f(() => loaded.Revision.Should().Be(saved.Revision));
+                    .f(() => loaded.GetRevision().Should().Be(saved.GetRevision()));
 
                 "And their mementos should match"
                     .f(() => loaded.GetMemento().ShouldMatch(saved.GetMemento()));
@@ -361,7 +363,7 @@ namespace dddlib.Persistence.Tests.Feature
                     .f(() => anotherLoaded.Should().Be(loaded));
 
                 "And their revisions should be equal"
-                    .f(() => anotherLoaded.Revision.Should().Be(loaded.Revision));
+                    .f(() => anotherLoaded.GetRevision().Should().Be(loaded.GetRevision()));
 
                 "And their mementos should match"
                     .f(() => anotherLoaded.GetMemento().ShouldMatch(loaded.GetMemento()));
@@ -467,7 +469,7 @@ namespace dddlib.Persistence.Tests.Feature
                             streamId,
                             new Snapshot
                             {
-                                StreamRevision = saved.Revision,
+                                StreamRevision = saved.GetRevision(),
                                 Memento = saved.GetMemento(),
                             });
                     });
@@ -479,7 +481,7 @@ namespace dddlib.Persistence.Tests.Feature
                     .f(() => loaded.Should().Be(saved));
 
                 "And their revisions should be equal"
-                    .f(() => loaded.Revision.Should().Be(saved.Revision));
+                    .f(() => loaded.GetRevision().Should().Be(saved.GetRevision()));
 
                 "And their mementos should match"
                     .f(() => loaded.GetMemento().ShouldMatch(saved.GetMemento()));
@@ -554,7 +556,7 @@ namespace dddlib.Persistence.Tests.Feature
                             streamId,
                             new Snapshot
                             {
-                                StreamRevision = saved.Revision,
+                                StreamRevision = saved.GetRevision(),
                                 Memento = saved.GetMemento(),
                             });
                     });
@@ -582,7 +584,7 @@ namespace dddlib.Persistence.Tests.Feature
                     .f(() => loaded.Should().Be(saved));
 
                 "And their revisions should be equal"
-                    .f(() => loaded.Revision.Should().Be(saved.Revision));
+                    .f(() => loaded.GetRevision().Should().Be(saved.GetRevision()));
 
                 "And their mementos should match"
                     .f(() => loaded.GetMemento().ShouldMatch(saved.GetMemento()));

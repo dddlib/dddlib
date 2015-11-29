@@ -2,13 +2,11 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Persistence.Tests.Sdk
+namespace dddlib.Tests.Sdk
 {
     using System.Data.SqlClient;
     using Microsoft.SqlServer.Management.Common;
-    using Xunit;
 
-    [Collection("SQL Server Collection")]
     public abstract class SqlServerFeature : Feature
     {
         // LINK (Cameron): https://github.com/xbehave/xbehave.net/wiki/Can%27t-access-fixture-data-when-using-IUseFixture
@@ -32,12 +30,6 @@ namespace dddlib.Persistence.Tests.Sdk
 
                 serverConnection.ExecuteNonQuery(sql);
             }
-        }
-
-        // LINK (Cameron): http://xunit.github.io/docs/shared-context.html
-        [CollectionDefinition("SQL Server Collection")]
-        public class DatabaseCollection : ICollectionFixture<SqlServerFixture>
-        {
         }
     }
 }

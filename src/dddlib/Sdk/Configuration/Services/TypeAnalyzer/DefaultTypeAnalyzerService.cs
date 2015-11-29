@@ -13,23 +13,48 @@ namespace dddlib.Sdk.Configuration.Services.TypeAnalyzer
     using dddlib.Runtime;
     using dddlib.Sdk.Configuration.Model;
 
-    internal class DefaultTypeAnalyzerService : ITypeAnalyzerService
+    /// <summary>
+    /// Represents the default type analyzer service.
+    /// </summary>
+    public class DefaultTypeAnalyzerService : ITypeAnalyzerService
     {
+        /// <summary>
+        /// Determines whether the specified runtime type is a valid aggregate root.
+        /// </summary>
+        /// <param name="runtimeType">The runtime type.</param>
+        /// <returns>Returns <c>true</c> when the runtime type is an aggregate root; otherwise <c>false</c>.</returns>
         public bool IsValidAggregateRoot(Type runtimeType)
         {
             return typeof(AggregateRoot).IsAssignableFrom(runtimeType);
         }
 
+        /// <summary>
+        /// Determines whether the specified runtime type is a valid entity.
+        /// </summary>
+        /// <param name="runtimeType">The runtime type.</param>
+        /// <returns>Returns <c>true</c> when the runtime type is an entity; otherwise <c>false</c>.</returns>
         public bool IsValidEntity(Type runtimeType)
         {
             return typeof(Entity).IsAssignableFrom(runtimeType);
         }
 
+        /// <summary>
+        /// Determines whether the specified runtime type is a valid value object.
+        /// </summary>
+        /// <param name="runtimeType">The runtime type.</param>
+        /// <returns>Returns <c>true</c> when the runtime type is a value object; otherwise <c>false</c>.</returns>
         public bool IsValidValueObject(Type runtimeType)
         {
             return runtimeType.IsSubclassOfRawGeneric(typeof(ValueObject<>));
         }
 
+        /// <summary>
+        /// Determines whether the specified runtime type contains a specific property.
+        /// </summary>
+        /// <param name="runtimeType">The runtime type.</param>
+        /// <param name="propertyName">The property name.</param>
+        /// <param name="propertyType">The property type.</param>
+        /// <returns>Returns <c>true</c> when the runtime type contains the property; otherwise <c>false</c>.</returns>
         public bool IsValidProperty(Type runtimeType, string propertyName, Type propertyType)
         {
             var property = runtimeType.GetProperties(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public)
@@ -40,6 +65,11 @@ namespace dddlib.Sdk.Configuration.Services.TypeAnalyzer
             return property != null;
         }
 
+        /// <summary>
+        /// Gets the natural key for the specified runtime type.
+        /// </summary>
+        /// <param name="runtimeType">The runtime type.</param>
+        /// <returns>The natural key.</returns>
         [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
         public NaturalKey GetNaturalKey(Type runtimeType)
         {
@@ -71,6 +101,11 @@ To fix this issue:
             return new NaturalKey(naturalKeys[0].DeclaringType, naturalKeys[0].Name, naturalKeys[0].PropertyType, this);
         }
 
+        /// <summary>
+        /// Gets the uninitialized factory for the specified runtime type.
+        /// </summary>
+        /// <param name="runtimeType">The runtime type.</param>
+        /// <returns>The uninitialized factory.</returns>
         public Delegate GetUninitializedFactory(Type runtimeType)
         {
             Guard.Against.Null(() => runtimeType);

@@ -5,12 +5,9 @@
 namespace dddlib.Persistence.Tests.Integration
 {
     using System;
-    using System.Data.SqlClient;
     using System.IO;
     using dddlib.Persistence.SqlServer;
-    using dddlib.Persistence.Tests.Sdk;
-    using FluentAssertions;
-    using Microsoft.SqlServer.Management.Common;
+    using dddlib.Tests.Sdk;
     using Xunit;
 
     // TODO (Cameron): Move to StorageTests.cs.
@@ -51,14 +48,6 @@ namespace dddlib.Persistence.Tests.Integration
             using (var reader = new StreamReader(stream))
             {
                 return reader.ReadToEnd();
-            }
-        }
-
-        private void ExecuteScript(string sqlScript)
-        {
-            using (var connection = new SqlConnection(this.ConnectionString))
-            {
-                new ServerConnection(connection).ExecuteNonQuery(sqlScript);
             }
         }
 

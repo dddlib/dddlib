@@ -4,7 +4,7 @@
 
 namespace dddlib.Persistence.Tests.Integration
 {
-    using dddlib.Persistence.Tests.Sdk;
+    using dddlib.Tests.Sdk;
 
     public class StorageTests : Integration.Database
     {

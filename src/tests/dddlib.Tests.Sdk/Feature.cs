@@ -2,15 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-// LINK (Cameron): https://github.com/dddlib/dddlib/issues/40
-// NOTE (Cameron): There is an issue in dddlib with parallelization in the tests. Specifically, the Application creation.
-[assembly: Xunit.CollectionBehavior(DisableTestParallelization = true)]
-
-#if dddlibTests
 namespace dddlib.Tests.Sdk
-#else
-namespace dddlib.Persistence.Tests.Sdk
-#endif
 {
     using System;
     using System.Linq;
@@ -21,7 +13,6 @@ namespace dddlib.Persistence.Tests.Sdk
     using dddlib.Sdk.Configuration.Model;
     using dddlib.Sdk.Configuration.Services.Bootstrapper;
     using dddlib.Sdk.Configuration.Services.TypeAnalyzer;
-    using FakeItEasy;
     using Xbehave;
 
     public abstract class Feature
@@ -57,11 +48,6 @@ namespace dddlib.Persistence.Tests.Sdk
             // TODO (Cameron): This is all a bit of a hack.
             public Action<IConfiguration> GetBootstrapper(Type type)
             {
-                if (type.Assembly != typeof(Feature).Assembly)
-                {
-                    return new DefaultBootstrapperProvider().GetBootstrapper(type);
-                }
-
                 var bootstrappers = type.DeclaringType == null
                     ? new Type[0]
                     : type.DeclaringType.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic)
@@ -72,15 +58,13 @@ namespace dddlib.Persistence.Tests.Sdk
                 var bootstrapperType = bootstrappers.SingleOrDefault(t => t.GetInterfaces().Any(i => i.GetGenericArguments()[0] == type));
                 if (bootstrapperType == null)
                 {
-                    return c => { };
+                    return new DefaultBootstrapperProvider().GetBootstrapper(type);
                 }
 
                 var bootstrapper = Activator.CreateInstance(bootstrapperType);
                 var method = bootstrapperType.GetMethod("Bootstrap");
 
-                Action<IConfiguration> action = (Action<IConfiguration>)Delegate.CreateDelegate(typeof(Action<IConfiguration>), bootstrapper, method);
-
-                return action; //// (Action<IConfiguration>)bootstrapper.Bootstrap;
+                return (Action<IConfiguration>)Delegate.CreateDelegate(typeof(Action<IConfiguration>), bootstrapper, method);
             }
         }
     }
