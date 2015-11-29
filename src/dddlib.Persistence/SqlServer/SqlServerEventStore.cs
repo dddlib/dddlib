@@ -11,6 +11,23 @@ namespace dddlib.Persistence.SqlServer
     // TODO (Cameron): Make public. Implement.
     internal class SqlServerEventStore : IEventStore
     {
+        private readonly string connectionString;
+        private readonly string schema;
+
+        public SqlServerEventStore(string connectionString)
+            : this(connectionString, "dbo")
+        {
+        }
+
+        public SqlServerEventStore(string connectionString, string schema)
+        {
+            Guard.Against.Null(() => connectionString);
+            Guard.Against.Null(() => schema);
+
+            this.connectionString = connectionString;
+            this.schema = schema;
+        }
+
         public void CommitStream(Guid streamId, IEnumerable<object> events, string preCommitState, out string postCommitState)
         {
             throw new NotImplementedException();

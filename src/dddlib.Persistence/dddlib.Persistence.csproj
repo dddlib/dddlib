@@ -56,6 +56,7 @@
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="AggregateRootNotFoundException.cs" />
+    <Compile Include="Memory\MemoryEventStoreRepository.cs" />
     <Compile Include="Sdk\EventStoreRepository.cs" />
     <Compile Include="Sdk\IEventStore.cs" />
     <Compile Include="IEventStoreRepository.cs" />
@@ -69,6 +70,7 @@
     <Compile Include="Sdk\DefaultNaturalKeySerializer.cs" />
     <Compile Include="Sdk\INaturalKeySerializer.cs" />
     <Compile Include="Sdk\Snapshot.cs" />
+    <Compile Include="SqlServer\SqlServerEventStoreRepository.cs" />
     <Compile Include="SqlServer\SqlServerGuardExtensions.cs" />
     <Compile Include="SqlServer\SqlServerEventStore.cs" />
     <Compile Include="SqlServer\SqlServerIdentityMap.cs" />
