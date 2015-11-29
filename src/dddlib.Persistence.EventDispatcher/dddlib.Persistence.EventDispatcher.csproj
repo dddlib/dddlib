@@ -4,28 +4,28 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{E14158AF-6742-4705-81F4-455184C1A2EC}</ProjectGuid>
+    <ProjectGuid>{3F412C2B-8B3A-495D-B8B4-C546A4CE1BAA}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>dddlib.Persistence</RootNamespace>
-    <AssemblyName>dddlib.Persistence</AssemblyName>
+    <RootNamespace>dddlib.Persistence.EventDispatcher</RootNamespace>
+    <AssemblyName>dddlib.Persistence.EventDispatcher</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <StyleCopTreatErrorsAsWarnings>false</StyleCopTreatErrorsAsWarnings>
-    <NuGetPackageImportStamp>978f0f87</NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>409606ba</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;GUARD_STRICT</DefineConstants>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <CodeAnalysisRuleSet>..\dddlib.ruleset</CodeAnalysisRuleSet>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <DocumentationFile>bin\Debug\dddlib.Persistence.xml</DocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DocumentationFile>bin\Debug\dddlib.Persistence.EventDispatcher.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -36,8 +36,7 @@
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <CodeAnalysisRuleSet>..\dddlib.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>bin\Release\dddlib.Persistence.xml</DocumentationFile>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <DocumentationFile>bin\Release\dddlib.Persistence.EventDispatcher.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -46,45 +45,33 @@
     <AssemblyOriginatorKeyFile>..\dddlib.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Transactions" />
-    <Reference Include="System.Web.Extensions" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="AggregateRootNotFoundException.cs" />
-    <Compile Include="Sdk\EventStoreRepository.cs" />
-    <Compile Include="Sdk\IEventStore.cs" />
-    <Compile Include="IEventStoreRepository.cs" />
-    <Compile Include="Sdk\IIdentityMap.cs" />
-    <Compile Include="ConcurrencyException.cs" />
-    <Compile Include="Memory\MemoryNaturalKeyRepository.cs" />
-    <Compile Include="Sdk\AggregateRootFactory.cs" />
-    <Compile Include="Sdk\DefaultIdentityMap.cs" />
-    <Compile Include="PersistenceException.cs" />
-    <Compile Include="Sdk\INaturalKeyRepository.cs" />
-    <Compile Include="Sdk\DefaultNaturalKeySerializer.cs" />
-    <Compile Include="Sdk\INaturalKeySerializer.cs" />
-    <Compile Include="Sdk\Snapshot.cs" />
-    <Compile Include="SqlServer\SqlServerGuardExtensions.cs" />
-    <Compile Include="SqlServer\SqlServerEventStore.cs" />
-    <Compile Include="SqlServer\SqlServerIdentityMap.cs" />
-    <Compile Include="SqlServer\SqlServerNaturalKeyRepository.cs" />
-    <Compile Include="IRepository.cs" />
+    <Compile Include="Guard.cs" />
+    <Compile Include="Sdk\Batch.cs" />
+    <Compile Include="Sdk\EventDispatcherService.cs" />
+    <Compile Include="Sdk\BatchPreparedEventArgs.cs" />
+    <Compile Include="Sdk\EventCommittedEventArgs.cs" />
+    <Compile Include="IEventDispatcherService.cs" />
+    <Compile Include="Memory\MemoryDispatcherService.cs" />
+    <Compile Include="IEventDispatcher.cs" />
     <Compile Include="Memory\MemoryEventStore.cs" />
-    <Compile Include="Memory\MemoryIdentityMap.cs" />
-    <Compile Include="Memory\MemoryRepository.cs" />
+    <Compile Include="Sdk\Event.cs" />
+    <Compile Include="SqlServer\SqlServerNotificationService.cs" />
+    <Compile Include="SqlServer\SqlServerEventDispatcherService.cs" />
+    <Compile Include="SqlServer\SqlServerEventStore.cs" />
+    <Compile Include="Sdk\IEventStore.cs" />
+    <Compile Include="Sdk\INotificationService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Sdk\Repository.cs" />
-    <Compile Include="Sdk\RepositoryBase.cs" />
-    <Compile Include="Sdk\NaturalKeyRecord.cs" />
-    <Compile Include="SqlServer\Database\Scripts.cs" />
-    <Compile Include="SqlServer\Database\Storage.cs" />
-    <Compile Include="SqlServer\SqlServerRepository.cs" />
-    <EmbeddedResource Include="SqlServer\Database\Scripts\GetDatabaseVersion.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SqlServer\Database\Scripts\SQLQuery1.sql" />
+    <EmbeddedResource Include="SqlServer\Database\Scripts\Version01.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
     <CodeAnalysisDictionary Include="..\dddlib.dictionary">
@@ -93,22 +80,10 @@
     <None Include="..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
-    <None Include="dddlib.Persistence.nuspec" />
+    <None Include="dddlib.Persistence.EventDispatcher.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\dddlib\dddlib.csproj">
-      <Project>{57610450-0379-472e-b40c-18b11295eefa}</Project>
-      <Name>dddlib</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="SqlServer\Database\Scripts\Version01.sql" />
-    <EmbeddedResource Include="SqlServer\Database\Scripts\CreateSchema.sql" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="SqlServer\Database\Scripts\EventStore.Version01.sql" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets" Condition="Exists('..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

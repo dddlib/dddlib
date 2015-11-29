@@ -8,7 +8,6 @@ namespace dddlib.Persistence.Tests.Feature
     using System.Collections.Generic;
     using System.Linq;
     using dddlib.Configuration;
-    using dddlib.Persistence;
     using dddlib.Persistence.Memory;
     using dddlib.Persistence.Sdk;
     using dddlib.Persistence.Tests.Sdk;

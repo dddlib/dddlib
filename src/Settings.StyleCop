@@ -6,6 +6,7 @@
     <BooleanProperty Name="ViolationsAsErrors">True</BooleanProperty>
     <CollectionProperty Name="RecognizedWords">
       <Value>bootstrapper</Value>
+      <Value>undispatched</Value>
     </CollectionProperty>
   </GlobalSettings>
   <Parsers>

@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Persistence
+namespace dddlib.Persistence.Sdk
 {
     using System;
 
