@@ -31,7 +31,10 @@ namespace dddlib.Persistence.SqlServer.Database
             foreach (var resourceName in resourceNames)
             {
                 var expectedVersion = this.databaseScripts.Count + 1;
-                var actualVersion = int.Parse(resourceName.Replace(string.Concat(RootNamespace, ".Version"), string.Empty).Replace(".sql", string.Empty));
+                var actualVersion = int.Parse(
+                    resourceName
+                        .Replace(string.Concat(RootNamespace, ".Version"), string.Empty)
+                        .Replace(".sql", string.Empty));
 
                 if (expectedVersion != actualVersion)
                 {

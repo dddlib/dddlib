@@ -4,7 +4,10 @@
 
 namespace dddlib.Persistence
 {
+    using System.Globalization;
+    using System.Linq;
     using dddlib.Persistence.Sdk;
+    using dddlib.Runtime;
 
     /// <summary>
     /// Represents an event store repository.
@@ -35,23 +38,50 @@ namespace dddlib.Persistence
         {
             Guard.Against.Null(() => aggregateRoot);
 
-            var id = this.GetId(aggregateRoot);
+            var streamId = this.GetId(aggregateRoot);
 
-            ////var memento = aggregateRoot.GetMemento();
             var events = aggregateRoot.GetUncommittedEvents();
 
             var state = aggregateRoot.State;
-            if (state == null)
+            if (state == null && !events.Any())
             {
-                // NOTE (Cameron): This is the initial commit, for what it's worth.
+                // NOTE (Cameron): This is the initial commit so there should be events.
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Cannot save initial commit for aggregate root of type '{0}' as it has no events.",
+                        aggregateRoot.GetType()));
+            }
+
+            if (!events.Any())
+            {
+                // TODO (Cameron): Nothing to commit. Log info?
+                return;
             }
 
             // TODO (Cameron): Try catch around commit stream.
             var newState = default(string);
-            this.eventStore.CommitStream(id, events, state, out newState);
+            this.eventStore.CommitStream(streamId, events, state, out newState);
 
             // TODO (Cameron): Save the memento with the new commits if the state is the same as the old state and replace the state with the new state.
             aggregateRoot.CommitEvents(newState);
+
+            ////if (heuristic.ShouldSaveSnapshot)
+            ////{
+            ////    ////// option 1. simple
+            ////    ////var memento = aggregateRoot.GetMemento(out streamRevision);
+            ////    ////this.eventStore.AddSnapshot(streamId, aggregateRoot.Revision, memento);
+
+            ////    // option 2. complex
+            ////    var memento = aggregateRoot.GetMemento();
+            ////    var recycledMemento = new AggregateRootFactory().Create<T>(memento, new object[0], "test").GetMemento();
+            ////    if (memento != recycledMemento)
+            ////    {
+            ////        throw new Exception("Memento implementation is wrong!");
+            ////    }
+
+            ////    this.eventStore.AddSnapshot(streamId, aggregateRoot.Revision, memento);
+            ////}
         }
 
         /// <summary>
@@ -62,12 +92,13 @@ namespace dddlib.Persistence
         /// <returns>The aggregate root.</returns>
         public T Load<T>(object naturalKey) where T : AggregateRoot
         {
-            var id = this.GetId<T>(naturalKey);
+            var streamId = this.GetId<T>(naturalKey);
 
             var state = default(string);
-            var events = this.eventStore.GetStream(id, out state);
+            var snapshot = this.eventStore.GetSnapshot(streamId) ?? new Snapshot();
+            var events = this.eventStore.GetStream(streamId, snapshot.StreamRevision, out state);
 
-            return this.Reconstitute<T>(null, events, state);
+            return this.Reconstitute<T>(snapshot.Memento, snapshot.StreamRevision, events, state);
         }
     }
 }

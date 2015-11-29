@@ -33,6 +33,10 @@ namespace dddlib.Persistence.Tests.Bug
                 this.RegistrationNumber = registration.Number;
             }
 
+            internal Car()
+            {
+            }
+
             [NaturalKey]
             public string RegistrationNumber { get; private set; }
 

@@ -37,10 +37,14 @@
     <AssemblyOriginatorKeyFile>..\..\dddlib.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\dddlib.Persistence\Sdk\AggregateRootFactory.cs">
+      <Link>Sdk\AggregateRootFactory.cs</Link>
+    </Compile>
     <Compile Include="Bug\Bug0017.cs" />
     <Compile Include="Bug\Bug0001.cs" />
     <Compile Include="Feature\EntityLifecycleManagement.cs" />
     <Compile Include="Feature\BusinessException.cs" />
+    <Compile Include="Feature\ModelValidationFeature.cs" />
     <Compile Include="Feature\ValueObjectSerialization.cs" />
     <None Include="..\..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
@@ -52,6 +56,7 @@
     <Compile Include="Feature\AggregateRootValueObjectMapping.cs" />
     <Compile Include="Feature\EntityEquality.cs" />
     <Compile Include="Feature\ValueObjectEquality.cs" />
+    <Compile Include="Sdk\ModelValidator.cs" />
     <Compile Include="Sdk\Feature.cs" />
     <None Include="packages.config" />
   </ItemGroup>
@@ -73,6 +78,8 @@
       <HintPath>..\..\..\packages\FluentAssertions.3.3.0\lib\net45\FluentAssertions.Core.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="Xbehave.Core, Version=2.0.0.0, Culture=neutral, PublicKeyToken=e4957f48888f9fe8, processorArchitecture=MSIL">

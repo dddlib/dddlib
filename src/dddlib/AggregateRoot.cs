@@ -31,8 +31,6 @@ namespace dddlib
 
         private readonly TypeInformation typeInformation;
 
-        private string state;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="AggregateRoot"/> class.
         /// </summary>
@@ -56,10 +54,9 @@ namespace dddlib
             this.typeInformation = getTypeInformation(this);
         }
 
-        internal string State
-        {
-            get { return this.state; }
-        }
+        internal string State { get; private set; }
+
+        internal int Revision { get; private set; }
 
         /// <summary>
         /// Specifies that a mapping should take place.
@@ -71,13 +68,15 @@ namespace dddlib
             get { return this.mapProvider.Value; }
         }
 
-        internal void Initialize(object memento, IEnumerable<object> events, string state)
+        internal void Initialize(object memento, int revision, IEnumerable<object> events, string state)
         {
             Guard.Against.Null(() => events);
+            Guard.Against.Negative(() => revision);
 
             if (memento != null)
             {
                 this.SetState(memento);
+                this.Revision = revision;
             }
 
             foreach (var @event in events)
@@ -85,7 +84,7 @@ namespace dddlib
                 this.Apply(@event, isNew: false);
             }
 
-            this.state = state;
+            this.State = state;
         }
 
         internal object GetMemento()
@@ -103,7 +102,7 @@ namespace dddlib
             Guard.Against.NullOrEmpty(() => state);
 
             this.events.Clear();
-            this.state = state;
+            this.State = state;
         }
 
         /// <summary>
@@ -166,8 +165,12 @@ namespace dddlib
 
             if (!@event.GetType().IsClass)
             {
-                // TODO (Cameron): Check - is this possible?
-                return;
+                // TODO (Cameron): This is to enforce the class constraint on the protected method for boxed value type events.
+                throw new RuntimeException(
+                    string.Format(
+                        "Unable to apply the specified change of type '{0}' to the aggregate root of type '{1}'.",
+                        @event.GetType(),
+                        this.GetType()));
             }
 
             try
@@ -188,6 +191,8 @@ namespace dddlib
                         @event.GetType()),
                     ex);
             }
+
+            this.Revision++;
 
             if (this.typeInformation.PersistEvents && isNew)
             {

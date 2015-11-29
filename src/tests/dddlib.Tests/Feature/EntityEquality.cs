@@ -571,5 +571,123 @@ namespace dddlib.Tests.Feature
                 }
             }
         }
+
+        // NOTE (Cameron): It doesn't make sense to support nested natural key definition in metadata so this is the only way.
+        public class NestedNaturalKeySelector : EntityEquality
+        {
+            [Scenario(Skip = "https://github.com/dddlib/dddlib/issues/72")]
+            public void Scenario(Subject instance1, Subject instance2, string naturalKey)
+            {
+                "Given an entity with a nested natural key selector"
+                    .f(() => { });
+
+                "And a natural key value"
+                    .f(() => naturalKey = "key");
+
+                "When two instances of that entity are instantiated"
+                    .f(() =>
+                    {
+                        instance1 = new Subject { Details = new Subject.SubjectDetails { NaturalKey = naturalKey } };
+                        instance2 = new Subject { Details = new Subject.SubjectDetails { NaturalKey = naturalKey } };
+                    });
+
+                "Then the first instance is equal to the second instance"
+                    .f(() => instance1.Should().Be(instance2));
+            }
+
+            public class Subject : Entity
+            {
+                public SubjectDetails Details { get; set; }
+
+                public class SubjectDetails
+                {
+                    public string NaturalKey { get; set; }
+                }
+            }
+
+            private class BootStrapper : IBootstrap<Subject>
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.Entity<Subject>().ToUseNaturalKey(subject => subject.Details.NaturalKey);
+                }
+            }
+        }
+
+        public class NestedNaturalKeySelectorWithSingleInstanceHavingNullReference : EntityEquality
+        {
+            [Scenario(Skip = "https://github.com/dddlib/dddlib/issues/72")]
+            public void Scenario(Subject instance1, Subject instance2)
+            {
+                "Given an entity with a nested natural key selector"
+                    .f(() => { });
+
+                "When two instances of that entity are instantiated (one with no defined natural key object)"
+                    .f(() =>
+                    {
+                        instance1 = new Subject();
+                        instance2 = new Subject { Details = new Subject.SubjectDetails { NaturalKey = "key" } };
+                    });
+
+                "Then the first instance is not equal to the second instance"
+                    .f(() => instance1.Should().NotBe(instance2));
+            }
+
+            public class Subject : Entity
+            {
+                public SubjectDetails Details { get; set; }
+
+                public class SubjectDetails
+                {
+                    public string NaturalKey { get; set; }
+                }
+            }
+
+            private class BootStrapper : IBootstrap<Subject>
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.Entity<Subject>().ToUseNaturalKey(subject => subject.Details.NaturalKey);
+                }
+            }
+        }
+
+        public class NestedNaturalKeySelectorWithBothInstancesHavingNullReference : EntityEquality
+        {
+            [Scenario(Skip = "https://github.com/dddlib/dddlib/issues/72")]
+            public void Scenario(Subject instance1, Subject instance2)
+            {
+                "Given an entity with a nested natural key selector"
+                    .f(() => { });
+
+                "When two instances of that entity are instantiated (one with no defined natural key object)"
+                    .f(() =>
+                    {
+                        instance1 = new Subject();
+                        instance2 = new Subject();
+                    });
+
+                "Then the first instance is not equal to the second instance"
+                    .f(() => instance1.Should().NotBe(instance2));
+            }
+
+            public class Subject : Entity
+            {
+                public SubjectDetails Details { get; set; }
+
+                public class SubjectDetails
+                {
+                    public string NaturalKey { get; set; }
+                }
+            }
+
+            private class BootStrapper : IBootstrap<Subject>
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.Entity<Subject>().ToUseNaturalKey(subject => subject.Details.NaturalKey);
+                }
+            }
+        }
     }
 }

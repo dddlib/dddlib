@@ -7,6 +7,7 @@ namespace dddlib.Persistence.Memory
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using dddlib.Persistence.Sdk;
 
     /// <summary>
     /// Represents a memory-based repository.

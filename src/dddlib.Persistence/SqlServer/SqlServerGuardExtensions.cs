@@ -26,15 +26,5 @@ namespace dddlib.Persistence.SqlServer
                 }
             }
         }
-
-        public static void NegativeOrZero(this Guard guard, Func<int> expression)
-        {
-            var value = expression();
-
-            if (value <= 0)
-            {
-                throw new ArgumentOutOfRangeException(Guard.Expression.Parse(expression), value, "Value has to be positive.");
-            }
-        }
     }
 }

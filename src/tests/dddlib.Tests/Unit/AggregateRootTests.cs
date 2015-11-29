@@ -6,6 +6,7 @@ namespace dddlib.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
+    using dddlib.Runtime;
     using FluentAssertions;
     using Xunit;
 
@@ -75,31 +76,31 @@ namespace dddlib.Tests.Unit
         }
 
         [Fact]
-        public void CanApplyInvalidChangeToAggregateWithoutEffectOrException()
+        public void CannotApplyInvalidChangeToAggregate()
         {
             // arrange
             var aggregate = new BadAggregate();
             var @event = 1;
 
             // act
-            aggregate.ApplyEvent(@event);
+            Action action = () => aggregate.ApplyEvent(@event);
 
             // assert
-            aggregate.BadChange.Should().BeNull();
+            action.ShouldThrow<RuntimeException>();
         }
 
         [Fact]
-        public void CanApplyOtherInvalidChangeToAggregateWithoutEffectOrException()
+        public void CannotApplyOtherInvalidChangeToAggregate()
         {
             // arrange
             var aggregate = new BadAggregate();
             int? @event = 1;
 
             // act
-            aggregate.ApplyEvent(@event);
+            Action action = () => aggregate.ApplyEvent(@event);
 
             // assert
-            aggregate.BadChange.Should().BeNull();
+            action.ShouldThrow<RuntimeException>();
         }
 
         [Fact]
@@ -155,7 +156,7 @@ namespace dddlib.Tests.Unit
             
             // act
             var aggregateRoot = Activator.CreateInstance(typeof(PersistedAggregate), true) as PersistedAggregate;
-            aggregateRoot.Initialize(memento, events, "state");
+            aggregateRoot.Initialize(memento, 0, events, "state");
             aggregateRoot.MakeSomethingHappen();
 
             // assert

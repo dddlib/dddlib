@@ -9,6 +9,7 @@ namespace dddlib.Persistence.Memory
     using System.Globalization;
     using System.Linq;
     using System.Reflection;
+    using dddlib.Persistence.Sdk;
     using dddlib.Sdk;
 
     /// <summary>
@@ -16,85 +17,130 @@ namespace dddlib.Persistence.Memory
     /// </summary>
     public class MemoryEventStore : IEventStore
     {
-        private readonly Dictionary<Guid, Data> store = new Dictionary<Guid, Data>();
+        private readonly Dictionary<Guid, List<Event>> eventStreams = new Dictionary<Guid, List<Event>>();
+        private readonly Dictionary<Guid, List<Snapshot>> snapshots = new Dictionary<Guid, List<Snapshot>>();
+
+        private long currentEventId;
 
         /// <summary>
-        /// Commits the specified identifier.
+        /// Commits the events to a stream.
         /// </summary>
-        /// <param name="id">The identifier.</param>
-        /// <param name="events">The events.</param>
-        /// <param name="state">The state.</param>
-        /// <param name="newState">The new state.</param>
-        public void CommitStream(Guid id, IEnumerable<object> events, string state, out string newState)
+        /// <param name="streamId">The stream identifier.</param>
+        /// <param name="events">The events to commit.</param>
+        /// <param name="preCommitState">The pre-commit state of the stream.</param>
+        /// <param name="postCommitState">The post-commit state of stream.</param>
+        public void CommitStream(Guid streamId, IEnumerable<object> events, string preCommitState, out string postCommitState)
         {
-            var data = default(Data);
-            if (this.store.TryGetValue(id, out data))
+            var eventStream = default(List<Event>);
+            if (this.eventStreams.TryGetValue(streamId, out eventStream))
             {
-                if (data.State != state)
+                if (eventStream.Last().State != preCommitState)
                 {
                     throw new Exception("Invalid state");
                 }
             }
-            else if (state != null)
+            else if (preCommitState != null)
             {
                 // TODO (Cameron): Not sure if this should be here...
                 throw new Exception("Invalid state #2");
             }
+            else
+            {
+                eventStream = new List<Event>();
+                this.eventStreams.Add(streamId, eventStream);
+            }
 
-            data = data ?? new Data();
+            var commitTimestamp = DateTime.UtcNow;
 
-            data.Events = data.Events ?? new List<object>();
-            data.Events.AddRange(events);
-            data.State = newState = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
-            data.Timestamp = DateTime.Now;
+            eventStream.AddRange(
+                events.Select(
+                    @event => 
+                    new Event
+                    {
+                        Id = ++this.currentEventId,
+                        Type = @event.GetType(),
+                        Payload = @event,
+                        State = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture),
+                        CommitTimestamp = commitTimestamp,
+                    }));
 
-            this.store[id] = data;
+            postCommitState = eventStream.Last().State;
         }
 
         /// <summary>
-        /// Gets the stream.
+        /// Gets the events for a stream.
         /// </summary>
-        /// <param name="id">The identifier.</param>
-        /// <param name="state">The state.</param>
+        /// <param name="streamId">The stream identifier.</param>
+        /// <param name="streamRevision">The stream revision to get the events from.</param>
+        /// <param name="state">The state of the steam.</param>
         /// <returns>The events.</returns>
-        public IEnumerable<object> GetStream(Guid id, out string state)
+        public IEnumerable<object> GetStream(Guid streamId, int streamRevision, out string state)
         {
-            var data = default(Data);
-            if (!this.store.TryGetValue(id, out data))
+            Guard.Against.Negative(() => streamRevision);
+
+            var eventStream = default(List<Event>);
+            if (!this.eventStreams.TryGetValue(streamId, out eventStream))
             {
                 throw new Exception("Invalid state #2");
             }
 
-            state = data.State;
+            state = eventStream.Last().State;
 
-            return data.Events.ToArray();
+            return eventStream.Skip(streamRevision).Select(@event => @event.Payload).ToList();
         }
 
         /// <summary>
-        /// Replays the events to.
+        /// Adds a snapshot for a stream.
         /// </summary>
-        /// <param name="views">The views.</param>
-        public void ReplayEventsTo(params object[] views)
+        /// <param name="streamId">The stream identifier.</param>
+        /// <param name="snapshot">The snapshot.</param>
+        public void AddSnapshot(Guid streamId, Snapshot snapshot)
         {
-            foreach (var view in views)
+            Guard.Against.Null(() => snapshot);
+
+            var streamSnapshots = default(List<Snapshot>);
+            if (!this.snapshots.TryGetValue(streamId, out streamSnapshots))
             {
-                foreach (var @event in this.store
-                    .OrderBy(e => e.Value.Timestamp)
-                    .SelectMany(e => e.Value.Events))
-                {
-                    // TODO (Cameron): This is not very sensible.
-                    new DefaultEventDispatcher(view.GetType(), "Handle", BindingFlags.Instance | BindingFlags.Public).Dispatch(view, @event);
-                }
+                streamSnapshots = new List<Snapshot>();
+                this.snapshots.Add(streamId, streamSnapshots);
             }
+
+            if (streamSnapshots.Any(streamSnapshot => streamSnapshot.StreamRevision == snapshot.StreamRevision))
+            {
+                throw new PersistenceException("Snapshot already exists for this revision.");
+            }
+
+            streamSnapshots.Add(snapshot);
         }
 
-        private class Data
+        /// <summary>
+        /// Gets the latest snapshot for a stream.
+        /// </summary>
+        /// <param name="streamId">The stream identifier.</param>
+        /// <returns>The snapshot.</returns>
+        public Snapshot GetSnapshot(Guid streamId)
         {
-            public List<object> Events { get; set; }
+            var streamSnapshots = default(List<Snapshot>);
+            if (!this.snapshots.TryGetValue(streamId, out streamSnapshots))
+            {
+                // NOTE (Cameron): There are no saved snapshots for this stream.
+                return null;
+            }
+
+            return streamSnapshots.Single(x => x.StreamRevision == streamSnapshots.Max(y => y.StreamRevision));
+        }
+
+        private class Event
+        {
+            public long Id { get; set; }
+
+            public Type Type { get; set; }
+
+            public object Payload { get; set; }
 
             public string State { get; set; }
 
-            public DateTime Timestamp { get; set; }
+            public DateTime CommitTimestamp { get; set; }
         }
     }
 }

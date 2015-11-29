@@ -140,7 +140,7 @@ namespace dddlib.Persistence.Sdk
                 string.Format(
                     CultureInfo.InvariantCulture,
                     @"The natural key of type '{0}' defined for aggregate root of type '{1}' does not meet equality expectations following identity map serialization.
-Please confirm that the natural key is correctly defined and implements value object equality.",
+Check that the natural key is correctly defined, implements value object equality, and can be successfully serialized and deserialized.",
                     naturalKeyType,
                     aggregateRootType));
         }

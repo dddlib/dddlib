@@ -2,12 +2,11 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Persistence
+namespace dddlib.Persistence.Sdk
 {
     using System;
     using System.Globalization;
     using System.Linq;
-    using dddlib.Persistence.Sdk;
 
     /// <summary>
     /// Represents an aggregate root repository.
@@ -44,17 +43,17 @@ namespace dddlib.Persistence
                         aggregateRoot.GetType()));
             }
 
-            var state = aggregateRoot.State;
-            if (state == null)
+            var preCommitState = aggregateRoot.State;
+            if (preCommitState == null)
             {
                 // NOTE (Cameron): This is the initial commit, for what it's worth.
             }
 
             // TODO (Cameron): Try catch around save.
-            var newState = default(string);
-            this.Save(id, memento, state, out newState);
+            var postCommitState = default(string);
+            this.Save(id, memento, preCommitState, out postCommitState);
 
-            aggregateRoot.CommitEvents(newState);
+            aggregateRoot.CommitEvents(postCommitState);
         }
 
         /// <summary>
@@ -69,7 +68,7 @@ namespace dddlib.Persistence
             var state = default(string);
             var memento = this.Load(id, out state);
             
-            return this.Reconstitute<T>(memento, Enumerable.Empty<object>(), state);
+            return this.Reconstitute<T>(memento, 0, Enumerable.Empty<object>(), state);
         }
 
         /// <summary>
@@ -77,9 +76,9 @@ namespace dddlib.Persistence
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <param name="memento">The memento.</param>
-        /// <param name="oldState">The old state.</param>
-        /// <param name="newState">The new state.</param>
-        protected abstract void Save(Guid id, object memento, string oldState, out string newState);
+        /// <param name="preCommitState">The pre-commit state of the memento.</param>
+        /// <param name="postCommitState">The post-commit state of memento.</param>
+        protected abstract void Save(Guid id, object memento, string preCommitState, out string postCommitState);
 
         /// <summary>
         /// Loads the memento and the state for the specified identifier.
