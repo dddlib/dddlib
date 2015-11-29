@@ -1,14 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{C23F7A97-EAAF-433E-8FCA-4893C049BA88}"
-	ProjectSection(SolutionItems) = preProject
-		nuget.config = nuget.config
-		.nuget\packages.config = .nuget\packages.config
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{62CB4EBC-B7D7-4919-850D-4BDA4B3B4EAA}"
 	ProjectSection(SolutionItems) = preProject
 		build.bat = build.bat
@@ -17,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		dddlib.msbuild = dddlib.msbuild
 		dddlib.ruleset = dddlib.ruleset
 		dddlib.snk = dddlib.snk
+		nuget.config = nuget.config
+		packages.config = packages.config
 		Settings.StyleCop = Settings.StyleCop
 		TODO.txt = TODO.txt
 		Version.txt = Version.txt
