@@ -22,6 +22,7 @@ namespace dddlib.Persistence.Tests.Feature
     {
         private IIdentityMap identityMap;
         private IEventStore eventStore;
+        private ISnapshotStore snapshotStore;
         private IEventStoreRepository repository;
 
         [Background]
@@ -35,8 +36,11 @@ namespace dddlib.Persistence.Tests.Feature
             "And an event store"
                 .f(() => this.eventStore = new MemoryEventStore());
 
+            "And a snapshot store"
+                .f(() => this.snapshotStore = new MemorySnapshotStore());
+
             "And an event store repository"
-                .f(() => this.repository = new EventStoreRepository(this.identityMap, this.eventStore));
+                .f(() => this.repository = new EventStoreRepository(this.identityMap, this.eventStore, this.snapshotStore));
         }
 
         public class UndefinedNaturalKey : MemoryEventPersistence
@@ -416,7 +420,7 @@ namespace dddlib.Persistence.Tests.Feature
                     {
                         Guid streamId;
                         this.identityMap.TryGet(typeof(Subject), typeof(string), saved.Id, out streamId);
-                        this.eventStore.AddSnapshot(
+                        this.snapshotStore.PutSnapshot(
                             streamId,
                             new Snapshot
                             {
@@ -498,7 +502,7 @@ namespace dddlib.Persistence.Tests.Feature
                     {
                         Guid streamId;
                         this.identityMap.TryGet(typeof(Subject), typeof(string), saved.Id, out streamId);
-                        this.eventStore.AddSnapshot(
+                        this.snapshotStore.PutSnapshot(
                             streamId,
                             new Snapshot
                             {
@@ -635,6 +639,8 @@ namespace dddlib.Persistence.Tests.Feature
          *  7. can save and snapshot and save and get (without snapshot)
          *  
          * duplicate add snapshot?
+
+            a. can create and end lifecycle and save and create again
          */
     }
 }

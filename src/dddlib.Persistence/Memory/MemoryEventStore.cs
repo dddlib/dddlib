@@ -18,7 +18,6 @@ namespace dddlib.Persistence.Memory
     public class MemoryEventStore : IEventStore
     {
         private readonly Dictionary<Guid, List<Event>> eventStreams = new Dictionary<Guid, List<Event>>();
-        private readonly Dictionary<Guid, List<Snapshot>> snapshots = new Dictionary<Guid, List<Snapshot>>();
 
         private long currentEventId;
 
@@ -87,47 +86,6 @@ namespace dddlib.Persistence.Memory
             state = eventStream.Last().State;
 
             return eventStream.Skip(streamRevision).Select(@event => @event.Payload).ToList();
-        }
-
-        /// <summary>
-        /// Adds a snapshot for a stream.
-        /// </summary>
-        /// <param name="streamId">The stream identifier.</param>
-        /// <param name="snapshot">The snapshot.</param>
-        public void AddSnapshot(Guid streamId, Snapshot snapshot)
-        {
-            Guard.Against.Null(() => snapshot);
-
-            var streamSnapshots = default(List<Snapshot>);
-            if (!this.snapshots.TryGetValue(streamId, out streamSnapshots))
-            {
-                streamSnapshots = new List<Snapshot>();
-                this.snapshots.Add(streamId, streamSnapshots);
-            }
-
-            if (streamSnapshots.Any(streamSnapshot => streamSnapshot.StreamRevision == snapshot.StreamRevision))
-            {
-                throw new PersistenceException("Snapshot already exists for this revision.");
-            }
-
-            streamSnapshots.Add(snapshot);
-        }
-
-        /// <summary>
-        /// Gets the latest snapshot for a stream.
-        /// </summary>
-        /// <param name="streamId">The stream identifier.</param>
-        /// <returns>The snapshot.</returns>
-        public Snapshot GetSnapshot(Guid streamId)
-        {
-            var streamSnapshots = default(List<Snapshot>);
-            if (!this.snapshots.TryGetValue(streamId, out streamSnapshots))
-            {
-                // NOTE (Cameron): There are no saved snapshots for this stream.
-                return null;
-            }
-
-            return streamSnapshots.Single(x => x.StreamRevision == streamSnapshots.Max(y => y.StreamRevision));
         }
 
         private class Event

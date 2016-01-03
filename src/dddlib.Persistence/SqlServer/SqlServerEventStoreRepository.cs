@@ -17,7 +17,10 @@ namespace dddlib.Persistence.SqlServer
         /// </summary>
         /// <param name="connectionString">The connection string.</param>
         public SqlServerEventStoreRepository(string connectionString)
-            : base(new SqlServerIdentityMap(connectionString), new SqlServerEventStore(connectionString))
+            : base(
+                new SqlServerIdentityMap(connectionString),
+                new SqlServerEventStore(connectionString),
+                new SqlServerSnapshotStore(connectionString))
         {
         }
 
@@ -27,7 +30,10 @@ namespace dddlib.Persistence.SqlServer
         /// <param name="connectionString">The connection string.</param>
         /// <param name="schema">The schema.</param>
         public SqlServerEventStoreRepository(string connectionString, string schema)
-            : base(new SqlServerIdentityMap(connectionString, schema), new SqlServerEventStore(connectionString, schema))
+            : base(
+                new SqlServerIdentityMap(connectionString, schema), 
+                new SqlServerEventStore(connectionString, schema), 
+                new SqlServerSnapshotStore(connectionString, schema))
         {
         }
     }

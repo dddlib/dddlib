@@ -15,18 +15,22 @@ namespace dddlib.Persistence.Sdk
     public class EventStoreRepository : RepositoryBase, IEventStoreRepository
     {
         private readonly IEventStore eventStore;
+        private readonly ISnapshotStore snapshotStore;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EventStoreRepository" /> class.
         /// </summary>
         /// <param name="identityMap">The identity map.</param>
         /// <param name="eventStore">The event store.</param>
-        public EventStoreRepository(IIdentityMap identityMap, IEventStore eventStore)
+        /// <param name="snapshotStore">The snapshot store.</param>
+        public EventStoreRepository(IIdentityMap identityMap, IEventStore eventStore, ISnapshotStore snapshotStore)
             : base(identityMap)
         {
             Guard.Against.Null(() => eventStore);
+            Guard.Against.Null(() => snapshotStore);
 
             this.eventStore = eventStore;
+            this.snapshotStore = snapshotStore;
         }
 
         /// <summary>
@@ -95,7 +99,7 @@ namespace dddlib.Persistence.Sdk
             var streamId = this.GetId<T>(naturalKey);
 
             var state = default(string);
-            var snapshot = this.eventStore.GetSnapshot(streamId) ?? new Snapshot();
+            var snapshot = this.snapshotStore.GetSnapshot(streamId) ?? new Snapshot();
             var events = this.eventStore.GetStream(streamId, snapshot.StreamRevision, out state);
 
             return this.Reconstitute<T>(snapshot.Memento, snapshot.StreamRevision, events, state);

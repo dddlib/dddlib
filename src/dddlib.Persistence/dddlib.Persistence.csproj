@@ -57,6 +57,7 @@
     </Compile>
     <Compile Include="AggregateRootNotFoundException.cs" />
     <Compile Include="Memory\MemoryEventStoreRepository.cs" />
+    <Compile Include="Memory\MemorySnapshotStore.cs" />
     <Compile Include="Sdk\EventStoreRepository.cs" />
     <Compile Include="Sdk\IEventStore.cs" />
     <Compile Include="IEventStoreRepository.cs" />
@@ -69,6 +70,7 @@
     <Compile Include="Sdk\INaturalKeyRepository.cs" />
     <Compile Include="Sdk\DefaultNaturalKeySerializer.cs" />
     <Compile Include="Sdk\INaturalKeySerializer.cs" />
+    <Compile Include="Sdk\ISnapshotStore.cs" />
     <Compile Include="Sdk\Snapshot.cs" />
     <Compile Include="SqlServer\SqlServerEventStoreRepository.cs" />
     <Compile Include="SqlServer\SqlServerGuardExtensions.cs" />
@@ -86,6 +88,7 @@
     <Compile Include="SqlServer\Database\Scripts.cs" />
     <Compile Include="SqlServer\Database\Storage.cs" />
     <Compile Include="SqlServer\SqlServerRepository.cs" />
+    <Compile Include="SqlServer\SqlServerSnapshotStore.cs" />
     <EmbeddedResource Include="SqlServer\Database\Scripts\GetDatabaseVersion.sql" />
   </ItemGroup>
   <ItemGroup>
