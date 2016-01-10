@@ -23,6 +23,6 @@ dddlib contributors</authors>
   </metadata>
   <files>
     <file src="bin\Release\dddlib.Persistence.pdb" target="lib\net45" />
-    <file src="SqlServer\Database\Scripts\Version*.sql" target="sql" />
+    <file src="Scripts\*.sql" target="sql" />
   </files>
 </package>

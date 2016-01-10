@@ -10,16 +10,12 @@ namespace dddlib.Persistence.SqlServer
     using System.Data.SqlClient;
     using System.Transactions;
     using dddlib.Persistence.Sdk;
-    using dddlib.Persistence.SqlServer.Database;
 
     /// <summary>
     /// Represents the SQL Server natural key repository.
     /// </summary>
     public class SqlServerNaturalKeyRepository : INaturalKeyRepository
     {
-        // NOTE (Cameron): This is the only place we specify the version of the SQL database code that this repository is designed to work with.
-        private static readonly int StorageVersion = 1;
-
         private readonly string connectionString;
         private readonly string schema;
 
@@ -30,7 +26,7 @@ namespace dddlib.Persistence.SqlServer
         /// <param name="schema">The schema.</param>
         public SqlServerNaturalKeyRepository(string connectionString, string schema)
         {
-            new Storage(connectionString, schema).Initialize(StorageVersion);
+            new SqlConnection(connectionString).InitializeSchema(schema, typeof(SqlServerNaturalKeyRepository));
 
             this.connectionString = connectionString;
             this.schema = schema;
