@@ -17,9 +17,10 @@ namespace dddlib.Persistence.Sdk
         /// </summary>
         /// <param name="streamId">The stream identifier.</param>
         /// <param name="events">The events to commit.</param>
+        /// <param name="correlationId">The correlation identifier.</param>
         /// <param name="preCommitState">The pre-commit state of the stream.</param>
         /// <param name="postCommitState">The post-commit state of stream.</param>
-        void CommitStream(Guid streamId, IEnumerable<object> events, string preCommitState, out string postCommitState);
+        void CommitStream(Guid streamId, IEnumerable<object> events, Guid correlationId, string preCommitState, out string postCommitState);
 
         /// <summary>
         /// Gets the events for a stream.

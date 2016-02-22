@@ -26,9 +26,10 @@ namespace dddlib.Persistence.Memory
         /// </summary>
         /// <param name="streamId">The stream identifier.</param>
         /// <param name="events">The events to commit.</param>
+        /// <param name="commitId">The commit identifier.</param>
         /// <param name="preCommitState">The pre-commit state of the stream.</param>
         /// <param name="postCommitState">The post-commit state of stream.</param>
-        public void CommitStream(Guid streamId, IEnumerable<object> events, string preCommitState, out string postCommitState)
+        public void CommitStream(Guid streamId, IEnumerable<object> events, Guid commitId, string preCommitState, out string postCommitState)
         {
             var eventStream = default(List<Event>);
             if (this.eventStreams.TryGetValue(streamId, out eventStream))

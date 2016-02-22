@@ -4,9 +4,9 @@
 
 namespace dddlib.Persistence.Sdk
 {
+    using System;
     using System.Globalization;
     using System.Linq;
-    using dddlib.Persistence.Sdk;
     using dddlib.Runtime;
 
     /// <summary>
@@ -40,6 +40,17 @@ namespace dddlib.Persistence.Sdk
         /// <param name="aggregateRoot">The aggregate root.</param>
         public void Save<T>(T aggregateRoot) where T : AggregateRoot
         {
+            this.Save(aggregateRoot, Guid.NewGuid());
+        }
+
+        /// <summary>
+        /// Saves the specified aggregate root.
+        /// </summary>
+        /// <typeparam name="T">The type of aggregate root.</typeparam>
+        /// <param name="aggregateRoot">The aggregate root.</param>
+        /// <param name="correlationId">The correlation identifier.</param>
+        public void Save<T>(T aggregateRoot, Guid correlationId) where T : AggregateRoot
+        {
             Guard.Against.Null(() => aggregateRoot);
 
             var streamId = this.GetId(aggregateRoot);
@@ -65,7 +76,7 @@ namespace dddlib.Persistence.Sdk
 
             // TODO (Cameron): Try catch around commit stream.
             var newState = default(string);
-            this.eventStore.CommitStream(streamId, events, state, out newState);
+            this.eventStore.CommitStream(streamId, events, correlationId, state, out newState);
 
             // TODO (Cameron): Save the memento with the new commits if the state is the same as the old state and replace the state with the new state.
             aggregateRoot.CommitEvents(newState);

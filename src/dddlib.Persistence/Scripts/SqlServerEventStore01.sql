@@ -1,24 +1,27 @@
-IF NOT EXISTS (SELECT * FROM information_schema.schemata WHERE schema_name = 'dbo')
-    EXEC sp_executesql N'CREATE SCHEMA [dbo];';
-GO
-
-CREATE TABLE [dbo].[DatabaseVersion]
+CREATE TABLE [dbo].[Partitions]
 (
-    [Id] [int] NOT NULL,
-    [Description] [varchar](MAX) NOT NULL CHECK (DATALENGTH([Description]) > 0),
-    [Timestamp] [datetime2] NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT [PK_DatabaseVersion] PRIMARY KEY CLUSTERED ([Id])
+    [Id] INT NOT NULL,
+    [Key] UNIQUEIDENTIFIER NOT NULL,
+    CONSTRAINT [PK_Table] PRIMARY KEY ([Key])
 );
 GO
 
-CREATE TABLE [dbo].[Event]
+CREATE TABLE [dbo].[EventTypes]
 (
-    [Id] BIGINT NOT NULL,
-    [CommitId] UNIQUEIDENTIFIER NOT NULL, 
+    [PartitionKey] INT NOT NULL
+);
+GO
+
+CREATE TABLE [dbo].[Events]
+(
+    [PartitionKey] INT NOT NULL,
     [StreamId] UNIQUEIDENTIFIER NOT NULL,
-    [EventTypeId] INT NOT NULL, 
-    [Payload] VARCHAR(MAX) NOT NULL, 
-    [Dispatched] BIT NOT NULL, 
-    CONSTRAINT [PK_Table] PRIMARY KEY ([Id])
+    [StreamRevision] INT NOT NULL,
+    [CorrelationId] UNIQUEIDENTIFIER NOT NULL,
+    [SequenceNumber] BIGINT NOT NULL,
+    [EventTypeId] INT NOT NULL, -- this allows us to know what type to reconstitute
+    [Payload] VARCHAR(MAX) NOT NULL,
+    [Dispatched] BIT NOT NULL,
+    CONSTRAINT [PK_Table] PRIMARY KEY ([SequenceNumber])
 );
 GO
