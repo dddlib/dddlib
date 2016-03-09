@@ -33,11 +33,15 @@ namespace dddlib.Persistence.SqlServer
 
         public SqlServerEventStore(string connectionString, string schema, Guid partition)
         {
-            new SqlConnection(connectionString).InitializeSchema(schema, typeof(SqlServerEventStore));
+            Guard.Against.NullOrEmpty(() => schema);
 
             this.connectionString = connectionString;
             this.schema = schema;
             this.partition = partition;
+
+            var connection = new SqlConnection(connectionString);
+            connection.InitializeSchema(schema, "SqlServerPersistence");
+            connection.InitializeSchema(schema, typeof(SqlServerEventStore));
         }
 
         public void CommitStream(Guid streamId, IEnumerable<object> events, Guid commitId, string preCommitState, out string postCommitState)

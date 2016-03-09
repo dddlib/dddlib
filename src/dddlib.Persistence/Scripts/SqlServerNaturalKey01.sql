@@ -18,22 +18,22 @@ CREATE TABLE [dbo].[NaturalKey]
 GO
 
 CREATE PROCEDURE [dbo].[GetNaturalKeys]
-    @AggregateRootTypeName varchar(511),
-    @Checkpoint bigint
+    @AggregateRootTypeName VARCHAR(511),
+    @Checkpoint BIGINT
 AS
 SET NOCOUNT ON;
 
 SELECT [dbo].[NaturalKey].[Id], [dbo].[NaturalKey].[SerializedValue], [dbo].[NaturalKey].[Checkpoint]
-FROM [dbo].[NaturalKey] INNER JOIN [dbo].[AggregateRootType] on [dbo].[NaturalKey].[AggregateRootTypeId] = [dbo].[AggregateRootType].[Id]
+FROM [dbo].[NaturalKey] INNER JOIN [dbo].[AggregateRootType] ON [dbo].[NaturalKey].[AggregateRootTypeId] = [dbo].[AggregateRootType].[Id]
 WHERE [dbo].[NaturalKey].[Checkpoint] > @Checkpoint AND [dbo].[AggregateRootType].[Name] = @AggregateRootTypeName
 ORDER BY [dbo].[NaturalKey].[Checkpoint];
 
 GO
 
 CREATE PROCEDURE [dbo].[TryAddNaturalKey]
-    @AggregateRootTypeName varchar(511),
-    @SerializedValue varchar(MAX),
-    @Checkpoint bigint
+    @AggregateRootTypeName VARCHAR(511),
+    @SerializedValue VARCHAR(MAX),
+    @Checkpoint BIGINT
 AS
 SET NOCOUNT ON;
 

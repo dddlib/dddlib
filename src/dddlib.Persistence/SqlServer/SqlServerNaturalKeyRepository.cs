@@ -26,10 +26,12 @@ namespace dddlib.Persistence.SqlServer
         /// <param name="schema">The schema.</param>
         public SqlServerNaturalKeyRepository(string connectionString, string schema)
         {
-            new SqlConnection(connectionString).InitializeSchema(schema, typeof(SqlServerNaturalKeyRepository));
-
             this.connectionString = connectionString;
             this.schema = schema;
+
+            var connection = new SqlConnection(connectionString);
+            connection.InitializeSchema(schema, "SqlServerPersistence");
+            connection.InitializeSchema(schema, typeof(SqlServerNaturalKeyRepository));
         }
 
         /// <summary>
