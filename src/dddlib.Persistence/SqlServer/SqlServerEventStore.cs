@@ -26,12 +26,12 @@ namespace dddlib.Persistence.SqlServer
         {
         }
 
-        public SqlServerEventStore(string connectionString, Guid partition)
+        internal SqlServerEventStore(string connectionString, Guid partition)
             : this(connectionString, "dbo", partition)
         {
         }
 
-        public SqlServerEventStore(string connectionString, string schema, Guid partition)
+        internal SqlServerEventStore(string connectionString, string schema, Guid partition)
         {
             Guard.Against.NullOrEmpty(() => schema);
 

@@ -1,19 +1,11 @@
-CREATE TABLE [dbo].[AggregateRootType]
-(
-    [Id] [int] IDENTITY NOT NULL,
-    [Name] [varchar](511) NOT NULL CHECK (DATALENGTH([Name]) > 0), -- LINK (Cameron): http://stackoverflow.com/questions/186523/what-is-the-maximum-length-of-a-c-cli-identifier
-    CONSTRAINT [PK_AggregateRootType] PRIMARY KEY CLUSTERED ([Id])
-);
-GO
-
-CREATE TABLE [dbo].[NaturalKey]
+CREATE TABLE [dbo].[NaturalKeys]
 (
     [Id] [uniqueidentifier] NOT NULL CHECK ([Id] != 0x0) DEFAULT NEWSEQUENTIALID(),
-    [AggregateRootTypeId] [int] NOT NULL,
+    [TypeId] [int] NOT NULL,
     [Checkpoint] [bigint] NOT NULL,
     [SerializedValue] [varchar](MAX) NOT NULL CHECK (DATALENGTH([SerializedValue]) > 0),
-    CONSTRAINT [PK_NaturalKey] PRIMARY KEY CLUSTERED ([AggregateRootTypeId], [Checkpoint]),
-    CONSTRAINT [FK_NaturalKey_AggregateRootTypeId] FOREIGN KEY ([AggregateRootTypeId]) REFERENCES [dbo].[AggregateRootType] ([Id])
+    CONSTRAINT [PK_NaturalKeys] PRIMARY KEY CLUSTERED ([TypeId], [Checkpoint]),
+    CONSTRAINT [FK_TypeId_TypeId] FOREIGN KEY ([TypeId]) REFERENCES [dbo].[Types] ([Id])
 );
 GO
 
@@ -23,10 +15,10 @@ CREATE PROCEDURE [dbo].[GetNaturalKeys]
 AS
 SET NOCOUNT ON;
 
-SELECT [dbo].[NaturalKey].[Id], [dbo].[NaturalKey].[SerializedValue], [dbo].[NaturalKey].[Checkpoint]
-FROM [dbo].[NaturalKey] INNER JOIN [dbo].[AggregateRootType] ON [dbo].[NaturalKey].[AggregateRootTypeId] = [dbo].[AggregateRootType].[Id]
-WHERE [dbo].[NaturalKey].[Checkpoint] > @Checkpoint AND [dbo].[AggregateRootType].[Name] = @AggregateRootTypeName
-ORDER BY [dbo].[NaturalKey].[Checkpoint];
+SELECT [NaturalKey].[Id], [NaturalKey].[SerializedValue], [NaturalKey].[Checkpoint]
+FROM [dbo].[NaturalKeys] [NaturalKey] INNER JOIN [dbo].[Types] [Type] ON [NaturalKey].[TypeId] = [Type].[Id]
+WHERE [NaturalKey].[Checkpoint] > @Checkpoint AND [Type].[Name] = @AggregateRootTypeName
+ORDER BY [NaturalKey].[Checkpoint];
 
 GO
 
@@ -37,23 +29,27 @@ CREATE PROCEDURE [dbo].[TryAddNaturalKey]
 AS
 SET NOCOUNT ON;
 
-IF NOT EXISTS (SELECT * FROM [dbo].[AggregateRootType] WHERE [Name] = @AggregateRootTypeName)
-INSERT INTO [dbo].[AggregateRootType] ([Name])
-SELECT @AggregateRootTypeName;
+DECLARE @TypeId INT = (
+    SELECT [Id]
+    FROM [dbo].[Types]
+    WHERE [Name] = @AggregateRootTypeName
+);
 
-DECLARE @AggregateRootTypeId int;
-SELECT @AggregateRootTypeId = [Id]
-FROM [dbo].[AggregateRootType]
-WHERE [Name] = @AggregateRootTypeName;
+IF @TypeId IS NULL
+BEGIN
+    INSERT INTO [dbo].[Types] ([Name])
+    VALUES (@AggregateRootTypeName);
+    SET @TypeId = SCOPE_IDENTITY();
+END
 
-DECLARE @NaturalKey TABLE ([Id] uniqueidentifier, [Checkpoint] bigint);
+DECLARE @NaturalKeys TABLE ([Id] uniqueidentifier, [Checkpoint] bigint);
 
-IF ((SELECT ISNULL(MAX([Checkpoint]), 0) AS [Checkpoint] FROM [dbo].[NaturalKey] WHERE [AggregateRootTypeId] = @AggregateRootTypeId) = @Checkpoint)
-INSERT INTO [dbo].[NaturalKey] ([AggregateRootTypeId], [Checkpoint], [SerializedValue])
-OUTPUT inserted.[Id], inserted.[Checkpoint] INTO @NaturalKey
-SELECT @AggregateRootTypeId, @Checkpoint + CONVERT(bigint, 1), @SerializedValue;
+IF ((SELECT ISNULL(MAX([Checkpoint]), 0) AS [Checkpoint] FROM [dbo].[NaturalKeys] WHERE [TypeId] = @TypeId) = @Checkpoint)
+INSERT INTO [dbo].[NaturalKeys] ([TypeId], [Checkpoint], [SerializedValue])
+OUTPUT inserted.[Id], inserted.[Checkpoint] INTO @NaturalKeys
+SELECT @TypeId, @Checkpoint + CONVERT(BIGINT, 1), @SerializedValue;
 
 SELECT *
-FROM @NaturalKey;
+FROM @NaturalKeys;
 
 GO
