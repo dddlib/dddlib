@@ -41,17 +41,17 @@ BEGIN
     SET @TypeId = SCOPE_IDENTITY();
 END
 
-MERGE [dbo].[Snapshots] AS [Target]
-USING (SELECT @StreamId as [StreamId], @StreamRevision as [StreamRevision], @Payload as [Payload]) AS [Source]
+MERGE [dbo].[Snapshots] WITH (HOLDLOCK) AS [Target]
+USING (SELECT @StreamId AS [StreamId], @StreamRevision AS [StreamRevision], @Payload AS [Payload]) AS [Source]
 ON [Target].[StreamId] = [Source].[StreamId]
 WHEN MATCHED THEN
-  UPDATE SET
-    [Target].[StreamRevision] = [Source].[StreamRevision],
-    [Target].[TypeId] = @TypeId,
-    [Target].[Payload] = [Source].[Payload]
-WHEN NOT MATCHED THEN  
-  INSERT ([StreamId], [StreamRevision], [TypeId], [Payload]) 
-  VALUES ([Source].[StreamId], [Source].[StreamRevision], @TypeId, [Source].[Payload]);
+    UPDATE SET
+        [Target].[StreamRevision] = [Source].[StreamRevision],
+        [Target].[TypeId] = @TypeId,
+        [Target].[Payload] = [Source].[Payload]
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT ([StreamId], [StreamRevision], [TypeId], [Payload]) 
+    VALUES ([Source].[StreamId], [Source].[StreamRevision], @TypeId, [Source].[Payload]);
 
 GO
 

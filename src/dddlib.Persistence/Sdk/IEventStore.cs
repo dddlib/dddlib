@@ -13,6 +13,15 @@ namespace dddlib.Persistence.Sdk
     public interface IEventStore
     {
         /// <summary>
+        /// Gets the events for a stream.
+        /// </summary>
+        /// <param name="streamId">The stream identifier.</param>
+        /// <param name="streamRevision">The stream revision to get the events from.</param>
+        /// <param name="state">The state of the steam.</param>
+        /// <returns>The events.</returns>
+        IEnumerable<object> GetStream(Guid streamId, int streamRevision, out string state);
+
+        /// <summary>
         /// Commits the events to a stream.
         /// </summary>
         /// <param name="streamId">The stream identifier.</param>
@@ -21,14 +30,5 @@ namespace dddlib.Persistence.Sdk
         /// <param name="preCommitState">The pre-commit state of the stream.</param>
         /// <param name="postCommitState">The post-commit state of stream.</param>
         void CommitStream(Guid streamId, IEnumerable<object> events, Guid correlationId, string preCommitState, out string postCommitState);
-
-        /// <summary>
-        /// Gets the events for a stream.
-        /// </summary>
-        /// <param name="streamId">The stream identifier.</param>
-        /// <param name="streamRevision">The stream revision to get the events from.</param>
-        /// <param name="state">The state of the steam.</param>
-        /// <returns>The events.</returns>
-        IEnumerable<object> GetStream(Guid streamId, int streamRevision, out string state);
     }
 }

@@ -19,7 +19,7 @@ namespace dddlib.Persistence.Tests.Integration
         }
 
         [Fact]
-        public void TrySaveAndGetSnapshot()
+        public void TrySaveSnapshot()
         {
             // arrange
             var snapshotStore = new SqlServerSnapshotStore(this.ConnectionString);
@@ -37,6 +37,34 @@ namespace dddlib.Persistence.Tests.Integration
             // assert
             actualSnapshot.Should().NotBeNull();
             actualSnapshot.ShouldBeEquivalentTo(expectedSnapshot);
+        }
+
+        [Fact]
+        public void TryUpdateSnapshotRevision()
+        {
+            // arrange
+            var snapshotStore = new SqlServerSnapshotStore(this.ConnectionString);
+            var streamId = Guid.NewGuid();
+            var firstSnapshot = new Snapshot
+            {
+                StreamRevision = 4,
+                Memento = new Memento { Id = 2, Name = "first" },
+            };
+
+            var secondSnapshot = new Snapshot
+            {
+                StreamRevision = 8,
+                Memento = new Memento { Id = 2, Name = "second" },
+            };
+
+            // act
+            snapshotStore.PutSnapshot(streamId, firstSnapshot);
+            snapshotStore.PutSnapshot(streamId, secondSnapshot);
+            var actualSnapshot = snapshotStore.GetSnapshot(streamId);
+
+            // assert
+            actualSnapshot.Should().NotBeNull();
+            actualSnapshot.ShouldBeEquivalentTo(secondSnapshot);
         }
 
         private class Memento

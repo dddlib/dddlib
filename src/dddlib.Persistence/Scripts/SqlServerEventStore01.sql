@@ -14,50 +14,64 @@ GO
 
 CREATE PROCEDURE [dbo].[CommitStream]
     @StreamId UNIQUEIDENTIFIER,
-    @PayloadTypeName VARCHAR(511),
-    @Payload VARCHAR(MAX),
     @CorrelationId UNIQUEIDENTIFIER,
     @PreCommitState VARCHAR(36),
     @PostCommitState VARCHAR(36) = NULL OUTPUT
 AS
 SET NOCOUNT ON;
 
-DECLARE @TypeId INT = (
-    SELECT [Id]
-    FROM [dbo].[Types]
-    WHERE [Name] = @PayloadTypeName
-);
+MERGE INTO [dbo].[Types] WITH (HOLDLOCK) AS [Target]
+USING (SELECT DISTINCT [PayloadTypeName] AS [Name] FROM #Events) AS [Source]
+ON [Target].[Name] = [Source].[Name]
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT ([Name])
+    VALUES ([Source].[Name]);
 
-IF @TypeId IS NULL
-BEGIN
-    INSERT INTO [dbo].[Types] ([Name])
-    VALUES (@PayloadTypeName);
-    SET @TypeId = SCOPE_IDENTITY();
-END
+DECLARE @Lock INT;
+DECLARE @CommitState VARCHAR(36);
 
-DECLARE @Events TABLE ([SequenceNumber] BIGINT, [StreamRevision] INT, [State] VARCHAR(36));
+BEGIN TRANSACTION
 
-IF EXISTS (
-    SELECT [State]
-    FROM [dbo].[Events]
-    WHERE [State] = @PreCommitState
-        AND [StreamId] = @StreamId
-        AND [StreamRevision] = (
-        SELECT MAX([StreamRevision])
+    EXEC @Lock = sp_getapplock @Resource = @StreamId, @LockMode = 'Exclusive', @LockTimeout = 10000; -- 10 seconds
+    IF @Lock < 0
+        THROW 50000, 'Concurrency error (server side). Failed to acquire commit lock for stream.', 1;
+
+    WITH [Stream]
+    AS (
+        SELECT [StreamRevision] AS [Revision], [State]
         FROM [dbo].[Events]
-        WHERE [StreamId] = @StreamId))
-INSERT INTO [dbo].[Events] ([StreamId], [StreamRevision], [TypeId], [Payload], [CorrelationId], [SequenceNumber])
-OUTPUT inserted.[SequenceNumber], inserted.[StreamRevision], inserted.[State] INTO @Events
-SELECT
-    @StreamId,
-    (SELECT MAX([StreamRevision]) + 1 FROM [dbo].[Events] WHERE [StreamId] = @StreamId),
-    @TypeId,
-    @Payload,
-    @CorrelationId,
-    (SELECT MAX([SequenceNumber]) + 1 FROM [dbo].[Events]);
+        WHERE [StreamId] = @StreamId
+    )
+    SELECT @CommitState = [State]
+    FROM [Stream] 
+    WHERE [Revision] = (SELECT MAX([Revision]) FROM [Stream]);
+
+    -- LINK (Cameron): http://blogs.msdn.com/b/manub22/archive/2013/12/31/new-throw-statement-in-sql-server-2012-vs-raiserror.aspx
+    IF NOT ISNULL(@PreCommitState, '') = @CommitState
+        THROW 50000, 'Concurrency error (client side). Commit state mismatch.', 1;
+
+    DECLARE @Events TABLE ([SequenceNumber] BIGINT, [StreamRevision] INT, [State] VARCHAR(36));
+
+    INSERT INTO [dbo].[Events] WITH (TABLOCKX) ([StreamId], [StreamRevision], [TypeId], [Payload], [CorrelationId], [SequenceNumber])
+    OUTPUT inserted.[SequenceNumber], inserted.[StreamRevision], inserted.[State] INTO @Events
+    SELECT
+        @StreamId,
+        (COALESCE([Stream].[Revision], 0) + ROW_NUMBER() OVER (ORDER BY (SELECT NULL))),
+        [Type].[Id],
+        [Event].[Payload],
+        @CorrelationId,
+        (COALESCE([Max].[SequenceNumber], 0) + ROW_NUMBER() OVER (ORDER BY (SELECT NULL)))
+    FROM #Events [Event] 
+        CROSS JOIN (SELECT MAX([SequenceNumber]) AS [SequenceNumber] FROM [dbo].[Events]) [Max]
+        CROSS JOIN (SELECT MAX([StreamRevision]) AS [Revision] FROM [dbo].[Events] WHERE [StreamId] = @StreamId) [Stream]
+        INNER JOIN [dbo].[Types] [Type] ON [Event].[PayloadTypeName] = [Type].[Name]
+    ORDER BY [Event].[Index];
+
+COMMIT TRANSACTION
 
 SELECT @PostCommitState = [State]
-FROM @Events;
+FROM @Events
+WHERE [StreamRevision] = (SELECT MAX([StreamRevision]) FROM @Events);
 
 GO
 
@@ -68,8 +82,9 @@ AS
 SET NOCOUNT ON;
 
 SELECT [Event].[StreamId], [Event].[StreamRevision], [Type].[Name] AS [PayloadTypeName], [Event].[Payload], [Event].[SequenceNumber], [Event].[State]
-FROM [dbo].[Events] [Event] INNER JOIN [dbo].[Types] [Type] ON [Event].[TypeId] = [Type].[Id]
+FROM [dbo].[Events] [Event] WITH (NOLOCK) INNER JOIN [dbo].[Types] [Type] ON [Event].[TypeId] = [Type].[Id]
 WHERE [Event].[StreamId] = @StreamId
+    AND @StreamRevision >= @StreamRevision
 ORDER BY [Event].[StreamRevision];
 
 GO
