@@ -8,6 +8,7 @@ namespace dddlib.Persistence.SqlServer
     using System.Collections.Generic;
     using System.Data;
     using System.Data.SqlClient;
+    using System.Linq;
     using System.Transactions;
     using System.Web.Script.Serialization;
     using dddlib.Persistence.Sdk;
@@ -178,8 +179,19 @@ namespace dddlib.Persistence.SqlServer
                     command.Parameters.Add("@PreCommitState", SqlDbType.VarChar, 36).Value = (object)preCommitState ?? DBNull.Value;
                     command.Parameters.Add("@PostCommitState", SqlDbType.VarChar, 36).Direction = ParameterDirection.Output;
 
-                    // TODO (Cameron): Try... catch.
-                    command.ExecuteNonQuery();
+                    try
+                    {
+                        command.ExecuteNonQuery();
+                    }
+                    catch (SqlException ex)
+                    {
+                        if (ex.Errors.Cast<SqlError>().Any(error => error.Number != 50000))
+                        {
+                            throw;
+                        }
+
+                        throw new ConcurrencyException(ex.Message, ex);
+                    }
 
                     postCommitState = Convert.ToString(command.Parameters["@PostCommitState"].Value);
                 }

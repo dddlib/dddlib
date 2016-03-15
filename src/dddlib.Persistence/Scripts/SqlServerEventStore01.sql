@@ -32,7 +32,7 @@ DECLARE @CommitState VARCHAR(36);
 
 BEGIN TRANSACTION
 
-    EXEC @Lock = sp_getapplock @Resource = @StreamId, @LockMode = 'Exclusive', @LockTimeout = 10000; -- 10 seconds
+    EXEC @Lock = sp_getapplock @Resource = @StreamId, @LockMode = 'Exclusive', @LockTimeout = 1000;
     IF @Lock < 0
         THROW 50000, 'Concurrency error (server side). Failed to acquire commit lock for stream.', 1;
 

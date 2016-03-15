@@ -5,7 +5,10 @@
 namespace dddlib.Persistence.Tests.Integration
 {
     using System;
+    using System.Data;
+    using System.Data.SqlClient;
     using System.Linq;
+    using System.Transactions;
     using dddlib.Persistence.SqlServer;
     using dddlib.Persistence.Tests.Sdk;
     using FluentAssertions;
@@ -18,10 +21,6 @@ namespace dddlib.Persistence.Tests.Integration
         {
         }
 
-        // add single event
-        // add multiple events
-        // add 2x events with concurrency exception (client side)
-        // add 2x events with concurrency exception (server side)
         [Fact]
         public void TrySaveSingleEvent()
         {
@@ -132,6 +131,55 @@ namespace dddlib.Persistence.Tests.Integration
             stream2Events.Single().Should().BeOfType<Event>();
             stream2Events.Cast<Event>().Single().ShouldBeEquivalentTo(events2[0]);
             actualStream2CommitState.Should().Be(stream2CommitState);
+        }
+
+        [Fact]
+        public void ExpectClientSideConcurrencyException()
+        {
+            // arrange
+            var eventStore = new SqlServerEventStore(this.ConnectionString);
+            var streamId = Guid.NewGuid();
+            var events1 = new[] { new Event { Id = 1, Value = "One" } };
+            var events2 = new[] { new Event { Id = 1, Value = "AnotherOne" } };
+
+            string commitState;
+            eventStore.CommitStream(streamId, events1, Guid.NewGuid(), null, out commitState);
+
+            // act
+            Action action = () => eventStore.CommitStream(streamId, events2, Guid.NewGuid(), null, out commitState);
+
+            // assert
+            action.ShouldThrow<ConcurrencyException>();
+        }
+
+        [Fact]
+        public void ExpectServerSideConcurrencyException()
+        {
+            // arrange
+            var eventStore = new SqlServerEventStore(this.ConnectionString);
+            var streamId = Guid.NewGuid();
+            var events = new[] { new Event { Id = 1, Value = "One" } };
+
+            string commitState;
+
+            using (new TransactionScope(TransactionScopeOption.RequiresNew))
+            using (var connection = new SqlConnection(this.ConnectionString))
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandType = CommandType.Text;
+                command.CommandText = @"EXEC sp_getapplock @Resource = @StreamId, @LockMode = 'Exclusive', @LockTimeout = 1000;";
+                command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = streamId;
+
+                // NOTE (Cameron): This will cause SQL Server to acquire the same application lock as the commit attempt below.
+                connection.Open();
+                command.ExecuteNonQuery();
+
+                // act
+                Action action = () => eventStore.CommitStream(streamId, events, Guid.NewGuid(), null, out commitState);
+
+                // assert
+                action.ShouldThrow<ConcurrencyException>();
+            }
         }
 
         private class Event
