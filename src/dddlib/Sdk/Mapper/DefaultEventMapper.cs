@@ -16,7 +16,7 @@ namespace dddlib.Runtime
             // NOTE (Cameron): Cannot use Guardian because there is no class type constraint.
             if (source == null)
             {
-                throw new ArgumentNullException("source", "Value cannot be null.");
+                throw new ArgumentNullException(Guard.Expression.Parse(() => source), "Value cannot be null.");
             }
 
             this.source = source;

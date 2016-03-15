@@ -38,6 +38,9 @@ namespace dddlib.Sdk
         /// <returns>Returns <c>true</c> if the type is a subclass of the specified raw generic type.</returns>
         public static bool IsSubclassOfRawGeneric(this Type sourceType, Type genericType)
         {
+            Guard.Against.Null(() => sourceType);
+            Guard.Against.Null(() => genericType);
+
             while (sourceType != null && sourceType != typeof(object))
             {
                 var currentType = sourceType.IsGenericType ? sourceType.GetGenericTypeDefinition() : sourceType;
@@ -50,6 +53,18 @@ namespace dddlib.Sdk
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Gets the serialized name for the type.
+        /// </summary>
+        /// <param name="sourceType">The source type.</param>
+        /// <returns>The serialized name.</returns>
+        public static string GetSerializedName(this Type sourceType)
+        {
+            Guard.Against.Null(() => sourceType);
+
+            return string.Concat(sourceType.FullName, ", ", sourceType.Assembly.GetName().Name);
         }
     }
 }

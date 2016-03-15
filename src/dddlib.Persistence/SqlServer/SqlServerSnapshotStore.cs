@@ -10,6 +10,7 @@ namespace dddlib.Persistence.SqlServer
     using System.Transactions;
     using System.Web.Script.Serialization;
     using dddlib.Persistence.Sdk;
+    using dddlib.Sdk;
 
     /// <summary>
     /// Represents the SQL Server snapshot store.
@@ -116,6 +117,9 @@ namespace dddlib.Persistence.SqlServer
         /// <param name="snapshot">The snapshot.</param>
         public void PutSnapshot(Guid streamId, Snapshot snapshot)
         {
+            Guard.Against.Null(() => snapshot);
+            Guard.Against.Null(() => snapshot.Memento);
+
             // TODO (Cameron): Use partition for the call.
             using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
@@ -125,8 +129,7 @@ namespace dddlib.Persistence.SqlServer
                 command.CommandText = string.Concat(this.schema, ".PutSnapshot");
                 command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = streamId;
                 command.Parameters.Add("@StreamRevision", SqlDbType.Int).Value = snapshot.StreamRevision;
-                command.Parameters.Add("@PayloadTypeName", SqlDbType.VarChar, 511).Value = 
-                    string.Concat(snapshot.Memento.GetType().FullName, ", ", snapshot.Memento.GetType().Assembly.GetName().Name);
+                command.Parameters.Add("@PayloadTypeName", SqlDbType.VarChar, 511).Value = snapshot.Memento.GetType().GetSerializedName();
                 command.Parameters.Add("@Payload", SqlDbType.VarChar).Value = Serializer.Serialize(snapshot.Memento);
 
                 connection.Open();

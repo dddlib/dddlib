@@ -6,6 +6,7 @@ namespace dddlib.Sdk
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using System.Web.Script.Serialization;
     using dddlib.Runtime;
@@ -62,8 +63,12 @@ namespace dddlib.Sdk
                     var defaultConstructor = typeof(T).GetConstructor(Type.EmptyTypes);
                     if (defaultConstructor == null)
                     {
-                        // TODO (Cameron): Fix exception.
-                        throw new RuntimeException("deserialization error!");
+                        throw new RuntimeException(
+                            string.Format(
+                                CultureInfo.InvariantCulture,
+                                "Unable to deserialize value object of type '{0}' using the '{1}' as it does not have a default constructor defined.",
+                                typeof(T),
+                                typeof(DefaultValueObjectSerializer<T>)));
                     }
 
                     var valueObject = Activator.CreateInstance<T>();

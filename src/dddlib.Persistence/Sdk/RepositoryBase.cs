@@ -102,7 +102,7 @@ namespace dddlib.Persistence.Sdk
                         typeof(T),
                         aggregateRootType.NaturalKey.PropertyType,
                         naturalKey.GetType()),
-                    "naturalKey");
+                    Guard.Expression.Parse(() => naturalKey));
             }
 
             var identity = default(Guid);

@@ -12,6 +12,7 @@ namespace dddlib.Persistence.SqlServer
     using System.Transactions;
     using System.Web.Script.Serialization;
     using dddlib.Persistence.Sdk;
+    using dddlib.Sdk;
 
     /// <summary>
     /// Represents the SQL Server event store.
@@ -136,10 +137,7 @@ namespace dddlib.Persistence.SqlServer
             var index = 0;
             foreach (var @event in events)
             {
-                data.Rows.Add(
-                    ++index,
-                    string.Concat(@event.GetType().FullName, ", ", @event.GetType().Assembly.GetName().Name),
-                    Serializer.Serialize(@event));
+                data.Rows.Add(++index, @event.GetType().GetSerializedName(), Serializer.Serialize(@event));
             }
 
             // add all events into temporary table
