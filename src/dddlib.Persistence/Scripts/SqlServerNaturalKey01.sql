@@ -4,8 +4,8 @@ CREATE TABLE [dbo].[NaturalKeys]
     [TypeId] [int] NOT NULL,
     [Checkpoint] [bigint] NOT NULL,
     [SerializedValue] [varchar](MAX) NOT NULL CHECK (DATALENGTH([SerializedValue]) > 0),
-    CONSTRAINT [PK_NaturalKeys] PRIMARY KEY CLUSTERED ([TypeId], [Checkpoint]),
-    CONSTRAINT [FK_TypeId_TypeId] FOREIGN KEY ([TypeId]) REFERENCES [dbo].[Types] ([Id])
+    CONSTRAINT [PK_NaturalKey] PRIMARY KEY CLUSTERED ([TypeId], [Checkpoint]),
+    CONSTRAINT [FK_NaturalKeyTypeId_TypeId] FOREIGN KEY ([TypeId]) REFERENCES [dbo].[Types] ([Id])
 );
 GO
 

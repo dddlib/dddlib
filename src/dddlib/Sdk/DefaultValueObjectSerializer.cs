@@ -66,9 +66,8 @@ namespace dddlib.Sdk
                         throw new RuntimeException(
                             string.Format(
                                 CultureInfo.InvariantCulture,
-                                "Unable to deserialize value object of type '{0}' using the '{1}' as it does not have a default constructor defined.",
-                                typeof(T),
-                                typeof(DefaultValueObjectSerializer<T>)));
+                                "Unable to deserialize value object of type '{0}' using the default value object serializer as there is no suitable constructor defined.",
+                                typeof(T)));
                     }
 
                     var valueObject = Activator.CreateInstance<T>();

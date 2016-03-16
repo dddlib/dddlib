@@ -5,7 +5,7 @@ CREATE TABLE [dbo].[Snapshots]
     [TypeId] INT NOT NULL,
     [Payload] VARCHAR(MAX) NOT NULL,
     CONSTRAINT [PK_Snapshot] PRIMARY KEY ([StreamId]),
-    CONSTRAINT [FK_TypeId_TypeId] FOREIGN KEY ([TypeId]) REFERENCES [dbo].[Types] ([Id])
+    CONSTRAINT [FK_SnapshotTypeId_TypeId] FOREIGN KEY ([TypeId]) REFERENCES [dbo].[Types] ([Id])
 );
 GO
 
