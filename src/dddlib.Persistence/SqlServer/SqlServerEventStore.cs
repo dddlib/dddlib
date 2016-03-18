@@ -183,12 +183,27 @@ namespace dddlib.Persistence.SqlServer
                     }
                     catch (SqlException ex)
                     {
-                        if (ex.Errors.Cast<SqlError>().Any(error => error.Number != 50000))
+                        // NOTE (Cameron): 500 Internal Server Error
+                        if (ex.Errors.Cast<SqlError>().Any(sqlError => sqlError.Number == 50500))
                         {
-                            throw;
+                            throw new ConcurrencyException(ex.Message, ex);
                         }
 
-                        throw new ConcurrencyException(ex.Message, ex);
+                        // NOTE (Cameron): 409 Conflict
+                        if (ex.Errors.Cast<SqlError>().Any(sqlError => sqlError.Number == 50409))
+                        {
+                            if (preCommitState == null)
+                            {
+                                // NOTE (Cameron): Aggregate root already exists!
+                                throw new ConcurrencyException("Aggregate root already exists.", ex);
+                            }
+                            else
+                            {
+                                throw new ConcurrencyException(ex.Message, ex);
+                            }
+                        }
+
+                        throw;
                     }
 
                     postCommitState = Convert.ToString(command.Parameters["@PostCommitState"].Value);

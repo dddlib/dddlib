@@ -34,7 +34,7 @@ BEGIN TRANSACTION
 
     EXEC @Lock = sp_getapplock @Resource = @StreamId, @LockMode = 'Exclusive', @LockTimeout = 1000;
     IF @Lock < 0
-        THROW 50000, 'Concurrency error (server side). Failed to acquire commit lock for stream.', 1;
+        THROW 50500, 'Concurrency error (server side). Failed to acquire commit lock for stream.', 1;
 
     WITH [Stream]
     AS (
@@ -48,7 +48,7 @@ BEGIN TRANSACTION
 
     -- LINK (Cameron): http://blogs.msdn.com/b/manub22/archive/2013/12/31/new-throw-statement-in-sql-server-2012-vs-raiserror.aspx
     IF NOT ISNULL(@PreCommitState, '') = @CommitState
-        THROW 50000, 'Concurrency error (client side). Commit state mismatch.', 1;
+        THROW 50409, 'Concurrency error (client side). Commit state mismatch.', 1;
 
     DECLARE @Events TABLE ([SequenceNumber] BIGINT, [StreamRevision] INT, [State] VARCHAR(36));
 
