@@ -10,6 +10,7 @@ namespace dddlib.Persistence.Sdk
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using dddlib.Runtime;
 
@@ -27,6 +28,7 @@ namespace dddlib.Persistence.Sdk
         /// <param name="events">The events.</param>
         /// <param name="state">The state.</param>
         /// <returns>The aggregate root.</returns>
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "Nonsense.")]
         public T Create<T>(object memento, int revision, IEnumerable<object> events, string state)
             where T : AggregateRoot
         {
@@ -36,8 +38,14 @@ namespace dddlib.Persistence.Sdk
                 throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        "The aggregate root of type '{0}' does not have a factory method registered with the runtime.",
-                        typeof(T)));
+                        @"The aggregate root of type '{0}' does not have a factory method registered with the runtime.
+To fix this issue, either:
+- add a protected internal default constructor to the aggregate root, or
+- use the bootstrapper to configure the aggregate root to reconstitute using an uninitialized factory.",
+                        typeof(T)))
+                {
+                    HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Reconstitution",
+                };
             }
 
             var uninitializedFactory = (Func<T>)runtimeType.UninitializedFactory;
