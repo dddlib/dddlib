@@ -46,6 +46,7 @@
     <Compile Include="Feature\BusinessException.cs" />
     <Compile Include="Feature\ModelValidationFeature.cs" />
     <Compile Include="Feature\ValueObjectSerialization.cs" />
+    <Compile Include="Unit\DefaultTypeAnalyzerServiceTests.cs" />
     <None Include="..\..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>

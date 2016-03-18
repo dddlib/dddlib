@@ -33,6 +33,7 @@ namespace dddlib.Sdk.Configuration.Model
             }
 
             // NOTE (Cameron): Defaults.
+            this.UninitializedFactory = typeAnalyzerService.GetUninitializedFactory(runtimeType);
             this.EventDispatcher = new DefaultEventDispatcher(runtimeType);
         }
 

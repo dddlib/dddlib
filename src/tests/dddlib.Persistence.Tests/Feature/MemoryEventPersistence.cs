@@ -77,7 +77,7 @@ namespace dddlib.Persistence.Tests.Feature
             public void Scenario(Subject instance, Action action)
             {
                 "Given an instance of an aggregate root with no defined uninitialized factory"
-                    .f(() => instance = new Subject());
+                    .f(() => instance = new Subject("nonsense"));
 
                 "When that instance is saved to the repository"
                     .f(() => action = () => this.repository.Save(instance));
@@ -88,6 +88,10 @@ namespace dddlib.Persistence.Tests.Feature
 
             public class Subject : AggregateRoot
             {
+                public Subject(string nonsense)
+                {
+                }
+
                 [NaturalKey]
                 public string Id { get; set; }
             }

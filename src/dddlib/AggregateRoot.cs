@@ -131,7 +131,10 @@ namespace dddlib
                 string.Format(
                     CultureInfo.InvariantCulture,
                     "The aggregate root of type '{0}' has not been configured to apply a memento representing its state.",
-                    this.GetType()));
+                    this.GetType()))
+            {
+                HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Mementos",
+            };
         }
 
         /// <summary>

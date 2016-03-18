@@ -6,7 +6,6 @@ namespace dddlib.Tests.Unit
 {
     using System;
     using dddlib.Runtime;
-    using dddlib.Sdk;
     using dddlib.Sdk.Configuration.Model;
     using FakeItEasy;
     using FluentAssertions;
@@ -105,11 +104,14 @@ namespace dddlib.Tests.Unit
             var typeAnalyzerService = A.Fake<ITypeAnalyzerService>(o => o.Strict());
             A.CallTo(() => typeAnalyzerService.IsValidAggregateRoot(type)).Returns(true);
             A.CallTo(() => typeAnalyzerService.IsValidEntity(type)).Returns(true);
+            A.CallTo(() => typeAnalyzerService.GetUninitializedFactory(type)).Returns(null);
             A.CallTo(() => typeAnalyzerService.GetNaturalKey(type)).Returns(null);
             A.CallTo(() => typeAnalyzerService.IsValidAggregateRoot(typeof(AggregateRoot))).Returns(true);
             A.CallTo(() => typeAnalyzerService.IsValidEntity(typeof(AggregateRoot))).Returns(true);
+            A.CallTo(() => typeAnalyzerService.GetUninitializedFactory(typeof(AggregateRoot))).Returns(null);
             A.CallTo(() => typeAnalyzerService.GetNaturalKey(typeof(AggregateRoot))).Returns(null);
             A.CallTo(() => typeAnalyzerService.IsValidEntity(typeof(Entity))).Returns(true);
+            A.CallTo(() => typeAnalyzerService.GetUninitializedFactory(typeof(Entity))).Returns(null);
             A.CallTo(() => typeAnalyzerService.GetNaturalKey(typeof(Entity))).Returns(null);
             var entityType = new EntityType(typeof(Entity), typeAnalyzerService);
             var aggregateType = new AggregateRootType(typeof(AggregateRoot), typeAnalyzerService, entityType);
