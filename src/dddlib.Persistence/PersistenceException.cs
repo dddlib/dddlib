@@ -35,7 +35,7 @@ namespace dddlib.Persistence
         /// </summary>
         /// <param name="inner">The inner exception.</param>
         public PersistenceException(Exception inner)
-            : this(null, inner)
+            : this("A persistence exception has occurred.", inner)
         {
         }
 

@@ -17,7 +17,7 @@ namespace dddlib.Persistence
         /// Initializes a new instance of the <see cref="ConcurrencyException"/> class.
         /// </summary>
         public ConcurrencyException()
-            : this((string)null)
+            : this((Exception)null)
         {
         }
 
@@ -35,7 +35,7 @@ namespace dddlib.Persistence
         /// </summary>
         /// <param name="inner">The inner exception.</param>
         public ConcurrencyException(Exception inner)
-            : this(null, inner)
+            : this("A concurrency exception has occurred.", inner)
         {
         }
 

@@ -6,8 +6,10 @@ namespace dddlib.Persistence.Sdk
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using dddlib.Runtime;
+    using dddlib.Sdk.Configuration.Model;
 
     /// <summary>
     /// Represents the aggregate root repository.
@@ -41,36 +43,20 @@ namespace dddlib.Persistence.Sdk
 
             // NOTE (Cameron): Because we can't trust type of(T) as it may be the base class.
             var type = aggregateRoot.GetType();
+            var runtimeType = Application.Current.GetAggregateRootType(type);
 
-            var aggregateRootType = Application.Current.GetAggregateRootType(type);
-            if (aggregateRootType.NaturalKey == null)
-            {
-                throw new RuntimeException(
-                    string.Format(
-                        CultureInfo.InvariantCulture, 
-                        "Cannot save aggregate root of type '{0}' as there is no natural key defined.", 
-                        type));
-            }
+            Validate(runtimeType, type);
 
-            if (aggregateRootType.UninitializedFactory == null)
-            {
-                throw new RuntimeException(
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "Cannot save aggregate root of type '{0}' as there is no uninitialized factory defined for reconstitution.", 
-                        type));
-            }
-
-            var naturalKey = aggregateRootType.NaturalKey.GetValue(aggregateRoot);
+            var naturalKey = runtimeType.NaturalKey.GetValue(aggregateRoot);
             if (naturalKey == null)
             {
                 // NOTE (Cameron): This mimics the Guard clause functionality by design.
                 throw new ArgumentException(
                     "Value cannot be null.",
-                    string.Concat(Guard.Expression.Parse(() => aggregateRoot), ".", aggregateRootType.NaturalKey.PropertyName));
+                    string.Concat(Guard.Expression.Parse(() => aggregateRoot), ".", runtimeType.NaturalKey.PropertyName));
             }
 
-            return this.identityMap.GetOrAdd(aggregateRootType.RuntimeType, aggregateRootType.NaturalKey.PropertyType, naturalKey);
+            return this.identityMap.GetOrAdd(runtimeType.RuntimeType, runtimeType.NaturalKey.PropertyType, naturalKey);
         }
 
         /// <summary>
@@ -83,33 +69,31 @@ namespace dddlib.Persistence.Sdk
         {
             Guard.Against.Null(() => naturalKey);
 
-            var aggregateRootType = Application.Current.GetAggregateRootType(typeof(T));
-            if (aggregateRootType.NaturalKey == null)
-            {
-                throw new RuntimeException(
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "Cannot load aggregate root of type '{0}' as there is no natural key defined.",
-                        typeof(T)));
-            }
+            var runtimeType = Application.Current.GetAggregateRootType(typeof(T));
 
-            if (aggregateRootType.NaturalKey.PropertyType != naturalKey.GetType())
+            Validate(runtimeType, typeof(T));
+
+            if (runtimeType.NaturalKey.PropertyType != naturalKey.GetType())
             {
                 throw new ArgumentException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        "Invalid value for aggregate root of type '{0}'. That value type must match natural key type of '{1}' but is type of '{2}'.",
+                        "Invalid natural key value type for aggregate root of type '{0}'. Expected value type of '{1}' but value is type of '{2}'.",
                         typeof(T),
-                        aggregateRootType.NaturalKey.PropertyType,
+                        runtimeType.NaturalKey.PropertyType,
                         naturalKey.GetType()),
-                    "naturalKey");
+                    Guard.Expression.Parse(() => naturalKey));
             }
 
             var identity = default(Guid);
-            if (!this.identityMap.TryGet(aggregateRootType.RuntimeType, aggregateRootType.NaturalKey.PropertyType, naturalKey, out identity))
+            if (!this.identityMap.TryGet(runtimeType.RuntimeType, runtimeType.NaturalKey.PropertyType, naturalKey, out identity))
             {
-                // aggregate root not found?
-                throw new AggregateRootNotFoundException();
+                throw new AggregateRootNotFoundException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Cannot find the aggregate root of type '{0}' with natural key '{1}'.",
+                        typeof(T),
+                        naturalKey));
             }
 
             return identity;
@@ -128,6 +112,41 @@ namespace dddlib.Persistence.Sdk
             where T : AggregateRoot
         {
             return this.factory.Create<T>(memento, revision, events, state);
+        }
+
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
+        private static void Validate(AggregateRootType runtimeType, Type type)
+        {
+            if (runtimeType.NaturalKey == null)
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        @"The aggregate root of type '{0}' does not have a natural key defined.
+To fix this issue, either:
+- use a bootstrapper to define a natural key, or
+- decorate the natural key property on the aggregate root with the [dddlib.NaturalKey] attribute.",
+                        type))
+                {
+                    HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Equality",
+                };
+            }
+
+            // NOTE (Cameron): Exact duplication of the code in AggregateRootFactory...
+            if (runtimeType.UninitializedFactory == null)
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        @"The aggregate root of type '{0}' does not have a factory method registered with the runtime.
+To fix this issue, either:
+- use a bootstrapper to register a factory method with the runtime, or
+- add a default constructor to the aggregate root.",
+                        type))
+                {
+                    HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Reconstitution",
+                };
+            }
         }
     }
 }

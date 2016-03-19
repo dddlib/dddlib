@@ -18,7 +18,6 @@ namespace dddlib.Persistence.Memory
     public class MemoryEventStore : IEventStore
     {
         private readonly Dictionary<Guid, List<Event>> eventStreams = new Dictionary<Guid, List<Event>>();
-        private readonly Dictionary<Guid, List<Snapshot>> snapshots = new Dictionary<Guid, List<Snapshot>>();
 
         private long currentEventId;
 
@@ -27,22 +26,23 @@ namespace dddlib.Persistence.Memory
         /// </summary>
         /// <param name="streamId">The stream identifier.</param>
         /// <param name="events">The events to commit.</param>
+        /// <param name="commitId">The commit identifier.</param>
         /// <param name="preCommitState">The pre-commit state of the stream.</param>
         /// <param name="postCommitState">The post-commit state of stream.</param>
-        public void CommitStream(Guid streamId, IEnumerable<object> events, string preCommitState, out string postCommitState)
+        public void CommitStream(Guid streamId, IEnumerable<object> events, Guid commitId, string preCommitState, out string postCommitState)
         {
             var eventStream = default(List<Event>);
             if (this.eventStreams.TryGetValue(streamId, out eventStream))
             {
                 if (eventStream.Last().State != preCommitState)
                 {
-                    throw new Exception("Invalid state");
+                    throw new ConcurrencyException("Invalid state");
                 }
             }
             else if (preCommitState != null)
             {
                 // TODO (Cameron): Not sure if this should be here...
-                throw new Exception("Invalid state #2");
+                throw new ConcurrencyException("Invalid state #2");
             }
             else
             {
@@ -81,53 +81,12 @@ namespace dddlib.Persistence.Memory
             var eventStream = default(List<Event>);
             if (!this.eventStreams.TryGetValue(streamId, out eventStream))
             {
-                throw new Exception("Invalid state #2");
+                throw new ConcurrencyException("Invalid state #2");
             }
 
             state = eventStream.Last().State;
 
             return eventStream.Skip(streamRevision).Select(@event => @event.Payload).ToList();
-        }
-
-        /// <summary>
-        /// Adds a snapshot for a stream.
-        /// </summary>
-        /// <param name="streamId">The stream identifier.</param>
-        /// <param name="snapshot">The snapshot.</param>
-        public void AddSnapshot(Guid streamId, Snapshot snapshot)
-        {
-            Guard.Against.Null(() => snapshot);
-
-            var streamSnapshots = default(List<Snapshot>);
-            if (!this.snapshots.TryGetValue(streamId, out streamSnapshots))
-            {
-                streamSnapshots = new List<Snapshot>();
-                this.snapshots.Add(streamId, streamSnapshots);
-            }
-
-            if (streamSnapshots.Any(streamSnapshot => streamSnapshot.StreamRevision == snapshot.StreamRevision))
-            {
-                throw new PersistenceException("Snapshot already exists for this revision.");
-            }
-
-            streamSnapshots.Add(snapshot);
-        }
-
-        /// <summary>
-        /// Gets the latest snapshot for a stream.
-        /// </summary>
-        /// <param name="streamId">The stream identifier.</param>
-        /// <returns>The snapshot.</returns>
-        public Snapshot GetSnapshot(Guid streamId)
-        {
-            var streamSnapshots = default(List<Snapshot>);
-            if (!this.snapshots.TryGetValue(streamId, out streamSnapshots))
-            {
-                // NOTE (Cameron): There are no saved snapshots for this stream.
-                return null;
-            }
-
-            return streamSnapshots.Single(x => x.StreamRevision == streamSnapshots.Max(y => y.StreamRevision));
         }
 
         private class Event

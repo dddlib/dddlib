@@ -10,16 +10,13 @@ namespace dddlib.Persistence.SqlServer
     using System.Data.SqlClient;
     using System.Transactions;
     using dddlib.Persistence.Sdk;
-    using dddlib.Persistence.SqlServer.Database;
+    using dddlib.Sdk;
 
     /// <summary>
     /// Represents the SQL Server natural key repository.
     /// </summary>
     public class SqlServerNaturalKeyRepository : INaturalKeyRepository
     {
-        // NOTE (Cameron): This is the only place we specify the version of the SQL database code that this repository is designed to work with.
-        private static readonly int StorageVersion = 1;
-
         private readonly string connectionString;
         private readonly string schema;
 
@@ -30,10 +27,12 @@ namespace dddlib.Persistence.SqlServer
         /// <param name="schema">The schema.</param>
         public SqlServerNaturalKeyRepository(string connectionString, string schema)
         {
-            new Storage(connectionString, schema).Initialize(StorageVersion);
-
             this.connectionString = connectionString;
             this.schema = schema;
+
+            var connection = new SqlConnection(connectionString);
+            connection.InitializeSchema(schema, "SqlServerPersistence");
+            connection.InitializeSchema(schema, typeof(SqlServerNaturalKeyRepository));
         }
 
         /// <summary>
@@ -52,7 +51,7 @@ namespace dddlib.Persistence.SqlServer
             {
                 command.CommandType = CommandType.StoredProcedure;
                 command.CommandText = string.Concat(this.schema, ".GetNaturalKeys");
-                command.Parameters.Add("@AggregateRootTypeName", SqlDbType.VarChar, 511).Value = aggregateRootType.FullName;
+                command.Parameters.Add("@AggregateRootTypeName", SqlDbType.VarChar, 511).Value = aggregateRootType.GetSerializedName();
                 command.Parameters.Add("@Checkpoint", SqlDbType.BigInt).Value = checkpoint;
 
                 connection.Open();
@@ -91,7 +90,7 @@ namespace dddlib.Persistence.SqlServer
             {
                 command.CommandType = CommandType.StoredProcedure;
                 command.CommandText = string.Concat(this.schema, ".TryAddNaturalKey");
-                command.Parameters.Add("@AggregateRootTypeName", SqlDbType.VarChar, 511).Value = aggregateRootType.FullName;
+                command.Parameters.Add("@AggregateRootTypeName", SqlDbType.VarChar, 511).Value = aggregateRootType.GetSerializedName();
                 command.Parameters.Add("@SerializedValue", SqlDbType.VarChar).Value = serializedNaturalKey;
                 command.Parameters.Add("@Checkpoint", SqlDbType.BigInt).Value = checkpoint;
 

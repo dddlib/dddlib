@@ -4,9 +4,9 @@
 
 namespace dddlib.Persistence.Sdk
 {
+    using System;
     using System.Globalization;
     using System.Linq;
-    using dddlib.Persistence.Sdk;
     using dddlib.Runtime;
 
     /// <summary>
@@ -15,18 +15,22 @@ namespace dddlib.Persistence.Sdk
     public class EventStoreRepository : RepositoryBase, IEventStoreRepository
     {
         private readonly IEventStore eventStore;
+        private readonly ISnapshotStore snapshotStore;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EventStoreRepository" /> class.
         /// </summary>
         /// <param name="identityMap">The identity map.</param>
         /// <param name="eventStore">The event store.</param>
-        public EventStoreRepository(IIdentityMap identityMap, IEventStore eventStore)
+        /// <param name="snapshotStore">The snapshot store.</param>
+        public EventStoreRepository(IIdentityMap identityMap, IEventStore eventStore, ISnapshotStore snapshotStore)
             : base(identityMap)
         {
             Guard.Against.Null(() => eventStore);
+            Guard.Against.Null(() => snapshotStore);
 
             this.eventStore = eventStore;
+            this.snapshotStore = snapshotStore;
         }
 
         /// <summary>
@@ -36,17 +40,63 @@ namespace dddlib.Persistence.Sdk
         /// <param name="aggregateRoot">The aggregate root.</param>
         public void Save<T>(T aggregateRoot) where T : AggregateRoot
         {
+            this.Save(aggregateRoot, Guid.NewGuid());
+        }
+
+        /// <summary>
+        /// Saves the specified aggregate root.
+        /// </summary>
+        /// <typeparam name="T">The type of aggregate root.</typeparam>
+        /// <param name="aggregateRoot">The aggregate root.</param>
+        /// <param name="correlationId">The correlation identifier.</param>
+        public void Save<T>(T aggregateRoot, Guid correlationId) where T : AggregateRoot
+        {
             Guard.Against.Null(() => aggregateRoot);
 
-            var streamId = this.GetId(aggregateRoot);
+            try
+            {
+                this.SaveInternal(aggregateRoot, correlationId);
+            }
+            catch (RuntimeException ex)
+            {
+                throw new PersistenceException(
+                    string.Concat("An exception occurred during the save operation.\r\n", ex.Message),
+                    ex);
+            }
+        }
 
+        /// <summary>
+        /// Loads the aggregate root with the specified natural key.
+        /// </summary>
+        /// <typeparam name="T">The type of aggregate root.</typeparam>
+        /// <param name="naturalKey">The natural key.</param>
+        /// <returns>The aggregate root.</returns>
+        public T Load<T>(object naturalKey) where T : AggregateRoot
+        {
+            Guard.Against.Null(() => naturalKey);
+
+            try
+            {
+                return this.LoadInternal<T>(naturalKey);
+            }
+            catch (RuntimeException ex)
+            {
+                throw new PersistenceException(
+                    string.Concat("An exception occurred during the load operation.\r\n", ex.Message),
+                    ex);
+            }
+        }
+
+        private void SaveInternal<T>(T aggregateRoot, Guid correlationId) where T : AggregateRoot
+        {
+            var streamId = this.GetId(aggregateRoot);
             var events = aggregateRoot.GetUncommittedEvents();
 
             var state = aggregateRoot.State;
             if (state == null && !events.Any())
             {
-                // NOTE (Cameron): This is the initial commit so there should be events.
-                throw new RuntimeException(
+                // NOTE (Cameron): This is the initial commit so there should be events. It's odd but if we don't error we may confuse people.
+                throw new PersistenceException(
                     string.Format(
                         CultureInfo.InvariantCulture,
                         "Cannot save initial commit for aggregate root of type '{0}' as it has no events.",
@@ -61,7 +111,7 @@ namespace dddlib.Persistence.Sdk
 
             // TODO (Cameron): Try catch around commit stream.
             var newState = default(string);
-            this.eventStore.CommitStream(streamId, events, state, out newState);
+            this.eventStore.CommitStream(streamId, events, correlationId, state, out newState);
 
             // TODO (Cameron): Save the memento with the new commits if the state is the same as the old state and replace the state with the new state.
             aggregateRoot.CommitEvents(newState);
@@ -84,18 +134,12 @@ namespace dddlib.Persistence.Sdk
             ////}
         }
 
-        /// <summary>
-        /// Loads the aggregate root with the specified natural key.
-        /// </summary>
-        /// <typeparam name="T">The type of aggregate root.</typeparam>
-        /// <param name="naturalKey">The natural key.</param>
-        /// <returns>The aggregate root.</returns>
-        public T Load<T>(object naturalKey) where T : AggregateRoot
+        private T LoadInternal<T>(object naturalKey) where T : AggregateRoot
         {
             var streamId = this.GetId<T>(naturalKey);
 
             var state = default(string);
-            var snapshot = this.eventStore.GetSnapshot(streamId) ?? new Snapshot();
+            var snapshot = this.snapshotStore.GetSnapshot(streamId) ?? new Snapshot();
             var events = this.eventStore.GetStream(streamId, snapshot.StreamRevision, out state);
 
             return this.Reconstitute<T>(snapshot.Memento, snapshot.StreamRevision, events, state);

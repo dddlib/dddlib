@@ -33,9 +33,9 @@ namespace dddlib
                 this.PersistEvents = persistEvents;
             }
 
-            public IEventDispatcher EventDispatcher { get; set; }
+            public IEventDispatcher EventDispatcher { get; private set; }
 
-            public bool PersistEvents { get; set; }
+            public bool PersistEvents { get; private set; }
         }
     }
 }

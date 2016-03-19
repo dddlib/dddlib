@@ -17,7 +17,7 @@ namespace dddlib.Persistence
         /// Initializes a new instance of the <see cref="AggregateRootNotFoundException"/> class.
         /// </summary>
         public AggregateRootNotFoundException()
-            : this((string)null)
+            : this((Exception)null)
         {
         }
 
@@ -35,7 +35,7 @@ namespace dddlib.Persistence
         /// </summary>
         /// <param name="inner">The inner exception.</param>
         public AggregateRootNotFoundException(Exception inner)
-            : this(null, inner)
+            : this("Cannot find the aggregate root.", inner)
         {
         }
 

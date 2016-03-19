@@ -112,12 +112,6 @@ namespace dddlib
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Inappropriate.")]
         protected virtual object GetState()
         {
-            ////throw new RuntimeException(
-            ////    string.Format(
-            ////        CultureInfo.InvariantCulture,
-            ////        "The aggregate root of type '{0}' has not been configured to create a memento representing its state.",
-            ////        this.GetType()));
-
             return null;
         }
 
@@ -131,7 +125,10 @@ namespace dddlib
                 string.Format(
                     CultureInfo.InvariantCulture,
                     "The aggregate root of type '{0}' has not been configured to apply a memento representing its state.",
-                    this.GetType()));
+                    this.GetType()))
+            {
+                HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Mementos",
+            };
         }
 
         /// <summary>
@@ -146,14 +143,19 @@ namespace dddlib
 
             if (this.IsDestroyed)
             {
-                // TODO (Cameron): Use the natural key and type.
-                // maybe: Unable to change Bob because a Person with that name no longer exists.
-                // or: cannot change the aggregate of type Person with the identity Bob as this aggregates lifecycle has ended.
-                throw new BusinessException(
-                    string.Format(
-                        "Unable to apply the specified change of type '{0}' to the aggregate root of type '{1}' as the lifecycle of this instance of the aggregate root has been terminated.",
-                        @event.GetType(),
-                        this.GetType()));
+                var naturalKeyValue = this.GetNaturalKeyValue();
+                var message = naturalKeyValue == null
+                    ? string.Format(
+                        "Cannot apply '{0}' because that '{1}' no longer exists in the system.",
+                        @event.GetType().Name,
+                        this.GetType().Name)
+                    : string.Format(
+                        "Cannot apply '{0}' to '{1}' because that '{2}' no longer exists in the system.",
+                        @event.GetType().Name,
+                        naturalKeyValue,
+                        this.GetType().Name);
+
+                throw new BusinessException(message);
             }
 
             this.Apply(@event, isNew: true);
@@ -186,7 +188,7 @@ namespace dddlib
                 throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        "The event dispatcher of type '{0}' threw an exception whilst attempting to dispatch an event of type '{1}'.",
+                        "The event dispatcher of type '{0}' threw an exception whilst attempting to dispatch an event of type '{1}'.\r\nSee inner exception for details.",
                         this.typeInformation.EventDispatcher.GetType(),
                         @event.GetType()),
                     ex);

@@ -16,7 +16,7 @@ namespace dddlib.Persistence.Memory
         /// Initializes a new instance of the <see cref="MemoryEventStoreRepository"/> class.
         /// </summary>
         public MemoryEventStoreRepository()
-            : base(new MemoryIdentityMap(), new MemoryEventStore())
+            : base(new MemoryIdentityMap(), new MemoryEventStore(), new MemorySnapshotStore())
         {
         }
     }

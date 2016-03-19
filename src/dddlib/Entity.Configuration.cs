@@ -23,7 +23,9 @@ namespace dddlib
             {
                 Guard.Against.Null(() => entityType);
 
-                this.GetNaturalKeyValue = entityType.NaturalKey == null ? (Func<Entity, object>)null : entity => entityType.NaturalKey.GetValue(entity);
+                this.GetNaturalKeyValue = entityType.NaturalKey == null
+                    ? (Func<Entity, object>)null
+                    : entity => entityType.NaturalKey.GetValue(entity);
             }
 
             public TypeInformation(dddlib.Sdk.Configuration.Model.NaturalKey naturalKey)
@@ -36,7 +38,7 @@ namespace dddlib
                 get { return this.GetNaturalKeyValue != null; }
             }
 
-            public Func<Entity, object> GetNaturalKeyValue { get; set; }
+            public Func<Entity, object> GetNaturalKeyValue { get; private set; }
         }
     }
 }
