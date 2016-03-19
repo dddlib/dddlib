@@ -54,8 +54,8 @@ namespace dddlib.Persistence.Tests.Feature
                 "When that instance is saved to the repository"
                     .f(() => action = () => this.repository.Save(instance));
 
-                "Then a runtime exception is thrown"
-                    .f(() => action.ShouldThrow<RuntimeException>());
+                "Then a persistence exception is thrown"
+                    .f(() => action.ShouldThrow<PersistenceException>());
             }
 
             public class Subject : AggregateRoot
@@ -82,8 +82,8 @@ namespace dddlib.Persistence.Tests.Feature
                 "When that instance is saved to the repository"
                     .f(() => action = () => this.repository.Save(instance));
 
-                "Then a runtime exception is thrown"
-                    .f(() => action.ShouldThrow<RuntimeException>());
+                "Then a persistence exception is thrown"
+                    .f(() => action.ShouldThrow<PersistenceException>());
             }
 
             public class Subject : AggregateRoot
@@ -619,6 +619,88 @@ namespace dddlib.Persistence.Tests.Feature
             }
 
             public class SubjectDidSomething
+            {
+                public string Id { get; set; }
+            }
+
+            private class BootStrapper : IBootstrap<Subject>
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+                }
+            }
+        }
+
+        public class SaveAndEndLifecycleAndSaveAndCreate : MemoryEventPersistence
+        {
+            [Scenario(Skip = "Not ready yet.")]
+            public void Scenario(string naturalKey, Subject saved, Subject loaded, Subject temporallyNew, Action action)
+            {
+                "Given a natural key value"
+                    .f(() => naturalKey = "nturalKey");
+
+                "And an instance of an aggregate root with that natural key"
+                    .f(() => saved = new Subject(naturalKey));
+
+                "And that instance is saved to the repository"
+                    .f(() => this.repository.Save(saved));
+
+                "And that instance is loaded from the repository"
+                    .f(() => loaded = this.repository.Load<Subject>(naturalKey));
+
+                "And that instance is destroyed"
+                    .f(() => loaded.Destroy());
+
+                "And that destroyed instance is saved to the repository"
+                    .f(() => this.repository.Save(loaded));
+
+                "When a temporally new instance of an aggregate root with that same natural key is created"
+                    .f(() => temporallyNew = new Subject(naturalKey));
+
+                "And that temporally new instance is saved to the repository"
+                    .f(() => this.repository.Save(temporallyNew));
+
+                "Then a persistence exception is thrown"
+                    .f(() => action.ShouldThrow<PersistenceException>());
+            }
+
+            public class Subject : AggregateRoot
+            {
+                public Subject(string id)
+                {
+                    this.Apply(new NewSubject { Id = id });
+                }
+
+                internal Subject()
+                {
+                }
+
+                [NaturalKey]
+                public string Id { get; private set; }
+
+                public void Destroy()
+                {
+                    this.Apply(new SubjectDestroyed { Id = this.Id });
+                }
+
+                private void Handle(NewSubject @event)
+                {
+                    this.Id = @event.Id;
+                }
+
+                private void Handle(SubjectDestroyed @event)
+                {
+                    this.EndLifecycle();
+                }
+            }
+
+            public class NewSubject
+            {
+                public string Id { get; set; }
+            }
+
+            public class SubjectDestroyed
             {
                 public string Id { get; set; }
             }

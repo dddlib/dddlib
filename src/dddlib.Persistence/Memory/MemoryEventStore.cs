@@ -36,13 +36,13 @@ namespace dddlib.Persistence.Memory
             {
                 if (eventStream.Last().State != preCommitState)
                 {
-                    throw new Exception("Invalid state");
+                    throw new ConcurrencyException("Invalid state");
                 }
             }
             else if (preCommitState != null)
             {
                 // TODO (Cameron): Not sure if this should be here...
-                throw new Exception("Invalid state #2");
+                throw new ConcurrencyException("Invalid state #2");
             }
             else
             {
@@ -81,7 +81,7 @@ namespace dddlib.Persistence.Memory
             var eventStream = default(List<Event>);
             if (!this.eventStreams.TryGetValue(streamId, out eventStream))
             {
-                throw new Exception("Invalid state #2");
+                throw new ConcurrencyException("Invalid state #2");
             }
 
             state = eventStream.Last().State;

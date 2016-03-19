@@ -5,6 +5,7 @@
 namespace dddlib.Sdk.Configuration.Services.TypeAnalyzer
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
@@ -39,6 +40,7 @@ namespace dddlib.Sdk.Configuration.Services.TypeAnalyzer
             return property != null;
         }
 
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
         public NaturalKey GetNaturalKey(Type runtimeType)
         {
             Guard.Against.Null(() => runtimeType);
@@ -52,8 +54,13 @@ namespace dddlib.Sdk.Configuration.Services.TypeAnalyzer
                 throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        "Entity of type '{0}' has more than one natural key defined.",
-                        runtimeType));
+                        @"Entity of type '{0}' has more than one natural key defined.
+To fix this issue:
+- ensure that there is only a single natural key defined for the entity.",
+                        runtimeType))
+                {
+                    HelpLink = "https://github.com/dddlib/dddlib/wiki/Entity-Equality",
+                };
             }
 
             if (naturalKeys.Length == 0)

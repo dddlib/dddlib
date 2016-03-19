@@ -7,6 +7,7 @@ namespace dddlib.Persistence.Sdk
     using System;
     using System.Globalization;
     using System.Linq;
+    using Runtime;
 
     /// <summary>
     /// Represents an aggregate root repository.
@@ -31,29 +32,16 @@ namespace dddlib.Persistence.Sdk
         {
             Guard.Against.Null(() => aggregateRoot);
 
-            var id = this.GetId(aggregateRoot);
-
-            var memento = aggregateRoot.GetMemento();
-            if (memento == null)
+            try
+            {
+                this.SaveInternal(aggregateRoot);
+            }
+            catch (RuntimeException ex)
             {
                 throw new PersistenceException(
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "Cannot save aggregate root of type '{0}' as there is no configured memento representing its state.",
-                        aggregateRoot.GetType()));
+                    string.Concat("An exception occurred during the save operation.\r\n", ex.Message),
+                    ex);
             }
-
-            var preCommitState = aggregateRoot.State;
-            if (preCommitState == null)
-            {
-                // NOTE (Cameron): This is the initial commit, for what it's worth.
-            }
-
-            // TODO (Cameron): Try catch around save.
-            var postCommitState = default(string);
-            this.Save(id, memento, preCommitState, out postCommitState);
-
-            aggregateRoot.CommitEvents(postCommitState);
         }
 
         /// <summary>
@@ -63,12 +51,18 @@ namespace dddlib.Persistence.Sdk
         /// <returns>The aggregate root.</returns>
         public T Load(object naturalKey)
         {
-            var id = this.GetId<T>(naturalKey);
+            Guard.Against.Null(() => naturalKey);
 
-            var state = default(string);
-            var memento = this.Load(id, out state);
-            
-            return this.Reconstitute<T>(memento, 0, Enumerable.Empty<object>(), state);
+            try
+            {
+                return this.LoadInternal(naturalKey);
+            }
+            catch (RuntimeException ex)
+            {
+                throw new PersistenceException(
+                    string.Concat("An exception occurred during the load operation.\r\n", ex.Message),
+                    ex);
+            }
         }
 
         /// <summary>
@@ -87,5 +81,45 @@ namespace dddlib.Persistence.Sdk
         /// <param name="state">The state.</param>
         /// <returns>The memento.</returns>
         protected abstract object Load(Guid id, out string state);
+
+        private void SaveInternal(T aggregateRoot)
+        {
+            var id = this.GetId(aggregateRoot);
+
+            var memento = aggregateRoot.GetMemento();
+            if (memento == null)
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "The aggregate root of type '{0}' has not been configured to return a memento representing its state.",
+                        this.GetType()))
+                {
+                    HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Mementos",
+                };
+            }
+
+            var preCommitState = aggregateRoot.State;
+            if (preCommitState == null)
+            {
+                // NOTE (Cameron): This is the initial commit, for what it's worth.
+            }
+
+            // TODO (Cameron): Try catch around save.
+            var postCommitState = default(string);
+            this.Save(id, memento, preCommitState, out postCommitState);
+
+            aggregateRoot.CommitEvents(postCommitState);
+        }
+
+        private T LoadInternal(object naturalKey)
+        {
+            var id = this.GetId<T>(naturalKey);
+
+            var state = default(string);
+            var memento = this.Load(id, out state);
+
+            return this.Reconstitute<T>(memento, 0, Enumerable.Empty<object>(), state);
+        }
     }
 }

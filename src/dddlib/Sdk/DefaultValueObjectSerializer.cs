@@ -6,6 +6,7 @@ namespace dddlib.Sdk
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
     using System.Web.Script.Serialization;
@@ -55,8 +56,11 @@ namespace dddlib.Sdk
                 get { return new[] { typeof(T) }; }
             }
 
+            [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
             public override object Deserialize(IDictionary<string, object> dictionary, Type type, JavaScriptSerializer serializer)
             {
+                Guard.Against.Null(() => dictionary);
+
                 var constructor = typeof(T).GetConstructors().SingleOrDefault(ctor => ctor.GetParameters().Count() == dictionary.Count);
                 if (constructor == null)
                 {
@@ -66,8 +70,15 @@ namespace dddlib.Sdk
                         throw new RuntimeException(
                             string.Format(
                                 CultureInfo.InvariantCulture,
-                                "Unable to deserialize value object of type '{0}' using the default value object serializer as there is no suitable constructor defined.",
-                                typeof(T)));
+                                @"Unable to deserialize value object of type '{0}' using the default value object serializer as there is no suitable constructor defined.
+To fix this issue, either:
+- add a public constructor that accepts the following parameters: '{1}', or
+- ensure that the properties of the value object are read/write and add a default constructor to the value object.",
+                                typeof(T),
+                                string.Join(", ", dictionary.Keys)))
+                        {
+                            HelpLink = "https://github.com/dddlib/dddlib/wiki/Value-Object-Serialization",
+                        };
                     }
 
                     var valueObject = Activator.CreateInstance<T>();

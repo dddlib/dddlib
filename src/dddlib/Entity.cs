@@ -46,7 +46,7 @@ namespace dddlib
         /// Gets a value indicating whether this instance has been destroyed.
         /// </summary>
         /// <value>Returns <c>true</c> if the lifecycle of this instance has ended; otherwise, <c>false</c>.</value>
-        protected bool IsDestroyed
+        protected internal bool IsDestroyed
         {
             get { return this.isDestroyed; }
         }
@@ -119,6 +119,14 @@ namespace dddlib
             var otherValue = this.typeInformation.GetNaturalKeyValue(other);
 
             return object.Equals(thisValue, otherValue);
+        }
+
+        // HACK (Cameron): Not sure if we should expose this (eg. protected) but it feels wrong at the moment.
+        internal object GetNaturalKeyValue()
+        {
+            return this.typeInformation.GetNaturalKeyValue == null
+                ? null
+                : this.typeInformation.GetNaturalKeyValue.Invoke(this);
         }
 
         /// <summary>

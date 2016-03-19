@@ -6,7 +6,6 @@ namespace dddlib.Sdk.Configuration.Model
 {
     using System;
     using System.Globalization;
-    using System.Linq;
     using dddlib.Runtime;
 
     /// <summary>

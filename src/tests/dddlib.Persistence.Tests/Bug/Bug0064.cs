@@ -24,7 +24,7 @@ namespace dddlib.Persistence.Tests.Bug
         }
 
         [Fact]
-        public void ShouldThrowRuntimeException()
+        public void ShouldThrowPersistenceException()
         {
             var thing = new Thing
             {
@@ -33,9 +33,10 @@ namespace dddlib.Persistence.Tests.Bug
 
             var repository = new MemoryRepository<Thing>();
 
-            var exception = Assert.Throws<RuntimeException>(() => repository.Save(thing));
+            var exception = Assert.Throws<PersistenceException>(() => repository.Save(thing));
 
-            Assert.Null(exception.InnerException);
+            Assert.NotNull(exception.InnerException);
+            Assert.IsType<RuntimeException>(exception.InnerException);
         }
 
         public class Thing : AggregateRoot

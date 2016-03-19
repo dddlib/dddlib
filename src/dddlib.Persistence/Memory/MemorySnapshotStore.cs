@@ -6,7 +6,6 @@ namespace dddlib.Persistence.Memory
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using dddlib.Persistence.Sdk;
 
     /// <summary>
@@ -15,7 +14,7 @@ namespace dddlib.Persistence.Memory
     /// <seealso cref="dddlib.Persistence.Sdk.ISnapshotStore" />
     public class MemorySnapshotStore : ISnapshotStore
     {
-        private readonly Dictionary<Guid, List<Snapshot>> snapshots = new Dictionary<Guid, List<Snapshot>>();
+        private readonly Dictionary<Guid, Snapshot> snapshots = new Dictionary<Guid, Snapshot>();
 
         /// <summary>
         /// Adds or updates the snapshot for a stream.
@@ -26,19 +25,7 @@ namespace dddlib.Persistence.Memory
         {
             Guard.Against.Null(() => snapshot);
 
-            var streamSnapshots = default(List<Snapshot>);
-            if (!this.snapshots.TryGetValue(streamId, out streamSnapshots))
-            {
-                streamSnapshots = new List<Snapshot>();
-                this.snapshots.Add(streamId, streamSnapshots);
-            }
-
-            if (streamSnapshots.Any(streamSnapshot => streamSnapshot.StreamRevision == snapshot.StreamRevision))
-            {
-                throw new PersistenceException("Snapshot already exists for this revision.");
-            }
-
-            streamSnapshots.Add(snapshot);
+            this.snapshots[streamId] = snapshot;
         }
 
         /// <summary>
@@ -48,14 +35,10 @@ namespace dddlib.Persistence.Memory
         /// <returns>The snapshot.</returns>
         public Snapshot GetSnapshot(Guid streamId)
         {
-            var streamSnapshots = default(List<Snapshot>);
-            if (!this.snapshots.TryGetValue(streamId, out streamSnapshots))
-            {
-                // NOTE (Cameron): There are no saved snapshots for this stream.
-                return null;
-            }
-
-            return streamSnapshots.Single(x => x.StreamRevision == streamSnapshots.Max(y => y.StreamRevision));
+            var snapshot = default(Snapshot);
+            return this.snapshots.TryGetValue(streamId, out snapshot)
+                ? snapshot
+                : null;
         }
     }
 }

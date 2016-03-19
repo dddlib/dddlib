@@ -139,10 +139,16 @@ namespace dddlib.Persistence.Sdk
             throw new RuntimeException(
                 string.Format(
                     CultureInfo.InvariantCulture,
-                    @"The natural key of type '{0}' defined for aggregate root of type '{1}' does not meet equality expectations following identity map serialization.
-Check that the natural key is correctly defined, implements value object equality, and can be successfully serialized and deserialized.",
+                    @"The natural key of type '{0}' defined for aggregate root of type '{1}' does not meet equality expectations following serialization.
+To fix this issue, check that the natural key:
+- is correctly defined in either a bootstrapper or through use of the [dddlib.NaturalKey] attribute, and
+- implements value object equality, and
+- can be successfully serialized and deserialized.",
                     naturalKeyType,
-                    aggregateRootType));
+                    aggregateRootType))
+            {
+                HelpLink = "https://github.com/dddlib/dddlib/wiki/Value-Object-Serialization",
+            };
         }
     }
 }

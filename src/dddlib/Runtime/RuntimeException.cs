@@ -22,7 +22,7 @@ namespace dddlib.Runtime
         /// Initializes a new instance of the <see cref="RuntimeException"/> class.
         /// </summary>
         public RuntimeException()
-            : this((string)null)
+            : this((Exception)null)
         {
         }
 
@@ -40,7 +40,7 @@ namespace dddlib.Runtime
         /// </summary>
         /// <param name="inner">The inner exception.</param>
         public RuntimeException(Exception inner)
-            : this(null, inner)
+            : this("A runtime exception has occurred.", inner)
         {
         }
 

@@ -53,15 +53,50 @@ namespace dddlib.Persistence.Sdk
         {
             Guard.Against.Null(() => aggregateRoot);
 
-            var streamId = this.GetId(aggregateRoot);
+            try
+            {
+                this.SaveInternal(aggregateRoot, correlationId);
+            }
+            catch (RuntimeException ex)
+            {
+                throw new PersistenceException(
+                    string.Concat("An exception occurred during the save operation.\r\n", ex.Message),
+                    ex);
+            }
+        }
 
+        /// <summary>
+        /// Loads the aggregate root with the specified natural key.
+        /// </summary>
+        /// <typeparam name="T">The type of aggregate root.</typeparam>
+        /// <param name="naturalKey">The natural key.</param>
+        /// <returns>The aggregate root.</returns>
+        public T Load<T>(object naturalKey) where T : AggregateRoot
+        {
+            Guard.Against.Null(() => naturalKey);
+
+            try
+            {
+                return this.LoadInternal<T>(naturalKey);
+            }
+            catch (RuntimeException ex)
+            {
+                throw new PersistenceException(
+                    string.Concat("An exception occurred during the load operation.\r\n", ex.Message),
+                    ex);
+            }
+        }
+
+        private void SaveInternal<T>(T aggregateRoot, Guid correlationId) where T : AggregateRoot
+        {
+            var streamId = this.GetId(aggregateRoot);
             var events = aggregateRoot.GetUncommittedEvents();
 
             var state = aggregateRoot.State;
             if (state == null && !events.Any())
             {
-                // NOTE (Cameron): This is the initial commit so there should be events.
-                throw new RuntimeException(
+                // NOTE (Cameron): This is the initial commit so there should be events. It's odd but if we don't error we may confuse people.
+                throw new PersistenceException(
                     string.Format(
                         CultureInfo.InvariantCulture,
                         "Cannot save initial commit for aggregate root of type '{0}' as it has no events.",
@@ -99,13 +134,7 @@ namespace dddlib.Persistence.Sdk
             ////}
         }
 
-        /// <summary>
-        /// Loads the aggregate root with the specified natural key.
-        /// </summary>
-        /// <typeparam name="T">The type of aggregate root.</typeparam>
-        /// <param name="naturalKey">The natural key.</param>
-        /// <returns>The aggregate root.</returns>
-        public T Load<T>(object naturalKey) where T : AggregateRoot
+        private T LoadInternal<T>(object naturalKey) where T : AggregateRoot
         {
             var streamId = this.GetId<T>(naturalKey);
 
