@@ -11,7 +11,6 @@ namespace dddlib.Persistence.Tests.Feature
     using dddlib.Persistence.Memory;
     using dddlib.Persistence.Sdk;
     using dddlib.Persistence.Tests.Sdk;
-    using dddlib.Runtime;
     using FluentAssertions;
     using Xbehave;
 
@@ -201,7 +200,7 @@ namespace dddlib.Persistence.Tests.Feature
             public void Scenario(Subject saved, Subject loaded)
             {
                 "Given an instance of an aggregate root"
-                    .f(() => saved = new Subject("test"));
+                    .f(() => saved = new Subject("test2"));
 
                 "And that instance is saved to the repository"
                     .f(() => this.repository.Save(saved));
@@ -306,7 +305,7 @@ namespace dddlib.Persistence.Tests.Feature
             public void Scenario(Subject saved, Subject loaded, Subject anotherLoaded)
             {
                 "Given an instance of an aggregate root"
-                    .f(() => saved = new Subject("test"));
+                    .f(() => saved = new Subject("test3"));
 
                 "And that instance is saved to the repository"
                     .f(() => this.repository.Save(saved));
@@ -414,7 +413,7 @@ namespace dddlib.Persistence.Tests.Feature
             public void Scenario(Subject saved, Subject loaded)
             {
                 "Given an instance of an aggregate root"
-                    .f(() => saved = new Subject("test"));
+                    .f(() => saved = new Subject("test4"));
 
                 "And that instance is saved to the repository"
                     .f(() => this.repository.Save(saved));
@@ -496,7 +495,7 @@ namespace dddlib.Persistence.Tests.Feature
             public void Scenario(Subject saved, Subject loaded, IEnumerable<object> events)
             {
                 "Given an instance of an aggregate root"
-                    .f(() => saved = new Subject("test"));
+                    .f(() => saved = new Subject("test5"));
 
                 "And that instance is saved to the repository"
                     .f(() => this.repository.Save(saved));
@@ -724,20 +723,5 @@ namespace dddlib.Persistence.Tests.Feature
                 }
             }
         }
-
-        /*
-         * in all - validate with memento comparison
-        X*  1. can save and get
-        X*  2. can save and save and get
-        X*  3. can save and get and save and get
-        X*  4. can save and snapshot and get (with snapshot)
-        X*  5. can save and snapshot and save and get (with snapshot)
-         *  6. can save and snapshot and get (without snapshot)
-         *  7. can save and snapshot and save and get (without snapshot)
-         *  
-         * duplicate add snapshot?
-
-            a. can create and end lifecycle and save and create again
-         */
     }
 }
