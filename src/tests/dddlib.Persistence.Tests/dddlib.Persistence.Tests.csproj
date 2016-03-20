@@ -55,22 +55,6 @@
     <Reference Include="FluentAssertions.Core">
       <HintPath>..\..\..\packages\FluentAssertions.3.3.0\lib\net45\FluentAssertions.Core.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.SqlServer.ConnectionInfo, Version=12.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>lib\Microsoft.SqlServer.ConnectionInfo.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Management.Sdk.Sfc, Version=12.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>lib\Microsoft.SqlServer.Management.Sdk.Sfc.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.Smo, Version=12.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>lib\Microsoft.SqlServer.Smo.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.SqlServer.SqlEnum, Version=12.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>lib\Microsoft.SqlServer.SqlEnum.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
@@ -96,9 +80,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\dddlib.Tests\Sdk\Feature.cs">
-      <Link>Sdk\Feature.cs</Link>
-    </Compile>
     <Compile Include="Bug\BugConfiguration.cs" />
     <Compile Include="Bug\Bug0043.cs" />
     <Compile Include="Bug\Bug0064.cs" />
@@ -106,16 +87,15 @@
     <Compile Include="Feature\SqlServerMementoPersistence.cs" />
     <Compile Include="Feature\MemoryMementoPersistence.cs" />
     <Compile Include="Feature\MemoryEventPersistence.cs" />
+    <Compile Include="Guard.cs" />
     <Compile Include="Integration\SqlServerEventStoreTests.cs" />
     <Compile Include="Integration\SqlServerNaturalKeyRepositoryTests.cs" />
     <Compile Include="Integration\SqlServerSnapshotStoreTests.cs" />
     <Compile Include="Integration\StorageTests.cs" />
     <Compile Include="Sdk\AssertionExtensions.cs" />
-    <Compile Include="Sdk\Integration.cs" />
     <Compile Include="Integration\SqlServerIdentityMapTests.cs" />
     <Compile Include="Integration\UpgradeDatabaseVersionTests.cs" />
-    <Compile Include="Sdk\SqlServerFeature.cs" />
-    <Compile Include="Sdk\SqlServerFixture.cs" />
+    <Compile Include="Sdk\DatabaseCollection.cs" />
     <Compile Include="Unit\JsonSerializerTests.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -126,6 +106,10 @@
     <ProjectReference Include="..\..\dddlib\dddlib.csproj">
       <Project>{57610450-0379-472e-b40c-18b11295eefa}</Project>
       <Name>dddlib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\dddlib.Tests.Sdk\dddlib.Tests.Sdk.csproj">
+      <Project>{40067710-bf7a-482c-9c25-489a5633489c}</Project>
+      <Name>dddlib.Tests.Sdk</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -9,11 +9,6 @@ namespace dddlib.Tests.Support
     // NOTE (Cameron): Value objects should be sealed to take advantage of the ValueObject<T> base class.
     public sealed class Registration : ValueObject<Registration>
     {
-        internal Registration(string number)
-        {
-            this.Number = number;
-        }
-
         public Registration(string number, IRegistrationService registrationService)
         {
             Guard.Against.Null(() => number);
@@ -28,6 +23,11 @@ namespace dddlib.Tests.Support
                         number));
             }
 
+            this.Number = number;
+        }
+
+        internal Registration(string number)
+        {
             this.Number = number;
         }
 

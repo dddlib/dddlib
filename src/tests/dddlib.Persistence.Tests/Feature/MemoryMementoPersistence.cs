@@ -6,7 +6,7 @@ namespace dddlib.Persistence.Tests.Feature
 {
     using dddlib.Configuration;
     using dddlib.Persistence.Memory;
-    using dddlib.Persistence.Tests.Sdk;
+    using dddlib.Tests.Sdk;
     using FluentAssertions;
     using Xbehave;
 

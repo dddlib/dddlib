@@ -1,4 +1,4 @@
-﻿// <copyright file="Vehicle.cs" company="dddlib contributors">
+﻿// <copyright file="NewVehicle.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 

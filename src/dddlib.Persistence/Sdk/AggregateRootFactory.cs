@@ -2,7 +2,7 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-#if dddlibTests
+#if dddlibTestsSdk
 namespace dddlib.Tests.Sdk
 #else
 namespace dddlib.Persistence.Sdk

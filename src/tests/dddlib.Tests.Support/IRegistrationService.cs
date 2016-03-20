@@ -1,4 +1,8 @@
-﻿namespace dddlib.Tests.Support
+﻿// <copyright file="IRegistrationService.cs" company="dddlib contributors">
+//  Copyright (c) dddlib contributors. All rights reserved.
+// </copyright>
+
+namespace dddlib.Tests.Support
 {
     public interface IRegistrationService
     {

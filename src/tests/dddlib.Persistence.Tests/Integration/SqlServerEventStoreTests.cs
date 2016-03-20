@@ -10,7 +10,7 @@ namespace dddlib.Persistence.Tests.Integration
     using System.Linq;
     using System.Transactions;
     using dddlib.Persistence.SqlServer;
-    using dddlib.Persistence.Tests.Sdk;
+    using dddlib.Tests.Sdk;
     using FluentAssertions;
     using Xunit;
 

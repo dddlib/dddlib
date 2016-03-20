@@ -9,13 +9,15 @@ namespace dddlib.Persistence.Tests.Feature
     using System.Data.SqlClient;
     using dddlib.Configuration;
     using dddlib.Persistence.SqlServer;
-    using dddlib.Persistence.Tests.Sdk;
+    using dddlib.Tests.Sdk;
     using FluentAssertions;
     using Xbehave;
+    using Xunit;
 
     // As someone who uses dddlib
     // In order save state
     // I need to be able to persist an aggregate root (in SQL Server)
+    [Collection("SQL Server Collection")]
     public abstract class SqlServerMementoPersistence : SqlServerFeature
     {
         public SqlServerMementoPersistence(SqlServerFixture fixture)

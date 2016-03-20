@@ -2,8 +2,10 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Persistence.Tests.Sdk
+namespace dddlib.Tests.Sdk
 {
+    using System.Data.SqlClient;
+    using Microsoft.SqlServer.Management.Common;
     using Xunit;
 
     public static class Integration
@@ -16,6 +18,14 @@ namespace dddlib.Persistence.Tests.Sdk
             }
 
             public string ConnectionString { get; set; }
+
+            public void ExecuteScript(string sqlScript)
+            {
+                using (var connection = new SqlConnection(this.ConnectionString))
+                {
+                    new ServerConnection(connection).ExecuteNonQuery(sqlScript);
+                }
+            }
         }
     }
 }
