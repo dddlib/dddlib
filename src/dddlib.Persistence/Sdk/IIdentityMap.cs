@@ -29,5 +29,11 @@ namespace dddlib.Persistence.Sdk
         /// <param name="identity">The mapped identity.</param>
         /// <returns>Returns <c>true</c> if the mapping exists; otherwise <c>false</c>.</returns>
         bool TryGet(Type aggregateRootType, Type naturalKeyType, object naturalKey, out Guid identity);
+
+        /// <summary>
+        /// Removes the specified mapped identity.
+        /// </summary>
+        /// <param name="identity">The mapped identity.</param>
+        void Remove(Guid identity);
     }
 }

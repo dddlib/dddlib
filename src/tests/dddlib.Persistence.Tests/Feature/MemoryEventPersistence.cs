@@ -634,11 +634,11 @@ namespace dddlib.Persistence.Tests.Feature
 
         public class SaveAndEndLifecycleAndSaveAndCreate : MemoryEventPersistence
         {
-            [Scenario(Skip = "Not ready yet.")]
-            public void Scenario(string naturalKey, Subject saved, Subject loaded, Subject temporallyNew, Action action)
+            [Scenario]
+            public void Scenario(string naturalKey, Subject saved, Subject loaded, Subject temporallyNew, Subject actual, Action action)
             {
                 "Given a natural key value"
-                    .f(() => naturalKey = "nturalKey");
+                    .f(() => naturalKey = "naturalKey");
 
                 "And an instance of an aggregate root with that natural key"
                     .f(() => saved = new Subject(naturalKey));
@@ -652,6 +652,9 @@ namespace dddlib.Persistence.Tests.Feature
                 "And that instance is destroyed"
                     .f(() => loaded.Destroy());
 
+                "And no further operations can occur against that instance"
+                    .f(() => ((Action)(() => loaded.Destroy())).ShouldThrow<BusinessException>());
+
                 "And that destroyed instance is saved to the repository"
                     .f(() => this.repository.Save(loaded));
 
@@ -659,10 +662,18 @@ namespace dddlib.Persistence.Tests.Feature
                     .f(() => temporallyNew = new Subject(naturalKey));
 
                 "And that temporally new instance is saved to the repository"
-                    .f(() => this.repository.Save(temporallyNew));
+                    .f(() => action = () => this.repository.Save(temporallyNew));
 
-                "Then a persistence exception is thrown"
-                    .f(() => action.ShouldThrow<PersistenceException>());
+                "Then the operation completes without an exception being thrown"
+                    .f(() => action.ShouldNotThrow());
+
+                "And further operations can occur against that instance"
+                    .f(() =>
+                    {
+                        actual = this.repository.Load<Subject>(naturalKey);
+                        action = () => actual.Destroy();
+                        action.ShouldNotThrow();
+                    });
             }
 
             public class Subject : AggregateRoot

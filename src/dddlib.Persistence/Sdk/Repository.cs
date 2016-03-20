@@ -13,15 +13,21 @@ namespace dddlib.Persistence.Sdk
     /// Represents an aggregate root repository.
     /// </summary>
     /// <typeparam name="T">The type of aggregate root.</typeparam>
-    public abstract class Repository<T> : RepositoryBase, IRepository<T> where T : AggregateRoot
+    public abstract class Repository<T> : IRepository<T> where T : AggregateRoot
     {
+        // NOTE (Cameron): The aggregate root factory used to be part of this class but I've split out for reuse. Not sure it's worth injecting.
+        private readonly AggregateRootFactory factory = new AggregateRootFactory();
+        private readonly IIdentityMap identityMap;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Repository{T}"/> class.
         /// </summary>
         /// <param name="identityMap">The identity map.</param>
         public Repository(IIdentityMap identityMap)
-            : base(identityMap)
         {
+            Guard.Against.Null(() => identityMap);
+
+            this.identityMap = identityMap;
         }
 
         /// <summary>
@@ -84,7 +90,20 @@ namespace dddlib.Persistence.Sdk
 
         private void SaveInternal(T aggregateRoot)
         {
-            var id = this.GetId(aggregateRoot);
+            // NOTE (Cameron): Because we can't trust type of(T) as it may be the base class.
+            var type = aggregateRoot.GetType();
+            var runtimeType = Application.Current.GetAggregateRootType(type);
+
+            runtimeType.ValidateForPersistence();
+
+            var naturalKey = runtimeType.GetNaturalKey(aggregateRoot);
+            var id = this.identityMap.GetOrAdd(runtimeType.RuntimeType, runtimeType.NaturalKey.PropertyType, naturalKey);
+
+            var preCommitState = aggregateRoot.State;
+            if (preCommitState == null)
+            {
+                // NOTE (Cameron): This is the initial commit, for what it's worth.
+            }
 
             var memento = aggregateRoot.GetMemento();
             if (memento == null)
@@ -99,27 +118,46 @@ namespace dddlib.Persistence.Sdk
                 };
             }
 
-            var preCommitState = aggregateRoot.State;
-            if (preCommitState == null)
-            {
-                // NOTE (Cameron): This is the initial commit, for what it's worth.
-            }
-
-            // TODO (Cameron): Try catch around save.
             var postCommitState = default(string);
             this.Save(id, memento, preCommitState, out postCommitState);
 
             aggregateRoot.CommitEvents(postCommitState);
+
+            if (aggregateRoot.IsDestroyed)
+            {
+                this.identityMap.Remove(id);
+            }
         }
 
         private T LoadInternal(object naturalKey)
         {
-            var id = this.GetId<T>(naturalKey);
+            var runtimeType = Application.Current.GetAggregateRootType(typeof(T));
+
+            runtimeType.ValidateForPersistence();
+            runtimeType.Validate(naturalKey);
+
+            var id = default(Guid);
+            if (!this.identityMap.TryGet(runtimeType.RuntimeType, runtimeType.NaturalKey.PropertyType, naturalKey, out id))
+            {
+                runtimeType.ThrowNotFound(naturalKey);
+            }
 
             var state = default(string);
             var memento = this.Load(id, out state);
 
-            return this.Reconstitute<T>(memento, 0, Enumerable.Empty<object>(), state);
+            var aggregateRoot = this.factory.Create<T>(memento, 0, Enumerable.Empty<object>(), state);
+            if (aggregateRoot.IsDestroyed)
+            {
+                // NOTE (Cameron): We've hit an odd situation where we've got an aggregate whose lifecycle has ended.
+                this.identityMap.Remove(id);
+            }
+
+            if (aggregateRoot == null || aggregateRoot.IsDestroyed)
+            {
+                runtimeType.ThrowNotFound(naturalKey);
+            }
+
+            return aggregateRoot;
         }
     }
 }

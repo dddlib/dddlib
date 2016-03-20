@@ -5,6 +5,7 @@
 namespace dddlib.Persistence.Sdk
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
     using dddlib.Runtime;
@@ -12,8 +13,11 @@ namespace dddlib.Persistence.Sdk
     /// <summary>
     /// Represents an event store repository.
     /// </summary>
-    public class EventStoreRepository : RepositoryBase, IEventStoreRepository
+    public class EventStoreRepository : IEventStoreRepository
     {
+        // NOTE (Cameron): The aggregate root factory used to be part of this class but I've split out for reuse. Not sure it's worth injecting.
+        private readonly AggregateRootFactory factory = new AggregateRootFactory();
+        private readonly IIdentityMap identityMap;
         private readonly IEventStore eventStore;
         private readonly ISnapshotStore snapshotStore;
 
@@ -24,11 +28,12 @@ namespace dddlib.Persistence.Sdk
         /// <param name="eventStore">The event store.</param>
         /// <param name="snapshotStore">The snapshot store.</param>
         public EventStoreRepository(IIdentityMap identityMap, IEventStore eventStore, ISnapshotStore snapshotStore)
-            : base(identityMap)
         {
+            Guard.Against.Null(() => identityMap);
             Guard.Against.Null(() => eventStore);
             Guard.Against.Null(() => snapshotStore);
 
+            this.identityMap = identityMap;
             this.eventStore = eventStore;
             this.snapshotStore = snapshotStore;
         }
@@ -87,19 +92,31 @@ namespace dddlib.Persistence.Sdk
             }
         }
 
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
         private void SaveInternal<T>(T aggregateRoot, Guid correlationId) where T : AggregateRoot
         {
-            var streamId = this.GetId(aggregateRoot);
+            // NOTE (Cameron): Because we can't trust type of(T) as it may be the base class.
+            var type = aggregateRoot.GetType();
+            var runtimeType = Application.Current.GetAggregateRootType(type);
+
+            runtimeType.ValidateForPersistence();
+
+            var naturalKey = runtimeType.GetNaturalKey(aggregateRoot);
+            var streamId = this.identityMap.GetOrAdd(runtimeType.RuntimeType, runtimeType.NaturalKey.PropertyType, naturalKey);
             var events = aggregateRoot.GetUncommittedEvents();
 
-            var state = aggregateRoot.State;
-            if (state == null && !events.Any())
+            var preCommitState = aggregateRoot.State;
+            if (preCommitState == null && !events.Any())
             {
-                // NOTE (Cameron): This is the initial commit so there should be events. It's odd but if we don't error we may confuse people.
+                // NOTE (Cameron): This is the initial commit so there should be events. It's odd but if we don't throw we may confuse people.
                 throw new PersistenceException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        "Cannot save initial commit for aggregate root of type '{0}' as it has no events.",
+                        @"Cannot save initial commit for aggregate root of type '{0}' as there are no events to save.
+To fix this issue:
+- ensure that your aggregate root is configured to use event application, and
+- ensure that the events are getting applied using the base 'Apply' method.
+Further information: https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Event-Application",
                         aggregateRoot.GetType()));
             }
 
@@ -109,40 +126,47 @@ namespace dddlib.Persistence.Sdk
                 return;
             }
 
-            // TODO (Cameron): Try catch around commit stream.
-            var newState = default(string);
-            this.eventStore.CommitStream(streamId, events, correlationId, state, out newState);
+            var postCommitState = default(string);
+            this.eventStore.CommitStream(streamId, events, correlationId, preCommitState, out postCommitState);
 
-            // TODO (Cameron): Save the memento with the new commits if the state is the same as the old state and replace the state with the new state.
-            aggregateRoot.CommitEvents(newState);
+            aggregateRoot.CommitEvents(postCommitState);
 
-            ////if (heuristic.ShouldSaveSnapshot)
-            ////{
-            ////    ////// option 1. simple
-            ////    ////var memento = aggregateRoot.GetMemento(out streamRevision);
-            ////    ////this.eventStore.AddSnapshot(streamId, aggregateRoot.Revision, memento);
-
-            ////    // option 2. complex
-            ////    var memento = aggregateRoot.GetMemento();
-            ////    var recycledMemento = new AggregateRootFactory().Create<T>(memento, new object[0], "test").GetMemento();
-            ////    if (memento != recycledMemento)
-            ////    {
-            ////        throw new Exception("Memento implementation is wrong!");
-            ////    }
-
-            ////    this.eventStore.AddSnapshot(streamId, aggregateRoot.Revision, memento);
-            ////}
+            if (aggregateRoot.IsDestroyed)
+            {
+                this.identityMap.Remove(streamId);
+            }
         }
 
         private T LoadInternal<T>(object naturalKey) where T : AggregateRoot
         {
-            var streamId = this.GetId<T>(naturalKey);
+            var runtimeType = Application.Current.GetAggregateRootType(typeof(T));
+
+            runtimeType.ValidateForPersistence();
+            runtimeType.Validate(naturalKey);
+
+            var streamId = default(Guid);
+            if (!this.identityMap.TryGet(runtimeType.RuntimeType, runtimeType.NaturalKey.PropertyType, naturalKey, out streamId))
+            {
+                runtimeType.ThrowNotFound(naturalKey);
+            }
 
             var state = default(string);
             var snapshot = this.snapshotStore.GetSnapshot(streamId) ?? new Snapshot();
             var events = this.eventStore.GetStream(streamId, snapshot.StreamRevision, out state);
 
-            return this.Reconstitute<T>(snapshot.Memento, snapshot.StreamRevision, events, state);
+            var aggregateRoot = this.factory.Create<T>(snapshot.Memento, snapshot.StreamRevision, events, state);
+            if (aggregateRoot.IsDestroyed)
+            {
+                // NOTE (Cameron): We've hit an odd situation where we've got an aggregate whose lifecycle has ended.
+                this.identityMap.Remove(streamId);
+            }
+
+            if (aggregateRoot == null || aggregateRoot.IsDestroyed)
+            {
+                runtimeType.ThrowNotFound(naturalKey);
+            }
+
+            return aggregateRoot;
         }
     }
 }

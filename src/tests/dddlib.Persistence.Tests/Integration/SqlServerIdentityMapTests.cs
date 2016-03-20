@@ -86,6 +86,43 @@ namespace dddlib.Persistence.Tests.Integration
         }
 
         [Fact]
+        public void RemoveFromIdentityMap()
+        {
+            // arrange
+            var identityMap = new SqlServerIdentityMap(this.ConnectionString);
+            var registration = new Registration(Guid.NewGuid().ToString("N"));
+
+            // act
+            var identity = identityMap.GetOrAdd(typeof(Car), typeof(Registration), registration);
+            identityMap.Remove(identity);
+            var otherIdentity = identityMap.GetOrAdd(typeof(Car), typeof(Registration), registration);
+
+            // assert
+            identity.Should().NotBe(otherIdentity);
+        }
+
+        [Fact]
+        public void TryGetWhenIdentityMapHasRemovedNaturalKey()
+        {
+            // arrange
+            var identityMap = new SqlServerIdentityMap(this.ConnectionString);
+            var otherIdentityMap = new SqlServerIdentityMap(this.ConnectionString);
+            var registration = new Registration(Guid.NewGuid().ToString("N"));
+            var somelIdentity = default(Guid);
+
+            // act
+            var identity = identityMap.GetOrAdd(typeof(Car), typeof(Registration), registration);
+            var sameIdentity = otherIdentityMap.GetOrAdd(typeof(Car), typeof(Registration), registration);
+            identityMap.Remove(identity);
+            var success = otherIdentityMap.TryGet(typeof(Car), typeof(Registration), registration, out somelIdentity);
+            var anotherSuccess = otherIdentityMap.TryGet(typeof(Car), typeof(Registration), registration, out somelIdentity);
+
+            // assert
+            success.Should().BeFalse();
+            anotherSuccess.Should().BeFalse();
+        }
+
+        [Fact]
         public void UseAlternateSchema()
         {
             // arrange

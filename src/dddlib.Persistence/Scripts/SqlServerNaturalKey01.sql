@@ -44,7 +44,7 @@ END
 
 DECLARE @NaturalKeys TABLE ([Id] uniqueidentifier, [Checkpoint] bigint);
 
-IF ((SELECT ISNULL(MAX([Checkpoint]), 0) AS [Checkpoint] FROM [dbo].[NaturalKeys] WHERE [TypeId] = @TypeId) = @Checkpoint)
+IF ((SELECT COALESCE(MAX([Checkpoint]), 0) AS [Checkpoint] FROM [dbo].[NaturalKeys] WHERE [TypeId] = @TypeId) = @Checkpoint)
 INSERT INTO [dbo].[NaturalKeys] ([TypeId], [Checkpoint], [SerializedValue])
 OUTPUT inserted.[Id], inserted.[Checkpoint] INTO @NaturalKeys
 SELECT @TypeId, @Checkpoint + CONVERT(BIGINT, 1), @SerializedValue;

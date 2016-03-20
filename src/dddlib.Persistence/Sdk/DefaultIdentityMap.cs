@@ -6,6 +6,7 @@ namespace dddlib.Persistence.Sdk
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using dddlib.Runtime;
@@ -17,6 +18,8 @@ namespace dddlib.Persistence.Sdk
     {
         private readonly ConcurrentDictionary<Type, ConcurrentDictionary<object, Guid>> store =
             new ConcurrentDictionary<Type, ConcurrentDictionary<object, Guid>>();
+
+        private readonly ConcurrentDictionary<Guid, KeyValuePair<Type, object>> index = new ConcurrentDictionary<Guid, KeyValuePair<Type, object>>();
 
         private readonly INaturalKeyRepository repository;
         private readonly INaturalKeySerializer serializer;
@@ -48,7 +51,7 @@ namespace dddlib.Persistence.Sdk
         {
             Guard.Against.Null(() => aggregateRootType);
 
-            this.Validate(aggregateRootType, naturalKeyType, naturalKey);
+            this.ValidateSerialization(aggregateRootType, naturalKeyType, naturalKey);
 
             var mappings = this.store.GetOrAdd(aggregateRootType, _ => new ConcurrentDictionary<object, Guid>());
 
@@ -83,24 +86,30 @@ namespace dddlib.Persistence.Sdk
         {
             Guard.Against.Null(() => aggregateRootType);
 
-            this.Validate(aggregateRootType, naturalKeyType, naturalKey);
+            this.ValidateSerialization(aggregateRootType, naturalKeyType, naturalKey);
 
             var mappings = this.store.GetOrAdd(aggregateRootType, _ => new ConcurrentDictionary<object, Guid>());
+
+            identity = default(Guid);
+            while (this.Synchronize(aggregateRootType, naturalKeyType, mappings))
+            {
+            }
 
             if (mappings.TryGetValue(naturalKey, out identity))
             {
                 return true;
             }
 
-            while (this.Synchronize(aggregateRootType, naturalKeyType, mappings))
-            {
-                if (mappings.TryGetValue(naturalKey, out identity))
-                {
-                    return true;
-                }
-            }
-
             return false;
+        }
+
+        /// <summary>
+        /// Removes the specified mapped identity.
+        /// </summary>
+        /// <param name="identity">The mapped identity.</param>
+        public void Remove(Guid identity)
+        {
+            this.repository.Remove(identity);
         }
 
         private bool Synchronize(Type aggregateRootType, Type naturalKeyType, ConcurrentDictionary<object, Guid> mappings)
@@ -111,7 +120,15 @@ namespace dddlib.Persistence.Sdk
                 var naturalKey = this.serializer.Deserialize(naturalKeyType, naturalKeyRecord.SerializedValue);
 
                 // TODO (Cameron): Verify that no if clause is required here.
-                mappings.TryAdd(naturalKey, naturalKeyRecord.Identity);
+                if (naturalKeyRecord.IsRemoved)
+                {
+                    var identity = default(Guid);
+                    mappings.TryRemove(naturalKey, out identity);
+                }
+                else
+                {
+                    mappings.TryAdd(naturalKey, naturalKeyRecord.Identity);
+                }
 
                 this.checkpoint = naturalKeyRecord.Checkpoint;
             }
@@ -120,7 +137,7 @@ namespace dddlib.Persistence.Sdk
         }
 
         [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
-        private void Validate(Type aggregateRootType, Type naturalKeyType, object naturalKey)
+        private void ValidateSerialization(Type aggregateRootType, Type naturalKeyType, object naturalKey)
         {
             if (this.store.ContainsKey(aggregateRootType))
             {

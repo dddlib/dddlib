@@ -141,22 +141,7 @@ namespace dddlib
         {
             Guard.Against.Null(() => @event);
 
-            if (this.IsDestroyed)
-            {
-                var naturalKeyValue = this.GetNaturalKeyValue();
-                var message = naturalKeyValue == null
-                    ? string.Format(
-                        "Cannot apply '{0}' because that '{1}' no longer exists in the system.",
-                        @event.GetType().Name,
-                        this.GetType().Name)
-                    : string.Format(
-                        "Cannot apply '{0}' to '{1}' because that '{2}' no longer exists in the system.",
-                        @event.GetType().Name,
-                        naturalKeyValue,
-                        this.GetType().Name);
-
-                throw new BusinessException(message);
-            }
+            this.ThrowIfLifecycleEnded(@event.GetType().Name);
 
             this.Apply(@event, isNew: true);
         }
@@ -167,7 +152,7 @@ namespace dddlib
 
             if (!@event.GetType().IsClass)
             {
-                // TODO (Cameron): This is to enforce the class constraint on the protected method for boxed value type events.
+                // NOTE (Cameron): This is to enforce the class constraint on the protected method for boxed value type events.
                 throw new RuntimeException(
                     string.Format(
                         "Unable to apply the specified change of type '{0}' to the aggregate root of type '{1}'.",

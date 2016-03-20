@@ -28,5 +28,11 @@ namespace dddlib.Persistence.Sdk
         /// </summary>
         /// <value>The checkpoint.</value>
         public long Checkpoint { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this natural key is removed.
+        /// </summary>
+        /// <value>A value of <c>true</c> if this instance is removed; otherwise, <c>false</c>.</value>
+        public bool IsRemoved { get; set; }
     }
 }
