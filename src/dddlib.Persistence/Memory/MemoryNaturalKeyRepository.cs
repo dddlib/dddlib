@@ -13,10 +13,13 @@ namespace dddlib.Persistence.Memory
     /// <summary>
     /// Represents the memory natural key repository.
     /// </summary>
+    //// TODO (Cameron): I think this entire class is nonsense.
     public class MemoryNaturalKeyRepository : INaturalKeyRepository
     {
         private readonly ConcurrentDictionary<Type, ConcurrentDictionary<long, NaturalKeyRecord>> store =
             new ConcurrentDictionary<Type, ConcurrentDictionary<long, NaturalKeyRecord>>();
+
+        private long lastCheckpoint;
 
         /// <summary>
         /// Gets the natural key records for the specified type of aggregate root from the specified checkpoint.
@@ -48,10 +51,32 @@ namespace dddlib.Persistence.Memory
             {
                 Identity = Guid.NewGuid(),
                 SerializedValue = (string)serializedNaturalKey,
-                Checkpoint = checkpoint,
+                Checkpoint = checkpoint + 1,
             };
 
-            return naturalKeyRecords.TryAdd(checkpoint, naturalKeyRecord);
+            return naturalKeyRecords.TryAdd(this.lastCheckpoint = naturalKeyRecord.Checkpoint, naturalKeyRecord);
+        }
+
+        /// <summary>
+        /// Removes the natural key with the specified identity from the natural key records.
+        /// </summary>
+        /// <param name="naturalKeyIdentity">The natural key identity.</param>
+        public void Remove(Guid naturalKeyIdentity)
+        {
+            foreach (var naturalKeyRecords in this.store.Values)
+            {
+                var naturalKeyRecord = naturalKeyRecords.Values.SingleOrDefault(record => record.Identity == naturalKeyIdentity && !record.IsRemoved);
+                if (naturalKeyRecord != null)
+                {
+                    NaturalKeyRecord record;
+                    if (naturalKeyRecords.TryRemove(naturalKeyRecord.Checkpoint, out record))
+                    {
+                        record.Checkpoint = ++this.lastCheckpoint;
+                        record.IsRemoved = true;
+                        naturalKeyRecords.TryAdd(naturalKeyRecord.Checkpoint, naturalKeyRecord);
+                    }
+                }
+            }
         }
     }
 }

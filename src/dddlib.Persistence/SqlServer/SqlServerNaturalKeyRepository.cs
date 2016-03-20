@@ -65,6 +65,7 @@ namespace dddlib.Persistence.SqlServer
                             Identity = new Guid(Convert.ToString(reader["Id"])),
                             SerializedValue = (string)reader["SerializedValue"],
                             Checkpoint = Convert.ToInt64(reader["Checkpoint"]),
+                            IsRemoved = Convert.ToBoolean(reader["IsRemoved"]),
                         };
                     }
                 }
@@ -113,6 +114,26 @@ namespace dddlib.Persistence.SqlServer
 
                     return true;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Removes the natural key with the specified identity from the natural key records.
+        /// </summary>
+        /// <param name="naturalKeyIdentity">The natural key identity.</param>
+        public void Remove(Guid naturalKeyIdentity)
+        {
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            using (var connection = new SqlConnection(this.connectionString))
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandType = CommandType.StoredProcedure;
+                command.CommandText = string.Concat(this.schema, ".RemoveNaturalKey");
+                command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier).Value = naturalKeyIdentity;
+
+                connection.Open();
+
+                command.ExecuteNonQuery();
             }
         }
     }
