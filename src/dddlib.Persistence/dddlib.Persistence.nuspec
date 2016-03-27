@@ -17,9 +17,7 @@ dddlib contributors</authors>
     <dependencies>
       <dependency id="dddlib" version="$version$" />
     </dependencies>
-    <frameworkAssemblies>
-      <frameworkAssembly assemblyName="System.Data" targetFramework="net45" />
-    </frameworkAssemblies>
+    <frameworkAssemblies></frameworkAssemblies>
   </metadata>
   <files>
     <file src="bin\Release\dddlib.Persistence.pdb" target="lib\net45" />

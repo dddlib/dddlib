@@ -45,6 +45,7 @@
     <Compile Include="Feature\ValueObjectSerialization.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Unit\DefaultTypeAnalyzerServiceTests.cs" />
+    <Compile Include="Unit\DefaultValueObjectSerializerTests.cs" />
     <None Include="..\..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
