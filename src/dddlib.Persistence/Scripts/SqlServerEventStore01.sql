@@ -8,6 +8,7 @@ CREATE TABLE [dbo].[Events]
     [CorrelationId] UNIQUEIDENTIFIER NOT NULL,
     [SequenceNumber] BIGINT NOT NULL,
     [State] VARCHAR(36) NOT NULL CHECK (DATALENGTH([State]) > 0) DEFAULT LEFT(NEWID(), 8),
+    [Dispatched] BIT DEFAULT (0) NOT NULL,
     CONSTRAINT [PK_Event] PRIMARY KEY ([SequenceNumber]),
     CONSTRAINT [FK_EventTypeId_TypeId] FOREIGN KEY ([TypeId]) REFERENCES [dbo].[Types] ([Id])
 );

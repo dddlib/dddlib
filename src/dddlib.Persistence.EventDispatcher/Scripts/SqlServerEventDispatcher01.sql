@@ -1,8 +1,4 @@
-﻿ALTER TABLE [dbo].[Events]
-ADD [Dispatched] BIT DEFAULT (0) NOT NULL
-GO
-
-CREATE TABLE [dbo].[Batches] (
+﻿CREATE TABLE [dbo].[Batches] (
     [Id] BIGINT IDENTITY (1, 1) NOT NULL,
     [SequenceNumber] BIGINT NOT NULL,
     [Size] INT NOT NULL,
