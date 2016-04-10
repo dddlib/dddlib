@@ -76,6 +76,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <CodeAnalysisDictionary Include="..\dddlib.dictionary">
@@ -102,4 +103,12 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <Target Name="AfterBuild">
+    <MakeDir Directories="$(OutputPath)merged" />
+    <Exec Command="&quot;..\..\packages\ilmerge.2.14.1208\tools\ILMerge.exe&quot; /out:$(OutputPath)\merged\dddlib.Persistence.EventDispatcher.dll $(OutputPath)dddlib.Persistence.EventDispatcher.dll $(OutputPath)Meld.dll /internalize /targetplatform:&quot;v4,C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0&quot; /keyfile:..\dddlib.snk" />
+    <Delete Files="$(OutputPath)Meld.dll;$(OutputPath)Meld.pdb;$(OutputPath)Meld.xml" />
+    <Delete Files="$(OutputPath)dddlib.Persistence.EventDispatcher.dll;$(OutputPath)dddlib.Persistence.EventDispatcher.pdb" />
+    <Copy SourceFiles="$(OutputPath)merged\dddlib.Persistence.EventDispatcher.dll;$(OutputPath)merged\dddlib.Persistence.EventDispatcher.pdb" DestinationFolder="$(OutputPath)" />
+    <RemoveDir Directories="$(OutputPath)merged" />
+  </Target>
 </Project>
