@@ -5,40 +5,24 @@
 namespace dddlib.Persistence.EventDispatcher.Memory
 {
     using System;
-    using dddlib.Persistence.EventDispatcher;
+    using dddlib.Persistence.EventDispatcher.Sdk;
 
     // TODO (Cameron): This is going to be interesting...
-    internal class MemoryEventDispatcher
+    internal class MemoryEventDispatcher : EventDispatcher
     {
         private readonly IEventDispatcher eventDispatcher;
 
-        public MemoryEventDispatcher(Action<long, object> eventDispatcherDelegate)
-            : this(new Wrapper(eventDispatcherDelegate))
-        {
-        }
-
         public MemoryEventDispatcher(IEventDispatcher eventDispatcher)
+            : base(eventDispatcher, null, null, 50)
         {
             Guard.Against.Null(() => eventDispatcher);
 
             this.eventDispatcher = eventDispatcher;
         }
 
-        private class Wrapper : IEventDispatcher
+        public MemoryEventDispatcher(Action<long, object> eventDispatcherDelegate)
+            : this(new CustomEventDispatcher(eventDispatcherDelegate))
         {
-            private readonly Action<long, object> eventDispatcherDelegate;
-
-            public Wrapper(Action<long, object> eventDispatcherDelegate)
-            {
-                Guard.Against.Null(() => eventDispatcherDelegate);
-
-                this.eventDispatcherDelegate = eventDispatcherDelegate;
-            }
-
-            public void Dispatch(long eventId, object @event)
-            {
-                this.eventDispatcherDelegate.Invoke(eventId, @event);
-            }
         }
     }
 }

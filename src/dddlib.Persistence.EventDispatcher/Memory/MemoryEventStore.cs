@@ -13,7 +13,7 @@ namespace dddlib.Persistence.EventDispatcher.Memory
             throw new System.NotImplementedException();
         }
 
-        public void MarkEventAsDispatched(long eventId)
+        public void MarkEventAsDispatched(long sequenceNumber)
         {
             throw new System.NotImplementedException();
         }

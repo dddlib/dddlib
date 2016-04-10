@@ -51,7 +51,8 @@
     <Compile Include="Guard.cs" />
     <Compile Include="GuardExtensions.cs" />
     <Compile Include="Sdk\Batch.cs" />
-    <Compile Include="Sdk\EventDispatcherService.cs" />
+    <Compile Include="Sdk\CustomEventDispatcher.cs" />
+    <Compile Include="Sdk\EventDispatcher.cs" />
     <Compile Include="Sdk\BatchPreparedEventArgs.cs" />
     <Compile Include="Sdk\EventCommittedEventArgs.cs" />
     <Compile Include="Memory\MemoryEventDispatcher.cs" />

@@ -1,4 +1,8 @@
-﻿CREATE TABLE [dbo].[Batches] (
+﻿ALTER TABLE [dbo].[Events]
+ADD [Dispatched] BIT DEFAULT (0) NOT NULL
+GO
+
+CREATE TABLE [dbo].[Batches] (
     [Id] BIGINT IDENTITY (1, 1) NOT NULL,
     [SequenceNumber] BIGINT NOT NULL,
     [Size] INT NOT NULL,
@@ -13,7 +17,7 @@ AS
 SELECT [SequenceNumber]
 FROM [dbo].[Events]
 WHERE [Dispatched] = 0
-ORDER BY [Id] DESC;
+ORDER BY [SequenceNumber] ASC;
 
 GO
 
@@ -53,24 +57,24 @@ AS
 AS
 (
     SELECT [Event].[SequenceNumber], [Batch].[BatchId]
-    FROM [dbo].[Events] [Event] LEFT OUTER JOIN IncompleteBatches [Batch] ON ([Event].[Id] >= [Batch].[EventId] AND [Event].[Id] < [Batch].[EventId] + [Batch].[Size])
+    FROM [dbo].[Events] [Event] LEFT OUTER JOIN IncompleteBatches [Batch] ON ([Event].[SequenceNumber] >= [Batch].[SequenceNumber] AND [Event].[SequenceNumber] < [Batch].[SequenceNumber] + [Batch].[Size])
     WHERE [Event].[Dispatched] = 0
 ), NextUndispatchedEvents
 AS
 (
-    SELECT TOP (@MaxBatchSize) [EventId]
+    SELECT TOP (@MaxBatchSize) [SequenceNumber]
     FROM UnDispatchedEvents
     WHERE [BatchId] IS NULL
 ), NextBatch
 AS
 (
-    SELECT MIN([EventId]) AS [EventId], MAX([EventId]) - MIN([EventId]) + 1 AS [Size]
+    SELECT MIN([SequenceNumber]) AS [SequenceNumber], MAX([SequenceNumber]) - MIN([SequenceNumber]) + 1 AS [Size]
     FROM NextUndispatchedEvents
 )
-INSERT INTO [dbo].[Batches] ([EventId], [Size])
-SELECT [EventId], [Size]
+INSERT INTO [dbo].[Batches] ([SequenceNumber], [Size])
+SELECT [SequenceNumber], [Size]
 FROM NextBatch
-WHERE [EventId] IS NOT NULL;
+WHERE [SequenceNumber] IS NOT NULL;
 
 COMMIT;
 
@@ -80,35 +84,35 @@ SELECT [Id] AS [BatchId]
 FROM [dbo].[Batches]
 WHERE [Id] = @BatchId;
 
-SELECT [Event].[Id] AS [EventId], [Event].[Payload]
+SELECT [Event].[SequenceNumber], [Event].[Payload]
 FROM [dbo].[Events] [Event] INNER JOIN (
-    SELECT [Id] AS [BatchId], [EventId], [Size]
+    SELECT [Id] AS [BatchId], [SequenceNumber], [Size]
     FROM [dbo].[Batches]
-    WHERE [Id] = @BatchId) [Batch] ON ([Event].[Id] >= [Batch].[EventId] AND [Event].[Id] < [Batch].[EventId] + [Batch].[Size])
+    WHERE [Id] = @BatchId) [Batch] ON ([Event].[SequenceNumber] >= [Batch].[SequenceNumber] AND [Event].[SequenceNumber] < [Batch].[SequenceNumber] + [Batch].[Size])
 
 GO
 
 CREATE PROCEDURE [dbo].[MarkEventAsDispatched]
-    @EventId bigint
+    @SequenceNumber bigint
 AS
 
 SET NOCOUNT ON;
 
 UPDATE [dbo].[Events]
 SET [Dispatched] = 1
-WHERE [Id] = @EventId;
+WHERE [SequenceNumber] = @SequenceNumber;
 
 WITH IncompleteBatches
 AS
 (
-    SELECT [Id] AS [BatchId], [EventId], [Size]
+    SELECT [Id] AS [BatchId], [SequenceNumber], [Size]
     FROM [dbo].[Batches]
     WHERE [Complete] = 0
 ), UnDispatchedEvents
 AS
 (
     SELECT [Batch].[BatchId], [Event].[Dispatched], COUNT([Event].[Dispatched]) AS [Count]
-    FROM [dbo].[Events] [Event] LEFT OUTER JOIN IncompleteBatches [Batch] ON ([Event].[Id] >= [Batch].[EventId] AND [Event].[Id] < [Batch].[EventId] + [Batch].[Size])
+    FROM [dbo].[Events] [Event] LEFT OUTER JOIN IncompleteBatches [Batch] ON ([Event].[SequenceNumber] >= [Batch].[SequenceNumber] AND [Event].[SequenceNumber] < [Batch].[SequenceNumber] + [Batch].[Size])
     WHERE [Batch].[BatchId] IS NOT NULL
     GROUP BY [Batch].[BatchId], [Event].[Dispatched]
 ), PendingDispatch

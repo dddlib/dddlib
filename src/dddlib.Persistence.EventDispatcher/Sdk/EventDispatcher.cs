@@ -1,4 +1,4 @@
-﻿// <copyright file="EventDispatcherService.cs" company="dddlib contributors">
+﻿// <copyright file="EventDispatcher.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -9,39 +9,39 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Represents an event dispatcher service.
+    /// Represents an event dispatcher.
     /// </summary>
-    public class EventDispatcherService : IDisposable
+    public class EventDispatcher : IDisposable
     {
         private readonly object @lock = new object();
         private readonly Timer timer;
 
-        private readonly IEventStore eventStore;
         private readonly IEventDispatcher eventDispatcher;
+        private readonly IEventStore eventStore;
         private readonly INotificationService notificationService;
         private readonly int batchSize;
 
         private Batch bufferedBatch;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EventDispatcherService"/> class.
+        /// Initializes a new instance of the <see cref="EventDispatcher" /> class.
         /// </summary>
-        /// <param name="eventStore">The event store.</param>
         /// <param name="eventDispatcher">The event dispatcher.</param>
+        /// <param name="eventStore">The event store.</param>
         /// <param name="notificationService">The notification service.</param>
         /// <param name="batchSize">Size of the batch.</param>
-        public EventDispatcherService(
-            IEventStore eventStore, 
+        public EventDispatcher(
             IEventDispatcher eventDispatcher,
+            IEventStore eventStore, 
             INotificationService notificationService, 
             int batchSize)
         {
-            Guard.Against.Null(() => eventStore);
             Guard.Against.Null(() => eventDispatcher);
+            Guard.Against.Null(() => eventStore);
             Guard.Against.Null(() => notificationService);
 
-            this.eventStore = eventStore;
             this.eventDispatcher = eventDispatcher;
+            this.eventStore = eventStore;
             this.notificationService = notificationService;
             this.batchSize = batchSize;
 
@@ -85,22 +85,16 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
 
         private void OnEventComitted(object sender, EventCommittedEventArgs e)
         {
-            Console.WriteLine("Notify (Event Committed): {0}", e.EventId);
-
             this.BufferNextBatch();
         }
 
         private void OnBatchPrepared(object sender, BatchPreparedEventArgs e)
         {
-            Console.WriteLine("Notify (Batch Prepared): {0}", e.BatchId);
-
             this.ProcessBatch(e.BatchId);
         }
 
         private void OnTimeout(object state)
         {
-            Console.WriteLine("Buffer (Timeout)");
-
             this.RemoveFromBuffer();
         }
 
@@ -119,8 +113,6 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
                     return;
                 }
 
-                Console.WriteLine("Buffer (Add): {0}", batch.Id);
-
                 this.bufferedBatch = batch;
 
                 this.timer.Change(30 * 1000, Timeout.Infinite);
@@ -136,8 +128,6 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
                     batch = null;
                     return false;
                 }
-
-                Console.WriteLine("Buffer (Remove): {0}", batchId);
 
                 batch = this.bufferedBatch;
 
@@ -177,6 +167,7 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
 
             foreach (var @event in batch.Events)
             {
+                // TODO: Deserialize?
                 try
                 {
                     this.eventDispatcher.Dispatch(@event.Id, @event.Payload);

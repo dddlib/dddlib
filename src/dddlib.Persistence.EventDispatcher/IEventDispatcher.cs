@@ -12,8 +12,8 @@ namespace dddlib.Persistence.EventDispatcher
         /// <summary>
         /// Dispatches the specified event.
         /// </summary>
-        /// <param name="eventId">The event identifier.</param>
+        /// <param name="sequenceNumber">The sequence number for the event.</param>
         /// <param name="event">The event.</param>
-        void Dispatch(long eventId, object @event);
+        void Dispatch(long sequenceNumber, object @event);
     }
 }

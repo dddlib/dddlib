@@ -65,6 +65,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
             var connection = new SqlConnection(connectionString);
             connection.InitializeSchema(schema, "SqlServerPersistence");
             connection.InitializeSchema(schema, typeof(SqlServerEventStore));
+            connection.InitializeSchema(schema, typeof(SqlServerEventDispatcher));
         }
 
         /// <summary>
@@ -104,7 +105,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
                         events.Add(
                             new Event
                             {
-                                Id = Convert.ToInt64(reader["EventId"]),
+                                Id = Convert.ToInt64(reader["SequenceNumber"]),
                                 Payload = reader["Payload"].ToString(),
                             });
                     }
@@ -119,14 +120,14 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <summary>
         /// Marks the event as dispatched.
         /// </summary>
-        /// <param name="eventId">The event identifier.</param>
-        public void MarkEventAsDispatched(long eventId)
+        /// <param name="sequenceNumber">The sequence number for the event.</param>
+        public void MarkEventAsDispatched(long sequenceNumber)
         {
             using (var connection = new SqlConnection(this.connectionString))
             using (var command = new SqlCommand("dbo.MarkEventAsDispatched", connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.Add("EventId", SqlDbType.Int).Value = eventId;
+                command.Parameters.Add("SequenceNumber", SqlDbType.Int).Value = sequenceNumber;
 
                 connection.Open();
 

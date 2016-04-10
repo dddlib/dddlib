@@ -14,16 +14,16 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
         /// <summary>
         /// Initializes a new instance of the <see cref="EventCommittedEventArgs"/> class.
         /// </summary>
-        /// <param name="eventId">The event identifier.</param>
-        public EventCommittedEventArgs(long eventId)
+        /// <param name="sequenceNumber">The sequence number for the event.</param>
+        public EventCommittedEventArgs(long sequenceNumber)
         {
-            this.EventId = eventId;
+            this.SequenceNumber = sequenceNumber;
         }
 
         /// <summary>
-        /// Gets the event identifier.
+        /// Gets the sequence number for the event.
         /// </summary>
-        /// <value>The event identifier.</value>
-        public long EventId { get; private set; }
+        /// <value>The sequence number for the event.</value>
+        public long SequenceNumber { get; private set; }
     }
 }
