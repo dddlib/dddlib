@@ -1,4 +1,4 @@
-﻿// <copyright file="SqlServerEventDispatcherService.cs" company="dddlib contributors">
+﻿// <copyright file="SqlServerEventDispatcher.cs" company="dddlib contributors">
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
@@ -10,14 +10,14 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
     /// Represents the SQL Server event dispatcher service.
     /// </summary>
     //// TODO (Cameron): Manage disposable dependencies.
-    public class SqlServerEventDispatcherService : EventDispatcherService
+    public class SqlServerEventDispatcher : EventDispatcherService
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlServerEventDispatcherService"/> class.
+        /// Initializes a new instance of the <see cref="SqlServerEventDispatcher"/> class.
         /// </summary>
         /// <param name="connectionString">The connection string.</param>
         /// <param name="eventDispatcher">The event dispatcher.</param>
-        public SqlServerEventDispatcherService(string connectionString, IEventDispatcher eventDispatcher)
+        public SqlServerEventDispatcher(string connectionString, IEventDispatcher eventDispatcher)
              : base(
                 new SqlServerEventStore(connectionString),
                 eventDispatcher,

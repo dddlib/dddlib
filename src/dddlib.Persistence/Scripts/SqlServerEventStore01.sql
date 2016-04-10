@@ -3,6 +3,7 @@ CREATE TABLE [dbo].[Events]
     [StreamId] UNIQUEIDENTIFIER NOT NULL,
     [StreamRevision] INT NOT NULL,
     [TypeId] INT NOT NULL, -- this allows us to know which type to reconstitute
+    [Metadata] VARCHAR(MAX) NOT NULL,
     [Payload] VARCHAR(MAX) NOT NULL,
     [CorrelationId] UNIQUEIDENTIFIER NOT NULL,
     [SequenceNumber] BIGINT NOT NULL,
@@ -52,12 +53,13 @@ BEGIN TRANSACTION
 
     DECLARE @Events TABLE ([SequenceNumber] BIGINT, [StreamRevision] INT, [State] VARCHAR(36));
 
-    INSERT INTO [dbo].[Events] WITH (TABLOCKX) ([StreamId], [StreamRevision], [TypeId], [Payload], [CorrelationId], [SequenceNumber])
+    INSERT INTO [dbo].[Events] WITH (TABLOCKX) ([StreamId], [StreamRevision], [TypeId], [Metadata], [Payload], [CorrelationId], [SequenceNumber])
     OUTPUT inserted.[SequenceNumber], inserted.[StreamRevision], inserted.[State] INTO @Events
     SELECT
         @StreamId,
         (COALESCE([Stream].[Revision], 0) + ROW_NUMBER() OVER (ORDER BY (SELECT NULL))),
         [Type].[Id],
+        [Event].[Metadata],
         [Event].[Payload],
         @CorrelationId,
         (COALESCE([Max].[SequenceNumber], 0) + ROW_NUMBER() OVER (ORDER BY (SELECT NULL)))

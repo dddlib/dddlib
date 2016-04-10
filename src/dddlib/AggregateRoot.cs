@@ -119,12 +119,15 @@ namespace dddlib
         /// Sets the state of the aggregate root from the specified memento.
         /// </summary>
         /// <param name="memento">A memento representing the state of the aggregate root.</param>
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
         protected virtual void SetState(object memento)
         {
             throw new RuntimeException(
                 string.Format(
                     CultureInfo.InvariantCulture,
-                    "The aggregate root of type '{0}' has not been configured to apply a memento representing its state.",
+                    @"The aggregate root of type '{0}' has not been configured to reconstitute from a memento representing its state.
+To fix this issue:
+- override the 'SetState' method of the aggregate root to update the it's state from the specified memento.",
                     this.GetType()))
             {
                 HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Mementos",

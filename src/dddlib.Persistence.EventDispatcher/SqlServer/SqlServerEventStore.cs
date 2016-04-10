@@ -16,15 +16,55 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
     public class SqlServerEventStore : IEventStore
     {
         private readonly string connectionString;
+        private readonly string schema;
+        private readonly Guid partition;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlServerEventStore"/> class.
         /// </summary>
         /// <param name="connectionString">The connection string.</param>
         public SqlServerEventStore(string connectionString)
+            : this(connectionString, "dbo", Guid.Empty)
         {
-            // TODO (Cameron): Implement the storage solution to catch invalid connection string and database setup.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlServerEventStore"/> class.
+        /// </summary>
+        /// <param name="connectionString">The connection string.</param>
+        /// <param name="schema">The schema.</param>
+        public SqlServerEventStore(string connectionString, string schema)
+            : this(connectionString, schema, Guid.Empty)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlServerEventStore"/> class.
+        /// </summary>
+        /// <param name="connectionString">The connection string.</param>
+        /// <param name="partition">The partition.</param>
+        internal SqlServerEventStore(string connectionString, Guid partition)
+            : this(connectionString, "dbo", partition)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlServerEventStore"/> class.
+        /// </summary>
+        /// <param name="connectionString">The connection string.</param>
+        /// <param name="schema">The schema.</param>
+        /// <param name="partition">The partition.</param>
+        internal SqlServerEventStore(string connectionString, string schema, Guid partition)
+        {
+            Guard.Against.NullOrEmpty(() => schema);
+
             this.connectionString = connectionString;
+            this.schema = schema;
+            this.partition = partition;
+
+            var connection = new SqlConnection(connectionString);
+            connection.InitializeSchema(schema, "SqlServerPersistence");
+            connection.InitializeSchema(schema, typeof(SqlServerEventStore));
         }
 
         /// <summary>

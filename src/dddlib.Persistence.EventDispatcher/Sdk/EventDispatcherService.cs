@@ -11,7 +11,7 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
     /// <summary>
     /// Represents an event dispatcher service.
     /// </summary>
-    public class EventDispatcherService : IEventDispatcherService, IDisposable
+    public class EventDispatcherService : IDisposable
     {
         private readonly object @lock = new object();
         private readonly Timer timer;
@@ -46,6 +46,8 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
             this.batchSize = batchSize;
 
             this.timer = new Timer(this.OnTimeout, null, Timeout.Infinite, Timeout.Infinite);
+
+            this.Start();
         }
 
         /// <summary>

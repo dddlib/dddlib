@@ -40,6 +40,7 @@
   <ItemGroup>
     <Compile Include="Feature\MemoryEventDispatcher.cs" />
     <Compile Include="Feature\SqlServerEventDispatcher.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\dddlib.snk">

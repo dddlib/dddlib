@@ -129,15 +129,29 @@ namespace dddlib.Persistence.SqlServer
         /// <param name="postCommitState">The post-commit state of stream.</param>
         public void CommitStream(Guid streamId, IEnumerable<object> events, Guid correlationId, string preCommitState, out string postCommitState)
         {
+            Guard.Against.Null(() => events);
+
             var data = new DataTable();
             data.Columns.Add("Index").DataType = typeof(int);
             data.Columns.Add("PayloadTypeName").DataType = typeof(string);
+            data.Columns.Add("Metadata").DataType = typeof(string);
             data.Columns.Add("Payload").DataType = typeof(string);
+
+            // TODO (Cameron): Eliminate the overhead of custom serialization for metadata.
+            var metadata = new Metadata
+            {
+                Hostname = Environment.MachineName,
+                Timestamp = DateTime.UtcNow
+            };
 
             var index = 0;
             foreach (var @event in events)
             {
-                data.Rows.Add(++index, @event.GetType().GetSerializedName(), Serializer.Serialize(@event));
+                data.Rows.Add(
+                    ++index,
+                    @event.GetType().GetSerializedName(),
+                    Serializer.Serialize(metadata),
+                    Serializer.Serialize(@event));
             }
 
             // add all events into temporary table
@@ -155,6 +169,7 @@ namespace dddlib.Persistence.SqlServer
 (
     [Index] INT NOT NULL,
     [PayloadTypeName] VARCHAR(511) NOT NULL,
+    [Metadata] VARCHAR(MAX) NOT NULL,
     [Payload] VARCHAR(MAX) NOT NULL
 )";
 
@@ -209,6 +224,13 @@ namespace dddlib.Persistence.SqlServer
                     postCommitState = Convert.ToString(command.Parameters["@PostCommitState"].Value);
                 }
             }
+        }
+
+        private class Metadata
+        {
+            public string Hostname { get; set; }
+
+            public DateTime Timestamp { get; set; }
         }
     }
 }
