@@ -41,11 +41,13 @@
     <Compile Include="Feature\MemoryEventDispatcher.cs" />
     <Compile Include="Feature\SqlServerEventDispatcher.cs" />
     <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="Sdk\DatabaseCollection.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\dddlib.snk">
       <Link>Properties\dddlib.snk</Link>
     </None>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
