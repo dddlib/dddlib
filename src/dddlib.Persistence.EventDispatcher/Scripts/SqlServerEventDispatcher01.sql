@@ -1,4 +1,8 @@
-﻿ALTER TABLE [dbo].[Events]
+﻿DECLARE @Sql NVARCHAR(MAX) = N'ALTER DATABASE [' + db_name() + '] SET ENABLE_BROKER WITH ROLLBACK IMMEDIATE';
+EXECUTE sp_executesql @Sql;
+GO
+
+ALTER TABLE [dbo].[Events]
 ADD [Dispatched] BIT NOT NULL DEFAULT(0);
 GO
 
