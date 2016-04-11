@@ -20,6 +20,28 @@ namespace dddlib.Persistence.Memory
         private long currentEventId;
 
         /// <summary>
+        /// Gets the events for a stream.
+        /// </summary>
+        /// <param name="streamId">The stream identifier.</param>
+        /// <param name="streamRevision">The stream revision to get the events from.</param>
+        /// <param name="state">The state of the steam.</param>
+        /// <returns>The events.</returns>
+        public IEnumerable<object> GetStream(Guid streamId, int streamRevision, out string state)
+        {
+            Guard.Against.Negative(() => streamRevision);
+
+            var eventStream = default(List<Event>);
+            if (!this.eventStreams.TryGetValue(streamId, out eventStream))
+            {
+                throw new ConcurrencyException("Invalid state #2");
+            }
+
+            state = eventStream.Last().State;
+
+            return eventStream.Skip(streamRevision).Select(@event => @event.Payload).ToList();
+        }
+
+        /// <summary>
         /// Commits the events to a stream.
         /// </summary>
         /// <param name="streamId">The stream identifier.</param>
@@ -34,13 +56,10 @@ namespace dddlib.Persistence.Memory
             {
                 if (eventStream.Last().State != preCommitState)
                 {
-                    throw new ConcurrencyException("Invalid state");
+                    throw preCommitState == null
+                        ? new ConcurrencyException("Aggregate root already exists.")
+                        : new ConcurrencyException();
                 }
-            }
-            else if (preCommitState != null)
-            {
-                // TODO (Cameron): Not sure if this should be here...
-                throw new ConcurrencyException("Invalid state #2");
             }
             else
             {
@@ -63,28 +82,6 @@ namespace dddlib.Persistence.Memory
                     }));
 
             postCommitState = eventStream.Last().State;
-        }
-
-        /// <summary>
-        /// Gets the events for a stream.
-        /// </summary>
-        /// <param name="streamId">The stream identifier.</param>
-        /// <param name="streamRevision">The stream revision to get the events from.</param>
-        /// <param name="state">The state of the steam.</param>
-        /// <returns>The events.</returns>
-        public IEnumerable<object> GetStream(Guid streamId, int streamRevision, out string state)
-        {
-            Guard.Against.Negative(() => streamRevision);
-
-            var eventStream = default(List<Event>);
-            if (!this.eventStreams.TryGetValue(streamId, out eventStream))
-            {
-                throw new ConcurrencyException("Invalid state #2");
-            }
-
-            state = eventStream.Last().State;
-
-            return eventStream.Skip(streamRevision).Select(@event => @event.Payload).ToList();
         }
 
         private class Event
