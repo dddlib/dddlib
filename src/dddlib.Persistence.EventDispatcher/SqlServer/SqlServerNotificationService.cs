@@ -7,6 +7,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
     using System;
     using System.Data;
     using System.Data.SqlClient;
+    using System.Transactions;
     using dddlib.Persistence.EventDispatcher.Sdk;
 
     /// <summary>
@@ -15,6 +16,8 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
     public class SqlServerNotificationService : INotificationService, IDisposable
     {
         private readonly string connectionString;
+        private readonly string schema;
+        private readonly Guid partition;
 
         private long currentSequenceNumber;
         private long currentBatchId;
@@ -24,9 +27,48 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// </summary>
         /// <param name="connectionString">The connection string.</param>
         public SqlServerNotificationService(string connectionString)
+            : this(connectionString, "dbo", Guid.Empty)
         {
-            // TODO (Cameron): Implement the storage solution to catch invalid connection string and database setup.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlServerNotificationService"/> class.
+        /// </summary>
+        /// <param name="connectionString">The connection string.</param>
+        /// <param name="schema">The schema.</param>
+        public SqlServerNotificationService(string connectionString, string schema)
+            : this(connectionString, schema, Guid.Empty)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlServerNotificationService"/> class.
+        /// </summary>
+        /// <param name="connectionString">The connection string.</param>
+        /// <param name="partition">The partition.</param>
+        public SqlServerNotificationService(string connectionString, Guid partition)
+            : this(connectionString, "dbo", partition)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlServerNotificationService" /> class.
+        /// </summary>
+        /// <param name="connectionString">The connection string.</param>
+        /// <param name="schema">The schema.</param>
+        /// <param name="partition">The partition.</param>
+        public SqlServerNotificationService(string connectionString, string schema, Guid partition)
+        {
+            Guard.Against.NullOrEmpty(() => schema);
+
             this.connectionString = connectionString;
+            this.schema = schema;
+            this.partition = partition;
+
+            var connection = new SqlConnection(connectionString);
+            connection.InitializeSchema(schema, "SqlServerPersistence");
+            connection.InitializeSchema(schema, typeof(SqlServerEventStore));
+            connection.InitializeSchema(schema, typeof(SqlServerEventDispatcher));
 
             SqlDependency.Start(this.connectionString);
 
@@ -54,8 +96,9 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
 
         private void MonitorEvents()
         {
+            using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
-            using (var command = new SqlCommand("dbo.MonitorUndispatchedEvents", connection))
+            using (var command = new SqlCommand(string.Concat(this.schema, ".MonitorUndispatchedEvents"), connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
                 command.Notification = null;
@@ -89,8 +132,9 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
 
         private void MonitorBatches()
         {
+            using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
-            using (var command = new SqlCommand("dbo.MonitorUndispatchedBatches", connection))
+            using (var command = new SqlCommand(string.Concat(this.schema, ".MonitorUndispatchedBatches"), connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
                 command.Notification = null;
@@ -129,6 +173,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
 
             if (eventArgs.Info == SqlNotificationInfo.Invalid)
             {
+                // TODO (Cameron): Fix exception type.
                 throw new Exception("Unable to process.");
             }
 
@@ -142,6 +187,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
 
             if (eventArgs.Info == SqlNotificationInfo.Invalid)
             {
+                // TODO (Cameron): Fix exception type.
                 throw new Exception("Unable to process.");
             }
 

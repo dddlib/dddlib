@@ -84,7 +84,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
-            using (var command = new SqlCommand("dbo.GetNextUndispatchedEventsBatch", connection))
+            using (var command = new SqlCommand(string.Concat(this.schema, ".GetNextUndispatchedEventsBatch"), connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
                 command.Parameters.Add("MaxBatchSize", SqlDbType.Int).Value = batchSize;
@@ -138,7 +138,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         {
             using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
-            using (var command = new SqlCommand("dbo.MarkEventAsDispatched", connection))
+            using (var command = new SqlCommand(string.Concat(this.schema, ".MarkEventAsDispatched"), connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
                 command.Parameters.Add("SequenceNumber", SqlDbType.Int).Value = sequenceNumber;
