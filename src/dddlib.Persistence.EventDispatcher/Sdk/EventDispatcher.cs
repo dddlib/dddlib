@@ -51,6 +51,14 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
         }
 
         /// <summary>
+        /// Finalizes an instance of the <see cref="EventDispatcher"/> class.
+        /// </summary>
+        ~EventDispatcher()
+        {
+            this.Dispose(false);
+        }
+
+        /// <summary>
         /// Starts the service.
         /// </summary>
         public void Start()
@@ -80,7 +88,21 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
         /// </summary>
         public void Dispose()
         {
-            this.Stop();
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources.
+        /// </summary>
+        /// <param name="disposing">Set to <c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // free managed resources
+                this.Stop();
+            }
         }
 
         private void OnEventComitted(object sender, EventCommittedEventArgs e)

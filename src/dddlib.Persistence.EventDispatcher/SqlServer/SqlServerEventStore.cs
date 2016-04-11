@@ -8,6 +8,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
     using System.Collections.Generic;
     using System.Data;
     using System.Data.SqlClient;
+    using System.Web.Script.Serialization;
     using dddlib.Persistence.EventDispatcher.Sdk;
 
     /// <summary>
@@ -15,6 +16,9 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
     /// </summary>
     public class SqlServerEventStore : IEventStore
     {
+        // NOTE (Cameron): This is nonsense and should be moved out of here.
+        private static readonly JavaScriptSerializer Serializer = new JavaScriptSerializer();
+
         private readonly string connectionString;
         private readonly string schema;
         private readonly Guid partition;
@@ -100,13 +104,18 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
 
                     reader.NextResult();
 
+                    // TODO (Cameron): This is massively inefficient.
                     while (reader.Read())
                     {
+                        var payloadTypeName = Convert.ToString(reader["PayloadTypeName"]);
+                        var payloadType = Type.GetType(payloadTypeName);
+                        var payload = Serializer.Deserialize(Convert.ToString(reader["Payload"]), payloadType);
+
                         events.Add(
                             new Event
                             {
                                 Id = Convert.ToInt64(reader["SequenceNumber"]),
-                                Payload = reader["Payload"].ToString(),
+                                Payload = payload,
                             });
                     }
 

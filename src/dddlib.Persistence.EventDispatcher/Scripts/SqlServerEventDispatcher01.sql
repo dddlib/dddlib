@@ -80,11 +80,12 @@ SELECT [Id] AS [BatchId]
 FROM [dbo].[Batches]
 WHERE [Id] = @BatchId;
 
-SELECT [Event].[SequenceNumber], [Event].[Payload]
-FROM [dbo].[Events] [Event] INNER JOIN (
+SELECT [Event].[SequenceNumber], [Type].[Name] AS [PayloadTypeName], [Event].[Payload]
+FROM [dbo].[Events] [Event] WITH (NOLOCK) INNER JOIN (
     SELECT [Id] AS [BatchId], [SequenceNumber], [Size]
     FROM [dbo].[Batches]
     WHERE [Id] = @BatchId) [Batch] ON ([Event].[SequenceNumber] >= [Batch].[SequenceNumber] AND [Event].[SequenceNumber] < [Batch].[SequenceNumber] + [Batch].[Size])
+    INNER JOIN [dbo].[Types] [Type] ON [Event].[TypeId] = [Type].[Id];
 
 GO
 

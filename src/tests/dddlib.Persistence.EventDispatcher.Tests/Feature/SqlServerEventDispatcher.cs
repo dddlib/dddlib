@@ -10,7 +10,6 @@ namespace dddlib.Persistence.EventDispatcher.Tests.Feature
     using FluentAssertions;
     using Persistence.Sdk;
     using Persistence.SqlServer;
-    using Runtime;
     using Xbehave;
     using Xunit;
 
@@ -56,22 +55,28 @@ namespace dddlib.Persistence.EventDispatcher.Tests.Feature
             }
 
             [Scenario]
-            public void Scenario(Subject instance, Action action, Action<long, object> eventDispatcherDelegate)
+            public void Scenario(Subject instance, dddlib.Persistence.EventDispatcher.Sdk.EventDispatcher eventDispatcher, NewSubject newSubject)
             {
-                "Given an event dispatcher delegate"
-                    .f(() => eventDispatcherDelegate = (sequenceNumber, @event) => { });
-
-                "And a SQL Server event dispatcher for that delegate"
-                    .f(() => new SqlServer.SqlServerEventDispatcher(this.ConnectionString, eventDispatcherDelegate));
+                "Given a SQL Server event dispatcher"
+                    .f(c => eventDispatcher = new SqlServer.SqlServerEventDispatcher(
+                        this.ConnectionString,
+                        (sequenceNumber, @event) => newSubject = @event as NewSubject).Using(c));
 
                 "And an instance of an aggregate root"
                     .f(() => instance = new Subject("key"));
 
                 "When that instance is saved to the repository"
-                    .f(() => action = () => this.repository.Save(instance));
+                    .f(() => this.repository.Save(instance));
+
+                "And a short period of time elapses"
+                    .f(() => System.Threading.Tasks.Task.Delay(2000));
 
                 "Then the event is dispatched"
-                    .f(() => System.Threading.Tasks.Task.Delay(1000));
+                    .f(() =>
+                    {
+                        newSubject.Should().NotBeNull();
+                        newSubject.Id.Should().Be(instance.Id);
+                    });
             }
 
             public class Subject : AggregateRoot

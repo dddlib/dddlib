@@ -105,7 +105,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
                 {
                     if (reader.Read())
                     {
-                        var batchId = Convert.ToInt64(reader["BatchId"]);
+                        var batchId = Convert.ToInt64(reader["SequenceNumber"]);
                         if (this.currentBatchId == batchId)
                         {
                             return;
