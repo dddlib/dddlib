@@ -8,6 +8,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
     using System.Collections.Generic;
     using System.Data;
     using System.Data.SqlClient;
+    using System.Transactions;
     using System.Web.Script.Serialization;
     using dddlib.Persistence.EventDispatcher.Sdk;
 
@@ -81,6 +82,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <returns>The events batch.</returns>
         public Batch GetNextUndispatchedEventsBatch(int batchSize)
         {
+            using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
             using (var command = new SqlCommand("dbo.GetNextUndispatchedEventsBatch", connection))
             {
@@ -134,6 +136,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <param name="sequenceNumber">The sequence number for the event.</param>
         public void MarkEventAsDispatched(long sequenceNumber)
         {
+            using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
             using (var command = new SqlCommand("dbo.MarkEventAsDispatched", connection))
             {
@@ -143,6 +146,38 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
                 connection.Open();
 
                 command.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>
+        /// Gets the events from the specified sequence number.
+        /// </summary>
+        /// <param name="sequenceNumber">The sequence number.</param>
+        /// <returns>The events.</returns>
+        public IEnumerable<object> GetEventsFrom(long sequenceNumber)
+        {
+            using (new TransactionScope(TransactionScopeOption.Suppress))
+            using (var connection = new SqlConnection(this.connectionString))
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandType = CommandType.StoredProcedure;
+                command.CommandText = string.Concat(this.schema, ".GetEventsFrom");
+                command.Parameters.Add("@SequenceNumber", SqlDbType.Int).Value = sequenceNumber;
+
+                connection.Open();
+
+                using (var reader = command.ExecuteReader())
+                {
+                    // TODO (Cameron): This is massively inefficient.
+                    while (reader.Read())
+                    {
+                        var payloadTypeName = Convert.ToString(reader["PayloadTypeName"]);
+                        var payloadType = Type.GetType(payloadTypeName);
+                        var @event = Serializer.Deserialize(Convert.ToString(reader["Payload"]), payloadType);
+
+                        yield return @event;
+                    }
+                }
             }
         }
     }

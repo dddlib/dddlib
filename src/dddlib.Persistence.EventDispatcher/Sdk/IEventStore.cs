@@ -4,6 +4,8 @@
 
 namespace dddlib.Persistence.EventDispatcher.Sdk
 {
+    using System.Collections.Generic;
+
     /// <summary>
     /// Exposes the public members of the event store (for the event dispatcher).
     /// </summary>
@@ -21,5 +23,12 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
         /// </summary>
         /// <param name="sequenceNumber">The sequence number for the event.</param>
         void MarkEventAsDispatched(long sequenceNumber);
+
+        /// <summary>
+        /// Gets the events from the specified sequence number.
+        /// </summary>
+        /// <param name="sequenceNumber">The sequence number.</param>
+        /// <returns>The events.</returns>
+        IEnumerable<object> GetEventsFrom(long sequenceNumber);
     }
 }
