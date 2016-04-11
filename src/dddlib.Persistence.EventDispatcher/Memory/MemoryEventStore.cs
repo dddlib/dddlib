@@ -4,18 +4,25 @@
 
 namespace dddlib.Persistence.EventDispatcher.Memory
 {
+    using System;
+    using System.Collections.Generic;
     using dddlib.Persistence.EventDispatcher.Sdk;
 
     internal class MemoryEventStore : IEventStore
     {
         public Batch GetNextUndispatchedEventsBatch(int batchSize)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public void MarkEventAsDispatched(long sequenceNumber)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<object> GetEventsFrom(long sequenceNumber)
+        {
+            throw new NotImplementedException();
         }
     }
 }

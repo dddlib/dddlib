@@ -1,4 +1,8 @@
-﻿CREATE TABLE [dbo].[Batches] (
+﻿ALTER TABLE [dbo].[Events]
+ADD [Dispatched] BIT NOT NULL DEFAULT(0);
+GO
+
+CREATE TABLE [dbo].[Batches] (
     [Id] BIGINT IDENTITY (1, 1) NOT NULL,
     [SequenceNumber] BIGINT NOT NULL,
     [Size] INT NOT NULL,
@@ -127,5 +131,16 @@ UPDATE [Batch]
 SET [Batch].[Complete] = 1
 FROM PendingDispatch [Pending] INNER JOIN [dbo].[Batches] [Batch] ON [Pending].[BatchId] = [Batch].[Id]
 WHERE [Pending].[Pending] = 0;
+
+GO
+
+CREATE PROCEDURE [dbo].[GetEventsFrom]
+    @SequenceNumber BIGINT
+AS
+
+SELECT [Event].[SequenceNumber], [Type].[Name] AS [PayloadTypeName], [Event].[Payload]
+FROM [dbo].[Events] [Event] WITH (NOLOCK)INNER JOIN [dbo].[Types] [Type] ON [Event].[TypeId] = [Type].[Id]
+WHERE [Event].[SequenceNumber] > @SequenceNumber
+ORDER BY [Event].[SequenceNumber];
 
 GO
