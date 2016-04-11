@@ -19,7 +19,7 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
         /// <summary>
         /// Marks the event as dispatched.
         /// </summary>
-        /// <param name="eventId">The event identifier.</param>
-        void MarkEventAsDispatched(long eventId);
+        /// <param name="sequenceNumber">The sequence number for the event.</param>
+        void MarkEventAsDispatched(long sequenceNumber);
     }
 }

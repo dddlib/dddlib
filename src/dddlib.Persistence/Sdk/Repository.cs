@@ -5,6 +5,7 @@
 namespace dddlib.Persistence.Sdk
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
     using Runtime;
@@ -88,6 +89,7 @@ namespace dddlib.Persistence.Sdk
         /// <returns>The memento.</returns>
         protected abstract object Load(Guid id, out string state);
 
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
         private void SaveInternal(T aggregateRoot)
         {
             // NOTE (Cameron): Because we can't trust type of(T) as it may be the base class.
@@ -111,8 +113,10 @@ namespace dddlib.Persistence.Sdk
                 throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        "The aggregate root of type '{0}' has not been configured to return a memento representing its state.",
-                        this.GetType()))
+                        @"The aggregate root of type '{0}' has not been configured to return a memento representing its state.
+To fix this issue:
+- override the 'GetState' method of the aggregate root to return a memento describing it's state.",
+                        type))
                 {
                     HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Mementos",
                 };

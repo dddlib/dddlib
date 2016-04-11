@@ -16,7 +16,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
     {
         private readonly string connectionString;
 
-        private long currentEventId;
+        private long currentSequenceNumber;
         private long currentBatchId;
 
         /// <summary>
@@ -70,17 +70,17 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
                 {
                     if (reader.Read())
                     {
-                        var eventId = Convert.ToInt64(reader["EventId"]);
-                        if (this.currentEventId == eventId)
+                        var sequenceNumber = Convert.ToInt64(reader["SequenceNumber"]);
+                        if (this.currentSequenceNumber == sequenceNumber)
                         {
                             return;
                         }
 
-                        this.currentEventId = eventId;
+                        this.currentSequenceNumber = sequenceNumber;
 
                         if (this.OnEventCommitted != null)
                         {
-                            this.OnEventCommitted.Invoke(this, new EventCommittedEventArgs(this.currentEventId));
+                            this.OnEventCommitted.Invoke(this, new EventCommittedEventArgs(this.currentSequenceNumber));
                         }
                     }
                 }
@@ -105,7 +105,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
                 {
                     if (reader.Read())
                     {
-                        var batchId = Convert.ToInt64(reader["BatchId"]);
+                        var batchId = Convert.ToInt64(reader["SequenceNumber"]);
                         if (this.currentBatchId == batchId)
                         {
                             return;

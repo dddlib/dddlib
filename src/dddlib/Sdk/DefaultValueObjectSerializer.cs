@@ -26,7 +26,7 @@ namespace dddlib.Sdk
         /// </summary>
         public DefaultValueObjectSerializer()
         {
-            Serializer.RegisterConverters(new[] { new ValueObjectConverter() });
+            Serializer.RegisterConverters(new JavaScriptConverter[] { new DateTimeConverter(), new ValueObjectConverter() });
         }
 
         /// <summary>

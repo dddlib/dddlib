@@ -38,10 +38,10 @@ namespace dddlib.Persistence.Sdk
                 throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        @"The aggregate root of type '{0}' does not have a factory method registered with the runtime.
+                        @"The aggregate root of type '{0}' does not have a factory method for reconstitution registered with the runtime.
 To fix this issue, either:
-- use a bootstrapper to register a factory method with the runtime, or
-- add a default constructor to the aggregate root.",
+- use a bootstrapper to configure reconstitution for that aggregate root, or
+- add a protected internal default constructor to the aggregate root.",
                         typeof(T)))
                 {
                     HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Reconstitution",
