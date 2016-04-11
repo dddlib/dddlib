@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;GUARD_STRICT</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;DDDLIB;GUARD_STRICT</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -31,7 +31,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;DDDLIB</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -68,6 +68,7 @@
     <Compile Include="Sdk\Configuration\Model\NaturalKey.cs" />
     <Compile Include="Sdk\Configuration\Services\TypeAnalyzer\DefaultTypeAnalyzerService.cs" />
     <Compile Include="Sdk\Configuration\Model\ValueObjectType.cs" />
+    <Compile Include="Sdk\DateTimeConverter.cs" />
     <Compile Include="Sdk\DefaultValueObjectSerializer.cs" />
     <Compile Include="Sdk\Mapper\DefaultEntityMapper.cs" />
     <Compile Include="Sdk\Configuration\Services\Bootstrapper\DefaultBootstrapperProvider.cs" />

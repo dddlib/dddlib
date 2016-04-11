@@ -70,6 +70,8 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
             connection.InitializeSchema(schema, "SqlServerPersistence");
             connection.InitializeSchema(schema, typeof(SqlServerEventStore));
             connection.InitializeSchema(schema, typeof(SqlServerEventDispatcher));
+
+            Serializer.RegisterConverters(new[] { new DateTimeConverter() });
         }
 
         /// <summary>

@@ -73,6 +73,8 @@ namespace dddlib.Persistence.SqlServer
             var connection = new SqlConnection(connectionString);
             connection.InitializeSchema(schema, "SqlServerPersistence");
             connection.InitializeSchema(schema, typeof(SqlServerEventStore));
+
+            Serializer.RegisterConverters(new[] { new DateTimeConverter() });
         }
 
         /// <summary>
