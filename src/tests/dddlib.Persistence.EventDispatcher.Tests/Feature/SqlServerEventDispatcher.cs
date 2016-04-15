@@ -5,6 +5,7 @@
 namespace dddlib.Persistence.EventDispatcher.Tests.Feature
 {
     using System;
+    using System.Threading;
     using Configuration;
     using dddlib.Tests.Sdk;
     using FluentAssertions;
@@ -55,12 +56,24 @@ namespace dddlib.Persistence.EventDispatcher.Tests.Feature
             }
 
             [Scenario]
-            public void Scenario(Subject instance, dddlib.Persistence.EventDispatcher.Sdk.EventDispatcher eventDispatcher, NewSubject newSubject)
+            public void Scenario(
+                Subject instance,
+                dddlib.Persistence.EventDispatcher.Sdk.EventDispatcher eventDispatcher,
+                NewSubject newSubject,
+                AutoResetEvent notify)
             {
                 "Given a SQL Server event dispatcher"
-                    .f(c => eventDispatcher = new SqlServer.SqlServerEventDispatcher(
-                        this.ConnectionString,
-                        (sequenceNumber, @event) => newSubject = @event as NewSubject).Using(c));
+                    .f(c =>
+                    {
+                        notify = new AutoResetEvent(false);
+                        eventDispatcher = new SqlServer.SqlServerEventDispatcher(
+                            this.ConnectionString,
+                            (sequenceNumber, @event) =>
+                            {
+                                newSubject = @event as NewSubject;
+                                notify.Set();
+                            }).Using(c);
+                    });
 
                 "And an instance of an aggregate root"
                     .f(() => instance = new Subject("key"));
@@ -69,7 +82,7 @@ namespace dddlib.Persistence.EventDispatcher.Tests.Feature
                     .f(() => this.repository.Save(instance));
 
                 "And a short period of time elapses"
-                    .f(() => System.Threading.Tasks.Task.Delay(2000));
+                    .f(() => notify.WaitOne(10 * 1000) /* up to 10 secs */);
 
                 "Then the event is dispatched"
                     .f(() =>
