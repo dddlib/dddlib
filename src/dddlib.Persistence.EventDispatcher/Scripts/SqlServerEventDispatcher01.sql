@@ -24,10 +24,10 @@ GO
 CREATE PROCEDURE [dbo].[MonitorUndispatchedBatches]
 AS
 
-SELECT [SequenceNumber]
+SELECT [Id]
 FROM [dbo].[Batches]
 WHERE [Complete] = 0
-ORDER BY [SequenceNumber]
+ORDER BY [SequenceNumber] ASC;
 
 GO
 

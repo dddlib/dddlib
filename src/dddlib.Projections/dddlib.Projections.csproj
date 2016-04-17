@@ -64,7 +64,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Meld">
-      <HintPath>..\..\packages\Meld.0.1.0-alpha67\lib\net45\Meld.dll</HintPath>
+      <HintPath>..\..\packages\Meld.0.1.0-alpha69\lib\net45\Meld.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />

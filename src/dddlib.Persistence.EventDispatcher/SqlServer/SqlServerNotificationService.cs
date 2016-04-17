@@ -149,7 +149,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
                 {
                     if (reader.Read())
                     {
-                        var batchId = Convert.ToInt64(reader["SequenceNumber"]);
+                        var batchId = Convert.ToInt64(reader["Id"]);
                         if (this.currentBatchId == batchId)
                         {
                             return;
@@ -168,8 +168,8 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
 
         private void SqlDependencyOnEventComitted(object sender, SqlNotificationEventArgs eventArgs)
         {
-            var dependency = (SqlDependency)sender;
-            dependency.OnChange -= this.SqlDependencyOnEventComitted;
+            var sqlDependency = (SqlDependency)sender;
+            sqlDependency.OnChange -= this.SqlDependencyOnEventComitted;
 
             if (eventArgs.Info == SqlNotificationInfo.Invalid)
             {
@@ -182,8 +182,8 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
 
         private void SqlDependencyOnBatchPrepared(object sender, SqlNotificationEventArgs eventArgs)
         {
-            var dependency = (SqlDependency)sender;
-            dependency.OnChange -= this.SqlDependencyOnBatchPrepared;
+            var sqlDependency = (SqlDependency)sender;
+            sqlDependency.OnChange -= this.SqlDependencyOnBatchPrepared;
 
             if (eventArgs.Info == SqlNotificationInfo.Invalid)
             {
