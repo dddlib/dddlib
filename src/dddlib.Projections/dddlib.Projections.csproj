@@ -61,11 +61,10 @@
       <Link>Properties\dddlib.snk</Link>
     </None>
     <None Include="dddlib.Projections.nuspec" />
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Meld">
-      <HintPath>..\..\packages\Meld.0.1.0-alpha52\lib\net45\Meld.dll</HintPath>
+      <HintPath>..\..\packages\Meld.0.1.0-alpha67\lib\net45\Meld.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />

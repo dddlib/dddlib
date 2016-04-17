@@ -211,7 +211,6 @@ namespace dddlib.Persistence.SqlServer
                         {
                             if (preCommitState == null)
                             {
-                                // NOTE (Cameron): Aggregate root already exists!
                                 throw new ConcurrencyException("Aggregate root already exists.", ex);
                             }
                             else

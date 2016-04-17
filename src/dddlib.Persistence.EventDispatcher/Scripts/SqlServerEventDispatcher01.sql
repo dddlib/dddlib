@@ -1,7 +1,4 @@
-﻿--ALTER DATABASE [$database] SET ENABLE_BROKER WITH ROLLBACK IMMEDIATE;
-GO
-
-ALTER TABLE [dbo].[Events]
+﻿ALTER TABLE [dbo].[Events]
 ADD [Dispatched] BIT NOT NULL DEFAULT(0);
 GO
 

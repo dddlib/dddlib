@@ -91,7 +91,7 @@ namespace dddlib.Sdk
                             @"Unable to deserialize value object of type '{0}' using the default value object serializer as there is no suitable constructor defined.
 To fix this issue, either:
 - add a single public constructor that accepts the following parameter(s): '{1}', or
-- ensure that the properties of the value object are read/write and add a default constructor to the value object.",
+- define a custom serializer in a bootstrapper.",
                             typeof(T),
                             string.Join(", ", dictionary.Keys)))
                     {
