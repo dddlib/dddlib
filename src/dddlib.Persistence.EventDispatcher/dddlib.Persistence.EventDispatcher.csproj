@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;GUARD_STRICT</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;GUARD_STRICT;DISPATCHER</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -31,7 +31,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;DISPATCHER</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -49,11 +49,18 @@
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\dddlib.Persistence\Memory\MemoryEventStore.cs">
+      <Link>Memory\MemoryEventStore.cs</Link>
+    </Compile>
+    <Compile Include="..\dddlib.Persistence\Sdk\ExclusiveCodeBlock.cs">
+      <Link>Sdk\ExclusiveCodeBlock.cs</Link>
+    </Compile>
     <Compile Include="..\dddlib\Sdk\DateTimeConverter.cs">
       <Link>Sdk\DateTimeConverter.cs</Link>
     </Compile>
     <Compile Include="Guard.cs" />
     <Compile Include="GuardExtensions.cs" />
+    <Compile Include="Memory\MemoryNotificationService.cs" />
     <Compile Include="Sdk\Batch.cs" />
     <Compile Include="Sdk\CustomEventDispatcher.cs" />
     <Compile Include="Sdk\EventDispatcher.cs" />
@@ -61,7 +68,6 @@
     <Compile Include="Sdk\EventCommittedEventArgs.cs" />
     <Compile Include="Memory\MemoryEventDispatcher.cs" />
     <Compile Include="IEventDispatcher.cs" />
-    <Compile Include="Memory\MemoryEventStore.cs" />
     <Compile Include="Sdk\Event.cs" />
     <Compile Include="SqlServer\SqlServerNotificationService.cs" />
     <Compile Include="SqlServer\SqlServerEventDispatcher.cs" />
@@ -104,6 +110,9 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Scripts\SqlServerEventDispatcher02.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts\Other03.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets" Condition="Exists('..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets')" />

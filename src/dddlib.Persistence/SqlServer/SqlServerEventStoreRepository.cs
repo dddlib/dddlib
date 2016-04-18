@@ -7,7 +7,7 @@ namespace dddlib.Persistence.SqlServer
     using Sdk;
 
     /// <summary>
-    /// Represents a memory-based event store repository.
+    /// Represents a SQL Server-based event store repository.
     /// </summary>
     /// <seealso cref="dddlib.Persistence.Sdk.EventStoreRepository" />
     public sealed class SqlServerEventStoreRepository : EventStoreRepository

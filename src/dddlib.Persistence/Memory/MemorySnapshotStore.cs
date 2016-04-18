@@ -9,7 +9,7 @@ namespace dddlib.Persistence.Memory
     using dddlib.Persistence.Sdk;
 
     /// <summary>
-    /// Represents a memory-based snapshot store.
+    /// Represents the memory-based snapshot store.
     /// </summary>
     /// <seealso cref="dddlib.Persistence.Sdk.ISnapshotStore" />
     public class MemorySnapshotStore : ISnapshotStore

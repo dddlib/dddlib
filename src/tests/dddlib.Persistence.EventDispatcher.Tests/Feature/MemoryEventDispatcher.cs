@@ -4,13 +4,12 @@
 
 namespace dddlib.Persistence.EventDispatcher.Tests.Feature
 {
-    using System;
+    using System.Threading;
     using Configuration;
     using dddlib.Tests.Sdk;
     using FluentAssertions;
     using Persistence.Memory;
     using Persistence.Sdk;
-    using Runtime;
     using Xbehave;
 
     public abstract class MemoryEventDispatcher : Feature
@@ -38,23 +37,77 @@ namespace dddlib.Persistence.EventDispatcher.Tests.Feature
                 .f(() => this.repository = new EventStoreRepository(this.identityMap, this.eventStore, this.snapshotStore));
         }
 
-        public class UndefinedNaturalKey : MemoryEventDispatcher
+        public class CanDispatch : MemoryEventDispatcher
         {
-            [Scenario(Skip = "Nonsense.")]
-            public void Scenario(Subject instance, Action action)
+            [Scenario(Skip = "Incomplete.")]
+            public void Scenario(
+                Subject instance,
+                dddlib.Persistence.EventDispatcher.Sdk.EventDispatcher eventDispatcher,
+                NewSubject newSubject,
+                AutoResetEvent notify)
             {
-                "Given an instance of an aggregate root with no defined natural key"
-                    .f(() => instance = new Subject());
+                "Given a SQL Server event dispatcher"
+                    .f(c =>
+                    {
+                        notify = new AutoResetEvent(false);
+                        eventDispatcher = new Memory.MemoryEventDispatcher(
+                            (sequenceNumber, @event) =>
+                            {
+                                newSubject = @event as NewSubject;
+                                notify.Set();
+                            }).Using(c);
+                    });
+
+                "And an instance of an aggregate root"
+                    .f(() => instance = new Subject("key"));
 
                 "When that instance is saved to the repository"
-                    .f(() => action = () => this.repository.Save(instance));
+                    .f(() => this.repository.Save(instance));
 
-                "Then a runtime exception is thrown"
-                    .f(() => action.ShouldThrow<RuntimeException>());
+                "And a short period of time elapses"
+                    .f(() => notify.WaitOne(10 * 1000) /* up to 10 secs */);
+
+                "Then the event is dispatched"
+                    .f(() =>
+                    {
+                        newSubject.Should().NotBeNull();
+                        newSubject.Id.Should().Be(instance.Id);
+                    });
             }
 
             public class Subject : AggregateRoot
             {
+                public Subject(string id)
+                {
+                    this.Apply(new NewSubject { Id = id });
+                }
+
+                internal Subject()
+                {
+                }
+
+                [NaturalKey]
+                public string Id { get; private set; }
+
+                protected override object GetState()
+                {
+                    return this.Id;
+                }
+
+                protected override void SetState(object memento)
+                {
+                    this.Id = memento.ToString();
+                }
+
+                private void Handle(NewSubject @event)
+                {
+                    this.Id = @event.Id;
+                }
+            }
+
+            public class NewSubject
+            {
+                public string Id { get; set; }
             }
 
             private class BootStrapper : IBootstrap<Subject>

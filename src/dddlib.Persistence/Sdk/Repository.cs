@@ -148,6 +148,10 @@ To fix this issue:
 
             var state = default(string);
             var memento = this.Load(id, out state);
+            if (memento == null)
+            {
+                runtimeType.ThrowNotFound(naturalKey);
+            }
 
             var aggregateRoot = this.factory.Create<T>(memento, 0, Enumerable.Empty<object>(), state);
             if (aggregateRoot.IsDestroyed)
