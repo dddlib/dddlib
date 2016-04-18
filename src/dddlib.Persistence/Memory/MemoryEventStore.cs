@@ -24,7 +24,7 @@ namespace dddlib.Persistence.Memory
         private static readonly JavaScriptSerializer Serializer = new JavaScriptSerializer();
 
         private readonly Dictionary<Guid, List<Event>> eventStreams = new Dictionary<Guid, List<Event>>();
-        private readonly List<Event> eventStore = new List<Event>();
+        private readonly List<Event> store = new List<Event>();
 
         private readonly Mutex mutex;
         private readonly MemoryMappedFile file;
@@ -73,7 +73,8 @@ namespace dddlib.Persistence.Memory
             var eventStream = default(List<Event>);
             if (!this.eventStreams.TryGetValue(streamId, out eventStream))
             {
-                throw new ConcurrencyException("Invalid state #2");
+                state = null;
+                return new object[0];
             }
 
             state = eventStream.Last().State;
@@ -131,7 +132,7 @@ namespace dddlib.Persistence.Memory
                         StreamId = streamId,
                         Type = @event.GetType().GetSerializedName(),
                         Payload = payload,
-                        SequenceNumber = this.eventStore.Count + 1,
+                        SequenceNumber = this.store.Count + 1,
                         State = postCommitState = Guid.NewGuid().ToString("N").Substring(0, 8),
                     };
 
@@ -162,7 +163,7 @@ namespace dddlib.Persistence.Memory
 
             this.Synchronize();
 
-            return this.eventStore.Skip((int)sequenceNumber).Select(@event => @event.Payload);
+            return this.store.Skip((int)sequenceNumber).Select(@event => @event.Payload);
         }
 
         /// <summary>
@@ -220,7 +221,7 @@ namespace dddlib.Persistence.Memory
                 }
 
                 eventStream.Add(@event);
-                this.eventStore.Add(@event);
+                this.store.Add(@event);
             }
             while (length > 0);
 
