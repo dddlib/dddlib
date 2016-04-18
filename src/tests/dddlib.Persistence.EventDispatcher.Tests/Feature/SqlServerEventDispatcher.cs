@@ -4,7 +4,6 @@
 
 namespace dddlib.Persistence.EventDispatcher.Tests.Feature
 {
-    using System;
     using System.Threading;
     using Configuration;
     using dddlib.Tests.Sdk;

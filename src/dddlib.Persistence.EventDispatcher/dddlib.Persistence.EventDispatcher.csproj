@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;GUARD_STRICT</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;GUARD_STRICT;DISPATCHER</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -31,7 +31,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;DISPATCHER</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -49,6 +49,12 @@
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\dddlib.Persistence\Memory\MemoryEventStore.cs">
+      <Link>Memory\MemoryEventStore.cs</Link>
+    </Compile>
+    <Compile Include="..\dddlib.Persistence\Sdk\ExclusiveCodeBlock.cs">
+      <Link>Sdk\ExclusiveCodeBlock.cs</Link>
+    </Compile>
     <Compile Include="..\dddlib\Sdk\DateTimeConverter.cs">
       <Link>Sdk\DateTimeConverter.cs</Link>
     </Compile>
@@ -62,7 +68,6 @@
     <Compile Include="Sdk\EventCommittedEventArgs.cs" />
     <Compile Include="Memory\MemoryEventDispatcher.cs" />
     <Compile Include="IEventDispatcher.cs" />
-    <Compile Include="Memory\MemoryEventStore.cs" />
     <Compile Include="Sdk\Event.cs" />
     <Compile Include="SqlServer\SqlServerNotificationService.cs" />
     <Compile Include="SqlServer\SqlServerEventDispatcher.cs" />

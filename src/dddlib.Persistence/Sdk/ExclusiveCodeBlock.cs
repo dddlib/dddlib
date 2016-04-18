@@ -2,7 +2,11 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-namespace dddlib.Sdk
+#if PERSISTENCE
+namespace dddlib.Persistence.Memory
+#else
+namespace dddlib.Persistence.EventDispatcher.Memory
+#endif
 {
     using System;
     using System.Threading;

@@ -12,7 +12,8 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
     /// </summary>
     public class SqlServerEventDispatcher : EventDispatcher
     {
-        private SqlServerNotificationService notificationService;
+        private readonly SqlServerNotificationService notificationService;
+
         private bool isDisposed;
 
         /// <summary>
@@ -127,8 +128,6 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
                 {
                     this.notificationService.Dispose();
                 }
-
-                this.notificationService = null;
 
                 this.isDisposed = true;
             }

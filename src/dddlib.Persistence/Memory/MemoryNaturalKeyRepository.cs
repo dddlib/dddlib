@@ -47,8 +47,8 @@ namespace dddlib.Persistence.Memory
                 AccessControlType.Allow));
 
             var mutexCreated = false;
-            this.mutex = new Mutex(false, @"Global\MemoryNaturalKeyRepository", out mutexCreated, securitySettings);
-            this.file = MemoryMappedFile.CreateOrOpen("MemoryNaturalKeyRepository", 1 * 1024 * 1024 /* 1MB */);
+            this.mutex = new Mutex(false, @"Global\MemoryNaturalKeyRepository3Mutex", out mutexCreated, securitySettings);
+            this.file = MemoryMappedFile.CreateOrOpen("MemoryNaturalKeyRepository3", 1 * 1024 * 1024 /* 1MB */);
 
             Serializer.RegisterConverters(new[] { new DateTimeConverter() });
         }

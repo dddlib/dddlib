@@ -2,7 +2,11 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
+#if PERSISTENCE
 namespace dddlib.Persistence.Memory
+#else
+namespace dddlib.Persistence.EventDispatcher.Memory
+#endif
 {
     using System;
     using System.Collections.Generic;
@@ -13,9 +17,12 @@ namespace dddlib.Persistence.Memory
     using System.Text;
     using System.Threading;
     using System.Web.Script.Serialization;
+#if PERSISTENCE
+    using dddlib.Persistence.Sdk;
     using dddlib.Sdk;
-    using Sdk;
-
+#else
+    using dddlib.Persistence.EventDispatcher.Sdk;
+#endif
     /// <summary>
     /// Represents the memory event store.
     /// </summary>
@@ -27,6 +34,7 @@ namespace dddlib.Persistence.Memory
         private readonly List<Event> store = new List<Event>();
 
         private readonly Mutex mutex;
+        private readonly EventWaitHandle waitHandle;
         private readonly MemoryMappedFile file;
 
         private long readOffset;
@@ -38,28 +46,39 @@ namespace dddlib.Persistence.Memory
         /// </summary>
         public MemoryEventStore()
         {
-            var securitySettings = new MutexSecurity();
-            securitySettings.AddAccessRule(
+            var waitHandleSecuritySettings = new EventWaitHandleSecurity();
+            waitHandleSecuritySettings.AddAccessRule(
+                new EventWaitHandleAccessRule(
+                new SecurityIdentifier(WellKnownSidType.WorldSid, null),
+                EventWaitHandleRights.FullControl,
+                AccessControlType.Allow));
+
+            var waitHandleCreated = false;
+            this.waitHandle = new EventWaitHandle(false, EventResetMode.AutoReset, "MemoryNotificationService2", out waitHandleCreated, waitHandleSecuritySettings);
+
+            var mutexSecuritySettings = new MutexSecurity();
+            mutexSecuritySettings.AddAccessRule(
                 new MutexAccessRule(
                 new SecurityIdentifier(WellKnownSidType.WorldSid, null),
                 MutexRights.FullControl,
                 AccessControlType.Allow));
 
             var mutexCreated = false;
-            this.mutex = new Mutex(false, @"Global\MemoryEventStore", out mutexCreated, securitySettings);
-            this.file = MemoryMappedFile.CreateOrOpen("MemoryEventStore", 10 * 1024 * 1024 /* 10MB */);
+            this.mutex = new Mutex(false, @"Global\MemoryEventStore2Mutex", out mutexCreated, mutexSecuritySettings);
+            this.file = MemoryMappedFile.CreateOrOpen("MemoryEventStore2", 10 * 1024 * 1024 /* 10MB */);
 
+            // TODO (Cameron): Fix.
             Serializer.RegisterConverters(new[] { new DateTimeConverter() });
         }
-
-        /// <summary>
-        /// Gets the events for a stream.
-        /// </summary>
-        /// <param name="streamId">The stream identifier.</param>
-        /// <param name="streamRevision">The stream revision to get the events from.</param>
-        /// <param name="state">The state of the steam.</param>
-        /// <returns>The events.</returns>
-        public IEnumerable<object> GetStream(Guid streamId, int streamRevision, out string state)
+#if PERSISTENCE
+    /// <summary>
+    /// Gets the events for a stream.
+    /// </summary>
+    /// <param name="streamId">The stream identifier.</param>
+    /// <param name="streamRevision">The stream revision to get the events from.</param>
+    /// <param name="state">The state of the steam.</param>
+    /// <returns>The events.</returns>
+    public IEnumerable<object> GetStream(Guid streamId, int streamRevision, out string state)
         {
             Guard.Against.Negative(() => streamRevision);
 
@@ -142,11 +161,41 @@ namespace dddlib.Persistence.Memory
                     {
                         accessor.Write(0, (ushort)buffer.Length);
                         accessor.WriteArray(2, buffer, 0, buffer.Length);
+                        this.waitHandle.Set();
                     }
 
                     this.writeOffset += 2 + buffer.Length;
                 }
             }
+        }
+#else
+        /// <summary>
+        /// Gets the next undispatched events batch.
+        /// </summary>
+        /// <param name="batchSize">Size of the batch.</param>
+        /// <returns>The events batch.</returns>
+        public Batch GetNextUndispatchedEventsBatch(int batchSize)
+        {
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Marks the event as dispatched.
+        /// </summary>
+        /// <param name="sequenceNumber">The sequence number for the event.</param>
+        public void MarkEventAsDispatched(long sequenceNumber)
+        {
+            if (this.isDisposed)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -165,7 +214,7 @@ namespace dddlib.Persistence.Memory
 
             return this.store.Skip((int)sequenceNumber).Select(@event => @event.Payload);
         }
-
+#endif
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
@@ -176,6 +225,7 @@ namespace dddlib.Persistence.Memory
                 return;
             }
 
+            this.waitHandle.Dispose();
             this.mutex.Dispose();
             this.file.Dispose();
 
