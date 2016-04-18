@@ -10,6 +10,8 @@ namespace dddlib.Persistence.EventDispatcher.Memory
 
     internal class MemoryEventStore : IEventStore
     {
+        private readonly Dictionary<Guid, List<Event>> eventStreams = new Dictionary<Guid, List<Event>>();
+
         public Batch GetNextUndispatchedEventsBatch(int batchSize)
         {
             throw new NotImplementedException();

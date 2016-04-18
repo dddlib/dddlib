@@ -153,6 +153,10 @@ Further information: https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Event-
             var state = default(string);
             var snapshot = this.snapshotStore.GetSnapshot(streamId) ?? new Snapshot();
             var events = this.eventStore.GetStream(streamId, snapshot.StreamRevision, out state);
+            if (snapshot.StreamRevision == 0 && !events.Any())
+            {
+                runtimeType.ThrowNotFound(naturalKey);
+            }
 
             var aggregateRoot = this.factory.Create<T>(snapshot.Memento, snapshot.StreamRevision, events, state);
             if (aggregateRoot.IsDestroyed)

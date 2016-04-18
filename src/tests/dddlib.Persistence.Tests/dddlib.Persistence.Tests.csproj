@@ -89,6 +89,7 @@
     <Compile Include="Feature\MemoryEventPersistence.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Guard.cs" />
+    <Compile Include="Integration\MemoryEventStoreTests.cs" />
     <Compile Include="Integration\SqlServerEventStoreTests.cs" />
     <Compile Include="Integration\SqlServerNaturalKeyRepositoryTests.cs" />
     <Compile Include="Integration\SqlServerSnapshotStoreTests.cs" />

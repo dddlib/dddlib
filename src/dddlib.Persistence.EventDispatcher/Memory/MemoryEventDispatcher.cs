@@ -12,17 +12,17 @@ namespace dddlib.Persistence.EventDispatcher.Memory
     {
         private readonly IEventDispatcher eventDispatcher;
 
+        public MemoryEventDispatcher(Action<long, object> eventDispatcherDelegate)
+            : this(new CustomEventDispatcher(eventDispatcherDelegate))
+        {
+        }
+
         public MemoryEventDispatcher(IEventDispatcher eventDispatcher)
-            : base(eventDispatcher, null, null, 50)
+            : base(eventDispatcher, new MemoryEventStore(), null, 50)
         {
             Guard.Against.Null(() => eventDispatcher);
 
             this.eventDispatcher = eventDispatcher;
-        }
-
-        public MemoryEventDispatcher(Action<long, object> eventDispatcherDelegate)
-            : this(new CustomEventDispatcher(eventDispatcherDelegate))
-        {
         }
     }
 }
