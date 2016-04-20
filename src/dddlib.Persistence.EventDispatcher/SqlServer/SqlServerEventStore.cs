@@ -93,7 +93,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
             using (var command = new SqlCommand(string.Concat(this.schema, ".GetNextUndispatchedEventsBatch"), connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.Add("DispatcherId", SqlDbType.VarChar).Value = dispatcherId == null ? (object)DBNull.Value : dispatcherId;
+                command.Parameters.Add("DispatcherId", SqlDbType.VarChar).Value = (object)dispatcherId ?? DBNull.Value;
                 command.Parameters.Add("MaxBatchSize", SqlDbType.Int).Value = batchSize;
 
                 connection.Open();
@@ -154,7 +154,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
             using (var command = new SqlCommand(string.Concat(this.schema, ".MarkEventAsDispatched"), connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.Add("DispatcherId", SqlDbType.VarChar).Value = dispatcherId == null ? (object)DBNull.Value : dispatcherId;
+                command.Parameters.Add("DispatcherId", SqlDbType.VarChar).Value = (object)dispatcherId ?? DBNull.Value;
                 command.Parameters.Add("SequenceNumber", SqlDbType.Int).Value = sequenceNumber;
 
                 connection.Open();

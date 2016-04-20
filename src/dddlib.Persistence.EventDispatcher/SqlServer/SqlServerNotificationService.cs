@@ -168,7 +168,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
             using (var command = new SqlCommand(string.Concat(this.schema, ".MonitorUndispatchedBatches"), connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.Add("DispatcherId", SqlDbType.VarChar).Value = this.dispatcherId == null ? (object)DBNull.Value : this.dispatcherId;
+                command.Parameters.Add("DispatcherId", SqlDbType.VarChar).Value = (object)this.dispatcherId ?? DBNull.Value;
                 command.Notification = null;
 
                 connection.Open();

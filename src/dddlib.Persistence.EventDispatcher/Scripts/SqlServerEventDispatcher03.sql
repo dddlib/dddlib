@@ -43,13 +43,13 @@ CREATE TABLE [dbo].[Batches] (
 GO
 
 ALTER PROCEDURE [dbo].[MonitorUndispatchedEvents]
-    @SequenceNumber VARCHAR(10)
+    @SequenceNumber BIGINT
 AS
 
 SELECT [SequenceNumber]
 FROM [dbo].[Events]
 WHERE [SequenceNumber] > @SequenceNumber
-ORDER BY [SequenceNumber] ASC;
+ORDER BY [SequenceNumber] DESC;
 
 GO
 
@@ -104,8 +104,9 @@ AS
     FROM [dbo].[DispatchedEvents]
     WHERE ([DispatcherId] = @DispatcherId OR [DispatcherId] IS NULL AND @DispatcherId IS NULL)
 )
-INSERT INTO [dbo].[Batches] ([SequenceNumber], [Size])
+INSERT INTO [dbo].[Batches] ([DispatcherId], [SequenceNumber], [Size])
 SELECT
+    @DispatcherId,
     COALESCE([Batched].[SequenceNumber], [Dispatched].[SequenceNumber], 0) + 1 AS [SequenceNumber],
     IIF([Undispatched].[SequenceNumber] - COALESCE([Batched].[SequenceNumber], [Dispatched].[SequenceNumber], 0) > @MaxBatchSize, @MaxBatchSize, [Undispatched].[SequenceNumber] - COALESCE([Batched].[SequenceNumber], [Dispatched].[SequenceNumber], 0)) AS [Size]
 FROM BatchedEvents [Batched] CROSS JOIN UnDispatchedEvents [Undispatched] CROSS JOIN DispatchedEvents [Dispatched]
@@ -136,9 +137,15 @@ AS
 
 SET NOCOUNT ON;
 
-UPDATE [dbo].[DispatchedEvents]
-SET [SequenceNumber] = @SequenceNumber
-WHERE ([DispatcherId] = @DispatcherId OR [DispatcherId] IS NULL AND @DispatcherId IS NULL);
+MERGE INTO [dbo].[DispatchedEvents] AS [Target]
+USING (SELECT @DispatcherId AS [DispatcherId], @SequenceNumber AS [SequenceNumber]) AS [Source]
+ON [Target].[DispatcherId] = [Source].[DispatcherId]
+WHEN MATCHED THEN
+    UPDATE
+    SET [Target].[SequenceNumber] = [Source].[SequenceNumber]
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT ([DispatcherId], [SequenceNumber])
+    VALUES ([Source].[DispatcherId], [Source].[SequenceNumber]);
 
 WITH BatchedEvents
 AS
