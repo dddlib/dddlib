@@ -172,9 +172,10 @@ namespace dddlib.Persistence.EventDispatcher.Memory
         /// <summary>
         /// Gets the next undispatched events batch.
         /// </summary>
+        /// <param name="dispatcherId">The dispatcher identifier.</param>
         /// <param name="batchSize">Size of the batch.</param>
         /// <returns>The events batch.</returns>
-        public Batch GetNextUndispatchedEventsBatch(int batchSize)
+        public Batch GetNextUndispatchedEventsBatch(string dispatcherId, int batchSize)
         {
             if (this.isDisposed)
             {
@@ -187,8 +188,9 @@ namespace dddlib.Persistence.EventDispatcher.Memory
         /// <summary>
         /// Marks the event as dispatched.
         /// </summary>
+        /// <param name="dispatcherId">The dispatcher identifier.</param>
         /// <param name="sequenceNumber">The sequence number for the event.</param>
-        public void MarkEventAsDispatched(long sequenceNumber)
+        public void MarkEventAsDispatched(string dispatcherId, long sequenceNumber)
         {
             if (this.isDisposed)
             {

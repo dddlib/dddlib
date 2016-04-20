@@ -46,7 +46,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// </summary>
         /// <param name="connectionString">The connection string.</param>
         /// <param name="partition">The partition.</param>
-        public SqlServerNotificationService(string connectionString, Guid partition)
+        internal SqlServerNotificationService(string connectionString, Guid partition)
             : this(connectionString, "dbo", partition)
         {
         }
@@ -57,7 +57,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <param name="connectionString">The connection string.</param>
         /// <param name="schema">The schema.</param>
         /// <param name="partition">The partition.</param>
-        public SqlServerNotificationService(string connectionString, string schema, Guid partition)
+        internal SqlServerNotificationService(string connectionString, string schema, Guid partition)
         {
             Guard.Against.NullOrEmpty(() => schema);
 
