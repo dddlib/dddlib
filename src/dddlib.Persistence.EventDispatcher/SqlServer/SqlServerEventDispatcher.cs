@@ -214,7 +214,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
             : this(
                eventDispatcher,
                new SqlServerEventStore(connectionString, schema, partition),
-               new SqlServerNotificationService(connectionString, schema, partition),
+               new SqlServerNotificationService(connectionString, schema, partition, dispatcherId),
                dispatcherId)
         {
         }

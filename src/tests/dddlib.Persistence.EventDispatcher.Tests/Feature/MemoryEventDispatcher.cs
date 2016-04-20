@@ -39,14 +39,14 @@ namespace dddlib.Persistence.EventDispatcher.Tests.Feature
 
         public class CanDispatch : MemoryEventDispatcher
         {
-            [Scenario]
+            [Scenario(Skip = "Not ready yet.")]
             public void Scenario(
                 Subject instance,
                 dddlib.Persistence.EventDispatcher.Sdk.EventDispatcher eventDispatcher,
                 NewSubject newSubject,
                 AutoResetEvent notify)
             {
-                "Given a SQL Server event dispatcher"
+                "Given a memory event dispatcher"
                     .f(c =>
                     {
                         notify = new AutoResetEvent(false);

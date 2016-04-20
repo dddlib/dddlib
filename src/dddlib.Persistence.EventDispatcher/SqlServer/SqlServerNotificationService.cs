@@ -18,6 +18,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         private readonly string connectionString;
         private readonly string schema;
         private readonly Guid partition;
+        private readonly string dispatcherId;
 
         private long currentSequenceNumber;
         private long currentBatchId;
@@ -27,7 +28,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// </summary>
         /// <param name="connectionString">The connection string.</param>
         public SqlServerNotificationService(string connectionString)
-            : this(connectionString, "dbo", Guid.Empty)
+            : this(connectionString, "dbo", Guid.Empty, null)
         {
         }
 
@@ -37,7 +38,18 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <param name="connectionString">The connection string.</param>
         /// <param name="schema">The schema.</param>
         public SqlServerNotificationService(string connectionString, string schema)
-            : this(connectionString, schema, Guid.Empty)
+            : this(connectionString, schema, Guid.Empty, null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlServerNotificationService"/> class.
+        /// </summary>
+        /// <param name="connectionString">The connection string.</param>
+        /// <param name="schema">The schema.</param>
+        /// <param name="dispatcherId">The dispatcher identifier.</param>
+        public SqlServerNotificationService(string connectionString, string schema, string dispatcherId)
+            : this(connectionString, schema, Guid.Empty, dispatcherId)
         {
         }
 
@@ -47,7 +59,18 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <param name="connectionString">The connection string.</param>
         /// <param name="partition">The partition.</param>
         internal SqlServerNotificationService(string connectionString, Guid partition)
-            : this(connectionString, "dbo", partition)
+            : this(connectionString, "dbo", partition, null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlServerNotificationService"/> class.
+        /// </summary>
+        /// <param name="connectionString">The connection string.</param>
+        /// <param name="schema">The schema.</param>
+        /// <param name="partition">The partition.</param>
+        internal SqlServerNotificationService(string connectionString, string schema, Guid partition)
+            : this(connectionString, "dbo", partition, null)
         {
         }
 
@@ -57,13 +80,20 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <param name="connectionString">The connection string.</param>
         /// <param name="schema">The schema.</param>
         /// <param name="partition">The partition.</param>
-        internal SqlServerNotificationService(string connectionString, string schema, Guid partition)
+        /// <param name="dispatcherId">The dispatcher identifier.</param>
+        internal SqlServerNotificationService(string connectionString, string schema, Guid partition, string dispatcherId)
         {
             Guard.Against.NullOrEmpty(() => schema);
+
+            if (dispatcherId != null && dispatcherId.Length > 10)
+            {
+                throw new ArgumentException("Dispatcher identity cannot be more than 10 character long.", Guard.Expression.Parse(() => dispatcherId));
+            }
 
             this.connectionString = connectionString;
             this.schema = schema;
             this.partition = partition;
+            this.dispatcherId = dispatcherId;
 
             var connection = new SqlConnection(connectionString);
             connection.InitializeSchema(schema, "SqlServerPersistence");
@@ -101,6 +131,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
             using (var command = new SqlCommand(string.Concat(this.schema, ".MonitorUndispatchedEvents"), connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.Add("SequenceNumber", SqlDbType.VarChar).Value = this.currentSequenceNumber;
                 command.Notification = null;
 
                 connection.Open();
@@ -137,6 +168,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
             using (var command = new SqlCommand(string.Concat(this.schema, ".MonitorUndispatchedBatches"), connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.Add("DispatcherId", SqlDbType.VarChar).Value = this.dispatcherId == null ? (object)DBNull.Value : this.dispatcherId;
                 command.Notification = null;
 
                 connection.Open();

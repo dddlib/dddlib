@@ -43,6 +43,11 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
             Guard.Against.Null(() => eventStore);
             Guard.Against.Null(() => notificationService);
 
+            if (dispatcherId != null && dispatcherId.Length > 10)
+            {
+                throw new ArgumentException("Dispatcher identity cannot be more than 10 character long.", Guard.Expression.Parse(() => dispatcherId));
+            }
+
             this.eventDispatcher = eventDispatcher;
             this.eventStore = eventStore;
             this.notificationService = notificationService;
@@ -70,7 +75,7 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
             this.notificationService.OnBatchPrepared += this.OnBatchPrepared;
             this.notificationService.OnEventCommitted += this.OnEventComitted;
 
-            ////this.BufferNextBatch();
+            this.BufferNextBatch();
         }
 
         /// <summary>

@@ -42,6 +42,17 @@ CREATE TABLE [dbo].[Batches] (
 );
 GO
 
+ALTER PROCEDURE [dbo].[MonitorUndispatchedEvents]
+    @SequenceNumber VARCHAR(10)
+AS
+
+SELECT [SequenceNumber]
+FROM [dbo].[Events]
+WHERE [SequenceNumber] > @SequenceNumber
+ORDER BY [SequenceNumber] ASC;
+
+GO
+
 ALTER PROCEDURE [dbo].[MonitorUndispatchedBatches]
     @DispatcherId VARCHAR(10)
 AS
@@ -89,17 +100,17 @@ AS
 ), DispatchedEvents
 AS
 (
-    SELECT [SequenceNumber]
+    SELECT MAX([SequenceNumber]) AS [SequenceNumber]
     FROM [dbo].[DispatchedEvents]
     WHERE ([DispatcherId] = @DispatcherId OR [DispatcherId] IS NULL AND @DispatcherId IS NULL)
 )
 INSERT INTO [dbo].[Batches] ([SequenceNumber], [Size])
 SELECT
-    ISNULL([Batched].[SequenceNumber], [Dispatched].[SequenceNumber]) + 1 AS [SequenceNumber],
-    IIF([Undispatched].[SequenceNumber] - ISNULL([Batched].[SequenceNumber], [Dispatched].[SequenceNumber]) > @MaxBatchSize, @MaxBatchSize, [Undispatched].[SequenceNumber] - ISNULL([Batched].[SequenceNumber], [Dispatched].[SequenceNumber])) AS [Size]
+    COALESCE([Batched].[SequenceNumber], [Dispatched].[SequenceNumber], 0) + 1 AS [SequenceNumber],
+    IIF([Undispatched].[SequenceNumber] - COALESCE([Batched].[SequenceNumber], [Dispatched].[SequenceNumber], 0) > @MaxBatchSize, @MaxBatchSize, [Undispatched].[SequenceNumber] - COALESCE([Batched].[SequenceNumber], [Dispatched].[SequenceNumber], 0)) AS [Size]
 FROM BatchedEvents [Batched] CROSS JOIN UnDispatchedEvents [Undispatched] CROSS JOIN DispatchedEvents [Dispatched]
 WHERE
-    IIF([Undispatched].[SequenceNumber] - ISNULL([Batched].[SequenceNumber], [Dispatched].[SequenceNumber]) > @MaxBatchSize, @MaxBatchSize, [Undispatched].[SequenceNumber] - ISNULL([Batched].[SequenceNumber], [Dispatched].[SequenceNumber])) > 0;
+    IIF([Undispatched].[SequenceNumber] - COALESCE([Batched].[SequenceNumber], [Dispatched].[SequenceNumber], 0) > @MaxBatchSize, @MaxBatchSize, [Undispatched].[SequenceNumber] - COALESCE([Batched].[SequenceNumber], [Dispatched].[SequenceNumber], 0)) > 0;
 
 COMMIT;
 
