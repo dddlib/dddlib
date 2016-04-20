@@ -78,15 +78,22 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <summary>
         /// Gets the next undispatched events batch.
         /// </summary>
+        /// <param name="dispatcherId">The dispatcher identifier.</param>
         /// <param name="batchSize">Size of the batch.</param>
         /// <returns>The events batch.</returns>
-        public Batch GetNextUndispatchedEventsBatch(int batchSize)
+        public Batch GetNextUndispatchedEventsBatch(string dispatcherId, int batchSize)
         {
+            if (dispatcherId != null && dispatcherId.Length > 10)
+            {
+                throw new ArgumentException("Dispatcher identity cannot be more than 10 character long.", Guard.Expression.Parse(() => dispatcherId));
+            }
+
             using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
             using (var command = new SqlCommand(string.Concat(this.schema, ".GetNextUndispatchedEventsBatch"), connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.Add("DispatcherId", SqlDbType.VarChar).Value = (object)dispatcherId ?? DBNull.Value;
                 command.Parameters.Add("MaxBatchSize", SqlDbType.Int).Value = batchSize;
 
                 connection.Open();
@@ -133,14 +140,21 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <summary>
         /// Marks the event as dispatched.
         /// </summary>
+        /// <param name="dispatcherId">The dispatcher identifier.</param>
         /// <param name="sequenceNumber">The sequence number for the event.</param>
-        public void MarkEventAsDispatched(long sequenceNumber)
+        public void MarkEventAsDispatched(string dispatcherId, long sequenceNumber)
         {
+            if (dispatcherId != null && dispatcherId.Length > 10)
+            {
+                throw new ArgumentException("Dispatcher identity cannot be more than 10 character long.", Guard.Expression.Parse(() => dispatcherId));
+            }
+
             using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
             using (var command = new SqlCommand(string.Concat(this.schema, ".MarkEventAsDispatched"), connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
+                command.Parameters.Add("DispatcherId", SqlDbType.VarChar).Value = (object)dispatcherId ?? DBNull.Value;
                 command.Parameters.Add("SequenceNumber", SqlDbType.Int).Value = sequenceNumber;
 
                 connection.Open();

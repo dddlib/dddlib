@@ -39,7 +39,7 @@ namespace dddlib.Persistence.EventDispatcher.Memory
             IEventDispatcher eventDispatcher,
             MemoryEventStore eventStore,
             MemoryNotificationService notificationService)
-            : base(eventDispatcher, eventStore, notificationService, 50)
+            : base(eventDispatcher, eventStore, notificationService, null, 50)
         {
             this.eventStore = eventStore;
             this.notificationService = notificationService;

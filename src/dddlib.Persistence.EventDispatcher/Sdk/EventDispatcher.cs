@@ -19,6 +19,7 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
         private readonly IEventDispatcher eventDispatcher;
         private readonly IEventStore eventStore;
         private readonly INotificationService notificationService;
+        private readonly string dispatcherId;
         private readonly int batchSize;
 
         private Batch bufferedBatch;
@@ -29,20 +30,28 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
         /// <param name="eventDispatcher">The event dispatcher.</param>
         /// <param name="eventStore">The event store.</param>
         /// <param name="notificationService">The notification service.</param>
+        /// <param name="dispatcherId">The dispatcher identifier.</param>
         /// <param name="batchSize">Size of the batch.</param>
         public EventDispatcher(
             IEventDispatcher eventDispatcher,
             IEventStore eventStore, 
             INotificationService notificationService, 
+            string dispatcherId,
             int batchSize)
         {
             Guard.Against.Null(() => eventDispatcher);
             Guard.Against.Null(() => eventStore);
             Guard.Against.Null(() => notificationService);
 
+            if (dispatcherId != null && dispatcherId.Length > 10)
+            {
+                throw new ArgumentException("Dispatcher identity cannot be more than 10 character long.", Guard.Expression.Parse(() => dispatcherId));
+            }
+
             this.eventDispatcher = eventDispatcher;
             this.eventStore = eventStore;
             this.notificationService = notificationService;
+            this.dispatcherId = dispatcherId;
             this.batchSize = batchSize;
 
             this.timer = new Timer(this.OnTimeout, null, Timeout.Infinite, Timeout.Infinite);
@@ -129,7 +138,7 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
                     return;
                 }
 
-                var batch = this.eventStore.GetNextUndispatchedEventsBatch(this.batchSize);
+                var batch = this.eventStore.GetNextUndispatchedEventsBatch(this.dispatcherId, this.batchSize);
                 if (batch == null)
                 {
                     return;
@@ -204,7 +213,7 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
 
                 // NOTE (Cameron): If this fails we will likely double dispatch.
                 // TODO (Cameron): Retry? Fall over?
-                this.eventStore.MarkEventAsDispatched(@event.Id);
+                this.eventStore.MarkEventAsDispatched(this.dispatcherId, @event.Id);
             }
         }
     }
