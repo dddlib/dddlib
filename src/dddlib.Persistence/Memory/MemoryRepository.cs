@@ -48,6 +48,7 @@ namespace dddlib.Persistence.Memory
             {
                 if (data.State != oldState)
                 {
+                    // TODO (Cameron): This definitely shouldn't be here...
                     throw new ConcurrencyException("Invalid state");
                 }
             }
@@ -76,7 +77,8 @@ namespace dddlib.Persistence.Memory
             var data = default(Data);
             if (!this.store.TryGetValue(id, out data))
             {
-                throw new ConcurrencyException("Invalid state #2");
+                state = null;
+                return null;
             }
 
             state = data.State;
