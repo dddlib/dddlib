@@ -161,6 +161,7 @@ namespace dddlib
         /// </summary>
         protected void EndLifecycle()
         {
+            this.ThrowIfLifecycleEnded();
             this.isDestroyed = true;
         }
     }
