@@ -4,7 +4,7 @@
 
 namespace dddlib.Persistence.EventDispatcher.Sdk
 {
-    using System.Collections.Generic;
+    using System;
 
     /// <summary>
     /// Exposes the public members of the event store (for the event dispatcher).
@@ -17,13 +17,13 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
         /// <param name="dispatcherId">The dispatcher identifier.</param>
         /// <param name="batchSize">Size of the batch.</param>
         /// <returns>The events batch.</returns>
-        Batch GetNextUndispatchedEventsBatch(string dispatcherId, int batchSize);
+        Batch GetNextUndispatchedEventsBatch(Guid dispatcherId, int batchSize);
 
         /// <summary>
         /// Marks the event as dispatched.
         /// </summary>
         /// <param name="dispatcherId">The dispatcher identifier.</param>
         /// <param name="sequenceNumber">The sequence number for the event.</param>
-        void MarkEventAsDispatched(string dispatcherId, long sequenceNumber);
+        void MarkEventAsDispatched(Guid dispatcherId, long sequenceNumber);
     }
 }

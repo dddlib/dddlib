@@ -179,7 +179,7 @@ namespace dddlib.Projections.Memory
         /// <param name="dispatcherId">The dispatcher identifier.</param>
         /// <param name="batchSize">Size of the batch.</param>
         /// <returns>The events batch.</returns>
-        public Batch GetNextUndispatchedEventsBatch(string dispatcherId, int batchSize)
+        public Batch GetNextUndispatchedEventsBatch(Guid dispatcherId, int batchSize)
         {
             if (this.isDisposed)
             {
@@ -194,7 +194,7 @@ namespace dddlib.Projections.Memory
         /// </summary>
         /// <param name="dispatcherId">The dispatcher identifier.</param>
         /// <param name="sequenceNumber">The sequence number for the event.</param>
-        public void MarkEventAsDispatched(string dispatcherId, long sequenceNumber)
+        public void MarkEventAsDispatched(Guid dispatcherId, long sequenceNumber)
         {
             if (this.isDisposed)
             {

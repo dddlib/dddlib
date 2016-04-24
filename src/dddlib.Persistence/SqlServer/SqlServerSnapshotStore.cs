@@ -23,14 +23,13 @@ namespace dddlib.Persistence.SqlServer
 
         private readonly string connectionString;
         private readonly string schema;
-        private readonly Guid partition;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlServerSnapshotStore"/> class.
         /// </summary>
         /// <param name="connectionString">The connection string.</param>
         public SqlServerSnapshotStore(string connectionString)
-            : this(connectionString, "dbo", Guid.Empty)
+            : this(connectionString, "dbo")
         {
         }
 
@@ -40,33 +39,11 @@ namespace dddlib.Persistence.SqlServer
         /// <param name="connectionString">The connection string.</param>
         /// <param name="schema">The schema.</param>
         public SqlServerSnapshotStore(string connectionString, string schema)
-            : this(connectionString, schema, Guid.Empty)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SqlServerSnapshotStore"/> class.
-        /// </summary>
-        /// <param name="connectionString">The connection string.</param>
-        /// <param name="partition">The partition.</param>
-        internal SqlServerSnapshotStore(string connectionString, Guid partition)
-            : this(connectionString, "dbo", partition)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SqlServerSnapshotStore"/> class.
-        /// </summary>
-        /// <param name="connectionString">The connection string.</param>
-        /// <param name="schema">The schema.</param>
-        /// <param name="partition">The partition.</param>
-        internal SqlServerSnapshotStore(string connectionString, string schema, Guid partition)
         {
             Guard.Against.NullOrEmpty(() => schema);
 
             this.connectionString = connectionString;
             this.schema = schema;
-            this.partition = partition;
 
             var connection = new SqlConnection(connectionString);
             connection.InitializeSchema(schema, "SqlServerPersistence");
@@ -82,7 +59,6 @@ namespace dddlib.Persistence.SqlServer
         /// <returns>The snapshot.</returns>
         public Snapshot GetSnapshot(Guid streamId)
         {
-            // TODO (Cameron): Use partition for the call.
             using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
             using (var command = connection.CreateCommand())
@@ -122,7 +98,6 @@ namespace dddlib.Persistence.SqlServer
             Guard.Against.Null(() => snapshot);
             Guard.Against.Null(() => snapshot.Memento);
 
-            // TODO (Cameron): Use partition for the call.
             using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
             using (var command = connection.CreateCommand())

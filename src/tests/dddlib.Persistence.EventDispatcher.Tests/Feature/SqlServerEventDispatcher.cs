@@ -4,6 +4,7 @@
 
 namespace dddlib.Persistence.EventDispatcher.Tests.Feature
 {
+    using System;
     using System.Threading;
     using Configuration;
     using dddlib.Tests.Sdk;
@@ -72,7 +73,7 @@ namespace dddlib.Persistence.EventDispatcher.Tests.Feature
                                 newSubject = @event as NewSubject;
                                 notify.Set();
                             },
-                            "id").Using(c);
+                            Guid.NewGuid()).Using(c);
                     });
 
                 "And an instance of an aggregate root"
