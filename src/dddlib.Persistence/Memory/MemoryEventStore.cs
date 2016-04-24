@@ -7,7 +7,7 @@ namespace dddlib.Persistence.Memory
 #elif DISPATCHER
 namespace dddlib.Persistence.EventDispatcher.Memory
 #elif PROJECTIONS
-namespace dddlib.Projections
+namespace dddlib.Projections.Memory
 #endif
 {
     using System;

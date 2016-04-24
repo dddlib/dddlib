@@ -59,6 +59,7 @@
     <Compile Include="Guard.cs" />
     <Compile Include="GuardExtensions.cs" />
     <Compile Include="IRepository.cs" />
+    <Compile Include="Memory\MemoryRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Sdk\IEventStore.cs" />
     <Compile Include="SqlServer\SqlServerEventStore.cs" />
@@ -91,9 +92,9 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\dddlib.Persistence\Scripts\SqlServerEventStore02.sql">
+    <EmbeddedResource Include="..\dddlib.Persistence\Scripts\SqlServerEventStore02.sql">
       <Link>Scripts\SqlServerEventStore02.sql</Link>
-    </Content>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Scripts\SqlServerProjectionStore01.sql" />
