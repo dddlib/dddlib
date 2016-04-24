@@ -32,7 +32,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <param name="connectionString">The connection string.</param>
         /// <param name="eventDispatcherDelegate">The event dispatcher delegate.</param>
         /// <param name="dispatcherId">The dispatcher identifier.</param>
-        public SqlServerEventDispatcher(string connectionString, Action<long, object> eventDispatcherDelegate, string dispatcherId)
+        public SqlServerEventDispatcher(string connectionString, Action<long, object> eventDispatcherDelegate, Guid dispatcherId)
             : this(connectionString, new CustomEventDispatcher(eventDispatcherDelegate), dispatcherId)
         {
         }
@@ -55,7 +55,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <param name="schema">The schema.</param>
         /// <param name="eventDispatcherDelegate">The event dispatcher delegate.</param>
         /// <param name="dispatcherId">The dispatcher identifier.</param>
-        public SqlServerEventDispatcher(string connectionString, string schema, Action<long, object> eventDispatcherDelegate, string dispatcherId)
+        public SqlServerEventDispatcher(string connectionString, string schema, Action<long, object> eventDispatcherDelegate, Guid dispatcherId)
             : this(connectionString, schema, new CustomEventDispatcher(eventDispatcherDelegate), dispatcherId)
         {
         }
@@ -66,7 +66,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <param name="connectionString">The connection string.</param>
         /// <param name="eventDispatcher">The event dispatcher.</param>
         public SqlServerEventDispatcher(string connectionString, IEventDispatcher eventDispatcher)
-            : this(connectionString, "dbo", Guid.Empty, eventDispatcher)
+            : this(connectionString, "dbo", eventDispatcher, Guid.Empty)
         {
         }
 
@@ -76,8 +76,8 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <param name="connectionString">The connection string.</param>
         /// <param name="eventDispatcher">The event dispatcher.</param>
         /// <param name="dispatcherId">The dispatcher identifier.</param>
-        public SqlServerEventDispatcher(string connectionString, IEventDispatcher eventDispatcher, string dispatcherId)
-            : this(connectionString, "dbo", Guid.Empty, eventDispatcher, dispatcherId)
+        public SqlServerEventDispatcher(string connectionString, IEventDispatcher eventDispatcher, Guid dispatcherId)
+            : this(connectionString, "dbo", eventDispatcher, dispatcherId)
         {
         }
 
@@ -88,7 +88,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <param name="schema">The schema.</param>
         /// <param name="eventDispatcher">The event dispatcher.</param>
         public SqlServerEventDispatcher(string connectionString, string schema, IEventDispatcher eventDispatcher)
-             : this(connectionString, schema, Guid.Empty, eventDispatcher)
+             : this(connectionString, schema, eventDispatcher, Guid.Empty)
         {
         }
 
@@ -99,122 +99,11 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <param name="schema">The schema.</param>
         /// <param name="eventDispatcher">The event dispatcher.</param>
         /// <param name="dispatcherId">The dispatcher identifier.</param>
-        public SqlServerEventDispatcher(string connectionString, string schema, IEventDispatcher eventDispatcher, string dispatcherId)
-            : this(connectionString, schema, Guid.Empty, eventDispatcher, dispatcherId)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SqlServerEventDispatcher"/> class.
-        /// </summary>
-        /// <param name="connectionString">The connection string.</param>
-        /// <param name="partition">The partition.</param>
-        /// <param name="eventDispatcherDelegate">The event dispatcher delegate.</param>
-        internal SqlServerEventDispatcher(string connectionString, Guid partition, Action<long, object> eventDispatcherDelegate)
-            : this(connectionString, partition, new CustomEventDispatcher(eventDispatcherDelegate))
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SqlServerEventDispatcher"/> class.
-        /// </summary>
-        /// <param name="connectionString">The connection string.</param>
-        /// <param name="partition">The partition.</param>
-        /// <param name="eventDispatcherDelegate">The event dispatcher delegate.</param>
-        /// <param name="dispatcherId">The dispatcher identifier.</param>
-        internal SqlServerEventDispatcher(string connectionString, Guid partition, Action<long, object> eventDispatcherDelegate, string dispatcherId)
-            : this(connectionString, partition, new CustomEventDispatcher(eventDispatcherDelegate), dispatcherId)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SqlServerEventDispatcher"/> class.
-        /// </summary>
-        /// <param name="connectionString">The connection string.</param>
-        /// <param name="schema">The schema.</param>
-        /// <param name="partition">The partition.</param>
-        /// <param name="eventDispatcherDelegate">The event dispatcher delegate.</param>
-        internal SqlServerEventDispatcher(string connectionString, string schema, Guid partition, Action<long, object> eventDispatcherDelegate)
-            : this(connectionString, schema, partition, new CustomEventDispatcher(eventDispatcherDelegate))
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SqlServerEventDispatcher"/> class.
-        /// </summary>
-        /// <param name="connectionString">The connection string.</param>
-        /// <param name="schema">The schema.</param>
-        /// <param name="partition">The partition.</param>
-        /// <param name="eventDispatcherDelegate">The event dispatcher delegate.</param>
-        /// <param name="dispatcherId">The dispatcher identifier.</param>
-        internal SqlServerEventDispatcher(
-            string connectionString,
-            string schema,
-            Guid partition,
-            Action<long, object> eventDispatcherDelegate,
-            string dispatcherId)
-            : this(
-                  connectionString,
-                  schema,
-                  partition,
-                  new CustomEventDispatcher(eventDispatcherDelegate),
-                  dispatcherId)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SqlServerEventDispatcher"/> class.
-        /// </summary>
-        /// <param name="connectionString">The connection string.</param>
-        /// <param name="partition">The partition.</param>
-        /// <param name="eventDispatcher">The event dispatcher.</param>
-        internal SqlServerEventDispatcher(string connectionString, Guid partition, IEventDispatcher eventDispatcher)
-             : this(connectionString, "dbo", partition, eventDispatcher, null)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SqlServerEventDispatcher"/> class.
-        /// </summary>
-        /// <param name="connectionString">The connection string.</param>
-        /// <param name="partition">The partition.</param>
-        /// <param name="eventDispatcher">The event dispatcher.</param>
-        /// <param name="dispatcherId">The dispatcher identifier.</param>
-        internal SqlServerEventDispatcher(string connectionString, Guid partition, IEventDispatcher eventDispatcher, string dispatcherId)
-            : this(connectionString, "dbo", partition, eventDispatcher, dispatcherId)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SqlServerEventDispatcher"/> class.
-        /// </summary>
-        /// <param name="connectionString">The connection string.</param>
-        /// <param name="schema">The schema.</param>
-        /// <param name="partition">The partition.</param>
-        /// <param name="eventDispatcher">The event dispatcher.</param>
-        internal SqlServerEventDispatcher(string connectionString, string schema, Guid partition, IEventDispatcher eventDispatcher)
-             : this(connectionString, schema, partition, eventDispatcher, null)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SqlServerEventDispatcher"/> class.
-        /// </summary>
-        /// <param name="connectionString">The connection string.</param>
-        /// <param name="schema">The schema.</param>
-        /// <param name="partition">The partition.</param>
-        /// <param name="eventDispatcher">The event dispatcher.</param>
-        /// <param name="dispatcherId">The dispatcher identifier.</param>
-        internal SqlServerEventDispatcher(
-            string connectionString,
-            string schema,
-            Guid partition,
-            IEventDispatcher eventDispatcher,
-            string dispatcherId)
+        public SqlServerEventDispatcher(string connectionString, string schema, IEventDispatcher eventDispatcher, Guid dispatcherId)
             : this(
                eventDispatcher,
-               new SqlServerEventStore(connectionString, schema, partition),
-               new SqlServerNotificationService(connectionString, schema, partition, dispatcherId),
+               new SqlServerEventStore(connectionString, schema),
+               new SqlServerNotificationService(connectionString, schema, dispatcherId),
                dispatcherId)
         {
         }
@@ -223,7 +112,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
             IEventDispatcher eventDispatcher,
             IEventStore eventStore,
             SqlServerNotificationService notificationService,
-            string dispatcherId)
+            Guid dispatcherId)
             : base(eventDispatcher, eventStore, notificationService, dispatcherId, 50)
         {
             this.notificationService = notificationService;

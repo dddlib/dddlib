@@ -1,5 +1,5 @@
 ﻿CREATE TABLE [dbo].[DispatchedEvents] (
-    [DispatcherId] VARCHAR(10),
+    [DispatcherId] UNIQUEIDENTIFIER,
     [SequenceNumber] BIGINT NOT NULL
 );
 GO
@@ -34,7 +34,7 @@ GO
 
 CREATE TABLE [dbo].[Batches] (
     [Id] BIGINT IDENTITY (1, 1) NOT NULL,
-    [DispatcherId] VARCHAR(10),
+    [DispatcherId] UNIQUEIDENTIFIER,
     [SequenceNumber] BIGINT NOT NULL,
     [Size] INT NOT NULL,
     [Timestamp] DATETIME2 (7) DEFAULT (GETDATE()) NOT NULL,
@@ -54,19 +54,19 @@ ORDER BY [SequenceNumber] DESC;
 GO
 
 ALTER PROCEDURE [dbo].[MonitorUndispatchedBatches]
-    @DispatcherId VARCHAR(10)
+    @DispatcherId UNIQUEIDENTIFIER
 AS
 
 SELECT [Id]
 FROM [dbo].[Batches]
-WHERE ([DispatcherId] = @DispatcherId OR [DispatcherId] IS NULL AND @DispatcherId IS NULL)
+WHERE [DispatcherId] = @DispatcherId
     AND [Complete] = 0
 ORDER BY [SequenceNumber] ASC;
 
 GO
 
 ALTER PROCEDURE [dbo].[GetNextUndispatchedEventsBatch]
-    @DispatcherId VARCHAR(10),
+    @DispatcherId UNIQUEIDENTIFIER,
     @MaxBatchSize INT
 AS
 
@@ -74,12 +74,12 @@ SET NOCOUNT ON;
 
 UPDATE [dbo].[Batches]
 SET [Complete] = 1
-WHERE ([DispatcherId] = @DispatcherId OR [DispatcherId] IS NULL AND @DispatcherId IS NULL)
+WHERE [DispatcherId] = @DispatcherId
     AND [Complete] = 0
     AND [SequenceNumber] >= (
         SELECT MIN([SequenceNumber])
         FROM [dbo].[Batches]
-        WHERE ([DispatcherId] = @DispatcherId OR [DispatcherId] IS NULL AND @DispatcherId IS NULL)
+        WHERE [DispatcherId] = @DispatcherId
             AND [Complete] = 0
             AND DATEDIFF(ss, [Timestamp], GETDATE()) >= 30);
 
@@ -90,7 +90,7 @@ AS
 (
     SELECT MAX([SequenceNumber] + [Size] - 1) AS [SequenceNumber]
     FROM [dbo].[Batches]
-    WHERE ([DispatcherId] = @DispatcherId OR [DispatcherId] IS NULL AND @DispatcherId IS NULL)
+    WHERE [DispatcherId] = @DispatcherId
         AND [Complete] = 0
 ), UnDispatchedEvents
 AS
@@ -102,7 +102,7 @@ AS
 (
     SELECT MAX([SequenceNumber]) AS [SequenceNumber]
     FROM [dbo].[DispatchedEvents]
-    WHERE ([DispatcherId] = @DispatcherId OR [DispatcherId] IS NULL AND @DispatcherId IS NULL)
+    WHERE [DispatcherId] = @DispatcherId
 )
 INSERT INTO [dbo].[Batches] ([DispatcherId], [SequenceNumber], [Size])
 SELECT
@@ -131,7 +131,7 @@ FROM [dbo].[Events] [Event] WITH (NOLOCK) INNER JOIN (
 GO
 
 ALTER PROCEDURE [dbo].[MarkEventAsDispatched]
-    @DispatcherId VARCHAR(10),
+    @DispatcherId UNIQUEIDENTIFIER,
     @SequenceNumber BIGINT
 AS
 
@@ -152,7 +152,7 @@ AS
 (
     SELECT [Id], SUM([SequenceNumber] + [Size] - 1) AS [SequenceNumber]
     FROM [dbo].[Batches]
-    WHERE ([DispatcherId] = @DispatcherId OR [DispatcherId] IS NULL AND @DispatcherId IS NULL)
+    WHERE [DispatcherId] = @DispatcherId
         AND [Complete] = 0
     GROUP BY [Id]
 )

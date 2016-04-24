@@ -4,8 +4,10 @@
 
 #if PERSISTENCE
 namespace dddlib.Persistence.Memory
-#else
+#elif DISPATCHER
 namespace dddlib.Persistence.EventDispatcher.Memory
+#elif PROJECTIONS
+namespace dddlib.Projections.Memory
 #endif
 {
     using System;
@@ -20,8 +22,10 @@ namespace dddlib.Persistence.EventDispatcher.Memory
 #if PERSISTENCE
     using dddlib.Persistence.Sdk;
     using dddlib.Sdk;
-#else
+#elif DISPATCHER
     using dddlib.Persistence.EventDispatcher.Sdk;
+#elif PROJECTIONS
+    using dddlib.Projections.Sdk;
 #endif
     /// <summary>
     /// Represents the memory event store.
@@ -168,14 +172,14 @@ namespace dddlib.Persistence.EventDispatcher.Memory
                 }
             }
         }
-#else
+#elif DISPATCHER
         /// <summary>
         /// Gets the next undispatched events batch.
         /// </summary>
         /// <param name="dispatcherId">The dispatcher identifier.</param>
         /// <param name="batchSize">Size of the batch.</param>
         /// <returns>The events batch.</returns>
-        public Batch GetNextUndispatchedEventsBatch(string dispatcherId, int batchSize)
+        public Batch GetNextUndispatchedEventsBatch(Guid dispatcherId, int batchSize)
         {
             if (this.isDisposed)
             {
@@ -190,7 +194,7 @@ namespace dddlib.Persistence.EventDispatcher.Memory
         /// </summary>
         /// <param name="dispatcherId">The dispatcher identifier.</param>
         /// <param name="sequenceNumber">The sequence number for the event.</param>
-        public void MarkEventAsDispatched(string dispatcherId, long sequenceNumber)
+        public void MarkEventAsDispatched(Guid dispatcherId, long sequenceNumber)
         {
             if (this.isDisposed)
             {
@@ -199,7 +203,7 @@ namespace dddlib.Persistence.EventDispatcher.Memory
 
             throw new NotImplementedException();
         }
-
+#elif PROJECTIONS
         /// <summary>
         /// Gets the events from the specified sequence number.
         /// </summary>

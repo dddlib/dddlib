@@ -19,7 +19,7 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
         private readonly IEventDispatcher eventDispatcher;
         private readonly IEventStore eventStore;
         private readonly INotificationService notificationService;
-        private readonly string dispatcherId;
+        private readonly Guid dispatcherId;
         private readonly int batchSize;
 
         private Batch bufferedBatch;
@@ -35,18 +35,13 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
         public EventDispatcher(
             IEventDispatcher eventDispatcher,
             IEventStore eventStore, 
-            INotificationService notificationService, 
-            string dispatcherId,
+            INotificationService notificationService,
+            Guid dispatcherId,
             int batchSize)
         {
             Guard.Against.Null(() => eventDispatcher);
             Guard.Against.Null(() => eventStore);
             Guard.Against.Null(() => notificationService);
-
-            if (dispatcherId != null && dispatcherId.Length > 10)
-            {
-                throw new ArgumentException("Dispatcher identity cannot be more than 10 character long.", Guard.Expression.Parse(() => dispatcherId));
-            }
 
             this.eventDispatcher = eventDispatcher;
             this.eventStore = eventStore;

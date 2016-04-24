@@ -4,8 +4,10 @@
 
 #if DDDLIB
 namespace dddlib.Sdk
-#else
+#elif DISPATCHER
 namespace dddlib.Persistence.EventDispatcher.Sdk
+#elif PROJECTIONS
+namespace dddlib.Projections.Sdk
 #endif
 {
     using System;

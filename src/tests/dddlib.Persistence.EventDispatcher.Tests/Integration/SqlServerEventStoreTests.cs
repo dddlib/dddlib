@@ -25,7 +25,7 @@ namespace dddlib.Persistence.EventDispatcher.Tests.Integration
             var eventDispatcherEventStore = new SqlServerEventDispatcherEventStore(this.ConnectionString);
 
             // act
-            var batch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch(null, 50);
+            var batch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch(Guid.Empty, 50);
 
             // assert
             batch.Should().BeNull();
@@ -47,7 +47,7 @@ namespace dddlib.Persistence.EventDispatcher.Tests.Integration
             eventStore.CommitStream(streamId, events, Guid.NewGuid(), null, out commitState);
 
             // act
-            var batch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch(null, 50);
+            var batch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch(Guid.Empty, 50);
 
             // assert
             batch.Should().NotBeNull();
@@ -70,8 +70,8 @@ namespace dddlib.Persistence.EventDispatcher.Tests.Integration
             eventStore.CommitStream(streamId, events, Guid.NewGuid(), null, out commitState);
 
             // act
-            var firstBatch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch(null, 50);
-            var secondBatch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch(null, 50);
+            var firstBatch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch(Guid.Empty, 50);
+            var secondBatch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch(Guid.Empty, 50);
 
             // assert
             firstBatch.Should().NotBeNull();
@@ -95,8 +95,8 @@ namespace dddlib.Persistence.EventDispatcher.Tests.Integration
             eventStore.CommitStream(streamId, events, Guid.NewGuid(), null, out commitState);
 
             // act
-            var firstBatch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch("A", 50);
-            var secondBatch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch("B", 50);
+            var firstBatch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch(Guid.NewGuid(), 50);
+            var secondBatch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch(Guid.NewGuid(), 50);
 
             // assert
             firstBatch.Should().NotBeNull();
@@ -123,8 +123,8 @@ namespace dddlib.Persistence.EventDispatcher.Tests.Integration
             eventStore.CommitStream(streamId, events, Guid.NewGuid(), null, out commitState);
 
             // act
-            var firstBatch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch(null, 2);
-            var secondBatch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch(null, 2);
+            var firstBatch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch(Guid.Empty, 2);
+            var secondBatch = eventDispatcherEventStore.GetNextUndispatchedEventsBatch(Guid.Empty, 2);
 
             // assert
             firstBatch.Should().NotBeNull();

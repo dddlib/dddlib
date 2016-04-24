@@ -22,14 +22,13 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
 
         private readonly string connectionString;
         private readonly string schema;
-        private readonly Guid partition;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlServerEventStore"/> class.
         /// </summary>
         /// <param name="connectionString">The connection string.</param>
         public SqlServerEventStore(string connectionString)
-            : this(connectionString, "dbo", Guid.Empty)
+            : this(connectionString, "dbo")
         {
         }
 
@@ -39,33 +38,11 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <param name="connectionString">The connection string.</param>
         /// <param name="schema">The schema.</param>
         public SqlServerEventStore(string connectionString, string schema)
-            : this(connectionString, schema, Guid.Empty)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SqlServerEventStore"/> class.
-        /// </summary>
-        /// <param name="connectionString">The connection string.</param>
-        /// <param name="partition">The partition.</param>
-        internal SqlServerEventStore(string connectionString, Guid partition)
-            : this(connectionString, "dbo", partition)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SqlServerEventStore"/> class.
-        /// </summary>
-        /// <param name="connectionString">The connection string.</param>
-        /// <param name="schema">The schema.</param>
-        /// <param name="partition">The partition.</param>
-        internal SqlServerEventStore(string connectionString, string schema, Guid partition)
         {
             Guard.Against.NullOrEmpty(() => schema);
 
             this.connectionString = connectionString;
             this.schema = schema;
-            this.partition = partition;
 
             var connection = new SqlConnection(connectionString);
             connection.InitializeSchema(schema, "SqlServerPersistence");
@@ -81,19 +58,14 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// <param name="dispatcherId">The dispatcher identifier.</param>
         /// <param name="batchSize">Size of the batch.</param>
         /// <returns>The events batch.</returns>
-        public Batch GetNextUndispatchedEventsBatch(string dispatcherId, int batchSize)
+        public Batch GetNextUndispatchedEventsBatch(Guid dispatcherId, int batchSize)
         {
-            if (dispatcherId != null && dispatcherId.Length > 10)
-            {
-                throw new ArgumentException("Dispatcher identity cannot be more than 10 character long.", Guard.Expression.Parse(() => dispatcherId));
-            }
-
             using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
             using (var command = new SqlCommand(string.Concat(this.schema, ".GetNextUndispatchedEventsBatch"), connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.Add("DispatcherId", SqlDbType.VarChar).Value = (object)dispatcherId ?? DBNull.Value;
+                command.Parameters.Add("DispatcherId", SqlDbType.UniqueIdentifier).Value = dispatcherId;
                 command.Parameters.Add("MaxBatchSize", SqlDbType.Int).Value = batchSize;
 
                 connection.Open();
@@ -142,19 +114,14 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         /// </summary>
         /// <param name="dispatcherId">The dispatcher identifier.</param>
         /// <param name="sequenceNumber">The sequence number for the event.</param>
-        public void MarkEventAsDispatched(string dispatcherId, long sequenceNumber)
+        public void MarkEventAsDispatched(Guid dispatcherId, long sequenceNumber)
         {
-            if (dispatcherId != null && dispatcherId.Length > 10)
-            {
-                throw new ArgumentException("Dispatcher identity cannot be more than 10 character long.", Guard.Expression.Parse(() => dispatcherId));
-            }
-
             using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
             using (var command = new SqlCommand(string.Concat(this.schema, ".MarkEventAsDispatched"), connection))
             {
                 command.CommandType = CommandType.StoredProcedure;
-                command.Parameters.Add("DispatcherId", SqlDbType.VarChar).Value = (object)dispatcherId ?? DBNull.Value;
+                command.Parameters.Add("DispatcherId", SqlDbType.UniqueIdentifier).Value = dispatcherId;
                 command.Parameters.Add("SequenceNumber", SqlDbType.Int).Value = sequenceNumber;
 
                 connection.Open();
