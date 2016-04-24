@@ -11,7 +11,7 @@ dddlib contributors</authors>
     <licenseUrl>https://raw.githubusercontent.com/dddlib/dddlib/dev/LICENSE.mit.txt</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A domain driven design library for .NET</description>
-    <releaseNotes>TBD</releaseNotes>
+    <releaseNotes>https://github.com/dddlib/dddlib/releases/tag/v0.5.0</releaseNotes>
     <copyright>Copyright (c) dddlib contributors.</copyright>
     <tags>domain driven design library dddlib</tags>
     <frameworkAssemblies>
