@@ -25,13 +25,5 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
         /// <param name="dispatcherId">The dispatcher identifier.</param>
         /// <param name="sequenceNumber">The sequence number for the event.</param>
         void MarkEventAsDispatched(string dispatcherId, long sequenceNumber);
-
-        /// <summary>
-        /// Gets the events from the specified sequence number.
-        /// </summary>
-        /// <param name="sequenceNumber">The sequence number.</param>
-        /// <returns>The events.</returns>
-        //// TODO (Cameron): Move to different library (dddlib.Projections).
-        IEnumerable<object> GetEventsFrom(long sequenceNumber);
     }
 }

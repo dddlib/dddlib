@@ -4,8 +4,10 @@
 
 #if PERSISTENCE
 namespace dddlib.Persistence.Memory
-#else
+#elif DISPATCHER
 namespace dddlib.Persistence.EventDispatcher.Memory
+#elif PROJECTIONS
+namespace dddlib.Projections
 #endif
 {
     using System;
@@ -20,8 +22,10 @@ namespace dddlib.Persistence.EventDispatcher.Memory
 #if PERSISTENCE
     using dddlib.Persistence.Sdk;
     using dddlib.Sdk;
-#else
+#elif DISPATCHER
     using dddlib.Persistence.EventDispatcher.Sdk;
+#elif PROJECTIONS
+    using dddlib.Projections.Sdk;
 #endif
     /// <summary>
     /// Represents the memory event store.
@@ -168,7 +172,7 @@ namespace dddlib.Persistence.EventDispatcher.Memory
                 }
             }
         }
-#else
+#elif DISPATCHER
         /// <summary>
         /// Gets the next undispatched events batch.
         /// </summary>
@@ -199,7 +203,7 @@ namespace dddlib.Persistence.EventDispatcher.Memory
 
             throw new NotImplementedException();
         }
-
+#elif PROJECTIONS
         /// <summary>
         /// Gets the events from the specified sequence number.
         /// </summary>
