@@ -5,6 +5,7 @@
 namespace dddlib.Runtime
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
 
     internal sealed class DefaultValueObjectMapper<TValueObject> : IValueObjectMapper<TValueObject>
@@ -26,6 +27,7 @@ namespace dddlib.Runtime
             return @event;
         }
 
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
         public T ToEvent<T>(T @event)
         {
             var runtimeType = Application.Current.GetValueObjectType(this.source.GetType());
@@ -36,9 +38,14 @@ namespace dddlib.Runtime
                 throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        "The value object of type '{0}' has not been configured to map to an event of type '{1}'.",
+                        @"The value object of type '{0}' has not been configured to map to an event of type '{1}'.
+To fix this issue:
+- use a bootstrapper to register a mapping for the event.",
                         this.source.GetType(),
-                        typeof(T)));
+                        typeof(T)))
+                {
+                    HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Value-Object-Mapping",
+                };
             }
 
             try
@@ -49,8 +56,8 @@ namespace dddlib.Runtime
             {
                 throw new RuntimeException(
                     string.Format(
-                        CultureInfo.InvariantCulture, 
-                        "An exception occurred when mapping a value object of type '{0}' to event of type '{1}'.", 
+                        CultureInfo.InvariantCulture,
+                        "An exception occurred whilst attempting to map a value object of type '{0}' to an event of type '{1}'.\r\nSee inner exception for details.",
                         this.source.GetType(), 
                         typeof(T)),
                     ex);

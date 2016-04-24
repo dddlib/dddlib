@@ -15,7 +15,7 @@ namespace dddlib.Persistence.Sdk
         /// <summary>
         /// Gets the natural key records for the specified type of aggregate root from the specified checkpoint.
         /// </summary>
-        /// <param name="aggregateRootType">Type of the aggregate root.</param>
+        /// <param name="aggregateRootType">The aggregate root type.</param>
         /// <param name="checkpoint">The checkpoint.</param>
         /// <returns>The natural key records.</returns>
         IEnumerable<NaturalKeyRecord> GetNaturalKeys(Type aggregateRootType, long checkpoint);
@@ -23,11 +23,17 @@ namespace dddlib.Persistence.Sdk
         /// <summary>
         /// Attempts to add the natural key to the natural key records.
         /// </summary>
-        /// <param name="aggregateRootType">Type of the aggregate root.</param>
+        /// <param name="aggregateRootType">The aggregate root type.</param>
         /// <param name="serializedNaturalKey">The serialized natural key.</param>
         /// <param name="checkpoint">The checkpoint.</param>
         /// <param name="naturalKeyRecord">The natural key record.</param>
         /// <returns>Returns <c>true</c> if the natural key record was successfully added; otherwise <c>false</c>.</returns>
         bool TryAddNaturalKey(Type aggregateRootType, object serializedNaturalKey, long checkpoint, out NaturalKeyRecord naturalKeyRecord);
+
+        /// <summary>
+        /// Removes the natural key with the specified identity from the natural key records.
+        /// </summary>
+        /// <param name="naturalKeyIdentity">The natural key identity.</param>
+        void Remove(Guid naturalKeyIdentity);
     }
 }

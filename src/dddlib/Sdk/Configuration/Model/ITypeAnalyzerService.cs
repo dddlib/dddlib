@@ -47,5 +47,12 @@ namespace dddlib.Sdk.Configuration.Model
         /// <param name="runtimeType">The runtime type.</param>
         /// <returns>The natural key.</returns>
         NaturalKey GetNaturalKey(Type runtimeType);
+
+        /// <summary>
+        /// Gets the uninitialized factory for the specified runtime type.
+        /// </summary>
+        /// <param name="runtimeType">The runtime type.</param>
+        /// <returns>The uninitialized factory.</returns>
+        Delegate GetUninitializedFactory(Type runtimeType);
     }
 }

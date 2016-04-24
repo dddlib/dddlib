@@ -31,8 +31,6 @@ namespace dddlib
 
         private readonly TypeInformation typeInformation;
 
-        private string state;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="AggregateRoot"/> class.
         /// </summary>
@@ -56,10 +54,9 @@ namespace dddlib
             this.typeInformation = getTypeInformation(this);
         }
 
-        internal string State
-        {
-            get { return this.state; }
-        }
+        internal string State { get; private set; }
+
+        internal int Revision { get; private set; }
 
         /// <summary>
         /// Specifies that a mapping should take place.
@@ -71,13 +68,15 @@ namespace dddlib
             get { return this.mapProvider.Value; }
         }
 
-        internal void Initialize(object memento, IEnumerable<object> events, string state)
+        internal void Initialize(object memento, int revision, IEnumerable<object> events, string state)
         {
             Guard.Against.Null(() => events);
+            Guard.Against.Negative(() => revision);
 
             if (memento != null)
             {
                 this.SetState(memento);
+                this.Revision = revision;
             }
 
             foreach (var @event in events)
@@ -85,7 +84,7 @@ namespace dddlib
                 this.Apply(@event, isNew: false);
             }
 
-            this.state = state;
+            this.State = state;
         }
 
         internal object GetMemento()
@@ -103,7 +102,7 @@ namespace dddlib
             Guard.Against.NullOrEmpty(() => state);
 
             this.events.Clear();
-            this.state = state;
+            this.State = state;
         }
 
         /// <summary>
@@ -113,12 +112,6 @@ namespace dddlib
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Inappropriate.")]
         protected virtual object GetState()
         {
-            ////throw new RuntimeException(
-            ////    string.Format(
-            ////        CultureInfo.InvariantCulture,
-            ////        "The aggregate root of type '{0}' has not been configured to create a memento representing its state.",
-            ////        this.GetType()));
-
             return null;
         }
 
@@ -126,13 +119,19 @@ namespace dddlib
         /// Sets the state of the aggregate root from the specified memento.
         /// </summary>
         /// <param name="memento">A memento representing the state of the aggregate root.</param>
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
         protected virtual void SetState(object memento)
         {
             throw new RuntimeException(
                 string.Format(
                     CultureInfo.InvariantCulture,
-                    "The aggregate root of type '{0}' has not been configured to apply a memento representing its state.",
-                    this.GetType()));
+                    @"The aggregate root of type '{0}' has not been configured to reconstitute from a memento representing its state.
+To fix this issue:
+- override the 'SetState' method of the aggregate root to update the it's state from the specified memento.",
+                    this.GetType()))
+            {
+                HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Mementos",
+            };
         }
 
         /// <summary>
@@ -145,17 +144,7 @@ namespace dddlib
         {
             Guard.Against.Null(() => @event);
 
-            if (this.IsDestroyed)
-            {
-                // TODO (Cameron): Use the natural key and type.
-                // maybe: Unable to change Bob because a Person with that name no longer exists.
-                // or: cannot change the aggregate of type Person with the identity Bob as this aggregates lifecycle has ended.
-                throw new BusinessException(
-                    string.Format(
-                        "Unable to apply the specified change of type '{0}' to the aggregate root of type '{1}' as the lifecycle of this instance of the aggregate root has been terminated.",
-                        @event.GetType(),
-                        this.GetType()));
-            }
+            this.ThrowIfLifecycleEnded(@event.GetType().Name);
 
             this.Apply(@event, isNew: true);
         }
@@ -166,8 +155,12 @@ namespace dddlib
 
             if (!@event.GetType().IsClass)
             {
-                // TODO (Cameron): Check - is this possible?
-                return;
+                // NOTE (Cameron): This is to enforce the class constraint on the protected method for boxed value type events.
+                throw new RuntimeException(
+                    string.Format(
+                        "Unable to apply the specified change of type '{0}' to the aggregate root of type '{1}'.",
+                        @event.GetType(),
+                        this.GetType()));
             }
 
             try
@@ -183,11 +176,13 @@ namespace dddlib
                 throw new RuntimeException(
                     string.Format(
                         CultureInfo.InvariantCulture,
-                        "The event dispatcher of type '{0}' threw an exception whilst attempting to dispatch an event of type '{1}'.",
+                        "The event dispatcher of type '{0}' threw an exception whilst attempting to dispatch an event of type '{1}'.\r\nSee inner exception for details.",
                         this.typeInformation.EventDispatcher.GetType(),
                         @event.GetType()),
                     ex);
             }
+
+            this.Revision++;
 
             if (this.typeInformation.PersistEvents && isNew)
             {

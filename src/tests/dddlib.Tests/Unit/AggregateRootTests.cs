@@ -6,7 +6,9 @@ namespace dddlib.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
+    using dddlib.Runtime;
     using FluentAssertions;
+    using Sdk;
     using Xunit;
 
     public class AggregateRootTests
@@ -75,31 +77,31 @@ namespace dddlib.Tests.Unit
         }
 
         [Fact]
-        public void CanApplyInvalidChangeToAggregateWithoutEffectOrException()
+        public void CannotApplyInvalidChangeToAggregate()
         {
             // arrange
             var aggregate = new BadAggregate();
             var @event = 1;
 
             // act
-            aggregate.ApplyEvent(@event);
+            Action action = () => aggregate.ApplyEvent(@event);
 
             // assert
-            aggregate.BadChange.Should().BeNull();
+            action.ShouldThrow<RuntimeException>();
         }
 
         [Fact]
-        public void CanApplyOtherInvalidChangeToAggregateWithoutEffectOrException()
+        public void CannotApplyOtherInvalidChangeToAggregate()
         {
             // arrange
             var aggregate = new BadAggregate();
             int? @event = 1;
 
             // act
-            aggregate.ApplyEvent(@event);
+            Action action = () => aggregate.ApplyEvent(@event);
 
             // assert
-            aggregate.BadChange.Should().BeNull();
+            action.ShouldThrow<RuntimeException>();
         }
 
         [Fact]
@@ -152,10 +154,10 @@ namespace dddlib.Tests.Unit
             // arrange
             var memento = (object)null;
             var events = new[] { new SomethingHappened() };
+            var factory = new AggregateRootFactory();
             
             // act
-            var aggregateRoot = Activator.CreateInstance(typeof(PersistedAggregate), true) as PersistedAggregate;
-            aggregateRoot.Initialize(memento, events, "state");
+            var aggregateRoot = factory.Create<PersistedAggregate>(memento, 0, events, "state");
             aggregateRoot.MakeSomethingHappen();
 
             // assert

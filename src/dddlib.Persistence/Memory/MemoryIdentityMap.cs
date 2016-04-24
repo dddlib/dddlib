@@ -5,49 +5,44 @@
 namespace dddlib.Persistence.Memory
 {
     using System;
-    using System.Collections.Concurrent;
+    using dddlib.Persistence.Sdk;
 
     /// <summary>
-    /// Represents a memory-based identity map.
+    /// Represents the memory-based identity map.
     /// </summary>
-    public class MemoryIdentityMap : IIdentityMap
+    public sealed class MemoryIdentityMap : DefaultIdentityMap, IDisposable
     {
-        private readonly ConcurrentDictionary<Type, ConcurrentDictionary<object, Guid>> store = 
-            new ConcurrentDictionary<Type, ConcurrentDictionary<object, Guid>>();
+        private readonly MemoryNaturalKeyRepository repository;
+
+        private bool isDisposed;
 
         /// <summary>
-        /// Gets the mapped identity for the specified natural key. If a mapping does not exist then one is created.
+        /// Initializes a new instance of the <see cref="MemoryIdentityMap" /> class.
         /// </summary>
-        /// <param name="aggregateRootType">Type of the aggregate root.</param>
-        /// <param name="naturalKeyType">Type of the natural key.</param>
-        /// <param name="naturalKey">The natural key.</param>
-        /// <returns>The mapped identity.</returns>
-        public Guid GetOrAdd(Type aggregateRootType, Type naturalKeyType, object naturalKey)
+        public MemoryIdentityMap()
+            : this(new MemoryNaturalKeyRepository(), new DefaultNaturalKeySerializer())
         {
-            var mappings = this.store.GetOrAdd(aggregateRootType, _ => new ConcurrentDictionary<object, Guid>());
-            var id = mappings.GetOrAdd(naturalKey, Guid.NewGuid());
+        }
 
-            return id;
+        private MemoryIdentityMap(MemoryNaturalKeyRepository repository, INaturalKeySerializer serializer)
+            : base(repository, serializer)
+        {
+            this.repository = repository;
         }
 
         /// <summary>
-        /// Attempts to get the mapped identity for the specified natural key.
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
-        /// <param name="aggregateRootType">Type of the aggregate root.</param>
-        /// <param name="naturalKeyType">Type of the natural key.</param>
-        /// <param name="naturalKey">The natural key.</param>
-        /// <param name="identity">The mapped identity.</param>
-        /// <returns>Returns <c>true</c> if the mapping exists; otherwise <c>false</c>.</returns>
-        public bool TryGet(Type aggregateRootType, Type naturalKeyType, object naturalKey, out Guid identity)
+        public void Dispose()
         {
-            var typeMappings = default(ConcurrentDictionary<object, Guid>);
-            if (!this.store.TryGetValue(aggregateRootType, out typeMappings))
+            if (this.isDisposed)
             {
-                identity = Guid.Empty;
-                return false;
+                return;
             }
 
-            return typeMappings.TryGetValue(naturalKey, out identity);
+            this.repository.Dispose();
+
+            this.isDisposed = true;
         }
     }
 }

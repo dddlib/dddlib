@@ -77,11 +77,11 @@ namespace dddlib.Persistence.Tests.Unit
 
         private class SensibleValueObject : ValueObject<SensibleValueObject>
         {
-            public SensibleValueObject(string key)
+            public SensibleValueObject(string value)
             {
-                Guard.Against.Null(() => key);
+                Guard.Against.Null(() => value);
 
-                this.Value = key;
+                this.Value = value;
             }
 
             public string Value { get; private set; }

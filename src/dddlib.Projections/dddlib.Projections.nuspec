@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>dddlib.Projections</id>
+    <title>dddlib.Projections</title>
+    <version>0.0.1</version>
+    <authors>Cameron Fletcher, 
+dddlib contributors</authors>
+    <projectUrl>https://github.com/dddlib/dddlib/wiki</projectUrl>
+    <iconUrl>http://nuget.cameronfletcher.com/icons/dddlib.png</iconUrl>
+    <licenseUrl>https://raw.githubusercontent.com/dddlib/dddlib/dev/LICENSE.mit.txt</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>A library for .NET designed to remove some of the complexity from denormalization</description>
+    <releaseNotes>https://github.com/dddlib/dddlib/releases/tag/v0.5.0</releaseNotes>
+    <copyright>Copyright (c) dddlib contributors.</copyright>
+    <tags>domain driven design library dddlib persistence events event sourcing cqrs denomalize denormalizer denormalization views view</tags>
+    <dependencies></dependencies>
+    <frameworkAssemblies></frameworkAssemblies>
+  </metadata>
+  <files>
+    <file src="bin\Release\dddlib.Projections.pdb" target="lib\net45" />
+  </files>
+</package>

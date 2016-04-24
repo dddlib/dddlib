@@ -6,6 +6,7 @@ namespace dddlib
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using dddlib.Runtime;
     using dddlib.Sdk.Configuration.Model;
 
@@ -46,7 +47,7 @@ namespace dddlib
         /// Gets a value indicating whether this instance has been destroyed.
         /// </summary>
         /// <value>Returns <c>true</c> if the lifecycle of this instance has ended; otherwise, <c>false</c>.</value>
-        protected bool IsDestroyed
+        protected internal bool IsDestroyed
         {
             get { return this.isDestroyed; }
         }
@@ -122,10 +123,45 @@ namespace dddlib
         }
 
         /// <summary>
+        /// Throws a <see cref="dddlib.BusinessException"/> if the lifecycle of the entity has ended.
+        /// </summary>
+        protected void ThrowIfLifecycleEnded()
+        {
+            this.ThrowIfLifecycleEnded(null);
+        }
+
+        /// <summary>
+        /// Throws a <see cref="dddlib.BusinessException" /> if the lifecycle of the entity has ended.
+        /// </summary>
+        /// <param name="eventName">The name of the event that resulted in the exception.</param>
+        protected void ThrowIfLifecycleEnded(string eventName)
+        {
+            if (!this.IsDestroyed)
+            {
+                return;
+            }
+
+            var naturalKeyValue = this.typeInformation.GetNaturalKeyValue == null
+                ? null
+                : this.typeInformation.GetNaturalKeyValue.Invoke(this);
+
+            var format = string.IsNullOrEmpty(eventName)
+                ? naturalKeyValue == null
+                    ? "Cannot apply changes because the '{0}' longer exists in the system."
+                    : "Cannot apply changes to '{1}' because that '{0}' no longer exists in  the system."
+                : naturalKeyValue == null
+                    ? "Cannot apply '{2}'  because the '{0}' no longer exists in  the system."
+                    : "Cannot apply '{2}' to '{1}' because that '{0}' no longer exists in  the system.";
+
+            throw new BusinessException(string.Format(CultureInfo.InvariantCulture, format, this.GetType().Name, naturalKeyValue, eventName));
+        }
+
+        /// <summary>
         /// Ends the lifecycle of this instance.
         /// </summary>
         protected void EndLifecycle()
         {
+            this.ThrowIfLifecycleEnded();
             this.isDestroyed = true;
         }
     }
