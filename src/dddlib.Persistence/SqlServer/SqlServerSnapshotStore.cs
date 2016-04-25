@@ -88,7 +88,7 @@ namespace dddlib.Persistence.SqlServer
                         throw new SerializationException(
                             string.Format(
                                 CultureInfo.InvariantCulture,
-                                @"Cannot deserialize event into type of '{0}' as that type does not exist in the assembly '{1}' or the assembly is not referenced by the project.
+                                @"Cannot deserialize snapshot into type of '{0}' as that type does not exist in the assembly '{1}' or the assembly is not referenced by the project.
 To fix this issue:
 - ensure that the assembly '{1}' contains the type '{0}', and
 - check that the the assembly '{1}' is referenced by the project.
