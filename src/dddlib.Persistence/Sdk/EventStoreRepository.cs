@@ -114,7 +114,6 @@ namespace dddlib.Persistence.Sdk
                 throw new ConcurrencyException("Aggregate root does not exist.");
             }
             
-
             var events = aggregateRoot.GetUncommittedEvents();
 
             if (preCommitState == null && !events.Any())

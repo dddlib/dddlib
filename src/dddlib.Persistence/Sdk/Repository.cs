@@ -98,10 +98,19 @@ namespace dddlib.Persistence.Sdk
 
             runtimeType.ValidateForPersistence();
 
-            var naturalKey = runtimeType.GetNaturalKey(aggregateRoot);
-            var id = this.identityMap.GetOrAdd(runtimeType.RuntimeType, runtimeType.NaturalKey.PropertyType, naturalKey);
-
             var preCommitState = aggregateRoot.State;
+            var naturalKey = runtimeType.GetNaturalKey(aggregateRoot);
+
+            var streamId = default(Guid);
+            if (preCommitState == null)
+            {
+                streamId = this.identityMap.GetOrAdd(runtimeType.RuntimeType, runtimeType.NaturalKey.PropertyType, naturalKey);
+            }
+            else if (!this.identityMap.TryGet(runtimeType.RuntimeType, runtimeType.NaturalKey.PropertyType, naturalKey, out streamId))
+            {
+                throw new ConcurrencyException("Aggregate root does not exist.");
+            }
+
             if (preCommitState == null)
             {
                 // NOTE (Cameron): This is the initial commit, for what it's worth.
@@ -123,13 +132,13 @@ To fix this issue:
             }
 
             var postCommitState = default(string);
-            this.Save(id, memento, preCommitState, out postCommitState);
+            this.Save(streamId, memento, preCommitState, out postCommitState);
 
             aggregateRoot.CommitEvents(postCommitState);
 
             if (aggregateRoot.IsDestroyed)
             {
-                this.identityMap.Remove(id);
+                this.identityMap.Remove(streamId);
             }
         }
 

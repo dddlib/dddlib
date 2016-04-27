@@ -26,9 +26,9 @@ namespace dddlib.Persistence.Tests.Bug
             var naturalKey = "key";
 
             // act
-            var subject = new Subject(naturalKey);
+            var subject = new EventBasedSubject(naturalKey);
             repository.Save(subject);
-            var sameSubject = repository.Load<Subject>(subject.NaturalKey);
+            var sameSubject = repository.Load<EventBasedSubject>(subject.NaturalKey);
             subject.Destroy();
             repository.Save(subject);
             sameSubject.Change();
@@ -38,6 +38,26 @@ namespace dddlib.Persistence.Tests.Bug
             action.ShouldThrow<ConcurrencyException>();
         }
 
+        [Fact]
+        public void ShouldThrowForMemoryRepository()
+        {
+            // arrange
+            var repository = new MemoryRepository<ConventionalSubject>();
+            var naturalKey = "key";
+
+            // act
+            var subject = new ConventionalSubject(naturalKey);
+            repository.Save(subject);
+            var sameSubject = repository.Load(subject.NaturalKey);
+            subject.Destroy();
+            repository.Save(subject);
+            Action action = () => repository.Save(sameSubject);
+
+            // assert
+            action.ShouldThrow<ConcurrencyException>();
+        }
+
+        [Fact]
         public void ShouldThrowForSqlServerEventStoreRepository()
         {
             // arrange
@@ -45,9 +65,9 @@ namespace dddlib.Persistence.Tests.Bug
             var naturalKey = "key";
 
             // act
-            var subject = new Subject(naturalKey);
+            var subject = new EventBasedSubject(naturalKey);
             repository.Save(subject);
-            var sameSubject = repository.Load<Subject>(subject.NaturalKey);
+            var sameSubject = repository.Load<EventBasedSubject>(subject.NaturalKey);
             subject.Destroy();
             repository.Save(subject);
             sameSubject.Change();
@@ -57,14 +77,50 @@ namespace dddlib.Persistence.Tests.Bug
             action.ShouldThrow<ConcurrencyException>();
         }
 
-        private class Subject : AggregateRoot
+        private class ConventionalSubject : AggregateRoot
         {
-            public Subject(string naturalKey)
+            public ConventionalSubject(string naturalKey)
+            {
+                this.NaturalKey = naturalKey;
+            }
+
+            protected internal ConventionalSubject()
+            {
+            }
+
+            [NaturalKey]
+            public string NaturalKey { get; private set; }
+
+            public void Destroy()
+            {
+                this.EndLifecycle();
+            }
+
+            protected override object GetState()
+            {
+                return new Memento { NaturalKey = this.NaturalKey };
+            }
+
+            protected override void SetState(object memento)
+            {
+                var subject = (Memento)memento;
+                this.NaturalKey = subject.NaturalKey;
+            }
+
+            private class Memento
+            {
+                public string NaturalKey { get; set; }
+            }
+        }
+
+        private class EventBasedSubject : AggregateRoot
+        {
+            public EventBasedSubject(string naturalKey)
             {
                 this.Apply(new SubjectCreated { NaturalKey = naturalKey });
             }
 
-            protected internal Subject()
+            protected internal EventBasedSubject()
             {
             }
 
