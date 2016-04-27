@@ -242,13 +242,13 @@ namespace dddlib.Persistence.Memory
                 this.readOffset += 2 + buffer.Length;
 
                 var naturalKeysType = default(List<MemoryMappedNaturalKey>);
-                var naturalKeyType = Type.GetType(memoryMappedNaturalKey.Type);
-                if (naturalKeyType == null)
+                var aggregateRootType = Type.GetType(memoryMappedNaturalKey.Type);
+                if (aggregateRootType == null)
                 {
                     throw new SerializationException(
                         string.Format(
                             CultureInfo.InvariantCulture,
-                            @"Cannot deserialize event into type of '{0}' as that type does not exist in the assembly '{1}' or the assembly is not referenced by the project.
+                            @"Cannot deserialize natural key for aggregate root of type '{0}' as that type does not exist in the assembly '{1}' or the assembly is not referenced by the project.
 To fix this issue:
 - ensure that the assembly '{1}' contains the type '{0}', and
 - check that the the assembly '{1}' is referenced by the project.
@@ -257,10 +257,10 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
                             memoryMappedNaturalKey.Type.Split(',').LastOrDefault()));
                 }
 
-                if (!this.naturalKeysTypes.TryGetValue(naturalKeyType, out naturalKeysType))
+                if (!this.naturalKeysTypes.TryGetValue(aggregateRootType, out naturalKeysType))
                 {
                     naturalKeysType = new List<MemoryMappedNaturalKey>();
-                    this.naturalKeysTypes.Add(naturalKeyType, naturalKeysType);
+                    this.naturalKeysTypes.Add(aggregateRootType, naturalKeysType);
                 }
 
                 naturalKeysType.Add(memoryMappedNaturalKey);
