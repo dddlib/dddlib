@@ -5,18 +5,43 @@
 namespace dddlib.Persistence.Tests.Bug
 {
     using System;
+    using dddlib.Tests.Sdk;
     using FluentAssertions;
     using Memory;
-    using Persistence.Sdk;
+    using SqlServer;
     using Xunit;
 
-    public class Bug0109
+    public class Bug0109 : dddlib.Tests.Sdk.Integration.Database
     {
+        public Bug0109(SqlServerFixture fixture)
+            : base(fixture)
+        {
+        }
+
         [Fact]
         public void ShouldThrowForMemoryEventStoreRepository()
         {
             // arrange
             var repository = new MemoryEventStoreRepository();
+            var naturalKey = "key";
+
+            // act
+            var subject = new Subject(naturalKey);
+            repository.Save(subject);
+            var sameSubject = repository.Load<Subject>(subject.NaturalKey);
+            subject.Destroy();
+            repository.Save(subject);
+            sameSubject.Change();
+            Action action = () => repository.Save(sameSubject);
+
+            // assert
+            action.ShouldThrow<ConcurrencyException>();
+        }
+
+        public void ShouldThrowForSqlServerEventStoreRepository()
+        {
+            // arrange
+            var repository = new SqlServerEventStoreRepository(this.ConnectionString);
             var naturalKey = "key";
 
             // act
