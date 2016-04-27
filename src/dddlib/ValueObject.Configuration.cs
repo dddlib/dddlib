@@ -31,7 +31,7 @@ namespace dddlib
                 this.EqualityComparer = equalityComparer;
             }
 
-            public IEqualityComparer<T> EqualityComparer { get; set; }
+            public IEqualityComparer<T> EqualityComparer { get; private set; }
         }
     }
 }

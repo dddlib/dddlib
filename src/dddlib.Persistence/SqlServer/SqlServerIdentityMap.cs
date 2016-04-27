@@ -7,7 +7,7 @@ namespace dddlib.Persistence.SqlServer
     using dddlib.Persistence.Sdk;
 
     /// <summary>
-    /// Represents a SQL-based identity map.
+    /// Represents the SQL-Server identity map.
     /// </summary>
     public class SqlServerIdentityMap : DefaultIdentityMap
     {

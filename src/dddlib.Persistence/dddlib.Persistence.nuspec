@@ -11,18 +11,16 @@ dddlib contributors</authors>
     <licenseUrl>https://raw.githubusercontent.com/dddlib/dddlib/dev/LICENSE.mit.txt</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>The persistence companion for dddlib, a domain driven design library for .NET</description>
-    <releaseNotes>Initial release</releaseNotes>
+    <releaseNotes>https://github.com/dddlib/dddlib/releases/tag/v0.5.0</releaseNotes>
     <copyright>Copyright (c) dddlib contributors.</copyright>
     <tags>domain driven design library dddlib persistence</tags>
     <dependencies>
       <dependency id="dddlib" version="$version$" />
     </dependencies>
-    <frameworkAssemblies>
-      <frameworkAssembly assemblyName="System.Data" targetFramework="net45" />
-    </frameworkAssemblies>
+    <frameworkAssemblies></frameworkAssemblies>
   </metadata>
   <files>
     <file src="bin\Release\dddlib.Persistence.pdb" target="lib\net45" />
-    <file src="SqlServer\Database\Scripts\Version*.sql" target="sql" />
+    <file src="Scripts\*.sql" target="sql" />
   </files>
 </package>

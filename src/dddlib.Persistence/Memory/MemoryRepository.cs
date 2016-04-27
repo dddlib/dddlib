@@ -7,6 +7,7 @@ namespace dddlib.Persistence.Memory
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using dddlib.Persistence.Sdk;
 
     /// <summary>
     /// Represents a memory-based repository.
@@ -47,13 +48,14 @@ namespace dddlib.Persistence.Memory
             {
                 if (data.State != oldState)
                 {
+                    // TODO (Cameron): This definitely shouldn't be here...
                     throw new ConcurrencyException("Invalid state");
                 }
             }
             else if (oldState != null)
             {
                 // TODO (Cameron): Not sure if this should be here...
-                throw new ConcurrencyException("Invalid state #2");
+                throw new ConcurrencyException("Aggregate root does not exist.");
             }
 
             data = data ?? new Data();
@@ -75,7 +77,8 @@ namespace dddlib.Persistence.Memory
             var data = default(Data);
             if (!this.store.TryGetValue(id, out data))
             {
-                throw new ConcurrencyException("Invalid state #2");
+                state = null;
+                return null;
             }
 
             state = data.State;

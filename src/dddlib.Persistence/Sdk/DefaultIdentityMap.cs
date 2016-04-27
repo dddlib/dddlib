@@ -6,6 +6,10 @@ namespace dddlib.Persistence.Sdk
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
+    using dddlib.Runtime;
 
     /// <summary>
     /// Represents the default identity map.
@@ -14,6 +18,8 @@ namespace dddlib.Persistence.Sdk
     {
         private readonly ConcurrentDictionary<Type, ConcurrentDictionary<object, Guid>> store =
             new ConcurrentDictionary<Type, ConcurrentDictionary<object, Guid>>();
+
+        private readonly ConcurrentDictionary<Guid, KeyValuePair<Type, object>> index = new ConcurrentDictionary<Guid, KeyValuePair<Type, object>>();
 
         private readonly INaturalKeyRepository repository;
         private readonly INaturalKeySerializer serializer;
@@ -45,13 +51,19 @@ namespace dddlib.Persistence.Sdk
         {
             Guard.Against.Null(() => aggregateRootType);
 
+            this.ValidateSerialization(aggregateRootType, naturalKeyType, naturalKey);
+
             var mappings = this.store.GetOrAdd(aggregateRootType, _ => new ConcurrentDictionary<object, Guid>());
 
             var identity = default(Guid);
             while (!this.TryGet(aggregateRootType, naturalKeyType, naturalKey, out identity))
             {
                 var naturalKeyRecord = default(NaturalKeyRecord);
-                if (this.repository.TryAddNaturalKey(aggregateRootType, this.serializer.Serialize(naturalKeyType, naturalKey), this.checkpoint, out naturalKeyRecord))
+                if (this.repository.TryAddNaturalKey(
+                    aggregateRootType, 
+                    this.serializer.Serialize(naturalKeyType, naturalKey), 
+                    this.checkpoint, 
+                    out naturalKeyRecord))
                 {
                     // TODO (Cameron): Confirm that this is what we want to do here.
                     mappings.TryAdd(naturalKey, naturalKeyRecord.Identity);
@@ -74,22 +86,30 @@ namespace dddlib.Persistence.Sdk
         {
             Guard.Against.Null(() => aggregateRootType);
 
+            this.ValidateSerialization(aggregateRootType, naturalKeyType, naturalKey);
+
             var mappings = this.store.GetOrAdd(aggregateRootType, _ => new ConcurrentDictionary<object, Guid>());
+
+            identity = default(Guid);
+            while (this.Synchronize(aggregateRootType, naturalKeyType, mappings))
+            {
+            }
 
             if (mappings.TryGetValue(naturalKey, out identity))
             {
                 return true;
             }
 
-            while (this.Synchronize(aggregateRootType, naturalKeyType, mappings))
-            {
-                if (mappings.TryGetValue(naturalKey, out identity))
-                {
-                    return true;
-                }
-            }
-
             return false;
+        }
+
+        /// <summary>
+        /// Removes the specified mapped identity.
+        /// </summary>
+        /// <param name="identity">The mapped identity.</param>
+        public void Remove(Guid identity)
+        {
+            this.repository.Remove(identity);
         }
 
         private bool Synchronize(Type aggregateRootType, Type naturalKeyType, ConcurrentDictionary<object, Guid> mappings)
@@ -100,12 +120,52 @@ namespace dddlib.Persistence.Sdk
                 var naturalKey = this.serializer.Deserialize(naturalKeyType, naturalKeyRecord.SerializedValue);
 
                 // TODO (Cameron): Verify that no if clause is required here.
-                mappings.TryAdd(naturalKey, naturalKeyRecord.Identity);
+                if (naturalKeyRecord.IsRemoved)
+                {
+                    var identity = default(Guid);
+                    mappings.TryRemove(naturalKey, out identity);
+                }
+                else
+                {
+                    mappings.TryAdd(naturalKey, naturalKeyRecord.Identity);
+                }
 
                 this.checkpoint = naturalKeyRecord.Checkpoint;
             }
 
             return this.checkpoint != startCheckpoint;
+        }
+
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
+        private void ValidateSerialization(Type aggregateRootType, Type naturalKeyType, object naturalKey)
+        {
+            if (this.store.ContainsKey(aggregateRootType))
+            {
+                // NOTE (Cameron): We must have already performed validation for this aggregate root type.
+                return;
+            }
+
+            var serializedNaturalKey = this.serializer.Serialize(naturalKeyType, naturalKey);
+            var deserializedNaturalKey = this.serializer.Deserialize(naturalKeyType, serializedNaturalKey);
+
+            if (object.Equals(naturalKey, deserializedNaturalKey))
+            {
+                return;
+            }
+
+            throw new RuntimeException(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    @"The natural key of type '{0}' defined for aggregate root of type '{1}' does not meet equality expectations following serialization.
+To fix this issue, check that the natural key:
+- is correctly defined in either a bootstrapper or through use of the [dddlib.NaturalKey] attribute, and
+- implements value object equality, and
+- can be successfully serialized and deserialized.",
+                    naturalKeyType,
+                    aggregateRootType))
+            {
+                HelpLink = "https://github.com/dddlib/dddlib/wiki/Value-Object-Serialization",
+            };
         }
     }
 }

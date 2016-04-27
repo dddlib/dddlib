@@ -6,7 +6,6 @@ namespace dddlib.Sdk.Configuration.Model
 {
     using System;
     using System.Globalization;
-    using System.Linq;
     using dddlib.Runtime;
 
     /// <summary>
@@ -33,6 +32,7 @@ namespace dddlib.Sdk.Configuration.Model
             }
 
             // NOTE (Cameron): Defaults.
+            this.UninitializedFactory = typeAnalyzerService.GetUninitializedFactory(runtimeType);
             this.EventDispatcher = new DefaultEventDispatcher(runtimeType);
         }
 

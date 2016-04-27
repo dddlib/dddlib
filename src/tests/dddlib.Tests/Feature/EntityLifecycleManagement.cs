@@ -10,7 +10,7 @@ namespace dddlib.Tests.Feature
     using Xbehave;
 
     // As someone who uses dddlib
-    // In order to model destruction as a concept
+    // In order to model lifecycle as a concept
     // I need to be able to end the lifecycle of an entity
     public class EntityLifecycleManagement : Feature
     {

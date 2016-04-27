@@ -8,15 +8,15 @@ namespace dddlib.Tests.Support
 
     public class Vehicle : AggregateRoot
     {
-        protected internal Vehicle()
-        {
-        }
-
         public Vehicle(Registration registration)
         {
             Guard.Against.Null(() => registration);
 
             this.Apply(new NewVehicle { RegistrationNumber = registration.Number });
+        }
+
+        protected internal Vehicle()
+        {
         }
 
         [NaturalKey]

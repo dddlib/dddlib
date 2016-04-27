@@ -12,14 +12,15 @@
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <StyleCopTreatErrorsAsWarnings>false</StyleCopTreatErrorsAsWarnings>
-    <NuGetPackageImportStamp>8b344642</NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;GUARD_STRICT;DDDLIB</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -31,12 +32,13 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;DDDLIB</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <CodeAnalysisRuleSet>..\dddlib.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>bin\Release\dddlib.xml</DocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -54,12 +56,12 @@
     </Compile>
     <Compile Include="AggregateRoot.cs" />
     <Compile Include="BusinessException.cs" />
+    <Compile Include="Guard.cs" />
+    <Compile Include="GuardExtensions.cs" />
     <Compile Include="Sdk\CustomValueObjectSerializer.cs" />
     <Compile Include="Entity.Configuration.cs">
       <DependentUpon>Entity.cs</DependentUpon>
     </Compile>
-    <Compile Include="Guard.cs" />
-    <Compile Include="GuardExtensions.cs" />
     <Compile Include="Runtime\IValueObjectSerializer.cs" />
     <Compile Include="Sdk\Configuration\Model\AggregateRootType.cs" />
     <Compile Include="Sdk\Configuration\Model\EntityType.cs" />
@@ -67,6 +69,7 @@
     <Compile Include="Sdk\Configuration\Model\NaturalKey.cs" />
     <Compile Include="Sdk\Configuration\Services\TypeAnalyzer\DefaultTypeAnalyzerService.cs" />
     <Compile Include="Sdk\Configuration\Model\ValueObjectType.cs" />
+    <Compile Include="Sdk\DateTimeConverter.cs" />
     <Compile Include="Sdk\DefaultValueObjectSerializer.cs" />
     <Compile Include="Sdk\Mapper\DefaultEntityMapper.cs" />
     <Compile Include="Sdk\Configuration\Services\Bootstrapper\DefaultBootstrapperProvider.cs" />
@@ -122,12 +125,12 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets" Condition="Exists('..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets')" />
+  <Import Project="..\..\packages\StyleCop.MSBuild.4.7.52.0\build\StyleCop.MSBuild.Targets" Condition="Exists('..\..\packages\StyleCop.MSBuild.4.7.52.0\build\StyleCop.MSBuild.Targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\StyleCop.MSBuild.4.7.49.1\build\StyleCop.MSBuild.Targets'))" />
+    <Error Condition="!Exists('..\..\packages\StyleCop.MSBuild.4.7.52.0\build\StyleCop.MSBuild.Targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\StyleCop.MSBuild.4.7.52.0\build\StyleCop.MSBuild.Targets'))" />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

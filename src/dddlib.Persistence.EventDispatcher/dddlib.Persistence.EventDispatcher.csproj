@@ -1,0 +1,144 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{3F412C2B-8B3A-495D-B8B4-C546A4CE1BAA}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>dddlib.Persistence.EventDispatcher</RootNamespace>
+    <AssemblyName>dddlib.Persistence.EventDispatcher</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <StyleCopTreatErrorsAsWarnings>false</StyleCopTreatErrorsAsWarnings>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;GUARD_STRICT;DISPATCHER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <CodeAnalysisRuleSet>..\dddlib.ruleset</CodeAnalysisRuleSet>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <DocumentationFile>bin\Debug\dddlib.Persistence.EventDispatcher.xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;DISPATCHER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <CodeAnalysisRuleSet>..\dddlib.ruleset</CodeAnalysisRuleSet>
+    <DocumentationFile>bin\Release\dddlib.Persistence.EventDispatcher.xml</DocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>..\dddlib.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\CommonAssemblyInfo.cs">
+      <Link>Properties\CommonAssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\dddlib.Persistence\Memory\MemoryEventStore.cs">
+      <Link>Memory\MemoryEventStore.cs</Link>
+    </Compile>
+    <Compile Include="..\dddlib.Persistence\Sdk\ExclusiveCodeBlock.cs">
+      <Link>Sdk\ExclusiveCodeBlock.cs</Link>
+    </Compile>
+    <Compile Include="..\dddlib\Sdk\DateTimeConverter.cs">
+      <Link>Sdk\DateTimeConverter.cs</Link>
+    </Compile>
+    <Compile Include="Guard.cs" />
+    <Compile Include="GuardExtensions.cs" />
+    <Compile Include="Memory\MemoryNotificationService.cs" />
+    <Compile Include="Sdk\Batch.cs" />
+    <Compile Include="Sdk\CustomEventDispatcher.cs" />
+    <Compile Include="Sdk\EventDispatcher.cs" />
+    <Compile Include="Sdk\BatchPreparedEventArgs.cs" />
+    <Compile Include="Sdk\EventCommittedEventArgs.cs" />
+    <Compile Include="Memory\MemoryEventDispatcher.cs" />
+    <Compile Include="IEventDispatcher.cs" />
+    <Compile Include="Sdk\Event.cs" />
+    <Compile Include="SqlServer\SqlServerNotificationService.cs" />
+    <Compile Include="SqlServer\SqlServerEventDispatcher.cs" />
+    <Compile Include="SqlServer\SqlServerEventStore.cs" />
+    <Compile Include="Sdk\IEventStore.cs" />
+    <Compile Include="Sdk\INotificationService.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts\SqlServerEventDispatcher01.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Meld">
+      <HintPath>..\..\packages\Meld.0.1.0\lib\net45\Meld.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Transactions" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <CodeAnalysisDictionary Include="..\dddlib.dictionary">
+      <Link>Properties\dddlib.dictionary</Link>
+    </CodeAnalysisDictionary>
+    <None Include="..\dddlib.snk">
+      <Link>Properties\dddlib.snk</Link>
+    </None>
+    <None Include="dddlib.Persistence.EventDispatcher.nuspec" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\dddlib.Persistence\Scripts\SqlServerEventStore01.sql">
+      <Link>Scripts\SqlServerEventStore01.sql</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\dddlib.Persistence\Scripts\SqlServerPersistence01.sql">
+      <Link>Scripts\SqlServerPersistence01.sql</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts\SqlServerEventDispatcher02.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts\SqlServerEventDispatcher03.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\dddlib.Persistence\Scripts\SqlServerEventStore02.sql">
+      <Link>Scripts\SqlServerEventStore02.sql</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  -->
+  <Target Name="AfterBuild">
+    <MakeDir Directories="$(OutputPath)merged" />
+    <Exec Command="&quot;..\..\packages\ilmerge.2.14.1208\tools\ILMerge.exe&quot; /out:$(OutputPath)\merged\dddlib.Persistence.EventDispatcher.dll $(OutputPath)dddlib.Persistence.EventDispatcher.dll $(OutputPath)Meld.dll /internalize /targetplatform:&quot;v4,C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0&quot; /keyfile:..\dddlib.snk" />
+    <Delete Files="$(OutputPath)Meld.dll;$(OutputPath)Meld.pdb;$(OutputPath)Meld.xml" />
+    <Delete Files="$(OutputPath)dddlib.Persistence.EventDispatcher.dll;$(OutputPath)dddlib.Persistence.EventDispatcher.pdb" />
+    <Copy SourceFiles="$(OutputPath)merged\dddlib.Persistence.EventDispatcher.dll;$(OutputPath)merged\dddlib.Persistence.EventDispatcher.pdb" DestinationFolder="$(OutputPath)" />
+    <RemoveDir Directories="$(OutputPath)merged" />
+  </Target>
+  <Import Project="..\..\packages\StyleCop.MSBuild.4.7.52.0\build\StyleCop.MSBuild.Targets" Condition="Exists('..\..\packages\StyleCop.MSBuild.4.7.52.0\build\StyleCop.MSBuild.Targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\packages\StyleCop.MSBuild.4.7.52.0\build\StyleCop.MSBuild.Targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\StyleCop.MSBuild.4.7.52.0\build\StyleCop.MSBuild.Targets'))" />
+  </Target>
+</Project>

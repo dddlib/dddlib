@@ -9,14 +9,15 @@ namespace dddlib.Persistence.Tests.Feature
     using System.Data.SqlClient;
     using dddlib.Configuration;
     using dddlib.Persistence.SqlServer;
-    using dddlib.Persistence.Tests.Sdk;
+    using dddlib.Tests.Sdk;
     using FluentAssertions;
     using Xbehave;
     using Xunit;
 
     // As someone who uses dddlib
     // In order save state
-    // I need to be able to persist an aggregate root
+    // I need to be able to persist an aggregate root (in SQL Server)
+    [Collection("SQL Server Collection")]
     public abstract class SqlServerMementoPersistence : SqlServerFeature
     {
         public SqlServerMementoPersistence(SqlServerFixture fixture)
@@ -125,14 +126,14 @@ namespace dddlib.Persistence.Tests.Feature
                 {
                 }
 
-                protected override void Save(Guid id, object memento, string oldState, out string newState)
+                protected override void Save(Guid id, object memento, string preCommitState, out string postCommitState)
                 {
                     using (var connection = new SqlConnection(this.ConnectionString))
                     using (var command = connection.CreateCommand())
                     {
                         command.CommandType = CommandType.Text;
                         command.CommandText = @"MERGE dbo.Subjects AS [Target]
-USING (select '" + id.ToString() + "' as [Id], '" + memento.ToString() + "' as [NaturalKey], " + (string.IsNullOrEmpty(oldState) ? "NULL" : "'" + oldState + "'") + @" as [State]) AS [Source]
+USING (select '" + id.ToString() + "' as [Id], '" + memento.ToString() + "' as [NaturalKey], " + (string.IsNullOrEmpty(preCommitState) ? "NULL" : "'" + preCommitState + "'") + @" as [State]) AS [Source]
 ON [Target].[Id] = [Source].[Id]
 WHEN MATCHED AND [Target].[State] = [Source].[State] THEN  
   UPDATE SET 
@@ -152,7 +153,7 @@ OUTPUT [Inserted].[State];";
                                 throw new ConcurrencyException("Concurrency!");
                             }
 
-                            newState = Convert.ToString(reader["State"]);
+                            postCommitState = Convert.ToString(reader["State"]);
                         }
                     }
                 }

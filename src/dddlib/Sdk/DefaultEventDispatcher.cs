@@ -52,7 +52,9 @@ namespace dddlib.Sdk
 
             if (!CodeGenerator.IsValidLanguageIndependentIdentifier(methodName))
             {
-                throw new ArgumentException("The specified target method name is not a valid language independent identifier.", "targetMethodName");
+                throw new ArgumentException(
+                    "The specified target method name is not a valid language independent identifier.",
+                    Guard.Expression.Parse(() => methodName));
             }
 
             this.handlers = GetHandlers(type, methodName, bindingFlags);
