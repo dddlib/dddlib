@@ -7,6 +7,10 @@ namespace dddlib.Persistence.SqlServer
     using System;
     using System.Data;
     using System.Data.SqlClient;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
+    using System.Linq;
+    using System.Runtime.Serialization;
     using System.Transactions;
     using System.Web.Script.Serialization;
     using dddlib.Persistence.Sdk;
@@ -57,6 +61,7 @@ namespace dddlib.Persistence.SqlServer
         /// </summary>
         /// <param name="streamId">The stream identifier.</param>
         /// <returns>The snapshot.</returns>
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
         public Snapshot GetSnapshot(Guid streamId)
         {
             using (new TransactionScope(TransactionScopeOption.Suppress))
@@ -78,6 +83,19 @@ namespace dddlib.Persistence.SqlServer
 
                     var payloadTypeName = Convert.ToString(reader["PayloadTypeName"]);
                     var payloadType = Type.GetType(payloadTypeName);
+                    if (payloadType == null)
+                    {
+                        throw new SerializationException(
+                            string.Format(
+                                CultureInfo.InvariantCulture,
+                                @"Cannot deserialize snapshot into type of '{0}' as that type does not exist in the assembly '{1}' or the assembly is not referenced by the project.
+To fix this issue:
+- ensure that the assembly '{1}' contains the type '{0}', and
+- check that the the assembly '{1}' is referenced by the project.
+Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
+                                payloadTypeName.Split(',').FirstOrDefault(),
+                                payloadTypeName.Split(',').LastOrDefault()));
+                    }
 
                     return new Snapshot
                     {

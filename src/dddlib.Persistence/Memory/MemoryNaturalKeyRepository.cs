@@ -6,8 +6,11 @@ namespace dddlib.Persistence.Memory
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.IO.MemoryMappedFiles;
     using System.Linq;
+    using System.Runtime.Serialization;
     using System.Security.AccessControl;
     using System.Security.Principal;
     using System.Text;
@@ -198,6 +201,7 @@ namespace dddlib.Persistence.Memory
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
         public void Dispose()
         {
             if (this.isDisposed)
@@ -211,6 +215,7 @@ namespace dddlib.Persistence.Memory
             this.isDisposed = true;
         }
 
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
         private void Synchronize()
         {
             var length = 0;
@@ -237,10 +242,25 @@ namespace dddlib.Persistence.Memory
                 this.readOffset += 2 + buffer.Length;
 
                 var naturalKeysType = default(List<MemoryMappedNaturalKey>);
-                if (!this.naturalKeysTypes.TryGetValue(Type.GetType(memoryMappedNaturalKey.Type), out naturalKeysType))
+                var aggregateRootType = Type.GetType(memoryMappedNaturalKey.Type);
+                if (aggregateRootType == null)
+                {
+                    throw new SerializationException(
+                        string.Format(
+                            CultureInfo.InvariantCulture,
+                            @"Cannot deserialize natural key for aggregate root of type '{0}' as that type does not exist in the assembly '{1}' or the assembly is not referenced by the project.
+To fix this issue:
+- ensure that the assembly '{1}' contains the type '{0}', and
+- check that the the assembly '{1}' is referenced by the project.
+Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
+                            memoryMappedNaturalKey.Type.Split(',').FirstOrDefault(),
+                            memoryMappedNaturalKey.Type.Split(',').LastOrDefault()));
+                }
+
+                if (!this.naturalKeysTypes.TryGetValue(aggregateRootType, out naturalKeysType))
                 {
                     naturalKeysType = new List<MemoryMappedNaturalKey>();
-                    this.naturalKeysTypes.Add(Type.GetType(memoryMappedNaturalKey.Type), naturalKeysType);
+                    this.naturalKeysTypes.Add(aggregateRootType, naturalKeysType);
                 }
 
                 naturalKeysType.Add(memoryMappedNaturalKey);

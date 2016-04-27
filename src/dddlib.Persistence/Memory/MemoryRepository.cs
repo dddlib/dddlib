@@ -55,7 +55,7 @@ namespace dddlib.Persistence.Memory
             else if (oldState != null)
             {
                 // TODO (Cameron): Not sure if this should be here...
-                throw new ConcurrencyException("Invalid state #2");
+                throw new ConcurrencyException("Aggregate root does not exist.");
             }
 
             data = data ?? new Data();

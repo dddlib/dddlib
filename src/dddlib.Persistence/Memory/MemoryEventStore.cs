@@ -12,8 +12,11 @@ namespace dddlib.Projections.Memory
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.IO.MemoryMappedFiles;
     using System.Linq;
+    using System.Runtime.Serialization;
     using System.Security.AccessControl;
     using System.Security.Principal;
     using System.Text;
@@ -238,6 +241,7 @@ namespace dddlib.Projections.Memory
             this.isDisposed = true;
         }
 
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
         private void Synchronize()
         {
             var length = 0;
@@ -260,10 +264,25 @@ namespace dddlib.Projections.Memory
 
                 var serializedEvent = Encoding.UTF8.GetString(buffer);
                 var memoryMappedEvent = Serializer.Deserialize<MemoryMappedEvent>(serializedEvent);
+                var payloadType = Type.GetType(memoryMappedEvent.Type);
+                if (payloadType == null)
+                {
+                    throw new SerializationException(
+                        string.Format(
+                            CultureInfo.InvariantCulture,
+                            @"Cannot deserialize event into type of '{0}' as that type does not exist in the assembly '{1}' or the assembly is not referenced by the project.
+To fix this issue:
+- ensure that the assembly '{1}' contains the type '{0}', and
+- check that the the assembly '{1}' is referenced by the project.
+Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
+                            memoryMappedEvent.Type.Split(',').FirstOrDefault(),
+                            memoryMappedEvent.Type.Split(',').LastOrDefault()));
+                }
+
                 var @event = new Event
                 {
                     SequenceNumber = memoryMappedEvent.SequenceNumber,
-                    Payload = Serializer.Deserialize(memoryMappedEvent.Payload, Type.GetType(memoryMappedEvent.Type)),
+                    Payload = Serializer.Deserialize(memoryMappedEvent.Payload, payloadType),
                     State = memoryMappedEvent.State,
                 };
 
