@@ -1,0 +1,2 @@
+﻿ALTER AUTHORIZATION ON DATABASE::[$database] TO [sa];
+GO
