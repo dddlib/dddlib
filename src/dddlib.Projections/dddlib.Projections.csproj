@@ -53,6 +53,9 @@
     <Compile Include="..\dddlib.Persistence\Memory\MemoryEventStore.cs">
       <Link>Memory\MemoryEventStore.cs</Link>
     </Compile>
+    <Compile Include="..\dddlib.Persistence\Sdk\JavaScriptSerializerExtensions.cs">
+      <Link>Sdk\JavaScriptSerializerExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\dddlib\Sdk\DateTimeConverter.cs">
       <Link>Sdk\DateTimeConverter.cs</Link>
     </Compile>

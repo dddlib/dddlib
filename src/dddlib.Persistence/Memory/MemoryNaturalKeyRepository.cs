@@ -242,7 +242,7 @@ namespace dddlib.Persistence.Memory
                 this.readOffset += 2 + buffer.Length;
 
                 var naturalKeysType = default(List<MemoryMappedNaturalKey>);
-                var aggregateRootType = Type.GetType(memoryMappedNaturalKey.Type);
+                var aggregateRootType = Serializer.GetType(memoryMappedNaturalKey.Type);
                 if (aggregateRootType == null)
                 {
                     throw new SerializationException(

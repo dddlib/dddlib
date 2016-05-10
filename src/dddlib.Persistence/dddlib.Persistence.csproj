@@ -46,6 +46,18 @@
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>..\dddlib.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Profiler|AnyCPU'">
+    <OutputPath>bin\Profiler\</OutputPath>
+    <DefineConstants>TRACE;PERSISTENCE</DefineConstants>
+    <DocumentationFile>bin\Profiler\dddlib.Persistence.xml</DocumentationFile>
+    <Optimize>true</Optimize>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>..\dddlib.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Meld">
       <HintPath>..\..\packages\Meld.0.1.0\lib\net45\Meld.dll</HintPath>
@@ -79,6 +91,7 @@
     <Compile Include="Sdk\DefaultNaturalKeySerializer.cs" />
     <Compile Include="Sdk\INaturalKeySerializer.cs" />
     <Compile Include="Sdk\ISnapshotStore.cs" />
+    <Compile Include="Sdk\JavaScriptSerializerExtensions.cs" />
     <Compile Include="Sdk\Snapshot.cs" />
     <Compile Include="SqlServer\SqlServerEventStoreRepository.cs" />
     <Compile Include="SqlServer\SqlServerGuardExtensions.cs" />
@@ -135,7 +148,7 @@
   <Target Name="BeforeBuild">
   </Target>
   -->
-  <Target Name="AfterBuild">
+  <Target Name="AfterBuild" Condition="'$(Configuration)|$(Platform)' != 'Profiler|AnyCPU'">
     <MakeDir Directories="$(OutputPath)merged" />
     <Exec Command="&quot;..\..\packages\ilmerge.2.14.1208\tools\ILMerge.exe&quot; /out:$(OutputPath)\merged\dddlib.Persistence.dll $(OutputPath)dddlib.Persistence.dll $(OutputPath)Meld.dll /internalize /targetplatform:&quot;v4,C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0&quot; /keyfile:..\dddlib.snk" />
     <Delete Files="$(OutputPath)Meld.dll;$(OutputPath)Meld.pdb;$(OutputPath)Meld.xml" />

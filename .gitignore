@@ -13,3 +13,4 @@ _ReSharper*
 Thumbs.db
 *.sln.ide
 *.orig
+*.psess
