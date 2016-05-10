@@ -264,7 +264,7 @@ namespace dddlib.Projections.Memory
 
                 var serializedEvent = Encoding.UTF8.GetString(buffer);
                 var memoryMappedEvent = Serializer.Deserialize<MemoryMappedEvent>(serializedEvent);
-                var payloadType = Type.GetType(memoryMappedEvent.Type);
+                var payloadType = Serializer.GetType(memoryMappedEvent.Type);
                 if (payloadType == null)
                 {
                     throw new SerializationException(

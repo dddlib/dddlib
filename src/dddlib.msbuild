@@ -41,10 +41,19 @@
   
   <Target Name="Test" DependsOnTargets="Build;CreateBuildDir">
     <ItemGroup>
-      <TestAssemblies Include="**/bin/**/*.Tests.dll" Exclude="**/bin/**/*Tests.Support.dll" />
+      <TestAssemblies Include="**/bin/**/*.Tests.dll" />
     </ItemGroup>
     <Message Text="TestAssemblies: @(TestAssemblies)" />
     <Xunit.Runner.MSBuild.xunit Assemblies="@(TestAssemblies)" Html="$(BuildDir)\TestResults.html" ParallelizeTestCollections="false" />
+  </Target>
+
+  <Target Name="PerformanceTest" DependsOnTargets="Build;CreateBuildDir">
+    <Exec Command="perftest.exe" WorkingDirectory="tests\perftest\bin\Release" />
+    <ItemGroup>
+      <HistogramFiles Include="tests\perftest\bin\Release\*.hgrm" />
+    </ItemGroup>
+    <Message Text="HistogramFiles: @(HistogramFiles)" />
+    <Copy SourceFiles="@(HistogramFiles)" DestinationFolder="$(BuildDir)\" ContinueOnError="false" />
   </Target>
 
   <Target Name="Package" DependsOnTargets="CreateBuildDir;UpdateVersion">

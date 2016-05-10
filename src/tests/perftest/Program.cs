@@ -79,10 +79,10 @@ namespace perftest
                 Console.WriteLine("Written: " + "baseline.hgrm");
             }
 
-            using (var writer = new StreamWriter("SQL Server EventStore.hgrm"))
+            using (var writer = new StreamWriter("SqlServerEventStore.hgrm"))
             {
                 histogram2.OutputPercentileDistribution(writer);
-                Console.WriteLine("Written: " + "SQL Server EventStore.hgrm");
+                Console.WriteLine("Written: " + "SqlServerEventStore.hgrm");
             }
         }
 

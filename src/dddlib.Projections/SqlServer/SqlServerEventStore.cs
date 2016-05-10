@@ -102,7 +102,7 @@ namespace dddlib.Projections.SqlServer
                     while (reader.Read())
                     {
                         var payloadTypeName = Convert.ToString(reader["PayloadTypeName"]);
-                        var payloadType = Type.GetType(payloadTypeName);
+                        var payloadType = Serializer.GetType(payloadTypeName);
                         if (payloadType == null)
                         {
                             throw new SerializationException(

@@ -91,6 +91,7 @@
     <Compile Include="Sdk\DefaultNaturalKeySerializer.cs" />
     <Compile Include="Sdk\INaturalKeySerializer.cs" />
     <Compile Include="Sdk\ISnapshotStore.cs" />
+    <Compile Include="Sdk\JavaScriptSerializerExtensions.cs" />
     <Compile Include="Sdk\Snapshot.cs" />
     <Compile Include="SqlServer\SqlServerEventStoreRepository.cs" />
     <Compile Include="SqlServer\SqlServerGuardExtensions.cs" />
