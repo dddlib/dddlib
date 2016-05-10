@@ -4,6 +4,44 @@
   <UsingTask AssemblyFile="..\packages\xunit.runner.msbuild.2.1.0\build\portable-net45+win8+wp8+wpa81\xunit.runner.msbuild.dll" TaskName="Xunit.Runner.MSBuild.xunit" />
   <UsingTask AssemblyFile="..\packages\AssemblyVersion.MSBuild.0.1.0\tools\AssemblyVersion.MSBuild.dll" TaskName="SetAssemblyVersion" />
   
+  <UsingTask TaskName="Zip" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <InputFileNames ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <OutputFileName ParameterType="System.String" Required="true" />
+      <OverwriteExistingFile ParameterType="System.Boolean" Required="false" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System.IO.Compression" />
+      <Using Namespace="System.IO.Compression" />
+      <Code Type="Fragment" Language="cs">
+      <![CDATA[        
+        const int BufferSize = 64 * 1024;
+        var buffer = new byte[BufferSize];
+        var fileMode = OverwriteExistingFile ? FileMode.Create : FileMode.CreateNew;
+ 
+        using (var outputFileStream = new FileStream(OutputFileName, fileMode))
+        using (var archive = new ZipArchive(outputFileStream, ZipArchiveMode.Create))
+        {
+          foreach (var inputFileName in InputFileNames.Select(f => f.ItemSpec))
+          {
+            var archiveEntry = archive.CreateEntry(Path.GetFileName(inputFileName));
+ 
+            using (var fs = new FileStream(inputFileName, FileMode.Open))
+            using (var zipStream = archiveEntry.Open())
+            {
+              int bytesRead = -1;
+              while ((bytesRead = fs.Read(buffer, 0, BufferSize)) > 0)
+              {
+                zipStream.Write(buffer, 0, bytesRead);
+              }
+            }
+          }
+        }
+      ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+  
   <PropertyGroup>
     <SolutionName>dddlib</SolutionName>
     <BuildDir>..\build</BuildDir>
@@ -47,13 +85,13 @@
     <Xunit.Runner.MSBuild.xunit Assemblies="@(TestAssemblies)" Html="$(BuildDir)\TestResults.html" ParallelizeTestCollections="false" />
   </Target>
 
-  <Target Name="PerformanceTest" DependsOnTargets="Build;CreateBuildDir">
+  <Target Name="PerformanceTest">
     <Exec Command="perftest.exe" WorkingDirectory="tests\perftest\bin\Release" />
     <ItemGroup>
       <HistogramFiles Include="tests\perftest\bin\Release\*.hgrm" />
     </ItemGroup>
     <Message Text="HistogramFiles: @(HistogramFiles)" />
-    <Copy SourceFiles="@(HistogramFiles)" DestinationFolder="$(BuildDir)\" ContinueOnError="false" />
+    <Zip InputFileNames="@(HistogramFiles)" OutputFileName="$(BuildDir)\HistogramFiles.zip" OverwriteExistingFile="true" />
   </Target>
 
   <Target Name="Package" DependsOnTargets="CreateBuildDir;UpdateVersion">
