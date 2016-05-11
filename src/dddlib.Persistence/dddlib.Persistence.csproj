@@ -74,6 +74,7 @@
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="AggregateRootNotFoundException.cs" />
+    <Compile Include="Sdk\CustomDataReader.cs" />
     <Compile Include="Sdk\ExclusiveCodeBlock.cs" />
     <Compile Include="Memory\MemoryEventStoreRepository.cs" />
     <Compile Include="Memory\MemorySnapshotStore.cs" />
@@ -141,6 +142,9 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Scripts\SqlServerEventStore02.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts\SqlServerEventStore03.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

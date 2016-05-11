@@ -133,12 +133,12 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
             data.Columns.Add("Metadata").DataType = typeof(string);
             data.Columns.Add("Payload").DataType = typeof(string);
 
-            // TODO (Cameron): Eliminate the overhead of custom serialization for metadata.
-            var metadata = new Metadata
-            {
-                Hostname = Environment.MachineName,
-                Timestamp = DateTime.UtcNow
-            };
+            var metadata = Serializer.Serialize(
+                new Metadata
+                {
+                    Hostname = Environment.MachineName,
+                    Timestamp = DateTime.UtcNow
+                });
 
             var index = 0;
             foreach (var @event in events)
@@ -146,7 +146,7 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
                 data.Rows.Add(
                     ++index,
                     @event.GetType().GetSerializedName(),
-                    Serializer.Serialize(metadata),
+                    metadata,
                     Serializer.Serialize(@event));
             }
 
@@ -156,32 +156,34 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
             {
                 connection.Open();
 
-                using (var command = connection.CreateCommand())
-                {
-                    command.CommandType = CommandType.Text;
-                    command.CommandText = @"CREATE TABLE #Events
-(
-    [Index] INT NOT NULL,
-    [PayloadTypeName] VARCHAR(511) NOT NULL,
-    [Metadata] VARCHAR(MAX) NOT NULL,
-    [Payload] VARCHAR(MAX) NOT NULL
-)";
+////                using (var command = connection.CreateCommand())
+////                {
+////                    command.CommandType = CommandType.Text;
+////                    command.CommandText = @"CREATE TABLE #Events
+////(
+////    [Index] INT NOT NULL,
+////    [PayloadTypeName] VARCHAR(511) NOT NULL,
+////    [Metadata] VARCHAR(MAX) NOT NULL,
+////    [Payload] VARCHAR(MAX) NOT NULL
+////)";
 
-                    command.ExecuteNonQuery();
-                }
+////                    command.ExecuteNonQuery();
+////                }
 
-                using (var bulkCopy = new SqlBulkCopy(connection))
-                {
-                    // TODO (Cameron): Async.
-                    bulkCopy.DestinationTableName = "#Events";
-                    bulkCopy.WriteToServer(data);
-                }
+////                using (var bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.TableLock, null))
+////                using (var dataReader = new CustomDataReader(events, metadata))
+////                {
+////                    // TODO (Cameron): Async.
+////                    bulkCopy.DestinationTableName = "#Events";
+////                    bulkCopy.WriteToServerAsync(dataReader).Wait();
+////                }
 
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandType = CommandType.StoredProcedure;
                     command.CommandText = string.Concat(this.schema, ".CommitStream");
                     command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = streamId;
+                    command.Parameters.Add("@Events", SqlDbType.Structured).Value = data;
                     command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = correlationId;
                     command.Parameters.Add("@PreCommitState", SqlDbType.VarChar, 36).Value = (object)preCommitState ?? DBNull.Value;
                     command.Parameters.Add("@PostCommitState", SqlDbType.VarChar, 36).Direction = ParameterDirection.Output;

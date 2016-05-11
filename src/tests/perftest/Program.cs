@@ -14,7 +14,7 @@ namespace perftest
 
     internal class Program
     {
-        private static readonly TimeSpan RunPeriod = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan RunPeriod = TimeSpan.FromSeconds(5);
 
         private readonly string connectionString;
 
