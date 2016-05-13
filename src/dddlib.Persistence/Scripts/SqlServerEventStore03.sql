@@ -7,6 +7,10 @@
 );
 GO
 
+CREATE NONCLUSTERED INDEX IX_Event_StreamId
+    ON [dbo].[Events] (StreamId); 
+GO
+
 ALTER PROCEDURE [dbo].[CommitStream]
     @StreamId UNIQUEIDENTIFIER,
     @Events [dbo].[Events] READONLY,
@@ -15,6 +19,8 @@ ALTER PROCEDURE [dbo].[CommitStream]
     @PostCommitState VARCHAR(36) = NULL OUTPUT
 AS
 SET NOCOUNT ON;
+SET XACT_ABORT ON;
+SET ARITHABORT ON;
 
 MERGE INTO [dbo].[Types] WITH (HOLDLOCK) AS [Target]
 USING (SELECT DISTINCT [PayloadTypeName] AS [Name] FROM @Events) AS [Source]
@@ -28,7 +34,8 @@ DECLARE @CommitState VARCHAR(36);
 
 BEGIN TRANSACTION
 
-    EXEC @Lock = sp_getapplock @Resource = @StreamId, @LockMode = 'Exclusive', @LockTimeout = 1000;
+    -- LINK (Cameron): http://rusanu.com/2015/03/06/the-cost-of-a-transactions-that-has-only-applocks/
+    EXEC @Lock = tempdb..sp_getapplock @Resource = @StreamId, @LockMode = 'Exclusive', @LockTimeout = 1000;
     IF @Lock < 0
         THROW 50500, 'Concurrency error (server side). Failed to acquire commit lock for stream.', 1;
 
@@ -69,5 +76,19 @@ COMMIT TRANSACTION
 SELECT @PostCommitState = [State]
 FROM @NonsenseEvents
 WHERE [StreamRevision] = (SELECT MAX([StreamRevision]) FROM @NonsenseEvents);
+
+GO
+
+ALTER PROCEDURE [dbo].[GetStream]
+    @StreamId UNIQUEIDENTIFIER,
+    @StreamRevision BIGINT
+AS
+SET NOCOUNT ON;
+
+SELECT [Type].[Name] AS [PayloadTypeName], [Event].[Payload], [Event].[SequenceNumber], [Event].[State]
+FROM [dbo].[Events] [Event] WITH (NOLOCK) INNER JOIN [dbo].[Types] [Type] ON [Event].[TypeId] = [Type].[Id]
+WHERE [Event].[StreamId] = @StreamId
+    AND [Event].[StreamRevision] > @StreamRevision
+ORDER BY [Event].[StreamRevision];
 
 GO

@@ -5,6 +5,7 @@
 namespace dddlib.Persistence.SqlServer
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Data;
     using System.Data.SqlClient;
@@ -16,6 +17,7 @@ namespace dddlib.Persistence.SqlServer
     using System.Web.Script.Serialization;
     using dddlib.Persistence.Sdk;
     using dddlib.Sdk;
+    using Microsoft.SqlServer.Server;
 
     /// <summary>
     /// Represents the SQL Server event store.
@@ -28,6 +30,11 @@ namespace dddlib.Persistence.SqlServer
 
         private readonly string connectionString;
         private readonly string schema;
+
+        static SqlServerEventStore()
+        {
+            Serializer.RegisterConverters(new[] { new DateTimeConverter() });
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlServerEventStore"/> class.
@@ -53,8 +60,6 @@ namespace dddlib.Persistence.SqlServer
             var connection = new SqlConnection(connectionString);
             connection.InitializeSchema(schema, "SqlServerPersistence");
             connection.InitializeSchema(schema, typeof(SqlServerEventStore));
-
-            Serializer.RegisterConverters(new[] { new DateTimeConverter() });
         }
 
         /// <summary>
@@ -80,14 +85,16 @@ namespace dddlib.Persistence.SqlServer
 
                 connection.Open();
 
-                using (var reader = command.ExecuteReader())
+                using (var reader = command.ExecuteReader(CommandBehavior.SingleResult))
                 {
                     var events = new List<object>();
 
-                    // TODO (Cameron): This is massively inefficient.
+                    // TODO (Cameron): This is quite inefficient.
                     while (reader.Read())
                     {
-                        var payloadTypeName = Convert.ToString(reader["PayloadTypeName"]);
+                        // NOTE (Cameron): Sequential access.
+                        var payloadTypeName = reader.GetString(2 /* PayloadTypeName */);
+
                         var payloadType = Serializer.GetType(payloadTypeName);
                         if (payloadType == null)
                         {
@@ -103,12 +110,12 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
                                     payloadTypeName.Split(',').LastOrDefault()));
                         }
 
-                        var @event = Serializer.Deserialize(Convert.ToString(reader["Payload"]), payloadType);
+                        var @event = Serializer.Deserialize(reader.GetString(3 /* Payload */), payloadType);
 
                         events.Add(@event);
 
-                        state = Convert.ToString(reader["State"]);
-                   }
+                        state = reader.GetString(5 /* State */);
+                    }
 
                     return events;
                 }
@@ -127,63 +134,23 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
         {
             Guard.Against.Null(() => events);
 
-            var data = new DataTable();
-            data.Columns.Add("Index").DataType = typeof(int);
-            data.Columns.Add("PayloadTypeName").DataType = typeof(string);
-            data.Columns.Add("Metadata").DataType = typeof(string);
-            data.Columns.Add("Payload").DataType = typeof(string);
-
-            var metadata = Serializer.Serialize(
-                new Metadata
-                {
-                    Hostname = Environment.MachineName,
-                    Timestamp = DateTime.UtcNow
-                });
-
-            var index = 0;
-            foreach (var @event in events)
+            var metadata = new Metadata
             {
-                data.Rows.Add(
-                    ++index,
-                    @event.GetType().GetSerializedName(),
-                    metadata,
-                    Serializer.Serialize(@event));
-            }
+                Hostname = Environment.MachineName,
+                Timestamp = DateTime.UtcNow
+            };
 
-            // NOTE (Cameron): Add all events into temporary table.
             using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
             {
                 connection.Open();
-
-////                using (var command = connection.CreateCommand())
-////                {
-////                    command.CommandType = CommandType.Text;
-////                    command.CommandText = @"CREATE TABLE #Events
-////(
-////    [Index] INT NOT NULL,
-////    [PayloadTypeName] VARCHAR(511) NOT NULL,
-////    [Metadata] VARCHAR(MAX) NOT NULL,
-////    [Payload] VARCHAR(MAX) NOT NULL
-////)";
-
-////                    command.ExecuteNonQuery();
-////                }
-
-////                using (var bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.TableLock, null))
-////                using (var dataReader = new CustomDataReader(events, metadata))
-////                {
-////                    // TODO (Cameron): Async.
-////                    bulkCopy.DestinationTableName = "#Events";
-////                    bulkCopy.WriteToServerAsync(dataReader).Wait();
-////                }
 
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandType = CommandType.StoredProcedure;
                     command.CommandText = string.Concat(this.schema, ".CommitStream");
                     command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = streamId;
-                    command.Parameters.Add("@Events", SqlDbType.Structured).Value = data;
+                    command.Parameters.Add("@Events", SqlDbType.Structured).Value = new SqlEvents(events, metadata);
                     command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = correlationId;
                     command.Parameters.Add("@PreCommitState", SqlDbType.VarChar, 36).Value = (object)preCommitState ?? DBNull.Value;
                     command.Parameters.Add("@PostCommitState", SqlDbType.VarChar, 36).Direction = ParameterDirection.Output;
@@ -218,6 +185,53 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
 
                     postCommitState = Convert.ToString(command.Parameters["@PostCommitState"].Value);
                 }
+            }
+        }
+
+        private class SqlEvents : IEnumerable<SqlDataRecord>
+        {
+            // NOTE (Cameron): This is nonsense and should be moved out of here.
+            private static readonly JavaScriptSerializer Serializer = new JavaScriptSerializer();
+
+            private static readonly SqlMetaData[] ColumnMetadata = new[]
+            {
+                new SqlMetaData("Index", SqlDbType.Int),
+                new SqlMetaData("PayloadTypeName", SqlDbType.VarChar, 511),
+                new SqlMetaData("Metadata", SqlDbType.VarChar, -1),
+                new SqlMetaData("Payload", SqlDbType.VarChar, -1),
+            };
+
+            private readonly IEnumerable<object> events;
+            private readonly string metadata;
+
+            static SqlEvents()
+            {
+                Serializer.RegisterConverters(new[] { new DateTimeConverter() });
+            }
+
+            public SqlEvents(IEnumerable<object> events, object metadata)
+            {
+                this.events = events;
+                this.metadata = Serializer.Serialize(metadata);
+            }
+
+            public IEnumerator<SqlDataRecord> GetEnumerator()
+            {
+                var index = 0;
+                foreach (var @event in this.events)
+                {
+                    var record = new SqlDataRecord(ColumnMetadata);
+                    record.SetInt32(0, ++index);
+                    record.SetString(1, @event.GetType().GetSerializedName());
+                    record.SetString(2, this.metadata);
+                    record.SetString(3, Serializer.Serialize(@event));
+                    yield return record;
+                }
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return this.GetEnumerator();
             }
         }
 

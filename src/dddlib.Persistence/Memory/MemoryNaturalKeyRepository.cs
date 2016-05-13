@@ -37,6 +37,11 @@ namespace dddlib.Persistence.Memory
         private long writeOffset;
         private bool isDisposed;
 
+        static MemoryNaturalKeyRepository()
+        {
+            Serializer.RegisterConverters(new[] { new DateTimeConverter() });
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="MemoryNaturalKeyRepository"/> class.
         /// </summary>
@@ -52,8 +57,6 @@ namespace dddlib.Persistence.Memory
             var mutexCreated = false;
             this.mutex = new Mutex(false, @"Global\MemoryNaturalKeyRepository3Mutex", out mutexCreated, securitySettings);
             this.file = MemoryMappedFile.CreateOrOpen("MemoryNaturalKeyRepository3", 1 * 1024 * 1024 /* 1MB */);
-
-            Serializer.RegisterConverters(new[] { new DateTimeConverter() });
         }
 
         /// <summary>

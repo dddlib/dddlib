@@ -48,6 +48,11 @@ namespace dddlib.Projections.Memory
         private long writeOffset;
         private bool isDisposed;
 
+        static MemoryEventStore()
+        {
+            Serializer.RegisterConverters(new[] { new DateTimeConverter() });
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="MemoryEventStore"/> class.
         /// </summary>
@@ -73,9 +78,6 @@ namespace dddlib.Projections.Memory
             var mutexCreated = false;
             this.mutex = new Mutex(false, @"Global\MemoryEventStore2Mutex", out mutexCreated, mutexSecuritySettings);
             this.file = MemoryMappedFile.CreateOrOpen("MemoryEventStore2", 10 * 1024 * 1024 /* 10MB */);
-
-            // TODO (Cameron): Fix.
-            Serializer.RegisterConverters(new[] { new DateTimeConverter() });
         }
 #if PERSISTENCE
     /// <summary>

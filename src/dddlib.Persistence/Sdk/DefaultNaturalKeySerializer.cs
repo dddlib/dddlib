@@ -16,10 +16,7 @@ namespace dddlib.Persistence.Sdk
     {
         private static readonly JavaScriptSerializer Serializer = new JavaScriptSerializer();
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DefaultNaturalKeySerializer"/> class.
-        /// </summary>
-        public DefaultNaturalKeySerializer()
+        static DefaultNaturalKeySerializer()
         {
             Serializer.RegisterConverters(new[] { new DateTimeConverter() });
         }

@@ -28,7 +28,7 @@ namespace perftest
             var connectionString = ConfigurationManager.ConnectionStrings["SqlDatabase"].ConnectionString;
 
             Console.WriteLine("Running...");
-            Setup(connectionString);
+            //Setup(connectionString);
 
             var program = new Program(connectionString);
             if (args.FirstOrDefault() != null && args.FirstOrDefault().Trim().ToLowerInvariant() == "profile")
@@ -40,7 +40,7 @@ namespace perftest
                 program.RunForContinuousIntegration();
             }
 
-            TearDown(connectionString);
+            //TearDown(connectionString);
             Console.WriteLine("Finished.");
         }
 
@@ -95,17 +95,34 @@ namespace perftest
         private void ExecuteBaselineTest(int iteration)
         {
             var repository = new Baseline.CarRepository(this.connectionString);
-            var car = repository.Load("ABC");
-            car.TotalDistanceDriven += 1;
+
+            var car = new Baseline.Car { Registration = string.Concat("T", iteration), };
             repository.Save(car);
+
+            var sameCar = repository.Load(car.Registration);
+            sameCar.TotalDistanceDriven += 1;
+            repository.Save(sameCar);
+
+            var stillSameCar = repository.Load(car.Registration);
+            stillSameCar.IsDestroyed = true;
+            repository.Save(stillSameCar);
+
         }
 
         private void ExecuteSqlServerEventStoreTest(int iteration)
         {
             var repository = new SqlServerEventStoreRepository(this.connectionString);
-            var car = repository.Load<SqlServerEventStore.Car>("ABC");
-            car.Drive(1);
+
+            var car = new SqlServerEventStore.Car(string.Concat("T", iteration));
             repository.Save(car);
+
+            var sameCar = repository.Load<SqlServerEventStore.Car>(car.Registration);
+            sameCar.Drive(1);
+            repository.Save(sameCar);
+
+            var stillSameCar = repository.Load<SqlServerEventStore.Car>(car.Registration);
+            stillSameCar.Scrap();
+            repository.Save(stillSameCar);
         }
 
         private static void TearDown(string connectionString)
