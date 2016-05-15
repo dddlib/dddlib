@@ -78,17 +78,3 @@ FROM @NonsenseEvents
 WHERE [StreamRevision] = (SELECT MAX([StreamRevision]) FROM @NonsenseEvents);
 
 GO
-
-ALTER PROCEDURE [dbo].[GetStream]
-    @StreamId UNIQUEIDENTIFIER,
-    @StreamRevision BIGINT
-AS
-SET NOCOUNT ON;
-
-SELECT [Type].[Name] AS [PayloadTypeName], [Event].[Payload], [Event].[SequenceNumber], [Event].[State]
-FROM [dbo].[Events] [Event] WITH (NOLOCK) INNER JOIN [dbo].[Types] [Type] ON [Event].[TypeId] = [Type].[Id]
-WHERE [Event].[StreamId] = @StreamId
-    AND [Event].[StreamRevision] > @StreamRevision
-ORDER BY [Event].[StreamRevision];
-
-GO

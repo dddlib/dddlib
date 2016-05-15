@@ -14,7 +14,7 @@ namespace dddlib.Tests.Sdk
         {
             public Database(SqlServerFixture fixture)
             {
-                this.ConnectionString = fixture.ConnectionString.Replace("=master;", string.Concat("=", fixture.DatabaseName, ";"));
+                this.ConnectionString = fixture.ConnectionString.Replace("=tempdb;", string.Concat("=", fixture.DatabaseName, ";"));
             }
 
             public string ConnectionString { get; set; }

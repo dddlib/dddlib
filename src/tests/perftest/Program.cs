@@ -5,11 +5,11 @@
 namespace perftest
 {
     using System;
-    using System.Configuration;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using dddlib.Persistence.SqlServer;
+    using dddlib.Tests.Sdk;
     using HdrHistogram;
 
     internal class Program
@@ -25,22 +25,21 @@ namespace perftest
 
         public static void Main(string[] args)
         {
-            var connectionString = ConfigurationManager.ConnectionStrings["SqlDatabase"].ConnectionString;
-
             Console.WriteLine("Running...");
-            //Setup(connectionString);
-
-            var program = new Program(connectionString);
-            if (args.FirstOrDefault() != null && args.FirstOrDefault().Trim().ToLowerInvariant() == "profile")
+            using (var fixture = new SqlServerFixture())
             {
-                program.RunForProfiling();
-            }
-            else
-            {
-                program.RunForContinuousIntegration();
+                var database = new Integration.Database(fixture);
+                var program = new Program(fixture.ConnectionString);
+                if (args.FirstOrDefault() != null && args.FirstOrDefault().Trim().ToLowerInvariant() == "profile")
+                {
+                    program.RunForProfiling();
+                }
+                else
+                {
+                    program.RunForContinuousIntegration();
+                }
             }
 
-            //TearDown(connectionString);
             Console.WriteLine("Finished.");
         }
 
@@ -86,11 +85,11 @@ namespace perftest
             }
         }
 
-        private static void Setup(string connectionString)
-        {
-            new Baseline.CarRepository(connectionString).Save(new Baseline.Car { Registration = "ABC", });
-            new SqlServerEventStoreRepository(connectionString).Save(new SqlServerEventStore.Car("ABC"));
-        }
+        ////private static void Setup(string connectionString)
+        ////{
+        ////    new Baseline.CarRepository(connectionString).Save(new Baseline.Car { Registration = "ABC", });
+        ////    new SqlServerEventStoreRepository(connectionString, "dddlib").Save(new SqlServerEventStore.Car("ABC"));
+        ////}
 
         private void ExecuteBaselineTest(int iteration)
         {
@@ -125,14 +124,14 @@ namespace perftest
             repository.Save(stillSameCar);
         }
 
-        private static void TearDown(string connectionString)
-        {
-            new Baseline.CarRepository(connectionString).Save(new Baseline.Car { Registration = "ABC", IsDestroyed = true });
+        ////private static void TearDown(string connectionString)
+        ////{
+        ////    new Baseline.CarRepository(connectionString).Save(new Baseline.Car { Registration = "ABC", IsDestroyed = true });
 
-            var repository = new SqlServerEventStoreRepository(connectionString);
-            var car = repository.Load<SqlServerEventStore.Car>("ABC");
-            car.Scrap();
-            repository.Save(car);
-        }
+        ////    var repository = new SqlServerEventStoreRepository(connectionString);
+        ////    var car = repository.Load<SqlServerEventStore.Car>("ABC");
+        ////    car.Scrap();
+        ////    repository.Save(car);
+        ////}
     }
 }

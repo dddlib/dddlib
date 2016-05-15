@@ -92,12 +92,11 @@ namespace dddlib.Persistence.SqlServer
                     // TODO (Cameron): This is quite inefficient.
                     while (reader.Read())
                     {
-                        // NOTE (Cameron): Sequential access.
-                        var payloadTypeName = reader.GetString(2 /* PayloadTypeName */);
-
-                        var payloadType = Serializer.GetType(payloadTypeName);
+                        var payloadType = Serializer.GetType(reader.GetString(2 /* PayloadTypeName */));
                         if (payloadType == null)
                         {
+                            var payloadTypeName = reader.GetString(2 /* PayloadTypeName */);
+
                             throw new SerializationException(
                                 string.Format(
                                     CultureInfo.InvariantCulture,
