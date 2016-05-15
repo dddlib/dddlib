@@ -13,6 +13,7 @@ namespace dddlib.Persistence.SqlServer
     using System.Globalization;
     using System.Linq;
     using System.Runtime.Serialization;
+    using System.Text;
     using System.Transactions;
     using System.Web.Script.Serialization;
     using dddlib.Persistence.Sdk;
@@ -28,6 +29,7 @@ namespace dddlib.Persistence.SqlServer
         // NOTE (Cameron): This is nonsense and should be moved out of here.
         private static readonly JavaScriptSerializer Serializer = new JavaScriptSerializer();
 
+        private readonly ITypeCache typeCache;
         private readonly string connectionString;
         private readonly string schema;
 
@@ -60,6 +62,8 @@ namespace dddlib.Persistence.SqlServer
             var connection = new SqlConnection(connectionString);
             connection.InitializeSchema(schema, "SqlServerPersistence");
             connection.InitializeSchema(schema, typeof(SqlServerEventStore));
+
+            this.typeCache = new SqlServerTypeCache(connectionString, schema);
         }
 
         /// <summary>
@@ -82,41 +86,54 @@ namespace dddlib.Persistence.SqlServer
                 command.CommandText = string.Concat(this.schema, ".GetStream");
                 command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = streamId;
                 command.Parameters.Add("@StreamRevision", SqlDbType.Int).Value = streamRevision;
+                command.Parameters.Add("@State", SqlDbType.VarChar, 36).Direction = ParameterDirection.Output;
 
                 connection.Open();
 
-                using (var reader = command.ExecuteReader(CommandBehavior.SingleResult))
+                try
                 {
                     var events = new List<object>();
 
-                    // TODO (Cameron): This is quite inefficient.
-                    while (reader.Read())
+                    using (var reader = command.ExecuteReader(CommandBehavior.SingleResult))
                     {
-                        var payloadType = Serializer.GetType(reader.GetString(2 /* PayloadTypeName */));
-                        if (payloadType == null)
+                        while (reader.Read())
                         {
-                            var payloadTypeName = reader.GetString(2 /* PayloadTypeName */);
+                            var typeId = reader.GetInt32(1 /* TypeId */);
+                            var payloadType = this.typeCache.GetType(typeId);
 
-                            throw new SerializationException(
-                                string.Format(
-                                    CultureInfo.InvariantCulture,
-                                    @"Cannot deserialize event into type of '{0}' as that type does not exist in the assembly '{1}' or the assembly is not referenced by the project.
+                            if (payloadType == null)
+                            {
+                                var payloadTypeName = this.typeCache.GetTypeName(typeId);
+
+                                throw new SerializationException(
+                                    string.Format(
+                                        CultureInfo.InvariantCulture,
+                                        @"Cannot deserialize event into type of '{0}' as that type does not exist in the assembly '{1}' or the assembly is not referenced by the project.
 To fix this issue:
 - ensure that the assembly '{1}' contains the type '{0}', and
-- check that the the assembly '{1}' is referenced by the project.
+- check that the assembly '{1}' is referenced by the project.
 Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
-                                    payloadTypeName.Split(',').FirstOrDefault(),
-                                    payloadTypeName.Split(',').LastOrDefault()));
+                                        payloadTypeName.Split(',').FirstOrDefault(),
+                                        payloadTypeName.Split(',').LastOrDefault()));
+                            }
+
+                            events.Add(Serializer.Deserialize(reader.GetString(2 /* Payload */), payloadType));
                         }
-
-                        var @event = Serializer.Deserialize(reader.GetString(3 /* Payload */), payloadType);
-
-                        events.Add(@event);
-
-                        state = reader.GetString(5 /* State */);
                     }
 
+                    state = Convert.ToString(command.Parameters["@State"].Value);
+
                     return events;
+                }
+                catch (SqlException ex)
+                {
+                    // NOTE (Cameron): 500 Internal Server Error
+                    if (ex.Errors.Cast<SqlError>().Any(sqlError => sqlError.Number == 50500))
+                    {
+                        throw new ConcurrencyException(ex.Message, ex);
+                    }
+
+                    throw;
                 }
             }
         }
@@ -149,7 +166,7 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
                     command.CommandType = CommandType.StoredProcedure;
                     command.CommandText = string.Concat(this.schema, ".CommitStream");
                     command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = streamId;
-                    command.Parameters.Add("@Events", SqlDbType.Structured).Value = new SqlEvents(events, metadata);
+                    command.Parameters.Add("@Events", SqlDbType.Structured).Value = new SqlEvents(this.typeCache, events, metadata);
                     command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = correlationId;
                     command.Parameters.Add("@PreCommitState", SqlDbType.VarChar, 36).Value = (object)preCommitState ?? DBNull.Value;
                     command.Parameters.Add("@PostCommitState", SqlDbType.VarChar, 36).Direction = ParameterDirection.Output;
@@ -195,11 +212,13 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
             private static readonly SqlMetaData[] ColumnMetadata = new[]
             {
                 new SqlMetaData("Index", SqlDbType.Int),
-                new SqlMetaData("PayloadTypeName", SqlDbType.VarChar, 511),
+                new SqlMetaData("TypeId", SqlDbType.Int),
                 new SqlMetaData("Metadata", SqlDbType.VarChar, -1),
                 new SqlMetaData("Payload", SqlDbType.VarChar, -1),
             };
 
+            private readonly SqlDataRecord record = new SqlDataRecord(ColumnMetadata);
+            private readonly ITypeCache typeCache;
             private readonly IEnumerable<object> events;
             private readonly string metadata;
 
@@ -208,8 +227,9 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
                 Serializer.RegisterConverters(new[] { new DateTimeConverter() });
             }
 
-            public SqlEvents(IEnumerable<object> events, object metadata)
+            public SqlEvents(ITypeCache typeCache, IEnumerable<object> events, object metadata)
             {
+                this.typeCache = typeCache;
                 this.events = events;
                 this.metadata = Serializer.Serialize(metadata);
             }
@@ -219,12 +239,11 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
                 var index = 0;
                 foreach (var @event in this.events)
                 {
-                    var record = new SqlDataRecord(ColumnMetadata);
-                    record.SetInt32(0, ++index);
-                    record.SetString(1, @event.GetType().GetSerializedName());
-                    record.SetString(2, this.metadata);
-                    record.SetString(3, Serializer.Serialize(@event));
-                    yield return record;
+                    this.record.SetInt32(0, ++index);
+                    this.record.SetInt32(1, this.typeCache.GetTypeId(@event.GetType()));
+                    this.record.SetString(2, this.metadata);
+                    this.record.SetString(3, Serializer.Serialize(@event));
+                    yield return this.record;
                 }
             }
 

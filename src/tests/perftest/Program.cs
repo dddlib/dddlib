@@ -8,19 +8,22 @@ namespace perftest
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using dddlib.Persistence;
     using dddlib.Persistence.SqlServer;
     using dddlib.Tests.Sdk;
     using HdrHistogram;
 
     internal class Program
     {
-        private static readonly TimeSpan RunPeriod = TimeSpan.FromSeconds(5);
+        private static readonly TimeSpan RunPeriod = TimeSpan.FromSeconds(60);
 
-        private readonly string connectionString;
+        private readonly Baseline.CarRepository baselineRepository;
+        private readonly IEventStoreRepository eventStoreRepository;
 
-        public Program(string connectionString)
+        public Program(Baseline.CarRepository baselineRepository, IEventStoreRepository eventStoreRepository)
         {
-            this.connectionString = connectionString;
+            this.baselineRepository = baselineRepository;
+            this.eventStoreRepository = eventStoreRepository;
         }
 
         public static void Main(string[] args)
@@ -29,7 +32,11 @@ namespace perftest
             using (var fixture = new SqlServerFixture())
             {
                 var database = new Integration.Database(fixture);
-                var program = new Program(fixture.ConnectionString);
+                var baselineRepository = new Baseline.CarRepository(database.ConnectionString);
+                var eventStoreRepository = new SqlServerEventStoreRepository(database.ConnectionString);
+
+                var program = new Program(baselineRepository, eventStoreRepository);
+
                 if (args.FirstOrDefault() != null && args.FirstOrDefault().Trim().ToLowerInvariant() == "profile")
                 {
                     program.RunForProfiling();
@@ -85,53 +92,33 @@ namespace perftest
             }
         }
 
-        ////private static void Setup(string connectionString)
-        ////{
-        ////    new Baseline.CarRepository(connectionString).Save(new Baseline.Car { Registration = "ABC", });
-        ////    new SqlServerEventStoreRepository(connectionString, "dddlib").Save(new SqlServerEventStore.Car("ABC"));
-        ////}
-
         private void ExecuteBaselineTest(int iteration)
         {
-            var repository = new Baseline.CarRepository(this.connectionString);
-
             var car = new Baseline.Car { Registration = string.Concat("T", iteration), };
-            repository.Save(car);
+            this.baselineRepository.Save(car);
 
-            var sameCar = repository.Load(car.Registration);
+            var sameCar = this.baselineRepository.Load(car.Registration);
             sameCar.TotalDistanceDriven += 1;
-            repository.Save(sameCar);
+            this.baselineRepository.Save(sameCar);
 
-            var stillSameCar = repository.Load(car.Registration);
+            var stillSameCar = this.baselineRepository.Load(car.Registration);
             stillSameCar.IsDestroyed = true;
-            repository.Save(stillSameCar);
+            this.baselineRepository.Save(stillSameCar);
 
         }
 
         private void ExecuteSqlServerEventStoreTest(int iteration)
         {
-            var repository = new SqlServerEventStoreRepository(this.connectionString);
-
             var car = new SqlServerEventStore.Car(string.Concat("T", iteration));
-            repository.Save(car);
+            this.eventStoreRepository.Save(car);
 
-            var sameCar = repository.Load<SqlServerEventStore.Car>(car.Registration);
+            var sameCar = this.eventStoreRepository.Load<SqlServerEventStore.Car>(car.Registration);
             sameCar.Drive(1);
-            repository.Save(sameCar);
+            this.eventStoreRepository.Save(sameCar);
 
-            var stillSameCar = repository.Load<SqlServerEventStore.Car>(car.Registration);
+            var stillSameCar = this.eventStoreRepository.Load<SqlServerEventStore.Car>(car.Registration);
             stillSameCar.Scrap();
-            repository.Save(stillSameCar);
+            this.eventStoreRepository.Save(stillSameCar);
         }
-
-        ////private static void TearDown(string connectionString)
-        ////{
-        ////    new Baseline.CarRepository(connectionString).Save(new Baseline.Car { Registration = "ABC", IsDestroyed = true });
-
-        ////    var repository = new SqlServerEventStoreRepository(connectionString);
-        ////    var car = repository.Load<SqlServerEventStore.Car>("ABC");
-        ////    car.Scrap();
-        ////    repository.Save(car);
-        ////}
     }
 }

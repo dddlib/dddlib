@@ -64,6 +64,7 @@ namespace dddlib.Sdk
         {
             Guard.Against.Null(() => sourceType);
 
+            // TODO (Cameron): Reduce allocations.
             return string.Concat(sourceType.FullName, ", ", sourceType.Assembly.GetName().Name);
         }
     }
