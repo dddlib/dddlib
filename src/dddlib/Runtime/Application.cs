@@ -86,7 +86,7 @@ namespace dddlib.Runtime
                 lock (SyncLock)
                 {
                     // LINK (Cameron): http://stackoverflow.com/questions/1043039/does-listt-guarantee-insertion-order
-                    return Applications.Any() ? Applications.Last() : DefaultApplication.Value;
+                    return Applications.Count > 0 ? Applications[Applications.Count - 1] : DefaultApplication.Value;
                 }
             }
         }

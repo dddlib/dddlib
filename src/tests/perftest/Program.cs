@@ -45,9 +45,10 @@ namespace perftest
                 {
                     program.RunForContinuousIntegration();
                 }
-            }
 
-            Console.WriteLine("Finished.");
+                Console.WriteLine("Finished.");
+                //Console.ReadKey();
+            }
         }
 
         private void RunForProfiling()

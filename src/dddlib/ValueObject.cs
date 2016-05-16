@@ -21,13 +21,17 @@ namespace dddlib
     public abstract partial class ValueObject<T> : IEquatable<T>
         where T : ValueObject<T>
     {
+        // PERF (Cameron): Introduced to reduce allocations of the function delegates for type information.
+        private static readonly Func<ValueObject<T>, TypeInformation> GetTypeInformation =
+            @this => new TypeInformation(Application.Current.GetValueObjectType(@this.GetType()));
+
         private readonly TypeInformation typeInformation;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ValueObject{T}"/> class.
         /// </summary>
         protected ValueObject()
-            : this(@this => new TypeInformation(Application.Current.GetValueObjectType(@this.GetType())))
+            : this(GetTypeInformation)
         {
         }
 

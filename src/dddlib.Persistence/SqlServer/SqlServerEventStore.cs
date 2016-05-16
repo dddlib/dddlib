@@ -29,6 +29,12 @@ namespace dddlib.Persistence.SqlServer
         // NOTE (Cameron): This is nonsense and should be moved out of here.
         private static readonly JavaScriptSerializer Serializer = new JavaScriptSerializer();
 
+        // PERF (Cameron): Introduced to reduce memory allocations.
+        private static readonly string Hostname = Environment.MachineName;
+
+        // PERF (Cameron): Introduced to reduce allocations of the stored procedure names on each call.
+        private readonly string getStreamStoredProcName;
+        private readonly string commitStreamStoredProcName;
         private readonly ITypeCache typeCache;
         private readonly string connectionString;
         private readonly string schema;
@@ -63,6 +69,9 @@ namespace dddlib.Persistence.SqlServer
             connection.InitializeSchema(schema, "SqlServerPersistence");
             connection.InitializeSchema(schema, typeof(SqlServerEventStore));
 
+            this.getStreamStoredProcName = string.Concat(this.schema, ".GetStream");
+            this.commitStreamStoredProcName = string.Concat(this.schema, ".CommitStream");
+
             this.typeCache = new SqlServerTypeCache(connectionString, schema);
         }
 
@@ -83,7 +92,7 @@ namespace dddlib.Persistence.SqlServer
             using (var command = connection.CreateCommand())
             {
                 command.CommandType = CommandType.StoredProcedure;
-                command.CommandText = string.Concat(this.schema, ".GetStream");
+                command.CommandText = this.getStreamStoredProcName;
                 command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = streamId;
                 command.Parameters.Add("@StreamRevision", SqlDbType.Int).Value = streamRevision;
                 command.Parameters.Add("@State", SqlDbType.VarChar, 36).Direction = ParameterDirection.Output;
@@ -152,7 +161,7 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
 
             var metadata = new Metadata
             {
-                Hostname = Environment.MachineName,
+                Hostname = Hostname,
                 Timestamp = DateTime.UtcNow
             };
 
@@ -164,7 +173,7 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandType = CommandType.StoredProcedure;
-                    command.CommandText = string.Concat(this.schema, ".CommitStream");
+                    command.CommandText = this.commitStreamStoredProcName;
                     command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = streamId;
                     command.Parameters.Add("@Events", SqlDbType.Structured).Value = new SqlEvents(this.typeCache, events, metadata);
                     command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = correlationId;

@@ -16,6 +16,10 @@ namespace dddlib
     //// TODO (Cameron): Ensure that an entity can be created without a natural key.
     public abstract partial class Entity
     {
+        // PERF (Cameron): Introduced to reduce allocations of the function delegates for type information.
+        private static readonly Func<Entity, TypeInformation> GetTypeInformation =
+            @this => new TypeInformation(Application.Current.GetEntityType(@this.GetType()));
+
         private readonly TypeInformation typeInformation;
 
         private bool isDestroyed;
@@ -24,7 +28,7 @@ namespace dddlib
         /// Initializes a new instance of the <see cref="Entity"/> class.
         /// </summary>
         protected Entity()
-            : this(@this => new TypeInformation(Application.Current.GetEntityType(@this.GetType())))
+            : this(GetTypeInformation)
         {
         }
 

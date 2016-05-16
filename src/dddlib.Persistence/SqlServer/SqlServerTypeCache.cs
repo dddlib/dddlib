@@ -16,6 +16,7 @@ namespace dddlib.Persistence.SqlServer
     /// <summary>
     /// Represents the SQL Server type cache.
     /// </summary>
+    /// <seealso cref="dddlib.Persistence.Sdk.ITypeCache" />
     public sealed class SqlServerTypeCache : ITypeCache
     {
         private static readonly ConcurrentDictionary<string, Type> ResolvedTypes = new ConcurrentDictionary<string, Type>();
