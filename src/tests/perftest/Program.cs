@@ -15,7 +15,7 @@ namespace perftest
 
     internal class Program
     {
-        private static readonly TimeSpan RunPeriod = TimeSpan.FromSeconds(60);
+        private static readonly TimeSpan RunPeriod = TimeSpan.FromSeconds(10);
 
         private readonly Baseline.CarRepository baselineRepository;
         private readonly IEventStoreRepository eventStoreRepository;
@@ -47,7 +47,7 @@ namespace perftest
                 }
 
                 Console.WriteLine("Finished.");
-                //Console.ReadKey();
+                ////Console.ReadKey();
             }
         }
 

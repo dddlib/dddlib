@@ -59,9 +59,9 @@ DECLARE @StreamLinkId BIGINT;
 
 -- LINK (Cameron): http://rusanu.com/2015/03/06/the-cost-of-a-transactions-that-has-only-applocks/
 -- LINK (Cameron): https://technet.microsoft.com/en-us/library/ms175519(v=sql.105).aspx
-EXEC @Lock = tempdb..sp_getapplock @Resource = @StreamId, @LockMode = 'Shared', @LockOwner = 'Session', @LockTimeout = 1000;
+EXEC @Lock = [tempdb]..[sp_getapplock] @Resource = @StreamId, @LockMode = 'Shared', @LockOwner = 'Session', @LockTimeout = 1000;
 IF @Lock < 0
-    THROW 50500, 'Concurrency error (server side). Failed to acquire commit lock for stream.', 1;
+    THROW 50500, 'Timeout (server side). Failed to acquire read lock for stream.', 1;
 
 SELECT @StreamLinkId = [LinkId], @State = [State]
 FROM [dbo].[Streams]
@@ -73,7 +73,7 @@ WHERE [StreamLinkId] = @StreamLinkId
     AND [StreamRevision] > @StreamRevision
 ORDER BY [StreamRevision];
 
-EXEC @Lock = tempdb..sp_releaseapplock @Resource = @StreamId, @LockOwner = 'Session';
+EXEC @Lock = [tempdb]..[sp_releaseapplock] @Resource = @StreamId, @LockOwner = 'Session';
 
 GO
 
@@ -84,6 +84,7 @@ ALTER PROCEDURE [dbo].[CommitStream]
     @PreCommitState VARCHAR(36),
     @PostCommitState VARCHAR(36) = NULL OUTPUT
 AS
+
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 SET ARITHABORT ON;
@@ -97,7 +98,7 @@ DECLARE @State VARCHAR(36);
 BEGIN TRANSACTION
 
     -- LINK (Cameron): http://rusanu.com/2015/03/06/the-cost-of-a-transactions-that-has-only-applocks/
-    EXEC @Lock = tempdb..sp_getapplock @Resource = @StreamId, @LockMode = 'Exclusive', @LockTimeout = 1000;
+    EXEC @Lock = [tempdb]..[sp_getapplock] @Resource = @StreamId, @LockMode = 'Exclusive', @LockTimeout = 1000;
     IF @Lock < 0
         THROW 50500, 'Concurrency error (server side). Failed to acquire commit lock for stream.', 1;
 
@@ -137,7 +138,7 @@ BEGIN TRANSACTION
         @CorrelationId,
         NEXT VALUE FOR [dbo].[SequenceNumber] OVER (ORDER BY [Index] ASC)
     FROM @Events
-    ORDER BY [Index]
+    ORDER BY [Index];
 
 COMMIT TRANSACTION
 
