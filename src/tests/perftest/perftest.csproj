@@ -84,12 +84,21 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="dddlib.Persistence.NEventStore, Version=0.3.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\packages\dddlib.Persistence.NEventStore.0.3.1-alpha23\lib\net45\dddlib.Persistence.NEventStore.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="HdrHistogram">
       <HintPath>..\..\..\packages\HdrHistogram.1.0.120-prerelease\lib\net45\HdrHistogram.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Meld">
       <HintPath>..\..\..\packages\Meld.0.1.0\lib\net45\Meld.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="NEventStore">
+      <HintPath>..\..\..\packages\NEventStore.5.2.0\lib\net40\NEventStore.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -129,6 +138,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Async\" />
+    <Folder Include="NEventStore\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Scripts\Car01.sql" />

@@ -17,7 +17,7 @@ namespace perftest.Baseline
         {
             this.connectionString = connectionString;
 
-            new SqlConnection(this.connectionString).InitializeSchema(typeof(CarRepository));
+            new SqlConnection(this.connectionString).InitializeSchema("baseline", typeof(CarRepository));
         }
 
         public Car Load(string registration)
@@ -26,7 +26,7 @@ namespace perftest.Baseline
             using (var command = connection.CreateCommand())
             {
                 command.CommandType = CommandType.StoredProcedure;
-                command.CommandText = "LoadCar";
+                command.CommandText = "baseline.LoadCar";
                 command.Parameters.Add("@Registration", SqlDbType.VarChar, 10).Value = registration;
 
                 connection.Open();
@@ -53,7 +53,7 @@ namespace perftest.Baseline
             using (var command = connection.CreateCommand())
             {
                 command.CommandType = CommandType.StoredProcedure;
-                command.CommandText = "SaveCar";
+                command.CommandText = "baseline.SaveCar";
                 command.Parameters.Add("@Registration", SqlDbType.VarChar, 10).Value = car.Registration;
                 command.Parameters.Add("@TotalDistanceDriven", SqlDbType.Int).Value = car.TotalDistanceDriven;
                 command.Parameters.Add("@IsDestroyed", SqlDbType.Bit).Value = car.IsDestroyed;

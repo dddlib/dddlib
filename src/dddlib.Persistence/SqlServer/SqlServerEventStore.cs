@@ -13,7 +13,6 @@ namespace dddlib.Persistence.SqlServer
     using System.Globalization;
     using System.Linq;
     using System.Runtime.Serialization;
-    using System.Text;
     using System.Transactions;
     using System.Web.Script.Serialization;
     using dddlib.Persistence.Sdk;
@@ -165,6 +164,8 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
                 Timestamp = DateTime.UtcNow
             };
 
+            var eventArray = events.ToArray();
+
             using (new TransactionScope(TransactionScopeOption.Suppress))
             using (var connection = new SqlConnection(this.connectionString))
             {
@@ -173,12 +174,23 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandType = CommandType.StoredProcedure;
-                    command.CommandText = this.commitStreamStoredProcName;
                     command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = streamId;
-                    command.Parameters.Add("@Events", SqlDbType.Structured).Value = new SqlEvents(this.typeCache, events, metadata);
+                    command.Parameters.Add("@Metadata", SqlDbType.VarChar, -1).Value = Serializer.Serialize(metadata);
                     command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = correlationId;
                     command.Parameters.Add("@PreCommitState", SqlDbType.VarChar, 36).Value = (object)preCommitState ?? DBNull.Value;
                     command.Parameters.Add("@PostCommitState", SqlDbType.VarChar, 36).Direction = ParameterDirection.Output;
+
+                    if (eventArray.Length == 1)
+                    {
+                        command.CommandText = string.Concat(this.schema, ".CommitStream2");
+                        command.Parameters.Add("@TypeId", SqlDbType.VarChar, -1).Value = this.typeCache.GetTypeId(eventArray[0].GetType());
+                        command.Parameters.Add("@Payload", SqlDbType.VarChar, -1).Value = Serializer.Serialize(eventArray[0]);
+                    }
+                    else
+                    {
+                        command.CommandText = this.commitStreamStoredProcName;
+                        command.Parameters.Add("@Events", SqlDbType.Structured).Value = new SqlEvents(this.typeCache, events);
+                    }
 
                     try
                     {
@@ -222,25 +234,22 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
             {
                 new SqlMetaData("Index", SqlDbType.Int),
                 new SqlMetaData("TypeId", SqlDbType.Int),
-                new SqlMetaData("Metadata", SqlDbType.VarChar, -1),
                 new SqlMetaData("Payload", SqlDbType.VarChar, -1),
             };
 
             private readonly SqlDataRecord record = new SqlDataRecord(ColumnMetadata);
             private readonly ITypeCache typeCache;
             private readonly IEnumerable<object> events;
-            private readonly string metadata;
 
             static SqlEvents()
             {
                 Serializer.RegisterConverters(new[] { new DateTimeConverter() });
             }
 
-            public SqlEvents(ITypeCache typeCache, IEnumerable<object> events, object metadata)
+            public SqlEvents(ITypeCache typeCache, IEnumerable<object> events)
             {
                 this.typeCache = typeCache;
                 this.events = events;
-                this.metadata = Serializer.Serialize(metadata);
             }
 
             public IEnumerator<SqlDataRecord> GetEnumerator()
@@ -250,8 +259,7 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
                 {
                     this.record.SetInt32(0, ++index);
                     this.record.SetInt32(1, this.typeCache.GetTypeId(@event.GetType()));
-                    this.record.SetString(2, this.metadata);
-                    this.record.SetString(3, Serializer.Serialize(@event));
+                    this.record.SetString(2, Serializer.Serialize(@event));
                     yield return this.record;
                 }
             }
