@@ -32,10 +32,19 @@ namespace dddlib.Sdk
         {
             var type = typeof(T);
 
+            var properties = type.GetProperties();
+            if (!properties.Any())
+            {
+                // NOTE (Cameron): Fall back to default object reference equality.
+                this.equalsMethod = object.ReferenceEquals;
+                this.hashCodeMethod = EqualityComparer<object>.Default.GetHashCode;
+                return;
+            }
+
             var left = Expression.Parameter(typeof(ValueObject<T>), "left");
             var right = Expression.Parameter(typeof(ValueObject<T>), "right");
 
-            var body = type.GetProperties()
+            var body = properties
                 .Select(property => Generate(
                     property.PropertyType,
                     Expression.Property(Expression.Convert(left, type), property),
@@ -45,7 +54,8 @@ namespace dddlib.Sdk
             this.equalsMethod = Expression.Lambda<Func<ValueObject<T>, ValueObject<T>, bool>>(body, left, right).Compile();
             
             var obj = Expression.Parameter(typeof(object), "obj");
-            var body2 = type.GetProperties()
+
+            var body2 = properties
                 .Select(property => Expression.Call(
                     this.GetType().GetMethod("GetHashCodeOrDefault", BindingFlags.NonPublic | BindingFlags.Static).MakeGenericMethod(property.PropertyType),
                     Expression.Property(Expression.TypeAs(obj, type), property)))
