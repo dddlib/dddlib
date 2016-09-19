@@ -83,7 +83,7 @@ namespace dddlib.Sdk
         {
             var equalityOperator = ObjectEqualityOperator;
 
-            for (; type != typeof(object); type = type.BaseType)
+            for (; type != typeof(object) && type.BaseType != null; type = type.BaseType)
             {
                 var method = GetDeclaredEqualityOperatorOrDefault(type);
                 if (method != null)
@@ -95,8 +95,13 @@ namespace dddlib.Sdk
             // TODO (Adam): Optimize for IList. See http://stackoverflow.com/a/486781/49241
             if (equalityOperator == null && typeof(IEnumerable).IsAssignableFrom(type))
             {
-                var genericInterfaces = type.GetInterfaces()
-                    .Where(@interface => @interface.IsGenericType && @interface.GetGenericTypeDefinition() == typeof(IEnumerable<>)).ToArray();
+                var interfaces = type.IsInterface
+                    ? type.GetInterfaces().Union(new[] { type }).ToArray()
+                    : type.GetInterfaces();
+
+                var genericInterfaces = interfaces
+                    .Where(@interface => @interface.IsGenericType && @interface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                    .ToArray();
 
                 if (genericInterfaces.Any())
                 {
