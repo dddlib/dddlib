@@ -28,6 +28,11 @@ namespace dddlib.Projections.SqlServer
         private readonly string schema;
         private readonly Guid partition;
 
+        static SqlServerEventStore()
+        {
+            Serializer.RegisterConverters(new[] { new DateTimeConverter() });
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlServerEventStore"/> class.
         /// </summary>
@@ -74,8 +79,6 @@ namespace dddlib.Projections.SqlServer
             var connection = new SqlConnection(connectionString);
             connection.InitializeSchema(schema, "SqlServerPersistence");
             connection.InitializeSchema(schema, typeof(SqlServerEventStore));
-
-            Serializer.RegisterConverters(new[] { new DateTimeConverter() });
         }
 
         /// <summary>

@@ -27,6 +27,11 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         private readonly string connectionString;
         private readonly string schema;
 
+        static SqlServerEventStore()
+        {
+            Serializer.RegisterConverters(new[] { new DateTimeConverter() });
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlServerEventStore"/> class.
         /// </summary>
@@ -52,8 +57,6 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
             connection.InitializeSchema(schema, "SqlServerPersistence");
             connection.InitializeSchema(schema, typeof(SqlServerEventStore));
             connection.InitializeSchema(schema, typeof(SqlServerEventDispatcher));
-
-            Serializer.RegisterConverters(new[] { new DateTimeConverter() });
         }
 
         /// <summary>

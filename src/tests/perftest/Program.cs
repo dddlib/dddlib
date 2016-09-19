@@ -5,43 +5,61 @@
 namespace perftest
 {
     using System;
-    using System.Configuration;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using dddlib.Persistence;
     using dddlib.Persistence.SqlServer;
+    using dddlib.Tests.Sdk;
     using HdrHistogram;
+    using global::NEventStore;
 
     internal class Program
     {
-        private static readonly TimeSpan RunPeriod = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan RunPeriod = TimeSpan.FromSeconds(60);
 
-        private readonly string connectionString;
+        private readonly Baseline.CarRepository baselineRepository;
+        private readonly IEventStoreRepository eventStoreRepository;
+        private readonly IEventStoreRepository nEventStoreRepository;
 
-        public Program(string connectionString)
+        public Program(
+            Baseline.CarRepository baselineRepository,
+            IEventStoreRepository eventStoreRepository,
+            IEventStoreRepository nEventStoreRepository)
         {
-            this.connectionString = connectionString;
+            this.baselineRepository = baselineRepository;
+            this.eventStoreRepository = eventStoreRepository;
+            this.nEventStoreRepository = nEventStoreRepository;
         }
 
         public static void Main(string[] args)
         {
-            var connectionString = ConfigurationManager.ConnectionStrings["SqlDatabase"].ConnectionString;
-
             Console.WriteLine("Running...");
-            Setup(connectionString);
-
-            var program = new Program(connectionString);
-            if (args.FirstOrDefault() != null && args.FirstOrDefault().Trim().ToLowerInvariant() == "profile")
+            using (var fixture = new SqlServerFixture())
             {
-                program.RunForProfiling();
-            }
-            else
-            {
-                program.RunForContinuousIntegration();
-            }
+                var database = new Integration.Database(fixture);
 
-            TearDown(connectionString);
-            Console.WriteLine("Finished.");
+                using (var store = GetNEventStore(database.ConnectionString))
+                {
+                    var baselineRepository = new Baseline.CarRepository(database.ConnectionString);
+                    var eventStoreRepository = new SqlServerEventStoreRepository(database.ConnectionString, "dddlib");
+                    var nEventStoreRepository = new dddlib.Persistence.NEventStore.NEventStoreRepository(database.ConnectionString, "NEventStore", store);
+
+                    var program = new Program(baselineRepository, eventStoreRepository, nEventStoreRepository);
+
+                    if (args.FirstOrDefault() != null && args.FirstOrDefault().Trim().ToLowerInvariant() == "profile")
+                    {
+                        program.RunForProfiling();
+                    }
+                    else
+                    {
+                        program.RunForContinuousIntegration();
+                    }
+                }
+
+                Console.WriteLine("Finished.");
+                ////Console.ReadKey();
+            }
         }
 
         private void RunForProfiling()
@@ -56,8 +74,9 @@ namespace perftest
 
         private void RunForContinuousIntegration()
         {
-            var histogram1 = new LongHistogram(TimeSpan.TicksPerSecond, 3);
-            var histogram2 = new LongHistogram(TimeSpan.TicksPerSecond, 3);
+            var histogram1 = new LongHistogram(TimeSpan.TicksPerMinute, 2);
+            var histogram2 = new LongHistogram(TimeSpan.TicksPerMinute, 2);
+            var histogram3 = new LongHistogram(TimeSpan.TicksPerMinute, 2);
 
             var iteration = 0;
             var stopwatch = Stopwatch.StartNew();
@@ -73,49 +92,84 @@ namespace perftest
                 histogram2.RecordLatency(() => ExecuteSqlServerEventStoreTest(++iteration));
             } while (stopwatch.Elapsed < RunPeriod);
 
+            iteration = 0;
+            stopwatch = Stopwatch.StartNew();
+            do
+            {
+                histogram3.RecordLatency(() => ExecuteNEventStoreTest(++iteration));
+            } while (stopwatch.Elapsed < RunPeriod);
+
             using (var writer = new StreamWriter("baseline.hgrm"))
             {
                 histogram1.OutputPercentileDistribution(writer);
                 Console.WriteLine("Written: " + "baseline.hgrm");
             }
 
-            using (var writer = new StreamWriter("SqlServerEventStore.hgrm"))
+            using (var writer = new StreamWriter("dddlib.hgrm"))
             {
                 histogram2.OutputPercentileDistribution(writer);
-                Console.WriteLine("Written: " + "SqlServerEventStore.hgrm");
+                Console.WriteLine("Written: " + "dddlib.hgrm");
             }
-        }
 
-        private static void Setup(string connectionString)
-        {
-            new Baseline.CarRepository(connectionString).Save(new Baseline.Car { Registration = "ABC", });
-            new SqlServerEventStoreRepository(connectionString).Save(new SqlServerEventStore.Car("ABC"));
+            using (var writer = new StreamWriter("NEventStore.hgrm"))
+            {
+                histogram3.OutputPercentileDistribution(writer);
+                Console.WriteLine("Written: " + "NEventStore.hgrm");
+            }
         }
 
         private void ExecuteBaselineTest(int iteration)
         {
-            var repository = new Baseline.CarRepository(this.connectionString);
-            var car = repository.Load("ABC");
-            car.TotalDistanceDriven += 1;
-            repository.Save(car);
+            var car = new Baseline.Car { Registration = string.Concat("T", iteration), };
+            this.baselineRepository.Save(car);
+
+            var sameCar = this.baselineRepository.Load(car.Registration);
+            sameCar.TotalDistanceDriven += 1;
+            this.baselineRepository.Save(sameCar);
+
+            var stillSameCar = this.baselineRepository.Load(car.Registration);
+            stillSameCar.IsDestroyed = true;
+            this.baselineRepository.Save(stillSameCar);
+
         }
 
         private void ExecuteSqlServerEventStoreTest(int iteration)
         {
-            var repository = new SqlServerEventStoreRepository(this.connectionString);
-            var car = repository.Load<SqlServerEventStore.Car>("ABC");
-            car.Drive(1);
-            repository.Save(car);
+            var car = new SqlServerEventStore.Car(string.Concat("T", iteration));
+            this.eventStoreRepository.Save(car);
+
+            var sameCar = this.eventStoreRepository.Load<SqlServerEventStore.Car>(car.Registration);
+            sameCar.Drive(1);
+            this.eventStoreRepository.Save(sameCar);
+
+            var stillSameCar = this.eventStoreRepository.Load<SqlServerEventStore.Car>(car.Registration);
+            stillSameCar.Scrap();
+            this.eventStoreRepository.Save(stillSameCar);
         }
 
-        private static void TearDown(string connectionString)
+        private void ExecuteNEventStoreTest(int iteration)
         {
-            new Baseline.CarRepository(connectionString).Save(new Baseline.Car { Registration = "ABC", IsDestroyed = true });
+            var car = new SqlServerEventStore.Car(string.Concat("T", iteration));
+            this.nEventStoreRepository.Save(car);
 
-            var repository = new SqlServerEventStoreRepository(connectionString);
-            var car = repository.Load<SqlServerEventStore.Car>("ABC");
-            car.Scrap();
-            repository.Save(car);
+            var sameCar = this.nEventStoreRepository.Load<SqlServerEventStore.Car>(car.Registration);
+            sameCar.Drive(1);
+            this.nEventStoreRepository.Save(sameCar);
+
+            var stillSameCar = this.nEventStoreRepository.Load<SqlServerEventStore.Car>(car.Registration);
+            stillSameCar.Scrap();
+            this.nEventStoreRepository.Save(stillSameCar);
+        }
+
+        private static NEventStore.IStoreEvents GetNEventStore(string connectionString)
+        {
+            return Wireup.Init()
+                //.LogToOutputWindow()
+                .UsingSqlPersistence("SqlDatabase", "System.Data.SqlClient", connectionString)
+                    .WithDialect(new global::NEventStore.Persistence.Sql.SqlDialects.MsSqlDialect())
+                    .InitializeStorageEngine()
+                    .UsingJsonSerialization()
+                .Build();
         }
     }
 }

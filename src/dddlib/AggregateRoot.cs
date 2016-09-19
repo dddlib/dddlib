@@ -12,6 +12,7 @@ namespace dddlib
         Consider enforcing logic around change of state field.  */
 
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
@@ -24,6 +25,10 @@ namespace dddlib
     /// </summary>
     public abstract partial class AggregateRoot : Entity
     {
+        // PERF (Cameron): Introduced to reduce allocations of the function delegates for type information.
+        private static readonly Func<AggregateRoot, TypeInformation> GetTypeInformation =
+            @this => new TypeInformation(Application.Current.GetAggregateRootType(@this.GetType()));
+
         private readonly List<object> events = new List<object>();
 
         // TODO (Cameron): Add to configuration.
@@ -35,7 +40,7 @@ namespace dddlib
         /// Initializes a new instance of the <see cref="AggregateRoot"/> class.
         /// </summary>
         protected AggregateRoot()
-            : this(@this => new TypeInformation(Application.Current.GetAggregateRootType(@this.GetType())))
+            : this(GetTypeInformation)
         {
         }
 

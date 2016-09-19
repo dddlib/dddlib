@@ -167,7 +167,7 @@ namespace dddlib.Persistence.Tests.Integration
             using (var command = connection.CreateCommand())
             {
                 command.CommandType = CommandType.Text;
-                command.CommandText = @"EXEC sp_getapplock @Resource = @StreamId, @LockMode = 'Exclusive', @LockTimeout = 1000;";
+                command.CommandText = @"EXEC tempdb..sp_getapplock @Resource = @StreamId, @LockMode = 'Exclusive', @LockTimeout = 1000;";
                 command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = streamId;
 
                 // NOTE (Cameron): This will cause SQL Server to acquire the same application lock as the commit attempt below.

@@ -21,10 +21,7 @@ namespace dddlib.Sdk
     {
         private static readonly JavaScriptSerializer Serializer = new JavaScriptSerializer();
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DefaultValueObjectSerializer{T}"/> class.
-        /// </summary>
-        public DefaultValueObjectSerializer()
+        static DefaultValueObjectSerializer()
         {
             Serializer.RegisterConverters(new JavaScriptConverter[] { new DateTimeConverter(), new ValueObjectConverter() });
         }

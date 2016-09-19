@@ -139,7 +139,8 @@ namespace dddlib.Persistence.EventDispatcher.Tests.Integration
             this.ExecuteScript(@"DELETE FROM [dbo].[Batches];
 DELETE FROM [dbo].[DispatchedEvents];
 DELETE FROM [dbo].[Events];
-DELETE FROM [dbo].[Types];");
+DELETE FROM [dbo].[Types];
+ALTER SEQUENCE [dbo].[SequenceNumber] RESTART WITH 1");
         }
 
         private class Event

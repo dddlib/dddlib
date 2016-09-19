@@ -28,6 +28,11 @@ namespace dddlib.Persistence.SqlServer
         private readonly string connectionString;
         private readonly string schema;
 
+        static SqlServerSnapshotStore()
+        {
+            Serializer.RegisterConverters(new[] { new DateTimeConverter() });
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlServerSnapshotStore"/> class.
         /// </summary>
@@ -52,8 +57,6 @@ namespace dddlib.Persistence.SqlServer
             var connection = new SqlConnection(connectionString);
             connection.InitializeSchema(schema, "SqlServerPersistence");
             connection.InitializeSchema(schema, typeof(SqlServerSnapshotStore));
-
-            Serializer.RegisterConverters(new[] { new DateTimeConverter() });
         }
 
         /// <summary>

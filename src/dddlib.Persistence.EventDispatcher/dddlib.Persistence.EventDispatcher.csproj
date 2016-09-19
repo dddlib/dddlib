@@ -126,6 +126,14 @@
   <ItemGroup>
     <EmbeddedResource Include="Scripts\SqlServerEventDispatcher04.sql" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts\SqlServerEventDispatcher05.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\dddlib.Persistence\Scripts\SqlServerEventStore03.sql">
+      <Link>Scripts\SqlServerEventStore03.sql</Link>
+    </EmbeddedResource>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
