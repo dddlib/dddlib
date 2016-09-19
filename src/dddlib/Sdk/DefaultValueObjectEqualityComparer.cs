@@ -7,9 +7,12 @@ namespace dddlib.Sdk
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using Runtime;
 
     /// <summary>
     /// The default value object equality comparer.
@@ -28,14 +31,31 @@ namespace dddlib.Sdk
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultValueObjectEqualityComparer{T}"/> class.
         /// </summary>
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
         public DefaultValueObjectEqualityComparer()
         {
             var type = typeof(T);
 
+            var properties = type.GetProperties();
+            if (!properties.Any())
+            {
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        @"The value object of type '{0}' does not have any public properties and is configured to use the default value object equality comparer. In this configuration no value object instance will ever be equal.
+To fix this issue, either:
+- add one or more public properties to the value object, or
+- define a custom value object equality comparer in a bootstrapper.",
+                        type))
+                {
+                    HelpLink = "https://github.com/dddlib/dddlib/wiki/Value-Object-Equality",
+                };
+            }
+
             var left = Expression.Parameter(typeof(ValueObject<T>), "left");
             var right = Expression.Parameter(typeof(ValueObject<T>), "right");
 
-            var body = type.GetProperties()
+            var body = properties
                 .Select(property => Generate(
                     property.PropertyType,
                     Expression.Property(Expression.Convert(left, type), property),
@@ -45,7 +65,8 @@ namespace dddlib.Sdk
             this.equalsMethod = Expression.Lambda<Func<ValueObject<T>, ValueObject<T>, bool>>(body, left, right).Compile();
             
             var obj = Expression.Parameter(typeof(object), "obj");
-            var body2 = type.GetProperties()
+
+            var body2 = properties
                 .Select(property => Expression.Call(
                     this.GetType().GetMethod("GetHashCodeOrDefault", BindingFlags.NonPublic | BindingFlags.Static).MakeGenericMethod(property.PropertyType),
                     Expression.Property(Expression.TypeAs(obj, type), property)))
