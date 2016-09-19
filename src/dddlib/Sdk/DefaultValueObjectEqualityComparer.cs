@@ -7,9 +7,12 @@ namespace dddlib.Sdk
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using Runtime;
 
     /// <summary>
     /// The default value object equality comparer.
@@ -28,6 +31,7 @@ namespace dddlib.Sdk
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultValueObjectEqualityComparer{T}"/> class.
         /// </summary>
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
         public DefaultValueObjectEqualityComparer()
         {
             var type = typeof(T);
@@ -35,10 +39,17 @@ namespace dddlib.Sdk
             var properties = type.GetProperties();
             if (!properties.Any())
             {
-                // NOTE (Cameron): Fall back to default object reference equality.
-                this.equalsMethod = object.ReferenceEquals;
-                this.hashCodeMethod = EqualityComparer<object>.Default.GetHashCode;
-                return;
+                throw new RuntimeException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        @"The value object of type '{0}' does not have any public properties and is configured to use the default value object equality comparer. In this configuration no value object instance will ever be equal.
+To fix this issue, either:
+- add one or more public properties to the value object, or
+- define a custom value object equality comparer in a bootstrapper.",
+                        type))
+                {
+                    HelpLink = "https://github.com/dddlib/dddlib/wiki/Value-Object-Equality",
+                };
             }
 
             var left = Expression.Parameter(typeof(ValueObject<T>), "left");

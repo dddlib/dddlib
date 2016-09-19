@@ -5,8 +5,8 @@
 namespace dddlib.Tests.Bug
 {
     using System;
-    using System.Collections.Generic;
     using FluentAssertions;
+    using Runtime;
     using Xunit;
 
     public class Bug0128
@@ -14,13 +14,9 @@ namespace dddlib.Tests.Bug
         [Fact]
         public void RespectLifecycle()
         {
-            // arrange
-            var a = new Subject("test");
-            var b = new Subject("TEST");
+            Action action = () => new Subject("test");
 
-            // assert
-            a.Should().NotBe(b);
-            (a == b).Should().BeFalse();
+            action.ShouldThrow<RuntimeException>();
         }
 
         public sealed class Subject : ValueObject<Subject>
