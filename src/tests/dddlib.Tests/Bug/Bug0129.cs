@@ -5,6 +5,7 @@
 namespace dddlib.Tests.Bug
 {
     using System.Collections.Generic;
+    using FluentAssertions;
     using Xunit;
 
     public class Bug0129
@@ -12,34 +13,21 @@ namespace dddlib.Tests.Bug
         [Fact]
         public void ShouldNotThrow()
         {
-            new CommitChain(
-                new[]
-                {
-                    new CommitChain.Element
-                    {
-                        Commit = new Commit()
-                    },
-                });
+            new Subject();
         }
 
-        public class CommitChain : ValueObject<CommitChain>
+        [Fact]
+        public void ShouldBeEqual()
         {
-            public CommitChain(IEnumerable<Element> elements)
-            {
-                this.Elements = new List<Element>(elements);
-            }
+            var a = new Subject { Elements = new[] { "hello" } };
+            var b = new Subject { Elements = new List<string> { "hello" } };
 
-            public IEnumerable<Element> Elements { get; set; }
-
-            public class Element : ValueObject<Element>
-            {
-                public Commit Commit { get; set; }
-            }
+            a.Should().Be(b);
         }
 
-        public class Commit : Entity
+        public class Subject : ValueObject<Subject>
         {
-            public string Id { get; set; }
+            public IEnumerable<string> Elements { get; set; }
         }
     }
 }
