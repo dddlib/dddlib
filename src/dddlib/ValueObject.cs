@@ -5,6 +5,7 @@
 namespace dddlib
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using dddlib.Runtime;
     using dddlib.Sdk.Configuration.Model;
@@ -21,6 +22,7 @@ namespace dddlib
             @this => new TypeInformation(Application.Current.GetValueObjectType(@this.GetType()));
 
         private readonly TypeInformation typeInformation;
+        private readonly IEqualityComparer<T> equalityComparer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ValueObject{T}"/> class.
@@ -43,6 +45,9 @@ namespace dddlib
         private ValueObject(Func<ValueObject<T>, TypeInformation> getTypeInformation)
         {
             this.typeInformation = getTypeInformation(this);
+
+            // NOTE (Cameron): We need to cause the lazy instantiation of the equality comparer to trigger now that we know the type information...
+            this.equalityComparer = this.typeInformation.EqualityComparer;
         }
 
 #pragma warning disable 1591
@@ -75,7 +80,7 @@ namespace dddlib
         /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public sealed override int GetHashCode()
         {
-            return this.typeInformation.EqualityComparer.GetHashCode(this as T);
+            return this.equalityComparer.GetHashCode(this as T);
         }
 
         /// <summary>
@@ -102,7 +107,7 @@ namespace dddlib
                 return false;
             }
 
-            return this.typeInformation.EqualityComparer.Equals(this as T, other);
+            return this.equalityComparer.Equals(this as T, other);
         }
     }
 }
