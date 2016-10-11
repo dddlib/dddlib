@@ -36,6 +36,7 @@
     <AssemblyOriginatorKeyFile>..\..\dddlib.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Bootstrapper.cs" />
     <Compile Include="Bug\Bug0017.cs" />
     <Compile Include="Bug\Bug0001.cs" />
     <Compile Include="Bug\Bug0092.cs" />

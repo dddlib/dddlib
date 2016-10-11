@@ -7,6 +7,8 @@ namespace dddlib.Sdk.Configuration.Model
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Reflection;
+    using System.Runtime.ExceptionServices;
     using dddlib.Runtime;
     using dddlib.Sdk.Configuration.Services.TypeAnalyzer;
 
@@ -16,6 +18,8 @@ namespace dddlib.Sdk.Configuration.Model
     public class ValueObjectType : Entity
     {
         private static readonly ITypeAnalyzerService DefaultTypeAnalyzerService = new DefaultTypeAnalyzerService();
+
+        private Lazy<object> equalityComparerFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ValueObjectType"/> class.
@@ -35,9 +39,10 @@ namespace dddlib.Sdk.Configuration.Model
             }
 
             this.RuntimeType = runtimeType;
-            this.EqualityComparer = Activator.CreateInstance(typeof(DefaultValueObjectEqualityComparer<>).MakeGenericType(runtimeType));
             this.Serializer = (IValueObjectSerializer)Activator.CreateInstance(typeof(DefaultValueObjectSerializer<>).MakeGenericType(runtimeType));
             this.Mappings = new MapperCollection();
+            this.equalityComparerFactory = new Lazy<object>(
+                () => Activator.CreateInstance(typeof(DefaultValueObjectEqualityComparer<>).MakeGenericType(runtimeType)));
         }
 
         /// <summary>
@@ -51,7 +56,21 @@ namespace dddlib.Sdk.Configuration.Model
         /// Gets the equality comparer for this value object type.
         /// </summary>
         /// <value>The equality comparer.</value>
-        public object EqualityComparer { get; private set; }
+        public object EqualityComparer
+        {
+            get
+            {
+                try
+                {
+                    return this.equalityComparerFactory.Value;
+                }
+                catch (TargetInvocationException ex)
+                {
+                    ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                    return null;
+                }
+            }
+        }
 
         /// <summary>
         /// Gets the serializer for this value object type.
@@ -86,7 +105,16 @@ namespace dddlib.Sdk.Configuration.Model
                         equalityComparerType));
             }
 
-            this.EqualityComparer = equalityComparer;
+            if (this.equalityComparerFactory.IsValueCreated)
+            {
+                throw new BusinessException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "An attempt has been made to configure the equality comparer for value object of type '{0}' after it has already been used.",
+                        this.GetType()));
+            }
+
+            this.equalityComparerFactory = new Lazy<object>(() => equalityComparer);
         }
 
         /// <summary>
