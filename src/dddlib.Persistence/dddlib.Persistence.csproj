@@ -99,6 +99,7 @@
     <Compile Include="SqlServer\SqlServerGuardExtensions.cs" />
     <Compile Include="SqlServer\SqlServerEventStore.cs" />
     <Compile Include="SqlServer\SqlServerIdentityMap.cs" />
+    <Compile Include="SqlServer\SqlServerMementoRepository.cs" />
     <Compile Include="SqlServer\SqlServerNaturalKeyRepository.cs" />
     <Compile Include="IRepository.cs" />
     <Compile Include="Memory\MemoryEventStore.cs" />
@@ -156,6 +157,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Scripts\scratch2.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts\SqlServerMementoRepository01.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

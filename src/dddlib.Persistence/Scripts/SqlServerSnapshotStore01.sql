@@ -10,7 +10,7 @@ CREATE TABLE [dbo].[Snapshots]
 GO
 
 CREATE PROCEDURE [dbo].[GetSnapshot]
-    @StreamId VARCHAR(511)
+    @StreamId UNIQUEIDENTIFIER
 AS
 SET NOCOUNT ON;
 
