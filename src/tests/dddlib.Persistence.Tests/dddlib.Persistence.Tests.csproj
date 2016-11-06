@@ -96,6 +96,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Bug\Bug0127.cs" />
     <Compile Include="Bug\Bug0081.cs" />
     <Compile Include="Bug\Bug0109.cs" />
     <Compile Include="Bug\BugConfiguration.cs" />
