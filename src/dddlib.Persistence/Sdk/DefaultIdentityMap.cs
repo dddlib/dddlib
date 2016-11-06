@@ -20,11 +20,10 @@ namespace dddlib.Persistence.Sdk
             new ConcurrentDictionary<Type, ConcurrentDictionary<object, Guid>>();
 
         private readonly ConcurrentDictionary<Guid, KeyValuePair<Type, object>> index = new ConcurrentDictionary<Guid, KeyValuePair<Type, object>>();
+        private readonly ConcurrentDictionary<Type, long> checkpoints = new ConcurrentDictionary<Type, long>();
 
         private readonly INaturalKeyRepository repository;
         private readonly INaturalKeySerializer serializer;
-
-        private long checkpoint;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultIdentityMap"/> class.
@@ -62,7 +61,7 @@ namespace dddlib.Persistence.Sdk
                 if (this.repository.TryAddNaturalKey(
                     aggregateRootType, 
                     this.serializer.Serialize(naturalKeyType, naturalKey), 
-                    this.checkpoint, 
+                    this.checkpoints.GetOrAdd(aggregateRootType, 0), 
                     out naturalKeyRecord))
                 {
                     // TODO (Cameron): Confirm that this is what we want to do here.
@@ -114,10 +113,15 @@ namespace dddlib.Persistence.Sdk
 
         private bool Synchronize(Type aggregateRootType, Type naturalKeyType, ConcurrentDictionary<object, Guid> mappings)
         {
-            var startCheckpoint = this.checkpoint;
+            var startCheckpoint = this.checkpoints.GetOrAdd(aggregateRootType, 0);
             foreach (var naturalKeyRecord in this.repository.GetNaturalKeys(aggregateRootType, startCheckpoint))
             {
                 var naturalKey = this.serializer.Deserialize(naturalKeyType, naturalKeyRecord.SerializedValue);
+
+                if (!this.checkpoints.TryUpdate(aggregateRootType, naturalKeyRecord.Checkpoint, startCheckpoint))
+                {
+                    break;
+                }
 
                 // TODO (Cameron): Verify that no if clause is required here.
                 if (naturalKeyRecord.IsRemoved)
@@ -129,11 +133,9 @@ namespace dddlib.Persistence.Sdk
                 {
                     mappings.TryAdd(naturalKey, naturalKeyRecord.Identity);
                 }
-
-                this.checkpoint = naturalKeyRecord.Checkpoint;
             }
 
-            return this.checkpoint != startCheckpoint;
+            return this.checkpoints.GetOrAdd(aggregateRootType, 0) != startCheckpoint;
         }
 
         [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1118:ParameterMustNotSpanMultipleLines", Justification = "It's fine here.")]
