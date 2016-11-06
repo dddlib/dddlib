@@ -45,7 +45,7 @@ To fix this issue, either:
                         @"The aggregate root of type '{0}' does not have a factory method registered with the runtime.
 To fix this issue, either:
 - use a bootstrapper to register a factory method with the runtime, or
-- add a default constructor to the aggregate root.",
+- add a (protected internal) default constructor to the aggregate root.",
                         aggregateRootType.RuntimeType))
                 {
                     HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Reconstitution",

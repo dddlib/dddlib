@@ -15,21 +15,42 @@ namespace dddlib.Projections.Sdk
     using System.Collections.Generic;
     using System.Web.Script.Serialization;
 
-    // LINK (Cameron): http://blog.calyptus.eu/seb/2011/12/custom-datetime-json-serialization/
-    internal class DateTimeConverter : JavaScriptConverter
+    /// <summary>
+    /// Represents the <see cref="System.DateTime"/> converter for JavaScript serialization.
+    /// </summary>
+    /// <seealso cref="System.Web.Script.Serialization.JavaScriptConverter" />
+    //// LINK (Cameron): http://blog.calyptus.eu/seb/2011/12/custom-datetime-json-serialization/
+    public class DateTimeConverter : JavaScriptConverter
     {
         private static readonly JavaScriptSerializer Serializer = new JavaScriptSerializer();
 
+        /// <summary>
+        /// Gets a collection of the supported types.
+        /// </summary>
+        /// <value>The supported types.</value>
         public override IEnumerable<Type> SupportedTypes
         {
             get { return new[] { typeof(DateTime) }; }
         }
 
+        /// <summary>
+        /// Converts the provided dictionary into an object of the specified type.
+        /// </summary>
+        /// <param name="dictionary">An <see cref="T:System.Collections.Generic.IDictionary`2" /> instance of property data stored as name/value pairs.</param>
+        /// <param name="type">The type of the resulting object.</param>
+        /// <param name="serializer">The <see cref="T:System.Web.Script.Serialization.JavaScriptSerializer" /> instance.</param>
+        /// <returns>The deserialized object.</returns>
         public override object Deserialize(IDictionary<string, object> dictionary, Type type, JavaScriptSerializer serializer)
         {
             return Serializer.ConvertToType(dictionary, type);
         }
 
+        /// <summary>
+        /// Builds a dictionary of name/value pairs.
+        /// </summary>
+        /// <param name="obj">The object to serialize.</param>
+        /// <param name="serializer">The object that is responsible for the serialization.</param>
+        /// <returns>An object that contains key/value pairs that represent the object’s data.</returns>
         public override IDictionary<string, object> Serialize(object obj, JavaScriptSerializer serializer)
         {
             return obj is DateTime

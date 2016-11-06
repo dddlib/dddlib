@@ -183,7 +183,7 @@ Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
                     if (eventArray.Length == 1)
                     {
                         command.CommandText = string.Concat(this.schema, ".CommitStream2");
-                        command.Parameters.Add("@TypeId", SqlDbType.VarChar, -1).Value = this.typeCache.GetTypeId(eventArray[0].GetType());
+                        command.Parameters.Add("@TypeId", SqlDbType.Int).Value = this.typeCache.GetTypeId(eventArray[0].GetType());
                         command.Parameters.Add("@Payload", SqlDbType.VarChar, -1).Value = Serializer.Serialize(eventArray[0]);
                     }
                     else
