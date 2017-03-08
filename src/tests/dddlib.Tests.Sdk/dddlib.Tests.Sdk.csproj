@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;dddlibTestsSdk</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -34,10 +34,6 @@
     <AssemblyOriginatorKeyFile>..\..\dddlib.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\dddlib.Persistence\Sdk\AggregateRootFactory.cs">
-      <Link>AggregateRootFactory.cs</Link>
-    </Compile>
-    <Compile Include="AggregateRootExtensions.cs" />
     <Compile Include="ApplicationExtensions.cs" />
     <Compile Include="Feature.cs" />
     <Compile Include="Integration.cs" />
@@ -52,6 +48,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\dddlib.TestFramework\dddlib.TestFramework.csproj">
+      <Project>{b9415122-275c-42be-bea8-357985a06537}</Project>
+      <Name>dddlib.TestFramework</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\dddlib\dddlib.csproj">
       <Project>{57610450-0379-472e-b40c-18b11295eefa}</Project>
       <Name>dddlib</Name>

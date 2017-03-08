@@ -7,6 +7,7 @@ namespace dddlib.Tests.Sdk
     using System;
     using System.Linq;
     using System.Web.Script.Serialization;
+    using dddlib.TestFramework;
 
     public static class ModelValidator
     {
@@ -27,7 +28,7 @@ namespace dddlib.Tests.Sdk
                 throw new Exception("No memento defined!");
             }
 
-            var sameAggregate = Factory.Create<T>(memento, aggregate.Revision, Enumerable.Empty<object>(), "test");
+            var sameAggregate = Factory.Create<T>(memento, aggregate.GetRevision(), Enumerable.Empty<object>(), "test");
             var sameMemento = sameAggregate.GetMemento();
 
             var expected = Serializer.Serialize(memento);

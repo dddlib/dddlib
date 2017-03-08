@@ -122,6 +122,10 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\dddlib.TestFramework\dddlib.TestFramework.csproj">
+      <Project>{b9415122-275c-42be-bea8-357985a06537}</Project>
+      <Name>dddlib.TestFramework</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\dddlib\dddlib.csproj">
       <Project>{57610450-0379-472e-b40c-18b11295eefa}</Project>
       <Name>dddlib</Name>

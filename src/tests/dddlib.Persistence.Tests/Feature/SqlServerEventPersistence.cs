@@ -9,9 +9,10 @@ namespace dddlib.Persistence.Tests.Feature
     using System.Linq;
     using dddlib.Configuration;
     using dddlib.Persistence.Sdk;
+    using dddlib.Persistence.SqlServer;
+    using dddlib.TestFramework;
     using dddlib.Tests.Sdk;
     using FluentAssertions;
-    using SqlServer;
     using Xbehave;
     using Xunit;
 

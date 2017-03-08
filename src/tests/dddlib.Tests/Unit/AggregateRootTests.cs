@@ -7,8 +7,8 @@ namespace dddlib.Tests.Unit
     using System;
     using System.Collections.Generic;
     using dddlib.Runtime;
+    using dddlib.TestFramework;
     using FluentAssertions;
-    using Sdk;
     using Xunit;
 
     public class AggregateRootTests

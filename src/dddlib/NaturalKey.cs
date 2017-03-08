@@ -5,7 +5,6 @@
 namespace dddlib
 {
     using System;
-    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Use this attribute to decorate a natural key on an aggregate root.

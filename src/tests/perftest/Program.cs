@@ -11,8 +11,8 @@ namespace perftest
     using dddlib.Persistence;
     using dddlib.Persistence.SqlServer;
     using dddlib.Tests.Sdk;
-    using HdrHistogram;
     using global::NEventStore;
+    using HdrHistogram;
 
     internal class Program
     {
