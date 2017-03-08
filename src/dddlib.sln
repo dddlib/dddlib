@@ -42,6 +42,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.Projections", "dddli
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "perftest", "tests\perftest\perftest.csproj", "{5D3BAB39-B374-41C3-A569-5C1EB178252F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dddlib.TestFramework", "dddlib.TestFramework\dddlib.TestFramework.csproj", "{B9415122-275C-42BE-BEA8-357985A06537}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -104,6 +106,11 @@ Global
 		{5D3BAB39-B374-41C3-A569-5C1EB178252F}.Profiler|Any CPU.Build.0 = Release|Any CPU
 		{5D3BAB39-B374-41C3-A569-5C1EB178252F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5D3BAB39-B374-41C3-A569-5C1EB178252F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9415122-275C-42BE-BEA8-357985A06537}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9415122-275C-42BE-BEA8-357985A06537}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9415122-275C-42BE-BEA8-357985A06537}.Profiler|Any CPU.ActiveCfg = Release|Any CPU
+		{B9415122-275C-42BE-BEA8-357985A06537}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9415122-275C-42BE-BEA8-357985A06537}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

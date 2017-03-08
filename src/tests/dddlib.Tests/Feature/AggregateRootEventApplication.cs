@@ -4,8 +4,8 @@
 
 namespace dddlib.Tests.Feature
 {
-    using System;
     using dddlib.Configuration;
+    using dddlib.TestFramework;
     using dddlib.Tests.Sdk;
     using dddlib.Tests.Support;
     using FluentAssertions;

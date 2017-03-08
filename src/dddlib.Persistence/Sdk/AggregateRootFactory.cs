@@ -2,8 +2,8 @@
 //  Copyright (c) dddlib contributors. All rights reserved.
 // </copyright>
 
-#if dddlibTestsSdk
-namespace dddlib.Tests.Sdk
+#if TEST_FRAMEWORK
+namespace dddlib.TestFramework
 #else
 namespace dddlib.Persistence.Sdk
 #endif

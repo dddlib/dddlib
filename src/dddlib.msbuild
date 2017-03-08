@@ -99,6 +99,7 @@
     <Exec Command="$(Nuget) pack $(SolutionName).Persistence\$(SolutionName).Persistence.csproj -OutputDir &quot;$(BuildDir)&quot; -Version $(SemanticVersion) -Properties Configuration=Release" />
     <Exec Command="$(Nuget) pack $(SolutionName).Persistence.EventDispatcher\$(SolutionName).Persistence.EventDispatcher.csproj -OutputDir &quot;$(BuildDir)&quot; -Version $(SemanticVersion) -Properties Configuration=Release" />
     <Exec Command="$(Nuget) pack $(SolutionName).Projections\$(SolutionName).Projections.csproj -OutputDir &quot;$(BuildDir)&quot; -Version $(SemanticVersion) -Properties Configuration=Release" />
+    <Exec Command="$(Nuget) pack $(SolutionName).TestFramework\$(SolutionName).TestFramework.csproj -OutputDir &quot;$(BuildDir)&quot; -Version $(SemanticVersion) -Properties Configuration=Release" />
   </Target>
 
   <Target Name="Publish" DependsOnTargets="Package">
@@ -106,6 +107,7 @@
     <Exec Command="$(Nuget) push &quot;$(BuildDir)\$(SolutionName).Persistence.$(SemanticVersion).nupkg&quot; $(NugetPublishApiKey) -Source $(NugetPublishUrl)" />
     <Exec Command="$(Nuget) push &quot;$(BuildDir)\$(SolutionName).Persistence.EventDispatcher.$(SemanticVersion).nupkg&quot; $(NugetPublishApiKey) -Source $(NugetPublishUrl)" />
     <Exec Command="$(Nuget) push &quot;$(BuildDir)\$(SolutionName).Projections.$(SemanticVersion).nupkg&quot; $(NugetPublishApiKey) -Source $(NugetPublishUrl)" />
+    <Exec Command="$(Nuget) push &quot;$(BuildDir)\$(SolutionName).TestFramework.$(SemanticVersion).nupkg&quot; $(NugetPublishApiKey) -Source $(NugetPublishUrl)" />
   </Target>
 
 </Project>
