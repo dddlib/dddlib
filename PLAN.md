@@ -239,8 +239,12 @@ Exit: benchmarks (optional BenchmarkDotNet project) show the generated paths all
 
 ### Phase 5: packaging
 
+- Versioning with [MinVer](https://github.com/adamralph/minver): the version comes from git tags (`v2.0.0`,
+  prerelease `v2.0.0-alpha.1`), height since the tag gives the prerelease suffix on untagged builds. The
+  `VersionPrefix` in `Directory.Build.props` goes; `RELEASE_NOTES.md` stays as human-written notes only.
 - NuGet metadata, SourceLink, deterministic builds, `RELEASE_NOTES.md`, GitHub Actions running
-  `dotnet test` with the SQL container.
+  `dotnet test` with the SQL container. The `dddlib` package carries the analyzer assembly under
+  `analyzers/dotnet/cs` so consumers get generation and diagnostics without a second package.
 
 ## 6. Test conventions with TUnit
 
