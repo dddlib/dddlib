@@ -65,22 +65,3 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
         System.Threading.Tasks.Task MarkDispatchedAsync(System.Guid dispatcherId, long sequenceNumber, System.Threading.CancellationToken cancellationToken = default);
     }
 }
-namespace dddlib.Persistence.EventDispatcher.SqlServer
-{
-    public sealed class SqlServerEventBatchStore : dddlib.Persistence.EventDispatcher.Sdk.IEventBatchStore
-    {
-        public SqlServerEventBatchStore(string connectionString, string schema = "dbo") { }
-        public System.Threading.Tasks.Task<dddlib.Persistence.EventDispatcher.Sdk.EventBatch?> GetNextBatchAsync(System.Guid dispatcherId, int batchSize, System.TimeSpan batchTimeout, System.Threading.CancellationToken cancellationToken = default) { }
-        public System.Threading.Tasks.Task MarkDispatchedAsync(System.Guid dispatcherId, long sequenceNumber, System.Threading.CancellationToken cancellationToken = default) { }
-    }
-    public sealed class SqlServerEventDispatcher : dddlib.Persistence.EventDispatcher.Sdk.EventDispatcher
-    {
-        public SqlServerEventDispatcher(string connectionString, System.Action<long, object> dispatch, dddlib.Persistence.EventDispatcher.EventDispatcherOptions? options = null, string schema = "dbo") { }
-        public SqlServerEventDispatcher(string connectionString, dddlib.Persistence.EventDispatcher.IEventDispatcher dispatcher, dddlib.Persistence.EventDispatcher.EventDispatcherOptions? options = null, string schema = "dbo") { }
-    }
-    public static class SqlServerEventDispatcherScripts
-    {
-        public const string Name = "06-SqlServerEventDispatcher.sql";
-        public static string Read(string schema = "dbo") { }
-    }
-}

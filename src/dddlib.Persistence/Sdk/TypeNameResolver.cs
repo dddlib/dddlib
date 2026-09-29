@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 
 namespace dddlib.Persistence.Sdk;
 
@@ -34,4 +35,20 @@ internal static class TypeNameResolver
             return type ?? Type.GetType(name, throwOnError: false);
         });
     }
+
+    /// <summary>
+    /// Resolves a stored type name, or throws with the steps to fix a type that no longer resolves.
+    /// </summary>
+    public static Type ResolveOrThrow(string serializedName) =>
+        Resolve(serializedName)
+            ?? throw new PersistenceException(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    @"Cannot deserialize into type of '{0}' as that type does not exist in the assembly '{1}' or the assembly is not referenced by the project.
+To fix this issue:
+- ensure that the assembly '{1}' contains the type '{0}', and
+- check that the assembly '{1}' is referenced by the project.
+Further information: https://github.com/dddlib/dddlib/blob/main/docs/persistence/serialization.md",
+                    serializedName.Split(',').First().Trim(),
+                    serializedName.Split(',').Last().Trim()));
 }

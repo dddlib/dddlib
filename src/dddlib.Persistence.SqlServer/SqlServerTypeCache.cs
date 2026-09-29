@@ -61,17 +61,7 @@ public sealed class SqlServerTypeCache : ITypeCache
     {
         var typeName = await this.GetTypeNameAsync(typeId, cancellationToken).ConfigureAwait(false);
 
-        return TypeNameResolver.Resolve(typeName)
-            ?? throw new PersistenceException(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    @"Cannot deserialize into type of '{0}' as that type does not exist in the assembly '{1}' or the assembly is not referenced by the project.
-To fix this issue:
-- ensure that the assembly '{1}' contains the type '{0}', and
-- check that the assembly '{1}' is referenced by the project.
-Further information: https://github.com/dddlib/dddlib/blob/main/docs/persistence/serialization.md",
-                    typeName.Split(',').First().Trim(),
-                    typeName.Split(',').Last().Trim()));
+        return TypeNameResolver.ResolveOrThrow(typeName);
     }
 
     private async Task TryAddTypeAsync(Type type, CancellationToken cancellationToken)

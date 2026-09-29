@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetLibVersion)</TargetFramework>
     <RootNamespace>dddlib.Persistence.EventDispatcher</RootNamespace>
-    <Description>Dispatches the events persisted by dddlib.Persistence to a handler, in order, with at-least-once delivery, polling an in-memory or SQL Server event store.</Description>
+    <Description>Dispatches the events persisted by dddlib.Persistence to a handler, in order, with at-least-once delivery, polling an event store. SQL Server is in dddlib.Persistence.EventDispatcher.SqlServer.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,11 +12,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../dddlib.Persistence/dddlib.Persistence.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Scripts/*.sql" LogicalName="dddlib.Persistence.EventDispatcher.Scripts.%(Filename)%(Extension)" />
-    <Content Include="Scripts/*.sql" Pack="true" PackagePath="content/Scripts;contentFiles/any/any/Scripts" CopyToOutputDirectory="Never" />
   </ItemGroup>
 
 </Project>

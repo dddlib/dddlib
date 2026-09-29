@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetLibVersion)</TargetFramework>
+    <RootNamespace>dddlib.Persistence.EventDispatcher.SqlServer</RootNamespace>
+    <Description>Dispatches the events persisted by dddlib.Persistence.SqlServer to a handler, in order, with at-least-once delivery, polling the SQL Server event store.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="dddlib.Persistence.EventDispatcher.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../dddlib.Persistence.EventDispatcher/dddlib.Persistence.EventDispatcher.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SQL Server infrastructure shared with dddlib.Persistence.SqlServer as linked files. -->
+    <Compile Include="../Shared/SqlServer/*.cs" Link="Shared/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts/*.sql" LogicalName="dddlib.Persistence.EventDispatcher.Scripts.%(Filename)%(Extension)" />
+    <Content Include="Scripts/*.sql" Pack="true" PackagePath="content/Scripts;contentFiles/any/any/Scripts" CopyToOutputDirectory="Never" />
+  </ItemGroup>
+
+</Project>

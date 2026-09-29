@@ -83,11 +83,11 @@ COMMIT TRANSACTION;
 SELECT @BatchId AS [BatchId]
 WHERE @BatchId IS NOT NULL;
 
-SELECT [SequenceNumber], [TypeId], [Payload]
-FROM [dbo].[Events]
+SELECT [Event].[SequenceNumber], [Type].[Name] AS [TypeName], [Event].[Payload]
+FROM [dbo].[Events] [Event] INNER JOIN [dbo].[Types] [Type] ON [Event].[TypeId] = [Type].[Id]
 WHERE @BatchId IS NOT NULL
-    AND [SequenceNumber] BETWEEN @First AND @Last
-ORDER BY [SequenceNumber];
+    AND [Event].[SequenceNumber] BETWEEN @First AND @Last
+ORDER BY [Event].[SequenceNumber];
 GO
 
 CREATE OR ALTER PROCEDURE [dbo].[MarkDispatched]

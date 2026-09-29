@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetLibVersion)</TargetFramework>
+    <RootNamespace>dddlib.Persistence.SqlServer</RootNamespace>
+    <Description>SQL Server persistence for dddlib: event store, snapshot store, identity map and memento repositories.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="dddlib.Persistence.Tests" />
+    <InternalsVisibleTo Include="dddlib.Tests.Support" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../dddlib.Persistence/dddlib.Persistence.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SQL Server infrastructure shared with dddlib.Persistence.EventDispatcher.SqlServer as linked files. -->
+    <Compile Include="../Shared/SqlServer/*.cs" Link="Shared/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The schema scripts. They are run manually before first use and are also embedded so tooling can read them. -->
+    <EmbeddedResource Include="Scripts/*.sql" LogicalName="dddlib.Persistence.Scripts.%(Filename)%(Extension)" />
+    <Content Include="Scripts/*.sql" Pack="true" PackagePath="content/Scripts;contentFiles/any/any/Scripts" CopyToOutputDirectory="Never" />
+  </ItemGroup>
+
+</Project>
