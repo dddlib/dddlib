@@ -350,6 +350,10 @@ Answered so far:
 
 Nothing is open.
 
+Documentation lives in `docs/` (ported from the v1 wiki on 2026-09-29, with the persistence pages the wiki
+never had). The runtime `HelpLink` URLs still point at the v1 wiki pages; repoint them once the v2 repository
+has a public home for `docs/`.
+
 ## 9. Working rules for the implementing session
 
 - Red, green, refactor. Port a scenario, watch it fail, port the code, watch it pass, commit.
