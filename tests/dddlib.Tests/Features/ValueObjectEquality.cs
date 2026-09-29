@@ -1,4 +1,4 @@
-namespace dddlib.Tests.Feature;
+namespace dddlib.Tests.Features;
 
 // As someone who uses dddlib
 // In order to compare value objects

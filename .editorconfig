@@ -387,3 +387,12 @@ dotnet_naming_style.s_camelcase.required_suffix =
 dotnet_naming_style.s_camelcase.word_separator = 
 dotnet_naming_style.s_camelcase.capitalization = camel_case
 
+
+#### dddlib analyzer policy ####
+[*.cs]
+# The fluent API deliberately uses names such as Map.Event(@event) and hides object members via IFluentExtensions.
+dotnet_diagnostic.CA1716.severity = none
+# Whether a public member is static is an API design decision, not an analyzer one.
+dotnet_code_quality.CA1822.api_surface = private, internal
+# MapperCollection keeps its legacy name.
+dotnet_code_quality.CA1711.allowed_suffixes = Collection

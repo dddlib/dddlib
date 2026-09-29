@@ -6,4 +6,10 @@
     <Description>A domain driven design library for .NET.</Description>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="dddlib.Persistence" />
+    <InternalsVisibleTo Include="dddlib.Persistence.Tests" />
+    <InternalsVisibleTo Include="dddlib.Tests.Support" />
+  </ItemGroup>
+
 </Project>
