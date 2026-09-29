@@ -2,7 +2,7 @@ using System.Globalization;
 
 namespace dddlib.Tests.Support;
 
-public sealed class Registration : ValueObject<Registration>
+public sealed partial class Registration : ValueObject<Registration>
 {
     public Registration(string number, IRegistrationService registrationService)
     {

@@ -1,6 +1,6 @@
 namespace dddlib.Tests.Support;
 
-public class Wheel : Entity
+public partial class Wheel : Entity
 {
     public Wheel(Guid id)
     {

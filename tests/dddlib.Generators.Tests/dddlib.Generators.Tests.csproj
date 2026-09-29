@@ -2,19 +2,19 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetTestVersion)</TargetFramework>
-    <RootNamespace>dddlib.Tests</RootNamespace>
+    <RootNamespace>dddlib.Generators.Tests</RootNamespace>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="TUnit" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../src/dddlib/dddlib.csproj" />
-    <ProjectReference Include="../../src/dddlib.Generators/dddlib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="../dddlib.Tests.Support/dddlib.Tests.Support.csproj" />
+    <ProjectReference Include="../../src/dddlib.Generators/dddlib.Generators.csproj" />
   </ItemGroup>
 
 </Project>

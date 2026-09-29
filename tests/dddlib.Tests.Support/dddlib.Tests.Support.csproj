@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/dddlib/dddlib.csproj" />
+    <ProjectReference Include="../../src/dddlib.Generators/dddlib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="../../src/dddlib.Persistence/dddlib.Persistence.csproj" />
   </ItemGroup>
 

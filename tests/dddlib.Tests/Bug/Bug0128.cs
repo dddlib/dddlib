@@ -6,6 +6,7 @@ namespace dddlib.Tests.Bug;
 // A value object with no public properties fails at construction under the default equality comparer, unless a
 // comparer is configured in the bootstrapper. The default comparer must therefore be created lazily, after the
 // bootstrapper has had its chance.
+#pragma warning disable DDDLIB004 // the value objects below deliberately have no public properties
 public class Bug0128
 {
     [Test]

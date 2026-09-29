@@ -11,9 +11,11 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/dddlib/dddlib.csproj" />
+    <Project Path="src/dddlib.Generators/dddlib.Generators.csproj" />
     <Project Path="src/dddlib.Persistence/dddlib.Persistence.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/dddlib.Generators.Tests/dddlib.Generators.Tests.csproj" />
     <Project Path="tests/dddlib.Persistence.Tests/dddlib.Persistence.Tests.csproj" />
     <Project Path="tests/dddlib.Tests/dddlib.Tests.csproj" />
     <Project Path="tests/dddlib.Tests.Support/dddlib.Tests.Support.csproj" />

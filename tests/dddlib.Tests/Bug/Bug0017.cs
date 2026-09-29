@@ -4,6 +4,7 @@ namespace dddlib.Tests.Bug;
 
 // https://github.com/dddlib/dddlib/issues/17
 // An entity with two natural keys must fail with a runtime exception that is not wrapped in another exception.
+#pragma warning disable DDDLIB001 // the entity below deliberately declares two natural keys
 public class Bug0017
 {
     [Test]

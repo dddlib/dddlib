@@ -2,7 +2,7 @@ using dddlib.Runtime;
 
 namespace dddlib.Tests.Support;
 
-public class Vehicle : AggregateRoot
+public partial class Vehicle : AggregateRoot
 {
     public Vehicle(Registration registration)
     {

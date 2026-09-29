@@ -167,11 +167,11 @@ public class AggregateRootTests
     {
         public object? BadChange { get; private set; }
 
-#pragma warning disable IDE0051 // value-type handlers must be ignored by the dispatcher
+#pragma warning disable IDE0051, DDDLIB002 // value-type handlers must be ignored by the dispatcher
         private void Handle(int @event) => this.BadChange = @event;
 
         private void Handle(int? @event) => this.BadChange = @event;
-#pragma warning restore IDE0051
+#pragma warning restore IDE0051, DDDLIB002
     }
 
     public class EmptyAggregate : AggregateRoot
