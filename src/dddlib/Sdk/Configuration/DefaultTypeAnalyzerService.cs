@@ -7,7 +7,7 @@ using dddlib.Sdk.Configuration.Model;
 
 namespace dddlib.Sdk.Configuration;
 
-public class DefaultTypeAnalyzerService : ITypeAnalyzerService
+public sealed class DefaultTypeAnalyzerService : ITypeAnalyzerService
 {
     private const BindingFlags DeclaredPublicInstance = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public;
 

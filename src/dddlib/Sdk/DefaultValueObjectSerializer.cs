@@ -8,7 +8,7 @@ namespace dddlib.Sdk;
 /// Serializes value objects as JSON using System.Text.Json. Records with a positional constructor and types with
 /// a parameterless constructor and settable properties round-trip without configuration.
 /// </summary>
-public class DefaultValueObjectSerializer<T> : IValueObjectSerializer
+public sealed class DefaultValueObjectSerializer<T> : IValueObjectSerializer
     where T : ValueObject<T>
 {
     public string Serialize(object valueObject)

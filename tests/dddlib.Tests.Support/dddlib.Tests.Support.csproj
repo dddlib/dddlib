@@ -11,6 +11,7 @@
     <PackageReference Include="TUnit.Assertions" />
     <PackageReference Include="Microsoft.Data.SqlClient" />
     <PackageReference Include="Testcontainers.MsSql" />
+    <PackageReference Include="PublicApiGenerator" />
   </ItemGroup>
 
   <ItemGroup>

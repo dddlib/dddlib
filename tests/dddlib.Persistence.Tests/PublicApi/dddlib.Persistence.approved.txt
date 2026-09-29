@@ -1,0 +1,232 @@
+namespace dddlib.Persistence
+{
+    public class AggregateRootNotFoundException : dddlib.Persistence.PersistenceException
+    {
+        public AggregateRootNotFoundException() { }
+        public AggregateRootNotFoundException(string? message) { }
+        public AggregateRootNotFoundException(string? message, System.Exception? innerException) { }
+    }
+    public class ConcurrencyException : dddlib.Persistence.PersistenceException
+    {
+        public ConcurrencyException() { }
+        public ConcurrencyException(string? message) { }
+        public ConcurrencyException(string? message, System.Exception? innerException) { }
+    }
+    public interface IEventStoreRepository
+    {
+        System.Threading.Tasks.Task<T> LoadAsync<T>(object naturalKey, System.Threading.CancellationToken cancellationToken = default)
+            where T : dddlib.AggregateRoot;
+        System.Threading.Tasks.Task SaveAsync<T>(T aggregateRoot, System.Threading.CancellationToken cancellationToken = default)
+            where T : dddlib.AggregateRoot;
+        System.Threading.Tasks.Task SaveAsync<T>(T aggregateRoot, System.Guid correlationId, System.Threading.CancellationToken cancellationToken = default)
+            where T : dddlib.AggregateRoot;
+    }
+    public interface IRepository<T>
+        where T : dddlib.AggregateRoot
+    {
+        System.Threading.Tasks.Task<T> LoadAsync(object naturalKey, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task SaveAsync(T aggregateRoot, System.Threading.CancellationToken cancellationToken = default);
+    }
+    public class PersistenceException : System.Exception
+    {
+        public PersistenceException() { }
+        public PersistenceException(string? message) { }
+        public PersistenceException(string? message, System.Exception? innerException) { }
+    }
+}
+namespace dddlib.Persistence.Memory
+{
+    public sealed class MemoryEventStore : dddlib.Persistence.Sdk.IEventStore
+    {
+        public MemoryEventStore() { }
+        public System.Threading.Tasks.Task<string> CommitStreamAsync(System.Guid streamId, System.Collections.Generic.IReadOnlyList<object> events, System.Guid correlationId, string? preCommitState, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.StreamResult> GetStreamAsync(System.Guid streamId, int streamRevision, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class MemoryEventStoreRepository : dddlib.Persistence.Sdk.EventStoreRepository
+    {
+        public MemoryEventStoreRepository() { }
+    }
+    public sealed class MemoryIdentityMap : dddlib.Persistence.Sdk.DefaultIdentityMap
+    {
+        public MemoryIdentityMap() { }
+    }
+    public sealed class MemoryNaturalKeyRepository : dddlib.Persistence.Sdk.INaturalKeyRepository
+    {
+        public MemoryNaturalKeyRepository() { }
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<dddlib.Persistence.Sdk.NaturalKeyRecord>> GetNaturalKeysAsync(System.Type aggregateRootType, long checkpoint, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemoveAsync(System.Guid naturalKeyIdentity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.NaturalKeyRecord?> TryAddNaturalKeyAsync(System.Type aggregateRootType, string serializedNaturalKey, long checkpoint, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public class MemoryRepository<T> : dddlib.Persistence.Sdk.Repository<T>
+        where T : dddlib.AggregateRoot
+    {
+        public MemoryRepository() { }
+        public MemoryRepository(dddlib.Persistence.Sdk.IIdentityMap identityMap) { }
+        protected override System.Threading.Tasks.Task<dddlib.Persistence.Sdk.MementoResult?> LoadAsync(System.Guid id, System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task<string> SaveAsync(System.Guid id, object memento, string? preCommitState, System.Threading.CancellationToken cancellationToken) { }
+    }
+    public sealed class MemorySnapshotStore : dddlib.Persistence.Sdk.ISnapshotStore
+    {
+        public MemorySnapshotStore() { }
+        public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.Snapshot?> GetSnapshotAsync(System.Guid streamId, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PutSnapshotAsync(System.Guid streamId, dddlib.Persistence.Sdk.Snapshot snapshot, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+}
+namespace dddlib.Persistence.Sdk
+{
+    public static class AggregateRootTypeExtensions
+    {
+        public static object GetNaturalKey(this dddlib.Sdk.Configuration.Model.AggregateRootType aggregateRootType, dddlib.AggregateRoot aggregateRoot) { }
+        [System.Diagnostics.CodeAnalysis.DoesNotReturn]
+        public static void ThrowNotFound(this dddlib.Sdk.Configuration.Model.AggregateRootType aggregateRootType, object naturalKey) { }
+        public static void ValidateForPersistence(this dddlib.Sdk.Configuration.Model.AggregateRootType aggregateRootType) { }
+        public static void ValidateNaturalKey(this dddlib.Sdk.Configuration.Model.AggregateRootType aggregateRootType, object naturalKey) { }
+    }
+    public class DefaultIdentityMap : dddlib.Persistence.Sdk.IIdentityMap
+    {
+        public DefaultIdentityMap(dddlib.Persistence.Sdk.INaturalKeyRepository repository, dddlib.Persistence.Sdk.INaturalKeySerializer serializer) { }
+        public System.Threading.Tasks.Task<System.Guid> GetOrAddAsync(System.Type aggregateRootType, System.Type naturalKeyType, object naturalKey, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemoveAsync(System.Guid identity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<System.Guid?> TryGetAsync(System.Type aggregateRootType, System.Type naturalKeyType, object naturalKey, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class DefaultNaturalKeySerializer : dddlib.Persistence.Sdk.INaturalKeySerializer
+    {
+        public DefaultNaturalKeySerializer() { }
+        public object Deserialize(System.Type naturalKeyType, string serializedNaturalKey) { }
+        public string Serialize(System.Type naturalKeyType, object naturalKey) { }
+    }
+    public class EventStoreRepository : dddlib.Persistence.IEventStoreRepository
+    {
+        public EventStoreRepository(dddlib.Persistence.Sdk.IIdentityMap identityMap, dddlib.Persistence.Sdk.IEventStore eventStore, dddlib.Persistence.Sdk.ISnapshotStore snapshotStore) { }
+        public System.Threading.Tasks.Task<T> LoadAsync<T>(object naturalKey, System.Threading.CancellationToken cancellationToken = default)
+            where T : dddlib.AggregateRoot { }
+        public System.Threading.Tasks.Task SaveAsync<T>(T aggregateRoot, System.Threading.CancellationToken cancellationToken = default)
+            where T : dddlib.AggregateRoot { }
+        public System.Threading.Tasks.Task SaveAsync<T>(T aggregateRoot, System.Guid correlationId, System.Threading.CancellationToken cancellationToken = default)
+            where T : dddlib.AggregateRoot { }
+    }
+    public interface IEventStore
+    {
+        System.Threading.Tasks.Task<string> CommitStreamAsync(System.Guid streamId, System.Collections.Generic.IReadOnlyList<object> events, System.Guid correlationId, string? preCommitState, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task<dddlib.Persistence.Sdk.StreamResult> GetStreamAsync(System.Guid streamId, int streamRevision, System.Threading.CancellationToken cancellationToken = default);
+    }
+    public interface IIdentityMap
+    {
+        System.Threading.Tasks.Task<System.Guid> GetOrAddAsync(System.Type aggregateRootType, System.Type naturalKeyType, object naturalKey, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task RemoveAsync(System.Guid identity, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task<System.Guid?> TryGetAsync(System.Type aggregateRootType, System.Type naturalKeyType, object naturalKey, System.Threading.CancellationToken cancellationToken = default);
+    }
+    public interface INaturalKeyRepository
+    {
+        System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<dddlib.Persistence.Sdk.NaturalKeyRecord>> GetNaturalKeysAsync(System.Type aggregateRootType, long checkpoint, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task RemoveAsync(System.Guid naturalKeyIdentity, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task<dddlib.Persistence.Sdk.NaturalKeyRecord?> TryAddNaturalKeyAsync(System.Type aggregateRootType, string serializedNaturalKey, long checkpoint, System.Threading.CancellationToken cancellationToken = default);
+    }
+    public interface INaturalKeySerializer
+    {
+        object Deserialize(System.Type naturalKeyType, string serializedNaturalKey);
+        string Serialize(System.Type naturalKeyType, object naturalKey);
+    }
+    public interface ISnapshotStore
+    {
+        System.Threading.Tasks.Task<dddlib.Persistence.Sdk.Snapshot?> GetSnapshotAsync(System.Guid streamId, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task PutSnapshotAsync(System.Guid streamId, dddlib.Persistence.Sdk.Snapshot snapshot, System.Threading.CancellationToken cancellationToken = default);
+    }
+    public interface ITypeCache
+    {
+        System.Threading.Tasks.Task<System.Type> GetTypeAsync(int typeId, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task<int> GetTypeIdAsync(System.Type type, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task<string> GetTypeNameAsync(int typeId, System.Threading.CancellationToken cancellationToken = default);
+    }
+    public sealed class MementoResult : System.IEquatable<dddlib.Persistence.Sdk.MementoResult>
+    {
+        public MementoResult(object Memento, string State) { }
+        public object Memento { get; init; }
+        public string State { get; init; }
+    }
+    public sealed class NaturalKeyRecord : System.IEquatable<dddlib.Persistence.Sdk.NaturalKeyRecord>
+    {
+        public NaturalKeyRecord(System.Guid Identity, string SerializedValue, long Checkpoint, bool IsRemoved) { }
+        public long Checkpoint { get; init; }
+        public System.Guid Identity { get; init; }
+        public bool IsRemoved { get; init; }
+        public string SerializedValue { get; init; }
+    }
+    public abstract class Repository<T> : dddlib.Persistence.IRepository<T>
+        where T : dddlib.AggregateRoot
+    {
+        protected Repository(dddlib.Persistence.Sdk.IIdentityMap identityMap) { }
+        protected abstract System.Threading.Tasks.Task<dddlib.Persistence.Sdk.MementoResult?> LoadAsync(System.Guid id, System.Threading.CancellationToken cancellationToken);
+        public System.Threading.Tasks.Task<T> LoadAsync(object naturalKey, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SaveAsync(T aggregateRoot, System.Threading.CancellationToken cancellationToken = default) { }
+        protected abstract System.Threading.Tasks.Task<string> SaveAsync(System.Guid id, object memento, string? preCommitState, System.Threading.CancellationToken cancellationToken);
+    }
+    public sealed class Snapshot : System.IEquatable<dddlib.Persistence.Sdk.Snapshot>
+    {
+        public Snapshot(int StreamRevision, object? Memento) { }
+        public object? Memento { get; init; }
+        public int StreamRevision { get; init; }
+    }
+    public sealed class StreamResult : System.IEquatable<dddlib.Persistence.Sdk.StreamResult>
+    {
+        public StreamResult(System.Collections.Generic.IReadOnlyList<object> Events, string? State) { }
+        public System.Collections.Generic.IReadOnlyList<object> Events { get; init; }
+        public string? State { get; init; }
+    }
+}
+namespace dddlib.Persistence.SqlServer
+{
+    public sealed class SqlServerEventStore : dddlib.Persistence.Sdk.IEventStore
+    {
+        public SqlServerEventStore(string connectionString, string schema = "dbo") { }
+        public System.Threading.Tasks.Task<string> CommitStreamAsync(System.Guid streamId, System.Collections.Generic.IReadOnlyList<object> events, System.Guid correlationId, string? preCommitState, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.StreamResult> GetStreamAsync(System.Guid streamId, int streamRevision, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class SqlServerEventStoreRepository : dddlib.Persistence.Sdk.EventStoreRepository
+    {
+        public SqlServerEventStoreRepository(string connectionString, string schema = "dbo") { }
+    }
+    public sealed class SqlServerIdentityMap : dddlib.Persistence.Sdk.DefaultIdentityMap
+    {
+        public SqlServerIdentityMap(string connectionString, string schema = "dbo") { }
+    }
+    public sealed class SqlServerMementoRepository<T> : dddlib.Persistence.Sdk.Repository<T>
+        where T : dddlib.AggregateRoot
+    {
+        public SqlServerMementoRepository(string connectionString, string schema = "dbo") { }
+        protected override System.Threading.Tasks.Task<dddlib.Persistence.Sdk.MementoResult?> LoadAsync(System.Guid id, System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task<string> SaveAsync(System.Guid id, object memento, string? preCommitState, System.Threading.CancellationToken cancellationToken) { }
+    }
+    public sealed class SqlServerNaturalKeyRepository : dddlib.Persistence.Sdk.INaturalKeyRepository
+    {
+        public SqlServerNaturalKeyRepository(string connectionString, string schema = "dbo") { }
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<dddlib.Persistence.Sdk.NaturalKeyRecord>> GetNaturalKeysAsync(System.Type aggregateRootType, long checkpoint, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemoveAsync(System.Guid naturalKeyIdentity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.NaturalKeyRecord?> TryAddNaturalKeyAsync(System.Type aggregateRootType, string serializedNaturalKey, long checkpoint, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public abstract class SqlServerRepository<T> : dddlib.Persistence.Sdk.Repository<T>
+        where T : dddlib.AggregateRoot
+    {
+        protected SqlServerRepository(string connectionString, string schema = "dbo") { }
+        protected string ConnectionString { get; }
+    }
+    public static class SqlServerScripts
+    {
+        public static System.Collections.Generic.IReadOnlyList<string> Names { get; }
+        public static string Read(string name, string schema = "dbo") { }
+        public static System.Collections.Generic.IReadOnlyList<string> SplitBatches(string script) { }
+    }
+    public sealed class SqlServerSnapshotStore : dddlib.Persistence.Sdk.ISnapshotStore
+    {
+        public SqlServerSnapshotStore(string connectionString, string schema = "dbo") { }
+        public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.Snapshot?> GetSnapshotAsync(System.Guid streamId, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PutSnapshotAsync(System.Guid streamId, dddlib.Persistence.Sdk.Snapshot snapshot, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class SqlServerTypeCache : dddlib.Persistence.Sdk.ITypeCache
+    {
+        public SqlServerTypeCache(string connectionString, string schema = "dbo") { }
+        public System.Threading.Tasks.Task<System.Type> GetTypeAsync(int typeId, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<int> GetTypeIdAsync(System.Type type, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<string> GetTypeNameAsync(int typeId, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+}

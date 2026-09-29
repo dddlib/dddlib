@@ -1,0 +1,335 @@
+namespace dddlib
+{
+    public abstract class AggregateRoot : dddlib.Entity
+    {
+        protected AggregateRoot() { }
+        protected AggregateRoot(dddlib.Sdk.Configuration.Model.AggregateRootType aggregateRootType) { }
+        protected dddlib.Runtime.IMapperProvider Map { get; }
+        protected void Apply<T>(T @event)
+            where T :  class, new () { }
+        protected virtual object? GetState() { }
+        protected virtual void SetState(object memento) { }
+    }
+    public class BusinessException : System.Exception
+    {
+        public BusinessException() { }
+        public BusinessException(string? message) { }
+        public BusinessException(string? message, System.Exception? innerException) { }
+    }
+    public abstract class Entity : System.IEquatable<dddlib.Entity>
+    {
+        protected Entity() { }
+        protected Entity(dddlib.Sdk.Configuration.Model.EntityType entityType) { }
+        protected bool IsDestroyed { get; }
+        protected void EndLifecycle() { }
+        public bool Equals(dddlib.Entity? other) { }
+        public override sealed bool Equals(object? obj) { }
+        public override sealed int GetHashCode() { }
+        protected void ThrowIfLifecycleEnded() { }
+        protected void ThrowIfLifecycleEnded(string? eventName) { }
+        public static bool operator !=(dddlib.Entity? first, dddlib.Entity? second) { }
+        public static bool operator ==(dddlib.Entity? first, dddlib.Entity? second) { }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Property, AllowMultiple=false, Inherited=false)]
+    public sealed class NaturalKeyAttribute : System.Attribute
+    {
+        public NaturalKeyAttribute() { }
+    }
+    public abstract class ValueObject<T> : System.IEquatable<T>
+        where T : dddlib.ValueObject<T>
+    {
+        protected ValueObject() { }
+        protected ValueObject(dddlib.Sdk.Configuration.Model.ValueObjectType valueObjectType) { }
+        public bool Equals(T? other) { }
+        public override sealed bool Equals(object? obj) { }
+        public override sealed int GetHashCode() { }
+        public static bool operator !=(dddlib.ValueObject<T>? first, dddlib.ValueObject<T>? second) { }
+        public static bool operator ==(dddlib.ValueObject<T>? first, dddlib.ValueObject<T>? second) { }
+    }
+}
+namespace dddlib.Configuration
+{
+    public interface IAggregateRootConfigurationWrapper<T> : dddlib.Sdk.IFluentExtensions
+        where T : dddlib.AggregateRoot
+    {
+        dddlib.Configuration.IAggregateRootConfigurationWrapper<T> ToReconstituteUsing(System.Func<T> uninitializedFactory);
+        dddlib.Configuration.IAggregateRootConfigurationWrapper<T> ToUseNaturalKey<TKey>(System.Linq.Expressions.Expression<System.Func<T, TKey>> naturalKeySelector);
+    }
+    public interface IBootstrapper
+    {
+        void Bootstrap(dddlib.Configuration.IConfiguration configure);
+    }
+    public interface IConfiguration : dddlib.Sdk.IFluentExtensions
+    {
+        dddlib.Configuration.IAggregateRootConfigurationWrapper<T> AggregateRoot<T>()
+            where T : dddlib.AggregateRoot;
+        dddlib.Configuration.IEntityConfigurationWrapper<T> Entity<T>()
+            where T : dddlib.Entity;
+        dddlib.Configuration.IValueObjectConfigurationWrapper<T> ValueObject<T>()
+            where T : dddlib.ValueObject<T>;
+    }
+    public interface IEntityConfigurationWrapper<T> : dddlib.Sdk.IFluentExtensions
+        where T : dddlib.Entity
+    {
+        dddlib.Configuration.IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Action<T, TEvent> mapping);
+        dddlib.Configuration.IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Action<T, TEvent> mapping, System.Func<TEvent, T> reverseMapping);
+        dddlib.Configuration.IEntityConfigurationWrapper<T> ToUseNaturalKey<TKey>(System.Linq.Expressions.Expression<System.Func<T, TKey>> naturalKeySelector);
+    }
+    public interface IValueObjectConfigurationWrapper<T> : dddlib.Sdk.IFluentExtensions
+        where T : dddlib.ValueObject<T>
+    {
+        dddlib.Configuration.IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Action<T, TEvent> mapping);
+        dddlib.Configuration.IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Action<T, TEvent> mapping, System.Func<TEvent, T> reverseMapping);
+        dddlib.Configuration.IValueObjectConfigurationWrapper<T> ToUseEqualityComparer(System.Collections.Generic.IEqualityComparer<T> equalityComparer);
+        dddlib.Configuration.IValueObjectConfigurationWrapper<T> ToUseValueObjectSerializer(dddlib.Runtime.IValueObjectSerializer valueObjectSerializer);
+        dddlib.Configuration.IValueObjectConfigurationWrapper<T> ToUseValueObjectSerializer(System.Func<T, string> serialize, System.Func<string, T> deserialize);
+    }
+}
+namespace dddlib.Runtime
+{
+    public sealed class Application : System.IDisposable
+    {
+        public Application() { }
+        public Application(dddlib.Sdk.Configuration.IBootstrapperProvider bootstrapperProvider) { }
+        public Application(dddlib.Sdk.Configuration.Model.ITypeAnalyzerService typeAnalyzerService, dddlib.Sdk.Configuration.IBootstrapperProvider bootstrapperProvider) { }
+        public static dddlib.Runtime.Application Current { get; }
+        public void Dispose() { }
+        public dddlib.Sdk.Configuration.Model.AggregateRootType GetAggregateRootType(System.Type type) { }
+        public dddlib.Sdk.Configuration.Model.EntityType GetEntityType(System.Type type) { }
+        public dddlib.Sdk.Configuration.Model.ValueObjectType GetValueObjectType(System.Type type) { }
+    }
+    public interface IEntityMapper<TEntity> : dddlib.Sdk.IFluentExtensions
+        where TEntity : dddlib.Entity
+    {
+        T ToEvent<T>()
+            where T : new();
+        T ToEvent<T>(T @event);
+    }
+    public interface IEventDispatcher
+    {
+        void Dispatch(object target, object @event);
+    }
+    public interface IEventMapper<TEvent> : dddlib.Sdk.IFluentExtensions
+    {
+        T ToEntity<T>()
+            where T : dddlib.Entity;
+        T ToValueObject<T>()
+            where T : dddlib.ValueObject<T>;
+    }
+    public interface IMapperProvider : dddlib.Sdk.IFluentExtensions
+    {
+        dddlib.Runtime.IEntityMapper<T> Entity<T>(T entity)
+            where T : dddlib.Entity;
+        dddlib.Runtime.IEventMapper<T> Event<T>(T @event)
+            where T :  notnull;
+        dddlib.Runtime.IValueObjectMapper<T> ValueObject<T>(T valueObject)
+            where T : dddlib.ValueObject<T>;
+    }
+    public interface IValueObjectMapper<TValueObject> : dddlib.Sdk.IFluentExtensions
+        where TValueObject : dddlib.ValueObject<TValueObject>
+    {
+        T ToEvent<T>()
+            where T : new();
+        T ToEvent<T>(T @event);
+    }
+    public interface IValueObjectSerializer
+    {
+        object Deserialize(string serializedValueObject);
+        string Serialize(object valueObject);
+    }
+    public class RuntimeException : System.Exception
+    {
+        public RuntimeException() { }
+        public RuntimeException(System.Exception? innerException) { }
+        public RuntimeException(string? message) { }
+        public RuntimeException(string? message, System.Exception? innerException) { }
+        public override string Message { get; }
+    }
+}
+namespace dddlib.Sdk
+{
+    public sealed class AggregateRootFactory
+    {
+        public AggregateRootFactory() { }
+        public T Create<T>(object? memento, int revision, System.Collections.Generic.IEnumerable<object> events, string? state)
+            where T : dddlib.AggregateRoot { }
+    }
+    public sealed class CustomValueObjectSerializer<T> : dddlib.Runtime.IValueObjectSerializer
+        where T : dddlib.ValueObject<T>
+    {
+        public CustomValueObjectSerializer(System.Func<T, string> serialize, System.Func<string, T> deserialize) { }
+        public T Deserialize(string serializedValueObject) { }
+        public string Serialize(T valueObject) { }
+    }
+    public sealed class DefaultEventDispatcher : dddlib.Runtime.IEventDispatcher
+    {
+        public DefaultEventDispatcher(System.Type type) { }
+        public DefaultEventDispatcher(System.Type type, string methodName, System.Reflection.BindingFlags bindingFlags) { }
+        public void Dispatch(object target, object @event) { }
+        public static dddlib.Sdk.DefaultEventDispatcher ForDeclaredHandlers(System.Type type) { }
+    }
+    public sealed class DefaultMapperProvider : dddlib.Runtime.IMapperProvider, dddlib.Sdk.IFluentExtensions
+    {
+        public DefaultMapperProvider() { }
+        public dddlib.Runtime.IEntityMapper<T> Entity<T>(T entity)
+            where T : dddlib.Entity { }
+        public dddlib.Runtime.IEventMapper<T> Event<T>(T @event)
+            where T :  notnull { }
+        public dddlib.Runtime.IValueObjectMapper<T> ValueObject<T>(T valueObject)
+            where T : dddlib.ValueObject<T> { }
+    }
+    public sealed class DefaultValueObjectEqualityComparer<T> : System.Collections.Generic.IEqualityComparer<T>
+        where T : dddlib.ValueObject<T>
+    {
+        public DefaultValueObjectEqualityComparer() { }
+        public bool Equals(T? x, T? y) { }
+        public int GetHashCode(T obj) { }
+    }
+    public sealed class DefaultValueObjectSerializer<T> : dddlib.Runtime.IValueObjectSerializer
+        where T : dddlib.ValueObject<T>
+    {
+        public DefaultValueObjectSerializer() { }
+        public object Deserialize(string serializedValueObject) { }
+        public string Serialize(object valueObject) { }
+    }
+    public static class EventDispatchers
+    {
+        public static dddlib.Runtime.IEventDispatcher ForAggregateRoot(System.Type type) { }
+    }
+    public interface IFluentExtensions
+    {
+        bool Equals(object? obj);
+        int GetHashCode();
+        System.Type GetType();
+        string? ToString();
+    }
+    public static class JsonSerialization
+    {
+        public static System.Text.Json.JsonSerializerOptions Options { get; }
+        public static void AddTypeInfoResolver(System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver resolver) { }
+    }
+    public sealed class MapperCollection
+    {
+        public MapperCollection() { }
+        public void AddOrUpdate<TSource, TDestination>(System.Action<TSource, TDestination> mapping) { }
+        public void AddOrUpdate<TSource, TDestination>(System.Func<TSource, TDestination> mapping) { }
+        public bool TryGet<TSource, TDestination>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Action<TSource, TDestination>? mapping) { }
+        public bool TryGet<TSource, TDestination>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Func<TSource, TDestination>? mapping) { }
+    }
+    public static class TypeExtensions
+    {
+        public static string GetSerializedName(this System.Type sourceType) { }
+        public static System.Collections.Generic.IEnumerable<System.Type> GetTypeHierarchyUntil(this System.Type sourceType, System.Type type) { }
+        public static bool IsSubclassOfRawGeneric(this System.Type sourceType, System.Type genericTypeDefinition) { }
+    }
+    public static class ValueObjectEquality
+    {
+        public const int HashSeed = 17;
+        public static int CombineHash<TValue>(int seed, TValue value) { }
+        public static bool ValuesEqual<TValue>(TValue left, TValue right) { }
+    }
+}
+namespace dddlib.Sdk.Configuration
+{
+    public sealed class DefaultBootstrapperProvider : dddlib.Sdk.Configuration.IBootstrapperProvider
+    {
+        public DefaultBootstrapperProvider() { }
+        public System.Action<dddlib.Configuration.IConfiguration> GetBootstrapper(System.Type type) { }
+    }
+    public sealed class DefaultTypeAnalyzerService : dddlib.Sdk.Configuration.Model.ITypeAnalyzerService
+    {
+        public DefaultTypeAnalyzerService() { }
+        public dddlib.Sdk.Configuration.Model.NaturalKey? GetNaturalKey(System.Type runtimeType) { }
+        public System.Delegate? GetUninitializedFactory(System.Type runtimeType) { }
+        public bool IsValidAggregateRoot(System.Type runtimeType) { }
+        public bool IsValidEntity(System.Type runtimeType) { }
+        public bool IsValidProperty(System.Type runtimeType, string propertyName, System.Type propertyType) { }
+        public bool IsValidValueObject(System.Type runtimeType) { }
+    }
+    public interface IBootstrapperProvider
+    {
+        System.Action<dddlib.Configuration.IConfiguration> GetBootstrapper(System.Type type);
+    }
+}
+namespace dddlib.Sdk.Configuration.Model
+{
+    public sealed class AggregateRootType : dddlib.Sdk.Configuration.Model.EntityType
+    {
+        public AggregateRootType(System.Type runtimeType, dddlib.Sdk.Configuration.Model.ITypeAnalyzerService typeAnalyzerService, dddlib.Sdk.Configuration.Model.EntityType baseEntity) { }
+        public dddlib.Runtime.IEventDispatcher EventDispatcher { get; }
+        public bool PersistEvents { get; }
+        public System.Delegate? UninitializedFactory { get; }
+        public void ConfigureUninitializedFactory(System.Delegate uninitializedFactory) { }
+    }
+    public class EntityType
+    {
+        public EntityType(System.Type runtimeType, dddlib.Sdk.Configuration.Model.ITypeAnalyzerService typeAnalyzerService) { }
+        public EntityType(System.Type runtimeType, dddlib.Sdk.Configuration.Model.ITypeAnalyzerService typeAnalyzerService, dddlib.Sdk.Configuration.Model.EntityType baseEntity) { }
+        public dddlib.Sdk.MapperCollection Mappings { get; }
+        public dddlib.Sdk.Configuration.Model.NaturalKey? NaturalKey { get; }
+        public System.Type RuntimeType { get; }
+        public void ConfigureNaturalKey(dddlib.Sdk.Configuration.Model.NaturalKey naturalKey) { }
+    }
+    public interface ITypeAnalyzerService
+    {
+        dddlib.Sdk.Configuration.Model.NaturalKey? GetNaturalKey(System.Type runtimeType);
+        System.Delegate? GetUninitializedFactory(System.Type runtimeType);
+        bool IsValidAggregateRoot(System.Type runtimeType);
+        bool IsValidEntity(System.Type runtimeType);
+        bool IsValidProperty(System.Type runtimeType, string propertyName, System.Type propertyType);
+        bool IsValidValueObject(System.Type runtimeType);
+    }
+    public sealed class NaturalKey : System.IEquatable<dddlib.Sdk.Configuration.Model.NaturalKey>
+    {
+        public NaturalKey(System.Type runtimeType, string propertyName, System.Type propertyType, System.Func<dddlib.Entity, object?> getValue) { }
+        public NaturalKey(System.Type runtimeType, string propertyName, System.Type propertyType, dddlib.Sdk.Configuration.Model.ITypeAnalyzerService typeAnalyzerService) { }
+        public string PropertyName { get; }
+        public System.Type PropertyType { get; }
+        public System.Type RuntimeType { get; }
+        public bool Equals(dddlib.Sdk.Configuration.Model.NaturalKey? other) { }
+        public override bool Equals(object? obj) { }
+        public override int GetHashCode() { }
+        public object? GetValue(dddlib.Entity entity) { }
+        public static bool operator !=(dddlib.Sdk.Configuration.Model.NaturalKey? left, dddlib.Sdk.Configuration.Model.NaturalKey? right) { }
+        public static bool operator ==(dddlib.Sdk.Configuration.Model.NaturalKey? left, dddlib.Sdk.Configuration.Model.NaturalKey? right) { }
+    }
+    public sealed class ValueObjectType
+    {
+        public ValueObjectType(System.Type runtimeType, dddlib.Sdk.Configuration.Model.ITypeAnalyzerService typeAnalyzerService) { }
+        public object EqualityComparer { get; }
+        public dddlib.Sdk.MapperCollection Mappings { get; }
+        public System.Type RuntimeType { get; }
+        public dddlib.Runtime.IValueObjectSerializer Serializer { get; }
+        public void ConfigureEqualityComparer<T>(System.Collections.Generic.IEqualityComparer<T> equalityComparer) { }
+        public void ConfigureSerializer(dddlib.Runtime.IValueObjectSerializer valueObjectSerializer) { }
+    }
+}
+namespace dddlib.Sdk.Generated
+{
+    public static class BootstrapperRegistry
+    {
+        public static void Register(System.Type bootstrapperType) { }
+        public static void RegisterNone(System.Reflection.Assembly assembly) { }
+        public static bool TryGet(System.Reflection.Assembly assembly, out System.Type? bootstrapperType) { }
+    }
+    public static class GeneratedMetadata
+    {
+        public const string TypeName = "__DddlibMetadata";
+        public static TMetadata? TryGet<TMetadata>(System.Type type)
+            where TMetadata :  class { }
+    }
+    public interface IGeneratedAggregateRootMetadata : dddlib.Runtime.IEventDispatcher, dddlib.Sdk.Generated.IGeneratedEntityMetadata
+    {
+        System.Delegate? UninitializedFactory { get; }
+    }
+    public interface IGeneratedEntityMetadata
+    {
+        string? NaturalKeyPropertyName { get; }
+        System.Type? NaturalKeyPropertyType { get; }
+        object? GetNaturalKeyValue(dddlib.Entity entity);
+    }
+    public interface IGeneratedValueObjectMetadata
+    {
+        object EqualityComparer { get; }
+    }
+}

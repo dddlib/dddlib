@@ -2,7 +2,7 @@ using dddlib.Runtime;
 
 namespace dddlib.Sdk;
 
-public class CustomValueObjectSerializer<T> : IValueObjectSerializer
+public sealed class CustomValueObjectSerializer<T> : IValueObjectSerializer
     where T : ValueObject<T>
 {
     private readonly Func<T, string> serialize;

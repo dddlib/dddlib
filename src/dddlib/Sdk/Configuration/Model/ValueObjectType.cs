@@ -9,7 +9,7 @@ namespace dddlib.Sdk.Configuration.Model;
 /// <summary>
 /// The runtime metadata for a value object type: its equality comparer, its serializer and its event mappings.
 /// </summary>
-public class ValueObjectType
+public sealed class ValueObjectType
 {
     private Lazy<object> equalityComparer;
 

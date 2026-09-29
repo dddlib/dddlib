@@ -8,7 +8,7 @@ namespace dddlib.Persistence.Sdk;
 /// Serializes value object natural keys through the value object's configured serializer and everything else
 /// (strings, GUIDs, numbers) as JSON.
 /// </summary>
-public class DefaultNaturalKeySerializer : INaturalKeySerializer
+public sealed class DefaultNaturalKeySerializer : INaturalKeySerializer
 {
     public string Serialize(Type naturalKeyType, object naturalKey)
     {

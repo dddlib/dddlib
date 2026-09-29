@@ -8,7 +8,7 @@ namespace dddlib.Sdk.Configuration;
 /// <summary>
 /// Locates the single <see cref="IBootstrapper"/> implementation in the assembly that declares a type.
 /// </summary>
-public class DefaultBootstrapperProvider : IBootstrapperProvider
+public sealed class DefaultBootstrapperProvider : IBootstrapperProvider
 {
     public Action<IConfiguration> GetBootstrapper(Type type)
     {
