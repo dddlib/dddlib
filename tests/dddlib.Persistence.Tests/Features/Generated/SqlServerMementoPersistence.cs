@@ -1,0 +1,189 @@
+using System.Data;
+using dddlib.Configuration;
+using dddlib.Persistence.Sdk;
+using dddlib.Persistence.SqlServer;
+using dddlib.Tests.Support;
+using Microsoft.Data.SqlClient;
+
+namespace dddlib.Persistence.Tests.Features.Generated;
+
+// As someone who uses dddlib without event sourcing
+// In order to persist aggregate roots durably
+// I need a SQL Server memento repository to save and load aggregate roots
+public abstract partial class SqlServerMementoPersistence : SqlServerFeature
+{
+    // A repository with its own table shaped for the aggregate root, built on SqlServerRepository<T>.
+    public sealed partial class DefaultSqlServerPersistence : SqlServerMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a SQL table for the subject
+            await this.Database.ExecuteScriptAsync(@"CREATE TABLE [dbo].[Subjects]
+(
+    [Id] [uniqueidentifier] NOT NULL,
+    [NaturalKey] [nvarchar](MAX) NOT NULL,
+    [State] [varchar](36) NOT NULL,
+    CONSTRAINT [PK_Subject] PRIMARY KEY CLUSTERED ([Id])
+);");
+
+            // And a repository
+            var repository = new SubjectRepository(this.ConnectionString);
+
+            // And a natural key value
+            var naturalKey = "key";
+
+            // And an instance of an aggregate root with that natural key
+            var instance = new Subject(naturalKey);
+
+            // When that instance is saved to the repository
+            await repository.SaveAsync(instance);
+
+            // And an other instance is loaded from the repository
+            var otherInstance = await repository.LoadAsync(instance.NaturalKey!);
+
+            // Then that instance should be the other instance
+            await Assert.That(otherInstance).IsEqualTo(instance);
+        }
+
+        public partial class Subject : AggregateRoot
+        {
+            public Subject(string naturalKey)
+            {
+                this.Apply(new NewSubject { NaturalKey = naturalKey });
+            }
+
+            internal Subject()
+            {
+            }
+
+            public string? NaturalKey { get; private set; }
+
+            protected override object? GetState() => this.NaturalKey;
+
+            protected override void SetState(object memento) => this.NaturalKey = memento.ToString();
+
+            private void Handle(NewSubject @event) => this.NaturalKey = @event.NaturalKey;
+        }
+
+        public partial class NewSubject
+        {
+            public string? NaturalKey { get; set; }
+        }
+
+        public sealed partial class SubjectRepository(string connectionString) : SqlServerRepository<Subject>(connectionString)
+        {
+            protected override async Task<string> SaveAsync(Guid id, object memento, string? preCommitState, CancellationToken cancellationToken)
+            {
+                await using var connection = new SqlConnection(this.ConnectionString);
+                await using var command = connection.CreateCommand();
+                command.CommandText = @"MERGE [dbo].[Subjects] AS [Target]
+USING (SELECT @Id AS [Id], @NaturalKey AS [NaturalKey], @State AS [State]) AS [Source]
+ON [Target].[Id] = [Source].[Id]
+WHEN MATCHED AND [Target].[State] = [Source].[State] THEN
+    UPDATE SET [Target].[NaturalKey] = [Source].[NaturalKey], [Target].[State] = LEFT(NEWID(), 8)
+WHEN NOT MATCHED AND [Source].[State] IS NULL THEN
+    INSERT ([Id], [NaturalKey], [State]) VALUES ([Source].[Id], [Source].[NaturalKey], LEFT(NEWID(), 8))
+OUTPUT inserted.[State];";
+                command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier).Value = id;
+                command.Parameters.Add("@NaturalKey", SqlDbType.NVarChar, -1).Value = (string)memento;
+                command.Parameters.Add("@State", SqlDbType.VarChar, 36).Value = (object?)preCommitState ?? DBNull.Value;
+
+                await connection.OpenAsync(cancellationToken);
+                var state = await command.ExecuteScalarAsync(cancellationToken);
+
+                return state as string ?? throw new ConcurrencyException("Commit state mismatch.");
+            }
+
+            protected override async Task<MementoResult?> LoadAsync(Guid id, CancellationToken cancellationToken)
+            {
+                await using var connection = new SqlConnection(this.ConnectionString);
+                await using var command = connection.CreateCommand();
+                command.CommandText = "SELECT [NaturalKey], [State] FROM [dbo].[Subjects] WHERE [Id] = @Id;";
+                command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier).Value = id;
+
+                await connection.OpenAsync(cancellationToken);
+                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+                return await reader.ReadAsync(cancellationToken)
+                    ? new MementoResult(reader.GetString(0), reader.GetString(1))
+                    : null;
+            }
+        }
+
+        private sealed partial class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>()
+                    .ToUseNaturalKey(subject => subject.NaturalKey)
+                    .ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    // The shipped SqlServerMementoRepository<T>, which stores any memento as JSON in the Mementos table.
+    public sealed partial class DefaultMementoRepositoryPersistence : SqlServerMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a repository
+            var repository = new SqlServerMementoRepository<Subject>(this.ConnectionString);
+
+            // And an instance of an aggregate root with a natural key
+            var instance = new Subject("key") { Name = "first" };
+
+            // And that instance is saved and loaded
+            await repository.SaveAsync(instance);
+            var loaded = await repository.LoadAsync(instance.NaturalKey!);
+
+            // When the loaded instance is changed, saved, and loaded again
+            loaded.Name = "second";
+            await repository.SaveAsync(loaded);
+            var reloaded = await repository.LoadAsync(instance.NaturalKey!);
+
+            // Then the reloaded instance carries the change
+            await Assert.That(reloaded).IsEqualTo(instance);
+            await Assert.That(reloaded.Name).IsEqualTo("second");
+
+            // And saving the stale first instance is a concurrency error
+            instance.Name = "stale";
+            var action = () => repository.SaveAsync(instance);
+            await Assert.That(action).Throws<ConcurrencyException>();
+        }
+
+        public partial class Subject : AggregateRoot
+        {
+            public Subject(string naturalKey)
+            {
+                this.NaturalKey = naturalKey;
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? NaturalKey { get; private set; }
+
+            public string? Name { get; set; }
+
+            protected override object? GetState() => new Memento { NaturalKey = this.NaturalKey, Name = this.Name };
+
+            protected override void SetState(object memento)
+            {
+                var subject = (Memento)memento;
+                this.NaturalKey = subject.NaturalKey;
+                this.Name = subject.Name;
+            }
+
+            public sealed partial class Memento
+            {
+                public string? NaturalKey { get; set; }
+
+                public string? Name { get; set; }
+            }
+        }
+    }
+}
