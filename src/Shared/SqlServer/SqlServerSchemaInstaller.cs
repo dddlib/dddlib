@@ -26,6 +26,11 @@ internal static class SqlServerSchemaInstaller
     /// </summary>
     public static int RequiredVersion => Scripts[^1].Version;
 
+    /// <summary>
+    /// Gets the name and version of this assembly, recorded with each version it applies.
+    /// </summary>
+    public static string Description { get; } = GetDescription();
+
     public static Task EnsureAsync(string connectionString, string schema, CancellationToken cancellationToken) =>
         EnsureAsync(connectionString, schema, Scripts, cancellationToken);
 
@@ -130,7 +135,6 @@ WHEN NOT MATCHED BY TARGET THEN
         return versions.Count == 0 ? 0 : versions.Keys.Max();
     }
 
-    private static string Description { get; } = GetDescription();
 
     private static async Task<Dictionary<int, bool>> ReadVersionsAsync(SqlConnection connection, SqlTransaction? transaction, string quotedSchema, CancellationToken cancellationToken)
     {

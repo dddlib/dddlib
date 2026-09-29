@@ -138,6 +138,38 @@ public class SqlServerSchemaTests : SqlServerIntegration
     }
 
     [Test]
+    public async Task FailsLoudlyWhenTheSchemaIsBehind()
+    {
+        var schema = NewSchema();
+        await this.Database.ExecuteScriptAsync($"CREATE SCHEMA [{schema}];");
+        var eventStore = new SqlServerEventStore(this.ConnectionString, schema);
+
+        await Assert.That(() => (Task)eventStore.GetStreamAsync(Guid.NewGuid(), 0))
+            .Throws<PersistenceException>()
+            .WithMessageContaining($"The SQL Server schema [{schema}] is at version 0, but dddlib.Persistence.SqlServer ");
+        await Assert.That(() => new SqlServerIdentityMap(this.ConnectionString, schema).TryGetAsync(typeof(object), typeof(string), "key"))
+            .Throws<PersistenceException>()
+            .WithMessageContaining("To fix this issue");
+
+        await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
+        var stream = await eventStore.GetStreamAsync(Guid.NewGuid(), 0);
+
+        await Assert.That(stream.Events).IsEmpty();
+    }
+
+    [Test]
+    public async Task FailsLoudlyWhenTheVersionIsMissing()
+    {
+        var schema = NewSchema();
+        await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
+        await this.Database.ExecuteScriptAsync($"DELETE FROM [{schema}].[Versions];");
+
+        await Assert.That(() => new SqlServerSnapshotStore(this.ConnectionString, schema).GetSnapshotAsync(Guid.NewGuid()))
+            .Throws<PersistenceException>()
+            .WithMessageContaining("is at version 0");
+    }
+
+    [Test]
     public async Task RejectsAnInvalidSchemaName()
     {
         await Assert.That(() => SqlServerSchema.EnsureAsync(this.ConnectionString, "bad name")).Throws<ArgumentException>();

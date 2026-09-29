@@ -22,6 +22,22 @@ public class SqlServerEventDispatcherSchemaTests : SqlServerIntegration
     }
 
     [Test]
+    public async Task FailsLoudlyWhenTheSchemaIsBehind()
+    {
+        var schema = string.Concat("s", Guid.NewGuid().ToString("N"));
+        await this.Database.ExecuteScriptAsync($"CREATE SCHEMA [{schema}];");
+        var batchStore = new SqlServerEventBatchStore(this.ConnectionString, schema);
+
+        await Assert.That(() => batchStore.GetNextBatchAsync(Guid.NewGuid(), 10, TimeSpan.FromSeconds(30)))
+            .Throws<PersistenceException>()
+            .WithMessageContaining($"The SQL Server schema [{schema}] is at version 0, but dddlib.Persistence.EventDispatcher.SqlServer ");
+
+        await SqlServerEventDispatcherSchema.EnsureAsync(this.ConnectionString, schema);
+
+        await Assert.That(await batchStore.GetNextBatchAsync(Guid.NewGuid(), 10, TimeSpan.FromSeconds(30))).IsNull();
+    }
+
+    [Test]
     public async Task BothPackagesProduceTheSameScript()
     {
         await Assert.That(SqlServerEventDispatcherSchema.GetScript("alternate")).IsEqualTo(global::dddlib.Persistence.SqlServer.SqlServerSchema.GetScript("alternate"));

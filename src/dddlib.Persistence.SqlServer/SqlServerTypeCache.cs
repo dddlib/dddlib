@@ -74,6 +74,7 @@ public sealed class SqlServerTypeCache : ITypeCache
         command.CommandText = string.Concat(this.schema, ".[TryAddType]");
         command.Parameters.Add("@Name", SqlDbType.VarChar, 511).Value = type.GetSerializedName();
 
+        await SqlServerSchemaCheck.EnsureCurrentAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -87,6 +88,7 @@ public sealed class SqlServerTypeCache : ITypeCache
         command.CommandType = CommandType.StoredProcedure;
         command.CommandText = string.Concat(this.schema, ".[GetTypes]");
 
+        await SqlServerSchemaCheck.EnsureCurrentAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleResult, cancellationToken).ConfigureAwait(false);
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))

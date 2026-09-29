@@ -44,6 +44,7 @@ public sealed class SqlServerEventBatchStore : IEventBatchStore
             command.Parameters.Add("@MaxBatchSize", SqlDbType.Int).Value = batchSize;
             command.Parameters.Add("@BatchTimeoutMilliseconds", SqlDbType.Int).Value = (int)Math.Clamp(Math.Ceiling(batchTimeout.TotalMilliseconds), 0, int.MaxValue);
 
+            await SqlServerSchemaCheck.EnsureCurrentAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
             await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
             try
@@ -92,6 +93,7 @@ public sealed class SqlServerEventBatchStore : IEventBatchStore
         command.Parameters.Add("@DispatcherId", SqlDbType.UniqueIdentifier).Value = dispatcherId;
         command.Parameters.Add("@SequenceNumber", SqlDbType.BigInt).Value = sequenceNumber;
 
+        await SqlServerSchemaCheck.EnsureCurrentAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
