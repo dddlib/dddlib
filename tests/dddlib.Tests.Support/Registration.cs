@@ -1,0 +1,28 @@
+using System.Globalization;
+
+namespace dddlib.Tests.Support;
+
+// A value object. In v2 value objects are records: structural equality, == and != come for free.
+public sealed record Registration
+{
+    public Registration(string number, IRegistrationService registrationService)
+    {
+        ArgumentNullException.ThrowIfNull(number);
+        ArgumentNullException.ThrowIfNull(registrationService);
+
+        if (!registrationService.ConfirmValid(number))
+        {
+            throw new BusinessException(
+                string.Format(CultureInfo.InvariantCulture, "The specified registration number '{0}' is invalid.", number));
+        }
+
+        this.Number = number;
+    }
+
+    internal Registration(string number)
+    {
+        this.Number = number;
+    }
+
+    public string Number { get; }
+}
