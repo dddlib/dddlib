@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetTestVersion)</TargetFramework>
+    <RootNamespace>dddlib.Persistence.Tests</RootNamespace>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TUnit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/dddlib/dddlib.csproj" />
+    <ProjectReference Include="../../src/dddlib.Persistence/dddlib.Persistence.csproj" />
+    <ProjectReference Include="../dddlib.Tests.Support/dddlib.Tests.Support.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetLibVersion)</TargetFramework>
+    <RootNamespace>dddlib.Persistence</RootNamespace>
+    <Description>Persistence for dddlib: event store repository with in-memory and SQL Server implementations.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="dddlib.Persistence.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../dddlib/dddlib.csproj" />
+  </ItemGroup>
+
+</Project>

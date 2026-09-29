@@ -1,0 +1,597 @@
+using dddlib.Configuration;
+using dddlib.Persistence.Memory;
+using dddlib.Persistence.Sdk;
+using dddlib.Tests.Support;
+
+namespace dddlib.Persistence.Tests.Features;
+
+// As someone who uses dddlib with event sourcing
+// In order to persist aggregate roots without a database
+// I need the in-memory event store repository to behave like the real one
+public abstract class MemoryEventPersistence : Feature
+{
+    protected MemoryEventPersistence()
+    {
+        // Given an identity map, an event store, a snapshot store and an event store repository
+        this.IdentityMap = new MemoryIdentityMap();
+        this.EventStore = new MemoryEventStore();
+        this.SnapshotStore = new MemorySnapshotStore();
+        this.Repository = new EventStoreRepository(this.IdentityMap, this.EventStore, this.SnapshotStore);
+    }
+
+    protected IIdentityMap IdentityMap { get; }
+
+    protected IEventStore EventStore { get; }
+
+    protected ISnapshotStore SnapshotStore { get; }
+
+    protected IEventStoreRepository Repository { get; }
+
+    public sealed class UndefinedNaturalKey : MemoryEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given an instance of an aggregate root with no defined natural key
+            var instance = new Subject();
+
+            // When that instance is saved to the repository
+            var action = () => this.Repository.SaveAsync(instance);
+
+            // Then a persistence exception is thrown
+            await Assert.That(action).Throws<PersistenceException>();
+        }
+
+        public class Subject : AggregateRoot
+        {
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class UndefinedUnititializedFactory : MemoryEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given an instance of an aggregate root with no defined uninitialized factory
+            var instance = new Subject("nonsense");
+
+            // When that instance is saved to the repository
+            var action = () => this.Repository.SaveAsync(instance);
+
+            // Then a persistence exception is thrown
+            await Assert.That(action).Throws<PersistenceException>();
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string nonsense)
+            {
+                _ = nonsense;
+            }
+
+            [NaturalKey]
+            public string? Id { get; set; }
+        }
+    }
+
+    public sealed class NullNaturalKey : MemoryEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given an instance of an aggregate root with a null natural key
+            var instance = new Subject();
+
+            // When that instance is saved to the repository
+            var action = () => this.Repository.SaveAsync(instance);
+
+            // Then an argument exception is thrown
+            await Assert.That(action).Throws<ArgumentException>();
+        }
+
+        public class Subject : AggregateRoot
+        {
+            [NaturalKey]
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class SaveAndLoad : MemoryEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given an instance of an aggregate root
+            var saved = new Subject("test");
+
+            // And that instance is saved to the repository
+            await this.Repository.SaveAsync(saved);
+
+            // When that instance is loaded from the repository
+            var loaded = await this.Repository.LoadAsync<Subject>(saved.Id!);
+
+            // Then the loaded instance should be the saved instance
+            await Assert.That(loaded).IsEqualTo(saved);
+
+            // And their revisions should be equal
+            await Assert.That(loaded.GetRevision()).IsEqualTo(saved.GetRevision());
+
+            // And their mementos should match
+            await Assert.That(MementoJson.Of(loaded.GetMemento())).IsEqualTo(MementoJson.Of(saved.GetMemento()));
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            protected override object? GetState() => this.Id;
+
+            protected override void SetState(object memento) => this.Id = memento.ToString();
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class SaveAndSaveAndLoad : MemoryEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given an instance of an aggregate root
+            var saved = new Subject("test2");
+
+            // And that instance is saved to the repository
+            await this.Repository.SaveAsync(saved);
+
+            // And something happened to that instance
+            saved.DoSomething();
+
+            // And that instance is saved again to the repository
+            await this.Repository.SaveAsync(saved);
+
+            // When that instance is loaded from the repository
+            var loaded = await this.Repository.LoadAsync<Subject>(saved.Id!);
+
+            // Then the loaded instance should be the saved instance
+            await Assert.That(loaded).IsEqualTo(saved);
+
+            // And their revisions should be equal
+            await Assert.That(loaded.GetRevision()).IsEqualTo(saved.GetRevision());
+
+            // And their mementos should match
+            await Assert.That(MementoJson.Of(loaded.GetMemento())).IsEqualTo(MementoJson.Of(saved.GetMemento()));
+        }
+
+        public class Subject : AggregateRoot
+        {
+            private bool hasDoneSomething;
+
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            public void DoSomething() => this.Apply(new SubjectDidSomething { Id = this.Id });
+
+            protected override object? GetState() => new Memento { Id = this.Id, HasDoneSomething = this.hasDoneSomething };
+
+            protected override void SetState(object memento)
+            {
+                var subject = (Memento)memento;
+                this.Id = subject.Id;
+                this.hasDoneSomething = subject.HasDoneSomething;
+            }
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+
+            private void Handle(SubjectDidSomething @event) => this.hasDoneSomething = true;
+
+            private sealed class Memento
+            {
+                public string? Id { get; set; }
+
+                public bool HasDoneSomething { get; set; }
+            }
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        public class SubjectDidSomething
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class SaveAndLoadAndSaveAndLoad : MemoryEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given an instance of an aggregate root
+            var saved = new Subject("test3");
+
+            // And that instance is saved to the repository
+            await this.Repository.SaveAsync(saved);
+
+            // And that instance is loaded from the repository
+            var loaded = await this.Repository.LoadAsync<Subject>(saved.Id!);
+
+            // And something happened to that loaded instance
+            loaded.DoSomething();
+
+            // And that loaded instance is saved to the repository
+            await this.Repository.SaveAsync(loaded);
+
+            // When another instance is loaded from the repository
+            var anotherLoaded = await this.Repository.LoadAsync<Subject>(saved.Id!);
+
+            // Then the other loaded instance should be the loaded instance
+            await Assert.That(anotherLoaded).IsEqualTo(loaded);
+
+            // And their revisions should be equal
+            await Assert.That(anotherLoaded.GetRevision()).IsEqualTo(loaded.GetRevision());
+
+            // And their mementos should match
+            await Assert.That(MementoJson.Of(anotherLoaded.GetMemento())).IsEqualTo(MementoJson.Of(loaded.GetMemento()));
+        }
+
+        public class Subject : AggregateRoot
+        {
+            private bool hasDoneSomething;
+
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            public void DoSomething() => this.Apply(new SubjectDidSomething { Id = this.Id });
+
+            protected override object? GetState() => new Memento { Id = this.Id, HasDoneSomething = this.hasDoneSomething };
+
+            protected override void SetState(object memento)
+            {
+                var subject = (Memento)memento;
+                this.Id = subject.Id;
+                this.hasDoneSomething = subject.HasDoneSomething;
+            }
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+
+            private void Handle(SubjectDidSomething @event) => this.hasDoneSomething = true;
+
+            private sealed class Memento
+            {
+                public string? Id { get; set; }
+
+                public bool HasDoneSomething { get; set; }
+            }
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        public class SubjectDidSomething
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class SnapshotAndLoad : MemoryEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given an instance of an aggregate root
+            var saved = new Subject("test4");
+
+            // And that instance is saved to the repository
+            await this.Repository.SaveAsync(saved);
+
+            // And that instance is snapshot to the repository
+            var streamId = await this.IdentityMap.TryGetAsync(typeof(Subject), typeof(string), saved.Id!);
+            await this.SnapshotStore.PutSnapshotAsync(streamId!.Value, new Snapshot(saved.GetRevision(), saved.GetMemento()));
+
+            // When that instance is loaded from the repository
+            var loaded = await this.Repository.LoadAsync<Subject>(saved.Id!);
+
+            // Then the loaded instance should be the saved instance
+            await Assert.That(loaded).IsEqualTo(saved);
+
+            // And their revisions should be equal
+            await Assert.That(loaded.GetRevision()).IsEqualTo(saved.GetRevision());
+
+            // And their mementos should match
+            await Assert.That(MementoJson.Of(loaded.GetMemento())).IsEqualTo(MementoJson.Of(saved.GetMemento()));
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            protected override object? GetState() => this.Id;
+
+            protected override void SetState(object memento) => this.Id = memento.ToString();
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class SnapshotAndSaveAndLoad : MemoryEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given an instance of an aggregate root
+            var saved = new Subject("test5");
+
+            // And that instance is saved to the repository
+            await this.Repository.SaveAsync(saved);
+
+            // And that instance is snapshot to the repository
+            var streamId = (await this.IdentityMap.TryGetAsync(typeof(Subject), typeof(string), saved.Id!))!.Value;
+            await this.SnapshotStore.PutSnapshotAsync(streamId, new Snapshot(saved.GetRevision(), saved.GetMemento()));
+
+            // And something happened to that instance
+            saved.DoSomething();
+
+            // And that instance is saved again to the repository
+            await this.Repository.SaveAsync(saved);
+
+            // When that instance is loaded from the repository
+            var loaded = await this.Repository.LoadAsync<Subject>(saved.Id!);
+
+            // And the events for that instance are loaded from the event store
+            var stream = await this.EventStore.GetStreamAsync(streamId, 0);
+
+            // Then the loaded instance should be the saved instance
+            await Assert.That(loaded).IsEqualTo(saved);
+
+            // And their revisions should be equal
+            await Assert.That(loaded.GetRevision()).IsEqualTo(saved.GetRevision());
+
+            // And their mementos should match
+            await Assert.That(MementoJson.Of(loaded.GetMemento())).IsEqualTo(MementoJson.Of(saved.GetMemento()));
+
+            // And the loaded events should contain two matching events
+            await Assert.That(stream.Events).Count().IsEqualTo(2);
+            await Assert.That(stream.Events[0]).IsTypeOf<NewSubject>();
+            await Assert.That(((NewSubject)stream.Events[0]).Id).IsEqualTo(saved.Id);
+            await Assert.That(stream.Events[1]).IsTypeOf<SubjectDidSomething>();
+            await Assert.That(((SubjectDidSomething)stream.Events[1]).Id).IsEqualTo(saved.Id);
+        }
+
+        public class Subject : AggregateRoot
+        {
+            private bool hasDoneSomething;
+
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            public void DoSomething() => this.Apply(new SubjectDidSomething { Id = this.Id });
+
+            protected override object? GetState() => new Memento { Id = this.Id, HasDoneSomething = this.hasDoneSomething };
+
+            protected override void SetState(object memento)
+            {
+                var subject = (Memento)memento;
+                this.Id = subject.Id;
+                this.hasDoneSomething = subject.HasDoneSomething;
+            }
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+
+            private void Handle(SubjectDidSomething @event) => this.hasDoneSomething = true;
+
+            private sealed class Memento
+            {
+                public string? Id { get; set; }
+
+                public bool HasDoneSomething { get; set; }
+            }
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        public class SubjectDidSomething
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class SaveAndEndLifecycleAndSaveAndCreate : MemoryEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a natural key value
+            var naturalKey = "naturalKey";
+
+            // And an instance of an aggregate root with that natural key
+            var saved = new Subject(naturalKey);
+
+            // And that instance is saved to the repository
+            await this.Repository.SaveAsync(saved);
+
+            // And that instance is loaded from the repository
+            var loaded = await this.Repository.LoadAsync<Subject>(naturalKey);
+
+            // And that instance is destroyed
+            loaded.Destroy();
+
+            // And no further operations can occur against that instance
+            await Assert.That(loaded.Destroy).Throws<BusinessException>();
+
+            // And that destroyed instance is saved to the repository
+            await this.Repository.SaveAsync(loaded);
+
+            // When a temporally new instance of an aggregate root with that same natural key is created
+            var temporallyNew = new Subject(naturalKey);
+
+            // And that temporally new instance is saved to the repository
+            var action = () => this.Repository.SaveAsync(temporallyNew);
+
+            // Then the operation completes without an exception being thrown
+            await Assert.That(action).ThrowsNothing();
+
+            // And further operations can occur against that instance
+            var actual = await this.Repository.LoadAsync<Subject>(naturalKey);
+            await Assert.That(actual.Destroy).ThrowsNothing();
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            public void Destroy() => this.Apply(new SubjectDestroyed { Id = this.Id });
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+
+            private void Handle(SubjectDestroyed @event) => this.EndLifecycle();
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        public class SubjectDestroyed
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+}
