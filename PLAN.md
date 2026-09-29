@@ -130,6 +130,8 @@ configured. Phase 4 turns that into an analyzer diagnostic.
 
 ### Source generators and analyzers (phase 4)
 
+Tracked in dddlib/dddlib#150 (Roslyn analyzer for Visual Studio).
+
 Each generator replaces one runtime mechanism and must leave the reflection path working for types
 that are not `partial`:
 
@@ -319,7 +321,8 @@ Answered so far:
 - Existing databases: none need to be supported. No compatibility constraints on JSON, type names or namespaces.
 - Package identity: publish under the existing `dddlib` package id as 2.0.
 - Memento-based `IRepository<T>`: kept. It was dropped on 2026-09-29 and reinstated the same day because it has
-  a use case. Async like the rest of persistence; `MementoResult` replaces the out parameters.
+  a use case. Async like the rest of persistence; `MementoResult` replaces the out parameters. As in v1 it stores
+  only the memento; storing the uncommitted events for dispatch as well is tracked in dddlib/dddlib#149.
 
 - `ValueObject<T>`: kept, with the legacy constraint `where T : ValueObject<T>`. See section 4.
 
