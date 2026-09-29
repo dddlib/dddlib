@@ -130,7 +130,7 @@ configured. Phase 4 turns that into an analyzer diagnostic.
 
 ### Source generators and analyzers (phase 4)
 
-Tracked in dddlib/dddlib#2 (Roslyn analyzer for Visual Studio).
+Tracked in dddlib/dddlib#2 (Roslyn analyzer for Visual Studio); the remaining coverage is planned in phase 7.
 
 How the generated code plugs in (implemented 2026-09-29): the generator emits a private nested `__DddlibMetadata`
 class into every aggregate root, entity and value object that is `partial` (containing types included). It carries
@@ -291,6 +291,111 @@ Done 2026-09-29. What was built, and where it departs from v1:
   `[NotInParallel]` because the batch feed is store-wide), MemoryEventBatchStoreTests (6, using a fake
   `TimeProvider` for the timeout and a dispatcher retry-in-order case), public API snapshot.
 
+
+### Phase 7: analyzer coverage (dddlib/dddlib#2)
+
+Planned 2026-09-29, not started. Turns the remaining runtime-only model mistakes into diagnostics, adds the code fixes
+the issue lists, and refines DDDLIB004. Everything stays inside the `dddlib` package: the analyzers in
+`dddlib.Generators`, the code fixes in a new `dddlib.CodeFixes` assembly packed into the same `analyzers/dotnet/cs`
+folder. Roslyn stays at 4.14 (.NET 9.0.300 SDK, Visual Studio 17.14).
+
+Constraints that shape the work:
+
+- `EnforceExtendedAnalyzerRules` is on, and RS1038 forbids a compiler-loaded analyzer assembly from referencing
+  `Microsoft.CodeAnalysis.Workspaces`. Code fix providers therefore go in `src/dddlib.CodeFixes` (netstandard2.0,
+  references `dddlib.Generators` and `Microsoft.CodeAnalysis.CSharp.Workspaces` 4.14 with `PrivateAssets="all"`).
+  `dddlib.csproj` packs both DLLs.
+- `TreatWarningsAsErrors` is on repo-wide and every test project references the generator as an analyzer, so a new
+  rule that fires on the test models fails the build. Each rule lands only when the whole solution builds; a hit in
+  a test model is either a test model fix or a false positive to fix in the rule, never a suppression.
+- Every rule keeps the existing style: `DiagnosticDescriptors` entry with a `helpLinkUri` into `docs/`, a row in
+  `AnalyzerReleases.Unshipped.md`, a row in the table in `docs/source-generator.md`, a sentence on the feature page
+  it relates to, and a red and a green test in `tests/dddlib.Generators.Tests`.
+
+#### 7.0 Shared analysis (do first)
+
+1. `BootstrapperModel`, in `src/dddlib.Generators/BootstrapperModel.cs`: a per-compilation, lazily built record of what
+   the assembly's bootstrapper configures. Built once from the single `IBootstrapper` implementation by walking the
+   `Bootstrap` method with the semantic model: every fluent chain rooted at `configure.AggregateRoot<T>()`,
+   `configure.Entity<T>()` or `configure.ValueObject<T>()` yields, per `T`, the set of `ToReconstituteUsing`,
+   `ToUseNaturalKey` (with the selected property symbol when the lambda body is a member access, otherwise a marker),
+   `ToUseEqualityComparer`, `ToUseValueObjectSerializer` and `ToMapToEvent<TEvent>` (with a flag for the reverse
+   mapping overload) calls. The model is `Unknown` when there is no bootstrapper, more than one, or the `configure`
+   parameter is used anywhere other than as the receiver of one of those three methods (helpers, loops, assignments).
+   Bootstrapper-aware rules do not report against an `Unknown` model. Exposed through a `Lazy<BootstrapperModel>`
+   created in the compilation-start action and shared by all analyzers, since symbol actions run concurrently.
+   Tests: `BootstrapperModelTests` covering each call kind, the reverse-mapping flag, the member-access marker, and
+   each `Unknown` trigger.
+2. `KnownSymbols` gains the symbols the new rules need: `IConfiguration` and the three wrapper interfaces,
+   `IMapperProvider` and the three mapper interfaces, `AggregateRoot.Apply`, `GetState`, `SetState`, `BusinessException`.
+3. `SymbolExtensions` gains `HasValueEquality(ITypeSymbol)` (string, primitives, enums, structs, value objects,
+   types overriding `Equals(object)` or implementing `IEquatable<T>`) and `IsDefaultSerializable(INamedTypeSymbol)`
+   (a public parameterless constructor with every public property settable or init-able, or exactly one public
+   constructor whose parameters match the public properties by name, case-insensitively) with a result naming the
+   offending property, reused by DDDLIB012 and DDDLIB017.
+
+#### 7.1 Event application rules (new `EventApplicationAnalyzer`, operation actions)
+
+| Id | Severity | Reports when | Detection |
+|---|---|---|---|
+| DDDLIB008 | Warning | `Apply(x)` in an aggregate root where no non-public `Handle` with exactly the static type of `x` exists anywhere in the containing type's hierarchy | `IInvocationOperation` on `AggregateRoot.Apply`; argument static type must be a concrete class (skip `object`, abstract, type parameters); handlers collected with `GetDispatchableHandlers` up the base chain, metadata types included |
+| DDDLIB009 | Warning | A `Handle` method's parameter is an abstract class or an interface, which exact-type dispatch never matches | Symbol action, extends the DDDLIB002 branch in `DomainTypeAnalyzer`; type parameters stay exempt |
+| DDDLIB010 | Warning | `Apply` is invoked inside a `Handle` method (directly, including lambdas within it) | `IInvocationOperation` whose containing method is a dispatchable handler |
+| DDDLIB011 | Warning | A `Handle` method contains a `throw` statement or expression | `IThrowOperation` whose containing method is a dispatchable handler; message says handlers run on replay |
+| DDDLIB012 | Warning | A public get-only property on an event or memento type has no constructor parameter of the same name, so it is written but not loaded | Event types are the static types of `Apply` arguments and handler parameters; memento types are the types of `new` expressions returned from `GetState` overrides. Each type analyzed once per compilation (`ConcurrentDictionary`), only when declared in the compilation; reported at the property. A registered `JsonSerializerContext` follows the same rules, so no exemption |
+
+Red and green tests per rule, plus for DDDLIB008: a handler declared on a base class in metadata (compile the base
+into a reference assembly in the test) and an argument typed as a base class of the handled type (green, since the
+runtime type is unknown).
+
+#### 7.2 Type shape rules (extend `DomainTypeAnalyzer`, symbol actions)
+
+| Id | Severity | Reports when | Detection |
+|---|---|---|---|
+| DDDLIB013 | Warning | An aggregate root overrides exactly one of `GetState` and `SetState` | `GetMembers` of the type, overrides only |
+| DDDLIB014 | Warning | A non-abstract aggregate root has no parameterless constructor of any accessibility and the bootstrapper model has no `ToReconstituteUsing` for it | `HasParameterlessConstructor` plus `BootstrapperModel`; message names both fixes and that applied events are not recorded without a factory |
+| DDDLIB015 | Warning | A non-abstract aggregate root has no `[NaturalKey]` anywhere in its hierarchy and the bootstrapper model has no `ToUseNaturalKey` for it or a base type | Walk base types for declared natural keys; entities are deliberately not reported (an entity without a key is legal) |
+| DDDLIB016 | Error | `[NaturalKey]` on a property the runtime ignores: non-public getter, static, indexer, write-only, or on a type that is not an entity | `GetAttributes` on every property symbol, compared with the filter in `GetDeclaredNaturalKeyProperties` |
+| DDDLIB017 | Warning | A natural key type cannot round-trip: a class type other than `string` without value equality, or a value object that is not default-serializable and has no `ToUseValueObjectSerializer` in the bootstrapper model | Applies to the effective natural key of aggregate roots (attribute or bootstrapper); uses `HasValueEquality` and `IsDefaultSerializable`; help link to value-object-serialization.md, as the runtime message |
+| DDDLIB018 | Error | `class A : ValueObject<B>` where `B` is not `A` | Compare `GetValueObjectArgument` with the type; generic self-types allowed |
+| DDDLIB019 | Warning | A public property of a value object has a class type other than `string` that is not enumerable, not a value object, and has no value equality | `GetValueObjectProperties` plus `HasValueEquality` |
+| DDDLIB004 | (refine) | Not reported when the bootstrapper model has `ToUseEqualityComparer` for the type | Consult the model; the docs sentence about suppressing it goes |
+
+#### 7.3 Bootstrapper rules (extend `BootstrapperAnalyzer`)
+
+| Id | Severity | Reports when | Detection |
+|---|---|---|---|
+| DDDLIB020 | Warning | `Map.Entity(x).ToEvent<E>()`, `Map.ValueObject(v).ToEvent<E>()`, `Map.Event(e).ToEntity<T>()` or `Map.Event(e).ToValueObject<T>()` with no matching `ToMapToEvent<E>` for `T` in the bootstrapper model; the two reverse forms also require the reverse-mapping overload | `IInvocationOperation` on the mapper interface methods; `T` from the receiver's type argument, `E` from the method's; reported at the call site |
+| DDDLIB021 | Error | The bootstrapper's `ToUseNaturalKey` selects a different property from the `[NaturalKey]` declared on the same type | `BootstrapperModel` against `GetDeclaredNaturalKeyProperties` |
+| DDDLIB022 | Error | A `ToUseNaturalKey` selector whose body is not a member access on the parameter | Syntax of the lambda argument; the runtime throws `ArgumentException` at bootstrap otherwise |
+
+#### 7.4 Code fixes (new `src/dddlib.CodeFixes`, new `tests/dddlib.CodeFixes.Tests`)
+
+In order of value. Each test applies the fix through an `AdhocWorkspace` and compares the resulting source.
+
+1. DDDLIB014: add `protected internal Type() { }` with a "used for reconstitution only" comment, after the last
+   constructor or as the first member.
+2. DDDLIB007: add `partial` to the type and every non-partial containing type, across all declarations.
+3. DDDLIB003: change the handler's accessibility to `private`.
+4. DDDLIB008: add `private void Handle(EventType @event) { }` after the last existing handler.
+5. DDDLIB013: add the missing `GetState` (returning `null`) or `SetState` (`throw new NotImplementedException()`)
+   override with a comment pointing at aggregate-root-mementos.md.
+6. DDDLIB001: remove the `[NaturalKey]` attribute, one fix registered per attribute so the author chooses.
+
+#### 7.5 Landing order and exit
+
+Commits, each green on the whole solution: `P7.0` shared analysis and model tests; `P7.1` one commit per rule or
+small group; `P7.2`, `P7.3` likewise; `P7.4` the code fix project and packaging; `P7.5` docs (the diagnostics table,
+feature pages, `docs/bootstrapper.md` on what the analyzer can and cannot read from a bootstrapper) and
+`RELEASE_NOTES.md`. The runtime checks stay for non-generated and dynamically configured models.
+
+Exit: DDDLIB008 to DDDLIB022 and the six code fixes shipped in the `dddlib` package; every runtime "To fix this
+issue" message that is statically decidable has a diagnostic; issue #2 closed with the table in
+`docs/source-generator.md` as the record.
+
+Considered and left out: a handler whose event is never applied (events arrive from subclasses and mappings, so it
+is noisy), publicly settable value object properties (a shape the serialization docs sanction), a public bootstrapper
+(only a recommendation), and reporting DDDLIB015 for entities.
 
 ## 6. Test conventions with TUnit
 
