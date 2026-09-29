@@ -38,7 +38,7 @@ To fix this issue:
     }
 
     public T ToValueObject<T>()
-        where T : notnull
+        where T : ValueObject<T>
     {
         var runtimeType = Application.Current.GetValueObjectType(typeof(T));
         if (!runtimeType.Mappings.TryGet<TEvent, T>(out Func<TEvent, T>? mapping))

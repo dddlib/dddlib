@@ -53,12 +53,31 @@ public class DefaultValueObjectSerializerTests
         await Assert.That(action).Throws<RuntimeException>();
     }
 
-    public sealed record ValueObjectWithPropertySetter
+    public class ValueObjectWithPropertySetter : ValueObject<ValueObjectWithPropertySetter>
     {
         public string? Property { get; set; }
     }
 
-    public sealed record ValueObjectWithConstructor(string Text, int Number);
+    public class ValueObjectWithConstructor : ValueObject<ValueObjectWithConstructor>
+    {
+        public ValueObjectWithConstructor(string text, int number)
+        {
+            this.Text = text;
+            this.Number = number;
+        }
 
-    public sealed record ValueObjectWithDateTime(DateTime Timestamp);
+        public string Text { get; }
+
+        public int Number { get; }
+    }
+
+    public class ValueObjectWithDateTime : ValueObject<ValueObjectWithDateTime>
+    {
+        public ValueObjectWithDateTime(DateTime timestamp)
+        {
+            this.Timestamp = timestamp;
+        }
+
+        public DateTime Timestamp { get; }
+    }
 }

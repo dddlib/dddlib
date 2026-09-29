@@ -13,5 +13,5 @@ public interface IConfiguration : IFluentExtensions
         where T : Entity;
 
     IValueObjectConfigurationWrapper<T> ValueObject<T>()
-        where T : notnull;
+        where T : ValueObject<T>;
 }

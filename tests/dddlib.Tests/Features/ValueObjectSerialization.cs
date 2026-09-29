@@ -17,7 +17,7 @@ public abstract class ValueObjectSerialization : Feature
         {
             // Given a value object with a serializer defined in the bootstrapper
             // And an instance of that value object
-            var instance = new Subject("value");
+            var instance = new Subject { Value = "value" };
 
             // And that instance is serialized and deserialized
             var serializer = Application.Current.GetValueObjectType(typeof(Subject)).Serializer;
@@ -31,7 +31,10 @@ public abstract class ValueObjectSerialization : Feature
             await Assert.That(serializedSubject).StartsWith("V:");
         }
 
-        public sealed record Subject(string Value);
+        public class Subject : ValueObject<Subject>
+        {
+            public string? Value { get; set; }
+        }
 
         private sealed class BootStrapper : IBootstrap<Subject>
         {
@@ -46,7 +49,7 @@ public abstract class ValueObjectSerialization : Feature
             public string Serialize(object valueObject) =>
                 string.Format(CultureInfo.InvariantCulture, "V:{0}", ((Subject)valueObject).Value);
 
-            public object Deserialize(string serializedValueObject) => new Subject(serializedValueObject[2..]);
+            public object Deserialize(string serializedValueObject) => new Subject { Value = serializedValueObject[2..] };
         }
     }
 
@@ -57,7 +60,7 @@ public abstract class ValueObjectSerialization : Feature
         {
             // Given a value object with a serializer defined in the bootstrapper via delegates
             // And an instance of that value object
-            var instance = new Subject("value");
+            var instance = new Subject { Value = "value" };
 
             // And that instance is serialized and deserialized
             var serializer = Application.Current.GetValueObjectType(typeof(Subject)).Serializer;
@@ -71,7 +74,10 @@ public abstract class ValueObjectSerialization : Feature
             await Assert.That(serializedSubject).StartsWith("X:");
         }
 
-        public sealed record Subject(string Value);
+        public class Subject : ValueObject<Subject>
+        {
+            public string? Value { get; set; }
+        }
 
         private sealed class BootStrapper : IBootstrap<Subject>
         {
@@ -80,7 +86,7 @@ public abstract class ValueObjectSerialization : Feature
                 configure.ValueObject<Subject>()
                     .ToUseValueObjectSerializer(
                         subject => string.Format(CultureInfo.InvariantCulture, "X:{0}", subject.Value),
-                        value => new Subject(value[2..]));
+                        value => new Subject { Value = value[2..] });
             }
         }
     }

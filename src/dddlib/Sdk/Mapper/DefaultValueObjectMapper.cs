@@ -4,7 +4,7 @@ using dddlib.Runtime;
 namespace dddlib.Sdk;
 
 internal sealed class DefaultValueObjectMapper<TValueObject> : IValueObjectMapper<TValueObject>
-    where TValueObject : notnull
+    where TValueObject : ValueObject<TValueObject>
 {
     private readonly TValueObject source;
 

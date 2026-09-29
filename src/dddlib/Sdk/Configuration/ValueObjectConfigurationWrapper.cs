@@ -5,7 +5,7 @@ using dddlib.Sdk.Configuration.Model;
 namespace dddlib.Sdk.Configuration;
 
 internal sealed class ValueObjectConfigurationWrapper<T> : IValueObjectConfigurationWrapper<T>
-    where T : notnull
+    where T : ValueObject<T>
 {
     private readonly ValueObjectType valueObjectType;
 
@@ -14,6 +14,12 @@ internal sealed class ValueObjectConfigurationWrapper<T> : IValueObjectConfigura
         ArgumentNullException.ThrowIfNull(valueObjectType);
 
         this.valueObjectType = valueObjectType;
+    }
+
+    public IValueObjectConfigurationWrapper<T> ToUseEqualityComparer(IEqualityComparer<T> equalityComparer)
+    {
+        this.valueObjectType.ConfigureEqualityComparer(equalityComparer);
+        return this;
     }
 
     public IValueObjectConfigurationWrapper<T> ToUseValueObjectSerializer(IValueObjectSerializer valueObjectSerializer)

@@ -1,33 +1,71 @@
+using dddlib.Configuration;
+using dddlib.Tests.Support;
+
 namespace dddlib.Tests.Features;
 
 // As someone who uses dddlib
 // In order to compare value objects
-// I need value objects to have structural equality
-//
-// In v2 value objects are C# records. These scenarios re-express the legacy ValueObjectEquality feature
-// to document what records provide natively and where the user has to step in (custom comparison and
-// collection-typed members). See PLAN.md section 4.
-public abstract class ValueObjectEquality
+// I need value objects to have structural equality over their public properties
+public abstract class ValueObjectEquality : Feature
 {
     public sealed class UndefinedEqualityComparer : ValueObjectEquality
     {
         [Test]
         public async Task Scenario()
         {
-            // Given a value object record with no custom equality
+            // Given a value object with an undefined equality comparer
             // And a value
             var value = "key";
 
             // When two instances of that value object are instantiated with the same value
-            var instance1 = new Subject(value);
-            var instance2 = new Subject(value);
+            var instance1 = new Subject { Value = value };
+            var instance2 = new Subject { Value = value };
 
             // Then the first instance is equal to the second instance
             await Assert.That(instance1).IsEqualTo(instance2);
             await Assert.That(instance1 == instance2).IsTrue();
+            await Assert.That(instance1.GetHashCode()).IsEqualTo(instance2.GetHashCode());
         }
 
-        public sealed record Subject(string Value);
+        public class Subject : ValueObject<Subject>
+        {
+            public string? Value { get; set; }
+        }
+    }
+
+    public sealed class EqualityComparerDefinedInBootstrapper : ValueObjectEquality
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a value object with an equality comparer defined in the bootstrapper
+            // When two instances of that value object are instantiated with the 'same' value
+            var instance1 = new Subject { Value = "a" };
+            var instance2 = new Subject { Value = "b" };
+
+            // Then the first instance is equal to the second instance
+            await Assert.That(instance1).IsEqualTo(instance2);
+        }
+
+        public class Subject : ValueObject<Subject>
+        {
+            public string? Value { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.ValueObject<Subject>().ToUseEqualityComparer(new EqualityComparer());
+            }
+        }
+
+        private sealed class EqualityComparer : IEqualityComparer<Subject>
+        {
+            public bool Equals(Subject? x, Subject? y) => x?.Value == "a" && y?.Value == "b";
+
+            public int GetHashCode(Subject obj) => 0;
+        }
     }
 
     public sealed class CaseSensitiveUndefinedEqualityComparer : ValueObjectEquality
@@ -35,90 +73,109 @@ public abstract class ValueObjectEquality
         [Test]
         public async Task Scenario()
         {
-            // Given a value object record with no custom equality
+            // Given a value object with an undefined equality comparer
             // When two instances of that value object are instantiated with values that differ by case
-            var instance1 = new Subject("CASE");
-            var instance2 = new Subject("case");
+            var instance1 = new Subject { Value = "CASE" };
+            var instance2 = new Subject { Value = "case" };
 
             // Then the first instance is not equal to the second instance
             await Assert.That(instance1).IsNotEqualTo(instance2);
             await Assert.That(instance1 != instance2).IsTrue();
         }
 
-        public sealed record Subject(string Value);
+        public class Subject : ValueObject<Subject>
+        {
+            public string? Value { get; set; }
+        }
     }
 
-    public sealed class CaseInsensitiveEqualityViaEqualsOverride : ValueObjectEquality
+    public sealed class CaseInsensitiveStringEqualityComparerDefinedInBootstrapper : ValueObjectEquality
     {
         [Test]
         public async Task Scenario()
         {
-            // Given a value object record that overrides Equals to compare case-insensitively
+            // Given a value object with a case-insensitive equality comparer defined in the bootstrapper
             // When two instances of that value object are instantiated with values that differ by case
-            var instance1 = new Subject("CASE");
-            var instance2 = new Subject("case");
-
-            // Then the first instance is equal to the second instance
-            await Assert.That(instance1).IsEqualTo(instance2);
-            await Assert.That(instance1 == instance2).IsTrue();
-            await Assert.That(instance1.GetHashCode()).IsEqualTo(instance2.GetHashCode());
-        }
-
-        public sealed record Subject(string Value)
-        {
-            public bool Equals(Subject? other) =>
-                other is not null && string.Equals(this.Value, other.Value, StringComparison.OrdinalIgnoreCase);
-
-            public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(this.Value);
-        }
-    }
-
-    public sealed class CollectionMemberComparesByReference : ValueObjectEquality
-    {
-        [Test]
-        public async Task Scenario()
-        {
-            // Given a value object record with a collection-typed member and no custom equality
-            // When two instances of that value object are instantiated with distinct but sequence-equal collections
-            var instance1 = new Subject(new List<string> { "hello" });
-            var instance2 = new Subject(new List<string> { "hello" });
-
-            // Then the first instance is not equal to the second instance (records compare the member by reference)
-            await Assert.That(instance1).IsNotEqualTo(instance2);
-        }
-
-        public sealed record Subject(List<string> Elements);
-    }
-
-    public sealed class CollectionMemberComparesBySequenceViaEqualsOverride : ValueObjectEquality
-    {
-        [Test]
-        public async Task Scenario()
-        {
-            // Given a value object record with a collection-typed member that overrides Equals to use sequence equality
-            // When two instances of that value object are instantiated with distinct but sequence-equal collections
-            var instance1 = new Subject(new List<string> { "hello" });
-            var instance2 = new Subject(new List<string> { "hello" });
+            var instance1 = new Subject { Value = "CASE" };
+            var instance2 = new Subject { Value = "case" };
 
             // Then the first instance is equal to the second instance
             await Assert.That(instance1).IsEqualTo(instance2);
             await Assert.That(instance1.GetHashCode()).IsEqualTo(instance2.GetHashCode());
         }
 
-        public sealed record Subject(List<string> Elements)
+        public class Subject : ValueObject<Subject>
         {
-            public bool Equals(Subject? other) => other is not null && this.Elements.SequenceEqual(other.Elements);
+            public string? Value { get; set; }
+        }
 
-            public override int GetHashCode()
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
             {
-                var hash = default(HashCode);
-                foreach (var element in this.Elements)
-                {
-                    hash.Add(element, StringComparer.Ordinal);
-                }
-
-                return hash.ToHashCode();
+                configure.ValueObject<Subject>().ToUseEqualityComparer(new EqualityComparer());
             }
+        }
+
+        private sealed class EqualityComparer : IEqualityComparer<Subject>
+        {
+            public bool Equals(Subject? x, Subject? y) => string.Equals(x?.Value, y?.Value, StringComparison.OrdinalIgnoreCase);
+
+            public int GetHashCode(Subject obj) => StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Value ?? string.Empty);
+        }
+    }
+
+    public sealed class CollectionMemberComparesBySequence : ValueObjectEquality
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a value object with a collection-typed member and an undefined equality comparer
+            // When two instances of that value object are instantiated with distinct but sequence-equal collections
+            var instance1 = new Subject { Elements = new List<string> { "hello", "world" } };
+            var instance2 = new Subject { Elements = new[] { "hello", "world" } };
+            var instance3 = new Subject { Elements = new[] { "world", "hello" } };
+
+            // Then the first instance is equal to the second instance but not the third
+            await Assert.That(instance1).IsEqualTo(instance2);
+            await Assert.That(instance1.GetHashCode()).IsEqualTo(instance2.GetHashCode());
+            await Assert.That(instance1).IsNotEqualTo(instance3);
+        }
+
+        public class Subject : ValueObject<Subject>
+        {
+            public IEnumerable<string>? Elements { get; set; }
+        }
+    }
+
+    public sealed class PrivateFieldsDoNotParticipateInEquality : ValueObjectEquality
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a value object with a public property and a private cache field
+            // When two instances of that value object are instantiated with the same value but different cache state
+            var instance1 = new Subject("key");
+            var instance2 = new Subject("key");
+            _ = instance1.Length;
+
+            // Then the first instance is equal to the second instance
+            await Assert.That(instance1).IsEqualTo(instance2);
+            await Assert.That(instance1.GetHashCode()).IsEqualTo(instance2.GetHashCode());
+        }
+
+        public class Subject : ValueObject<Subject>
+        {
+            private int? cachedLength;
+
+            public Subject(string value)
+            {
+                this.Value = value;
+            }
+
+            public string Value { get; }
+
+            public int Length => this.cachedLength ??= this.Value.Length;
         }
     }
 }

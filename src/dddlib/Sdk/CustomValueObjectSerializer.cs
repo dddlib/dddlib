@@ -3,7 +3,7 @@ using dddlib.Runtime;
 namespace dddlib.Sdk;
 
 public class CustomValueObjectSerializer<T> : IValueObjectSerializer
-    where T : notnull
+    where T : ValueObject<T>
 {
     private readonly Func<T, string> serialize;
     private readonly Func<string, T> deserialize;

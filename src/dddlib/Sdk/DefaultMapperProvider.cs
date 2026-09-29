@@ -13,6 +13,6 @@ public sealed class DefaultMapperProvider : IMapperProvider
         => new DefaultEntityMapper<T>(entity);
 
     public IValueObjectMapper<T> ValueObject<T>(T valueObject)
-        where T : notnull
+        where T : ValueObject<T>
         => new DefaultValueObjectMapper<T>(valueObject);
 }

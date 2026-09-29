@@ -50,7 +50,15 @@ public abstract class AggregateRootValueObjectMapping : Feature
             }
         }
 
-        public sealed record NaturalKey(string Value);
+        public class NaturalKey : ValueObject<NaturalKey>
+        {
+            public NaturalKey(string value)
+            {
+                this.Value = value;
+            }
+
+            public string Value { get; }
+        }
 
         public class NewSubject
         {
@@ -111,7 +119,15 @@ public abstract class AggregateRootValueObjectMapping : Feature
             }
         }
 
-        public sealed record Data(string Value);
+        public class Data : ValueObject<Data>
+        {
+            public Data(string value)
+            {
+                this.Value = value;
+            }
+
+            public string Value { get; }
+        }
 
         public class DataProcessed
         {
@@ -156,7 +172,15 @@ public abstract class AggregateRootValueObjectMapping : Feature
             public string? Id { get; set; }
         }
 
-        public sealed record SubjectId(string Value);
+        public class SubjectId : ValueObject<SubjectId>
+        {
+            public SubjectId(string value)
+            {
+                this.Value = value;
+            }
+
+            public string Value { get; }
+        }
 
         public class NewSubject
         {
@@ -194,7 +218,15 @@ public abstract class AggregateRootValueObjectMapping : Feature
             }
         }
 
-        public sealed record SubjectId(string Value);
+        public class SubjectId : ValueObject<SubjectId>
+        {
+            public SubjectId(string value)
+            {
+                this.Value = value;
+            }
+
+            public string Value { get; }
+        }
 
         public class NewSubject
         {

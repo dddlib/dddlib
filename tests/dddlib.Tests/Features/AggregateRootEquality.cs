@@ -169,8 +169,6 @@ public abstract class AggregateRootEquality : Feature
         }
     }
 
-    // In v2 the case-insensitive comparison lives on the value object record itself (an Equals override) rather than
-    // in an equality comparer registered in the bootstrapper. The scenario name is kept for parity with the legacy suite.
     public sealed class CaseInsensitiveEqualityComparerDefinedInBootstrapper : AggregateRootEquality
     {
         [Test]
@@ -181,19 +179,16 @@ public abstract class AggregateRootEquality : Feature
             var naturalKey = "key";
 
             // When two instances of that aggregate root are instantiated with natural key values that differ by case
-            var instance1 = new Subject { NaturalKey = new Key(naturalKey.ToUpperInvariant()) };
-            var instance2 = new Subject { NaturalKey = new Key(naturalKey.ToLowerInvariant()) };
+            var instance1 = new Subject { NaturalKey = new Key { Value = naturalKey.ToUpperInvariant() } };
+            var instance2 = new Subject { NaturalKey = new Key { Value = naturalKey.ToLowerInvariant() } };
 
             // Then the first instance is equal to the second instance
             await Assert.That(instance1).IsEqualTo(instance2);
         }
 
-        public sealed record Key(string Value)
+        public class Key : ValueObject<Key>
         {
-            public bool Equals(Key? other) =>
-                other is not null && string.Equals(this.Value, other.Value, StringComparison.OrdinalIgnoreCase);
-
-            public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(this.Value);
+            public string? Value { get; set; }
         }
 
         public class Subject : AggregateRoot
@@ -201,11 +196,19 @@ public abstract class AggregateRootEquality : Feature
             public Key? NaturalKey { get; set; }
         }
 
-        private sealed class BootStrapper : IBootstrap<Subject>
+        private sealed class BootStrapper : IBootstrap<Subject>, IBootstrap<Key>
         {
             public void Bootstrap(IConfiguration configure)
             {
                 configure.AggregateRoot<Subject>().ToUseNaturalKey(subject => subject.NaturalKey);
+                configure.ValueObject<Key>().ToUseEqualityComparer(new KeyEqualityComparer());
+            }
+
+            private sealed class KeyEqualityComparer : IEqualityComparer<Key>
+            {
+                public bool Equals(Key? x, Key? y) => string.Equals(x?.Value, y?.Value, StringComparison.OrdinalIgnoreCase);
+
+                public int GetHashCode(Key obj) => StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Value ?? string.Empty);
             }
         }
     }
@@ -221,8 +224,8 @@ public abstract class AggregateRootEquality : Feature
             var component2 = "key2";
 
             // When two instances of that aggregate root are instantiated with equal composite natural keys
-            var naturalKey1 = new NaturalKeyValue(component1, component2);
-            var naturalKey2 = new NaturalKeyValue(component1, component2);
+            var naturalKey1 = new NaturalKeyValue { Component1 = component1, Component2 = component2 };
+            var naturalKey2 = new NaturalKeyValue { Component1 = component1, Component2 = component2 };
             var instance1 = new Subject { NaturalKey = naturalKey1 };
             var instance2 = new Subject { NaturalKey = naturalKey2 };
 
@@ -230,7 +233,12 @@ public abstract class AggregateRootEquality : Feature
             await Assert.That(instance1).IsEqualTo(instance2);
         }
 
-        public sealed record NaturalKeyValue(string Component1, string Component2);
+        public class NaturalKeyValue : ValueObject<NaturalKeyValue>
+        {
+            public string? Component1 { get; set; }
+
+            public string? Component2 { get; set; }
+        }
 
         public class Subject : AggregateRoot
         {

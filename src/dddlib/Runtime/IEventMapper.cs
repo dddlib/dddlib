@@ -10,5 +10,5 @@ public interface IEventMapper<TEvent> : IFluentExtensions
         where T : Entity;
 
     T ToValueObject<T>()
-        where T : notnull;
+        where T : ValueObject<T>;
 }

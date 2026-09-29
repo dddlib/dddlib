@@ -67,7 +67,7 @@ internal sealed class BootstrapperConfiguration : IConfiguration
     }
 
     public IValueObjectConfigurationWrapper<T> ValueObject<T>()
-        where T : notnull
+        where T : ValueObject<T>
     {
         if (this.valueObjectType is not null && this.valueObjectType.RuntimeType == typeof(T))
         {
@@ -101,8 +101,10 @@ internal sealed class BootstrapperConfiguration : IConfiguration
     }
 
     private sealed class EmptyValueObjectConfigurationWrapper<T> : IValueObjectConfigurationWrapper<T>
-        where T : notnull
+        where T : ValueObject<T>
     {
+        public IValueObjectConfigurationWrapper<T> ToUseEqualityComparer(IEqualityComparer<T> equalityComparer) => this;
+
         public IValueObjectConfigurationWrapper<T> ToUseValueObjectSerializer(IValueObjectSerializer valueObjectSerializer) => this;
 
         public IValueObjectConfigurationWrapper<T> ToUseValueObjectSerializer(Func<T, string> serialize, Func<string, T> deserialize) => this;

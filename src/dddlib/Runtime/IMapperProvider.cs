@@ -14,5 +14,5 @@ public interface IMapperProvider : IFluentExtensions
         where T : Entity;
 
     IValueObjectMapper<T> ValueObject<T>(T valueObject)
-        where T : notnull;
+        where T : ValueObject<T>;
 }

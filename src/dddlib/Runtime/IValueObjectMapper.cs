@@ -5,7 +5,7 @@ namespace dddlib.Runtime;
 
 [EditorBrowsable(EditorBrowsableState.Never)]
 public interface IValueObjectMapper<TValueObject> : IFluentExtensions
-    where TValueObject : notnull
+    where TValueObject : ValueObject<TValueObject>
 {
     T ToEvent<T>()
         where T : new();

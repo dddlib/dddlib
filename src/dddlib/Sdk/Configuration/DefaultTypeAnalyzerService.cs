@@ -14,8 +14,7 @@ public class DefaultTypeAnalyzerService : ITypeAnalyzerService
 
     public bool IsValidEntity(Type runtimeType) => typeof(Entity).IsAssignableFrom(runtimeType);
 
-    // In v2 any type that is not an entity can act as a value object; records are the expected shape.
-    public bool IsValidValueObject(Type runtimeType) => runtimeType is not null && !typeof(Entity).IsAssignableFrom(runtimeType);
+    public bool IsValidValueObject(Type runtimeType) => runtimeType.IsSubclassOfRawGeneric(typeof(ValueObject<>));
 
     public bool IsValidProperty(Type runtimeType, string propertyName, Type propertyType)
     {

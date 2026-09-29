@@ -19,6 +19,26 @@ public static class TypeExtensions
     }
 
     /// <summary>
+    /// Gets a value indicating whether the source type derives from a constructed form of the specified generic type definition.
+    /// </summary>
+    public static bool IsSubclassOfRawGeneric(this Type sourceType, Type genericTypeDefinition)
+    {
+        ArgumentNullException.ThrowIfNull(sourceType);
+        ArgumentNullException.ThrowIfNull(genericTypeDefinition);
+
+        for (var current = sourceType; current is not null && current != typeof(object); current = current.BaseType)
+        {
+            var candidate = current.IsGenericType ? current.GetGenericTypeDefinition() : current;
+            if (candidate == genericTypeDefinition)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Gets a stable name for the type that does not include the assembly version.
     /// </summary>
     public static string GetSerializedName(this Type sourceType)

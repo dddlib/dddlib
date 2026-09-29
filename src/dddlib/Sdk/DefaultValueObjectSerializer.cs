@@ -9,7 +9,7 @@ namespace dddlib.Sdk;
 /// a parameterless constructor and settable properties round-trip without configuration.
 /// </summary>
 public class DefaultValueObjectSerializer<T> : IValueObjectSerializer
-    where T : notnull
+    where T : ValueObject<T>
 {
     public string Serialize(object valueObject)
     {

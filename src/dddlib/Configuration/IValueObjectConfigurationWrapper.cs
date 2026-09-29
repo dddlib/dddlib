@@ -6,8 +6,10 @@ namespace dddlib.Configuration;
 
 [EditorBrowsable(EditorBrowsableState.Never)]
 public interface IValueObjectConfigurationWrapper<T> : IFluentExtensions
-    where T : notnull
+    where T : ValueObject<T>
 {
+    IValueObjectConfigurationWrapper<T> ToUseEqualityComparer(IEqualityComparer<T> equalityComparer);
+
     IValueObjectConfigurationWrapper<T> ToUseValueObjectSerializer(IValueObjectSerializer valueObjectSerializer);
 
     IValueObjectConfigurationWrapper<T> ToUseValueObjectSerializer(Func<T, string> serialize, Func<string, T> deserialize);
