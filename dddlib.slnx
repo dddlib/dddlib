@@ -14,6 +14,9 @@
     <Project Path="src/dddlib.Generators/dddlib.Generators.csproj" />
     <Project Path="src/dddlib.Persistence/dddlib.Persistence.csproj" />
   </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/dddlib.Benchmarks/dddlib.Benchmarks.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/dddlib.Generators.Tests/dddlib.Generators.Tests.csproj" />
     <Project Path="tests/dddlib.Persistence.Tests/dddlib.Persistence.Tests.csproj" />

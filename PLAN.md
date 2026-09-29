@@ -132,6 +132,24 @@ configured. Phase 4 turns that into an analyzer diagnostic.
 
 Tracked in dddlib/dddlib#150 (Roslyn analyzer for Visual Studio).
 
+How the generated code plugs in (implemented 2026-09-29): the generator emits a private nested `__DddlibMetadata`
+class into every aggregate root, entity and value object that is `partial` (containing types included). It carries
+exact-type event dispatch over the handlers the type declares, the natural key accessor, the uninitialized factory
+and a value object comparer over the public properties. The runtime finds it once per type by name
+(`GeneratedMetadata`), so private handlers and private nested types need no module initializers. Event dispatch
+is composed one hierarchy level at a time (`EventDispatchers`), generated where a level is partial and reflection
+where it is not, so mixed hierarchies work. The assembly's bootstrapper is registered at module initialization
+(`BootstrapperRegistry`); scanning is the fallback.
+
+Diagnostics: DDDLIB001 more than one natural key (error), DDDLIB002 value-type handler parameter, DDDLIB003 public
+handler, DDDLIB004 value object without public properties (warnings), DDDLIB005 more than one bootstrapper,
+DDDLIB006 bootstrapper without a public default constructor (errors), DDDLIB007 make the type partial (info).
+
+Benchmarks (`benchmarks/dddlib.Benchmarks`, BenchmarkDotNet, 2026-09-29): both paths allocate nothing on `Apply`
+and on natural key equality. Steady-state cost is the same within noise (Apply medians 27 ns generated versus 35 ns
+reflection; equality 13 ns both): compiled expression delegates are as fast as generated code once jitted. The
+generated path wins at type construction (no reflection, no expression compilation) and for trimming and AOT.
+
 Each generator replaces one runtime mechanism and must leave the reflection path working for types
 that are not `partial`:
 
@@ -141,7 +159,7 @@ that are not `partial`:
 | Natural key discovery, uninitialized factory | Static type metadata registered via module initializer |
 | Bootstrapper discovery by assembly scan | Generated registration of `IBootstrapper` implementations |
 | Runtime "To fix this issue" exceptions | Analyzer diagnostics: duplicate natural key, missing reconstitution constructor, handler for a value-type event, value object without public properties, etc. |
-| Reflection-based JSON | `JsonSerializerContext` for events and natural keys |
+| Reflection-based JSON | A user-authored `JsonSerializerContext` registered through `JsonSerialization.AddTypeInfoResolver`. A generator cannot emit a context for System.Text.Json's own generator to fill in, because generators do not see each other's output. |
 
 ## 5. Phases
 
@@ -217,7 +235,7 @@ only prerequisite.
   before, and produce a public API snapshot test.
 
 Exit: benchmarks (optional BenchmarkDotNet project) show the generated paths allocate nothing on
-`Apply` and on natural key lookup.
+`Apply` and on natural key lookup. Met; see section 4.
 
 ### Phase 5: packaging
 
