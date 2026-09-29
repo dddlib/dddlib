@@ -283,6 +283,7 @@ namespace dddlib.Sdk.Configuration.Model
     {
         public NaturalKey(System.Type runtimeType, string propertyName, System.Type propertyType, System.Func<dddlib.Entity, object?> getValue) { }
         public NaturalKey(System.Type runtimeType, string propertyName, System.Type propertyType, dddlib.Sdk.Configuration.Model.ITypeAnalyzerService typeAnalyzerService) { }
+        public System.Func<dddlib.Entity, object?> Accessor { get; }
         public string PropertyName { get; }
         public System.Type PropertyType { get; }
         public System.Type RuntimeType { get; }

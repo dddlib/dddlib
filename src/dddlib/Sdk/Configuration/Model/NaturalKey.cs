@@ -69,6 +69,12 @@ public sealed class NaturalKey : IEquatable<NaturalKey>
 
     public static bool operator !=(NaturalKey? left, NaturalKey? right) => !(left == right);
 
+    /// <summary>
+    /// Gets the accessor itself, for callers on a hot path that already hold a non-null entity.
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public Func<Entity, object?> Accessor => this.getValue;
+
     public object? GetValue(Entity entity)
     {
         ArgumentNullException.ThrowIfNull(entity);

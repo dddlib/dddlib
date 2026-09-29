@@ -37,7 +37,7 @@ public class DomainTypeGeneratorTests
         await Assert.That(run.AllGeneratedSource).Contains("public string? NaturalKeyPropertyName => \"Id\";");
         await Assert.That(run.AllGeneratedSource).Contains("typeof(string)");
         await Assert.That(run.AllGeneratedSource).Contains("(global::System.Func<global::Sample.Subject>)(static () => new global::Sample.Subject())");
-        await Assert.That(run.AllGeneratedSource).Contains("if (eventType == typeof(global::Sample.NewSubject))");
+        await Assert.That(run.AllGeneratedSource).Contains("if (@event.GetType() == typeof(global::Sample.NewSubject))");
         await Assert.That(run.AllGeneratedSource).Contains("self.Handle((global::Sample.SubjectRenamed)@event);");
     }
 

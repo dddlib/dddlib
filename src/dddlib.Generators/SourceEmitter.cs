@@ -69,10 +69,10 @@ internal static class SourceEmitter
         if (model.HandlerEventTypes.Count > 0)
         {
             Line(builder, indent + 2, $"var self = ({model.FullyQualifiedName})target;");
-            Line(builder, indent + 2, "var eventType = @event.GetType();");
             foreach (var eventType in model.HandlerEventTypes)
             {
-                Line(builder, indent + 2, $"if (eventType == typeof({eventType}))");
+                // Written inline so the JIT can turn it into a method table comparison.
+                Line(builder, indent + 2, $"if (@event.GetType() == typeof({eventType}))");
                 Line(builder, indent + 2, "{");
                 Line(builder, indent + 3, $"self.Handle(({eventType})@event);");
                 Line(builder, indent + 3, "return;");

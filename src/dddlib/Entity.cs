@@ -26,7 +26,7 @@ public abstract class Entity : IEquatable<Entity>
     private protected Entity(Func<Type, EntityType> resolveEntityType)
     {
         this.Metadata = resolveEntityType(this.GetType());
-        this.getNaturalKeyValue = this.Metadata.NaturalKey is { } naturalKey ? naturalKey.GetValue : null;
+        this.getNaturalKeyValue = this.Metadata.NaturalKey?.Accessor;
     }
 
     /// <summary>
@@ -93,6 +93,35 @@ public abstract class Entity : IEquatable<Entity>
             return;
         }
 
+        this.ThrowLifecycleEnded(eventName);
+    }
+
+    /// <summary>
+    /// Throws a <see cref="BusinessException"/> if the lifecycle of this entity has ended. The event type name is
+    /// only computed when the exception is actually thrown.
+    /// </summary>
+    internal void ThrowIfLifecycleEnded(object @event)
+    {
+        if (!this.isDestroyed)
+        {
+            return;
+        }
+
+        this.ThrowLifecycleEnded(@event.GetType().Name);
+    }
+
+    /// <summary>
+    /// Ends the lifecycle of this entity. Subsequent calls to <see cref="ThrowIfLifecycleEnded()"/> will throw.
+    /// </summary>
+    protected void EndLifecycle()
+    {
+        this.ThrowIfLifecycleEnded();
+        this.isDestroyed = true;
+    }
+
+    private void ThrowLifecycleEnded(string? eventName)
+    {
+
         var naturalKeyValue = this.getNaturalKeyValue?.Invoke(this);
 
         var format = string.IsNullOrEmpty(eventName)
@@ -107,12 +136,4 @@ public abstract class Entity : IEquatable<Entity>
             string.Format(CultureInfo.InvariantCulture, format, this.GetType().Name, naturalKeyValue, eventName));
     }
 
-    /// <summary>
-    /// Ends the lifecycle of this entity. Subsequent calls to <see cref="ThrowIfLifecycleEnded()"/> will throw.
-    /// </summary>
-    protected void EndLifecycle()
-    {
-        this.ThrowIfLifecycleEnded();
-        this.isDestroyed = true;
-    }
 }

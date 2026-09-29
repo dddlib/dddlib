@@ -106,7 +106,7 @@ To fix this issue:
     {
         ArgumentNullException.ThrowIfNull(@event);
 
-        this.ThrowIfLifecycleEnded(@event.GetType().Name);
+        this.ThrowIfLifecycleEnded();
         this.Apply(@event, isNew: true);
     }
 

@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Linq.Expressions;
 using System.Reflection;
 using dddlib.Runtime;
@@ -14,7 +15,7 @@ public sealed class DefaultEventDispatcher : IEventDispatcher
     private const string DefaultMethodName = "Handle";
     private const BindingFlags DefaultBindingFlags = BindingFlags.Instance | BindingFlags.NonPublic;
 
-    private readonly Dictionary<Type, Action<object, object>[]> handlers;
+    private readonly FrozenDictionary<Type, Action<object, object>[]> handlers;
 
     /// <summary>
     /// Creates a dispatcher for the handlers declared anywhere in the type's hierarchy.
@@ -77,7 +78,7 @@ public sealed class DefaultEventDispatcher : IEventDispatcher
     private static bool IsValidIdentifier(string name) =>
         (char.IsLetter(name[0]) || name[0] == '_') && name.All(static c => char.IsLetterOrDigit(c) || c == '_');
 
-    private static Dictionary<Type, Action<object, object>[]> GetHandlers(IEnumerable<Type> types, string methodName, BindingFlags bindingFlags)
+    private static FrozenDictionary<Type, Action<object, object>[]> GetHandlers(IEnumerable<Type> types, string methodName, BindingFlags bindingFlags)
     {
         var handlerMethods = types
             .SelectMany(t => t.GetMethods(bindingFlags | BindingFlags.DeclaredOnly))
@@ -93,7 +94,8 @@ public sealed class DefaultEventDispatcher : IEventDispatcher
             .GroupBy(handler => handler.ParameterType)
             .ToDictionary(
                 group => group.Key,
-                group => group.Select(handler => CreateHandlerDelegate(handler.Method, handler.ParameterType)).ToArray());
+                group => group.Select(handler => CreateHandlerDelegate(handler.Method, handler.ParameterType)).ToArray())
+            .ToFrozenDictionary();
     }
 
     private static Action<object, object> CreateHandlerDelegate(MethodInfo method, Type parameterType)
