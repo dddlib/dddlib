@@ -44,7 +44,7 @@ to share identities between repositories.
 
 ## SQL Server
 
-`SqlServerMementoRepository<T>` stores any memento as JSON in the `Mementos` table created by the shipped scripts and
+`SqlServerMementoRepository<T>` stores any memento as JSON in the `Mementos` table of the [dddlib schema](sql-server.md) and
 appends the events to the event store's `Streams` and `Events` tables in the same stored procedure:
 
 ```csharp
@@ -95,7 +95,7 @@ public sealed class CarRepository(string connectionString)
 }
 ```
 
-`AppendEventsAsync` calls the `AppendEvents` procedure from script 05, which takes the same locks as the event
+`AppendEventsAsync` calls the `AppendEvents` procedure, which takes the same locks as the event
 store's commit so that sequence numbers reflect commit order.
 
 ## Concurrency

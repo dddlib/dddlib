@@ -8,6 +8,12 @@ domain has done without being called from inside the aggregate root.
 dotnet add package dddlib.Persistence.EventDispatcher
 ```
 
+The SQL Server host is in **dddlib.Persistence.EventDispatcher.SqlServer**:
+
+```shell
+dotnet add package dddlib.Persistence.EventDispatcher.SqlServer
+```
+
 ## Model
 
 Every committed event has a store-wide **sequence number**. A dispatcher is identified by a `Guid` and keeps its own
@@ -46,8 +52,7 @@ public sealed class CarProjection : IEventDispatcher
 
 ## Hosting
 
-The SQL Server host polls the same database the repository writes to. Run the package's schema script first (see
-below).
+The SQL Server host polls the same database the repository writes to. Install the schema first (see below).
 
 ```csharp
 using dddlib.Persistence.EventDispatcher;
@@ -96,15 +101,16 @@ itself does not log; subscribe to `DispatchFailed` to do so. Cancelling the toke
 
 ## SQL Server schema
 
-The package ships `06-SqlServerEventDispatcher.sql` under `content/Scripts`. Run it after the
-[dddlib.Persistence scripts](sql-server.md); it needs `Events` from script 03. It creates the `Batches` and
-`DispatchedEvents` tables and the `GetNextBatch` and `MarkDispatched` procedures. It is idempotent and targets `dbo`;
-`SqlServerEventDispatcherScripts.Read(schema)` returns the text rewritten for another schema.
+The dispatcher's `Batches` and `DispatchedEvents` tables and its `GetNextBatch` and `MarkDispatched` procedures are
+part of the one versioned dddlib schema, together with the event store they read. Install or upgrade it with
+`SqlServerEventDispatcherSchema.EnsureAsync(connectionString, schema)`, which does the same as
+`SqlServerSchema.EnsureAsync` in dddlib.Persistence.SqlServer; see [SQL Server](sql-server.md) for the scripts, running
+them yourself, and what happens when the schema is behind the package.
 
 Polling takes an application lock on the dispatcher id, so two hosts with the same dispatcher id never get the same
 batch. A host that cannot get the lock treats the poll as empty.
 
-Script 03 in this version serializes commits on a store-wide application lock, so sequence numbers are assigned in
+The event store in this version serializes commits on a store-wide application lock, so sequence numbers are assigned in
 commit order and a dispatcher that has passed sequence number N never sees an event below N appear later.
 
 ## Extending
