@@ -20,7 +20,8 @@ In scope:
 
 Out of scope until everything above is green: `dddlib.Projections`, `dddlib.Persistence.EventDispatcher`,
 `perftest`, and the old `dddlib.TestFramework` package (its three extension methods fold into the
-test support project).
+test support project). When the event dispatcher is ported, its SQL Server notification service must not use
+`SqlDependency`, which Azure SQL does not support; it should poll the event store instead (a polling listener).
 
 ## 2. Decisions already made
 
@@ -36,7 +37,7 @@ test support project).
 | Test databases | Testcontainers for .NET with the `mcr.microsoft.com/mssql/server` image, one container per test session, one database per test class. Docker is installed on the dev machine. |
 | SQL client | `Microsoft.Data.SqlClient`. Table-valued parameters via `Microsoft.Data.SqlClient.Server.SqlDataRecord`. |
 | JSON | `System.Text.Json`. The legacy `JavaScriptSerializer` does not exist on modern .NET. |
-| Schema migrations | Embedded `.sql` resources applied in order with a small version table. Replaces Meld. No ILMerge. |
+| Schema setup | SQL scripts shipped with the package and run manually before first use. No Meld, no runtime migration and no version table for now. No ILMerge. |
 | Guards | `ArgumentNullException.ThrowIfNull` and friends. Replaces Guardian's expression-based `Guard.Against`. |
 | API shape | Persistence is async end to end. `out` parameters become return records. Nullable reference types on everywhere. |
 | Strong naming | Dropped unless a consumer needs it. The old `.snk` stays in the legacy repo. |
@@ -119,8 +120,8 @@ configured. Phase 4 turns that into an analyzer diagnostic.
 - Stored type names: since nothing must stay compatible, store a stable name that does not include
   assembly version, for example `Namespace.TypeName, AssemblyName`, and resolve through a registry rather
   than `Type.GetType` on an assembly-qualified string.
-- Schema initialisation happens explicitly through an `EnsureSchemaAsync` call or a factory method, not in
-  constructors as the legacy code does. Constructors must not do I/O.
+- Nothing in the library touches the schema at runtime. The scripts are run manually before first use; the
+  test fixture runs them against the container database. Constructors must not do I/O.
 - `TransactionScopeOption.Suppress` wrapping is kept so callers' ambient transactions do not leak in.
 
 ### Source generators and analyzers (phase 4)
@@ -176,8 +177,9 @@ Exit: every scenario in section 7 for the core library is green.
   already lives in the core `dddlib.Sdk` namespace.)
 - `MemoryEventStore`, `MemoryNaturalKeyRepository`, `MemorySnapshotStore`, `MemoryIdentityMap`,
   `MemoryEventStoreRepository`.
-- Scenarios: MemoryEventPersistence (9), MemoryEventStoreTests (5),
-  JsonSerializerTests (4), bug regressions Bug0043, 0064, 0081, 0109, 0127.
+- Scenarios: MemoryEventPersistence (9), MemoryEventStoreTests (6), JsonSerializerTests (4), bug regressions
+  Bug0043, 0064, 0081, 0109 (their memory parts, re-expressed against the event store repository where they
+  used the dropped memento repository). Bug0127 and the SQL Server part of Bug0109 land in phase 3.
 
 Exit: all memory persistence scenarios green with no database.
 
@@ -186,15 +188,15 @@ Exit: all memory persistence scenarios green with no database.
 - Testcontainers fixture in `dddlib.Tests.Support`, shared per test session with
   `[ClassDataSource<SqlServerContainer>(Shared = SharedType.PerTestSession)]`. Each test class creates its
   own database from the container's connection string and drops it on dispose.
-- Embedded scripts and the version table, replacing Meld. Since there is no upgrade path from v1, the
-  scripts can be consolidated into one script per component (`Persistence`, `TypeCache`, `NaturalKey`,
-  `EventStore`, `SnapshotStore`), each at version 01.
+- SQL scripts under `src/dddlib.Persistence/Scripts`, packaged as content and run manually. Since there is no
+  upgrade path from v1, one script per component (`Persistence`, `TypeCache`, `NaturalKey`, `EventStore`,
+  `SnapshotStore`). The test fixture runs them on each per-class database.
 - `SqlServerTypeCache`, `SqlServerNaturalKeyRepository`, `SqlServerIdentityMap`, `SqlServerEventStore`,
   `SqlServerSnapshotStore`, `SqlServerEventStoreRepository`.
 - Scenarios: SqlServerEventPersistence (9), SqlServerEventStoreTests (6),
   SqlServerIdentityMapTests (7), SqlServerNaturalKeyRepositoryTests (1), SqlServerSnapshotStoreTests (2),
-  UpgradeDatabaseVersionTests (port the intent: a database at script version N upgrades to N+1 cleanly;
-  needs a second script to exist, so it can wait until one does).
+  and the SQL Server parts of Bug0109 plus Bug0127. UpgradeDatabaseVersionTests is dropped while schema setup
+  is manual.
 
 Exit: all SQL Server scenarios green against the container. CI can run them because Docker is the
 only prerequisite.
@@ -298,7 +300,7 @@ Persistence (`tests/dddlib.Persistence.Tests`):
 - MemoryEventPersistence and SqlServerEventPersistence, each: UndefinedNaturalKey, UndefinedUnititializedFactory, NullNaturalKey,
   SaveAndLoad, SaveAndSaveAndLoad, SaveAndLoadAndSaveAndLoad, SnapshotAndLoad, SnapshotAndSaveAndLoad, SaveAndEndLifecycleAndSaveAndCreate
 - Integration: MemoryEventStoreTests, SqlServerEventStoreTests, SqlServerIdentityMapTests, SqlServerNaturalKeyRepositoryTests,
-  SqlServerSnapshotStoreTests, UpgradeDatabaseVersionTests
+  SqlServerSnapshotStoreTests
 - Bug: 0043, 0064, 0081, 0109, 0127
 - Unit: JsonSerializerTests
 
