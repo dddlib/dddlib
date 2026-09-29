@@ -44,7 +44,7 @@ public sealed class SqlServerEventBatchStore : IEventBatchStore
             command.CommandText = string.Concat(this.schema, ".[GetNextBatch]");
             command.Parameters.Add("@DispatcherId", SqlDbType.UniqueIdentifier).Value = dispatcherId;
             command.Parameters.Add("@MaxBatchSize", SqlDbType.Int).Value = batchSize;
-            command.Parameters.Add("@BatchTimeoutSeconds", SqlDbType.Int).Value = Math.Max(1, (int)Math.Ceiling(batchTimeout.TotalSeconds));
+            command.Parameters.Add("@BatchTimeoutMilliseconds", SqlDbType.Int).Value = (int)Math.Clamp(Math.Ceiling(batchTimeout.TotalMilliseconds), 0, int.MaxValue);
 
             await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 

@@ -30,7 +30,7 @@ GO
 CREATE OR ALTER PROCEDURE [dbo].[GetNextBatch]
     @DispatcherId UNIQUEIDENTIFIER,
     @MaxBatchSize INT,
-    @BatchTimeoutSeconds INT
+    @BatchTimeoutMilliseconds INT
 AS
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
@@ -46,12 +46,13 @@ BEGIN TRANSACTION;
     IF @Lock < 0
         THROW 50500, 'Concurrency error (server side). Failed to acquire the batch lock for the dispatcher.', 1;
 
-    -- Batches that were never completed are handed out again after the timeout.
+    -- Batches that were never completed are handed out again after the timeout. The comparison is at millisecond
+    -- precision: DATEDIFF(SECOND) counts second boundaries crossed, which would expire a batch taken at xx.999 at (xx+1).001.
     UPDATE [dbo].[Batches]
     SET [Complete] = 1
     WHERE [DispatcherId] = @DispatcherId
         AND [Complete] = 0
-        AND DATEDIFF(SECOND, [Timestamp], SYSUTCDATETIME()) >= @BatchTimeoutSeconds;
+        AND [Timestamp] <= DATEADD(MILLISECOND, -@BatchTimeoutMilliseconds, SYSUTCDATETIME());
 
     DECLARE @After BIGINT = (
         SELECT MAX([SequenceNumber])
