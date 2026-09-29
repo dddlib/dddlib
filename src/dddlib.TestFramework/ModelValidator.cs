@@ -1,7 +1,7 @@
 using System.Text.Json;
 using dddlib.Sdk;
 
-namespace dddlib.Tests.Support;
+namespace dddlib.TestFramework;
 
 /// <summary>
 /// Assertions that help a domain model designer validate their model.

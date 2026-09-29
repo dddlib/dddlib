@@ -93,6 +93,7 @@ dddlib
 - [Bootstrapper](bootstrapper.md)
 - [Business Exceptions](business-exceptions.md)
 - [Source Generator and Analyzers](source-generator.md)
+- [Testing a Domain Model](testing.md) (dddlib.TestFramework)
 
 dddlib.Persistence
 

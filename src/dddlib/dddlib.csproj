@@ -7,9 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The generator and analyzers ship inside this package so consumers get them without a second package. -->
+    <ProjectReference Include="../dddlib.Generators/dddlib.Generators.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <None Include="../dddlib.Generators/bin/$(Configuration)/netstandard2.0/dddlib.Generators.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="dddlib.Persistence" />
     <InternalsVisibleTo Include="dddlib.Tests" />
     <InternalsVisibleTo Include="dddlib.Persistence.Tests" />
+    <InternalsVisibleTo Include="dddlib.TestFramework" />
     <InternalsVisibleTo Include="dddlib.Tests.Support" />
   </ItemGroup>
 

@@ -43,5 +43,6 @@ is no compatibility with data written by v1.
 
 - `dddlib.Persistence.EventDispatcher` and `dddlib.Projections`. When the dispatcher returns it will poll the event
   store rather than use `SqlDependency`, which Azure SQL does not support.
-- `dddlib.TestFramework`. Its extension methods for inspecting uncommitted events and mementos exist only in the
-  repository's own test support project for now.
+
+`dddlib.TestFramework` is back with the same three extension methods plus `ModelValidator`; see
+[Testing a Domain Model](testing.md).

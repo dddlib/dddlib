@@ -1,6 +1,7 @@
 using dddlib.Configuration;
 using dddlib.Persistence.Memory;
 using dddlib.Persistence.Sdk;
+using dddlib.TestFramework;
 using dddlib.Tests.Support;
 
 namespace dddlib.Persistence.Tests.Features.Generated;

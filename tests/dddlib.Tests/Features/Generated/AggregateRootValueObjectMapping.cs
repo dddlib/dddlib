@@ -1,5 +1,6 @@
 using dddlib.Configuration;
 using dddlib.Runtime;
+using dddlib.TestFramework;
 using dddlib.Tests.Support;
 
 namespace dddlib.Tests.Features.Generated;

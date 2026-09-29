@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetLibVersion)</TargetFramework>
+    <RootNamespace>dddlib.TestFramework</RootNamespace>
+    <Description>Test helpers for domain models written with dddlib: inspect uncommitted events, mementos and revisions, and validate memento implementations.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../dddlib/dddlib.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,4 +1,4 @@
-namespace dddlib.Tests.Support;
+namespace dddlib.TestFramework;
 
 /// <summary>
 /// Exposes the internal persistence surface of an aggregate root to tests.
