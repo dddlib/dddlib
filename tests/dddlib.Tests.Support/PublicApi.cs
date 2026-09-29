@@ -43,5 +43,24 @@ public static class PublicApi
         return (approved, received);
     }
 
+    /// <summary>
+    /// Finds the directory of a test project by walking up from the test binaries, which works under deterministic
+    /// builds where compiler-provided source paths are remapped.
+    /// </summary>
+    public static string ProjectDirectory(string projectFileName)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(projectFileName);
+
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, projectFileName)))
+            {
+                return directory.FullName;
+            }
+        }
+
+        throw new DirectoryNotFoundException($"No directory containing '{projectFileName}' above '{AppContext.BaseDirectory}'.");
+    }
+
     private static string Normalize(string text) => text.Replace("\r\n", "\n", StringComparison.Ordinal).Trim();
 }
