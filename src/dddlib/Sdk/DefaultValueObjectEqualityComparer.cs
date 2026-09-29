@@ -35,7 +35,7 @@ To fix this issue, either:
 - define a custom value object equality comparer in a bootstrapper.",
                     typeof(T)))
             {
-                HelpLink = "https://github.com/dddlib/dddlib/wiki/Value-Object-Equality",
+                HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/value-object-equality.md",
             };
         }
 

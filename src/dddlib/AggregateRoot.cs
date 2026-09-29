@@ -93,7 +93,7 @@ To fix this issue:
 - override the 'SetState' method of the aggregate root to update its state from the specified memento.",
                 this.GetType()))
         {
-            HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Mementos",
+            HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-mementos.md",
         };
     }
 

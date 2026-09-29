@@ -89,7 +89,7 @@ To fix this issue:
 - override the 'GetState' method of the aggregate root to return a memento describing its state.",
                     type))
             {
-                HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Mementos",
+                HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-mementos.md",
             };
 
         var postCommitState = await this.SaveAsync(id, memento, preCommitState, cancellationToken).ConfigureAwait(false);

@@ -37,7 +37,7 @@ is no compatibility with data written by v1.
   the single-event `CommitStream2` procedure. JSON columns are `NVARCHAR(MAX)`.
 - The in-memory implementations are in-process only; the memory-mapped files and global mutexes that shared them
   across processes are gone.
-- The memento repository still does not store events; see [issue 149](https://github.com/dddlib/dddlib/issues/149).
+- The memento repository still does not store events; see [issue 1](https://github.com/dddlib/dddlib/issues/1).
 
 ## Not yet ported
 

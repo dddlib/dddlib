@@ -33,7 +33,7 @@ To fix this issue:
                     this.source.GetType(),
                     typeof(T)))
             {
-                HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Entity-Mapping",
+                HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/bootstrapper.md#mapping",
             };
         }
 

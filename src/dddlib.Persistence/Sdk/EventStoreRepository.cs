@@ -90,7 +90,7 @@ public class EventStoreRepository : IEventStoreRepository
 To fix this issue:
 - ensure that your aggregate root is configured to use event application, and
 - ensure that the events are getting applied using the base 'Apply' method.
-Further information: https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Event-Application",
+Further information: https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-event-application.md",
                     aggregateRoot.GetType()));
         }
 

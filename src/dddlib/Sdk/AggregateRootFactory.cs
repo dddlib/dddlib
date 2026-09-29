@@ -25,7 +25,7 @@ To fix this issue, either:
 - add a protected internal default constructor to the aggregate root.",
                     typeof(T)))
             {
-                HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Reconstitution",
+                HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-reconstitution.md",
             };
         }
 

@@ -69,7 +69,7 @@ public sealed class SqlServerTypeCache : ITypeCache
 To fix this issue:
 - ensure that the assembly '{1}' contains the type '{0}', and
 - check that the assembly '{1}' is referenced by the project.
-Further information: https://github.com/dddlib/dddlib/wiki/Serialization",
+Further information: https://github.com/dddlib/dddlib/blob/main/docs/persistence/serialization.md",
                     typeName.Split(',').First().Trim(),
                     typeName.Split(',').Last().Trim()));
     }

@@ -30,7 +30,7 @@ To fix this issue:
                     typeof(T),
                     this.source.GetType()))
             {
-                HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Entity-Mapping",
+                HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/bootstrapper.md#mapping",
             };
         }
 
@@ -52,7 +52,7 @@ To fix this issue:
                     typeof(T),
                     this.source.GetType()))
             {
-                HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Value-Object-Mapping",
+                HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/bootstrapper.md#mapping",
             };
         }
 

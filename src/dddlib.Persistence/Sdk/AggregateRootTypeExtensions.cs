@@ -23,7 +23,7 @@ To fix this issue, either:
 - decorate the natural key property on the aggregate root with the [dddlib.NaturalKey] attribute.",
                     aggregateRootType.RuntimeType))
             {
-                HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Equality",
+                HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-equality.md",
             };
         }
 
@@ -38,7 +38,7 @@ To fix this issue, either:
 - add a (protected internal) default constructor to the aggregate root.",
                     aggregateRootType.RuntimeType))
             {
-                HelpLink = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Reconstitution",
+                HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-reconstitution.md",
             };
         }
     }

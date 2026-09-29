@@ -14,7 +14,7 @@ public interface IRepository<T> where T : AggregateRoot
 ```
 
 Events applied to the aggregate root are not stored by this model; saving clears them. Storing them as well, so that
-they can be dispatched, is tracked in [issue 149](https://github.com/dddlib/dddlib/issues/149).
+they can be dispatched, is tracked in [issue 1](https://github.com/dddlib/dddlib/issues/1).
 
 ## In-memory
 

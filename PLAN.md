@@ -1,6 +1,6 @@
 # dddlib v2 port plan
 
-This repository is a ground-up port of [dddlib](https://github.com/dddlib/dddlib) to modern .NET.
+This repository is a ground-up port of [dddlib v1](https://github.com/dddlib/dddlibv1) to modern .NET.
 The legacy source lives at `C:\Users\cameronfletcher\Development\code\git\dddlib\dddlib` (branch `dev`,
 last commit March 2017, .NET Framework 4.5). It is the reference, not the starting point: nothing is
 copied wholesale, but its feature tests define the behaviour this port must reproduce.
@@ -130,7 +130,7 @@ configured. Phase 4 turns that into an analyzer diagnostic.
 
 ### Source generators and analyzers (phase 4)
 
-Tracked in dddlib/dddlib#150 (Roslyn analyzer for Visual Studio).
+Tracked in dddlib/dddlib#2 (Roslyn analyzer for Visual Studio).
 
 How the generated code plugs in (implemented 2026-09-29): the generator emits a private nested `__DddlibMetadata`
 class into every aggregate root, entity and value object that is `partial` (containing types included). It carries
@@ -265,7 +265,7 @@ meanwhile.
   not support `SqlDependency`. The in-memory implementation may notify in-process.
 - Memory and SQL Server implementations, the dispatcher scripts consolidated to one file run manually like the
   others, and the three legacy test files: MemoryEventDispatcher, SqlServerEventDispatcher, SqlServerEventStoreTests.
-- Issue dddlib/dddlib#149 (events on the memento path) is the natural follow-on once the dispatcher exists.
+- Issue dddlib/dddlib#1 (events on the memento path) is the natural follow-on once the dispatcher exists.
 
 
 ## 6. Test conventions with TUnit
@@ -366,7 +366,7 @@ Answered so far:
 - Package identity: publish under the existing `dddlib` package id as 2.0.
 - Memento-based `IRepository<T>`: kept. It was dropped on 2026-09-29 and reinstated the same day because it has
   a use case. Async like the rest of persistence; `MementoResult` replaces the out parameters. As in v1 it stores
-  only the memento; storing the uncommitted events for dispatch as well is tracked in dddlib/dddlib#149.
+  only the memento; storing the uncommitted events for dispatch as well is tracked in dddlib/dddlib#1.
 
 - `ValueObject<T>`: kept, with the legacy constraint `where T : ValueObject<T>`. See section 4.
 

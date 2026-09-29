@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using dddlib.Tests.Support;
 
 namespace dddlib.Tests.PublicApi;
@@ -15,6 +14,6 @@ public class PublicApiTests
         await Assert.That(received).IsEqualTo(approved);
     }
 
-    private static string ApprovedPath([CallerFilePath] string sourcePath = "") =>
-        Path.Combine(Path.GetDirectoryName(sourcePath)!, "dddlib.approved.txt");
+    private static string ApprovedPath() =>
+        Path.Combine(global::dddlib.Tests.Support.PublicApi.ProjectDirectory("dddlib.Tests.csproj"), "PublicApi", "dddlib.approved.txt");
 }

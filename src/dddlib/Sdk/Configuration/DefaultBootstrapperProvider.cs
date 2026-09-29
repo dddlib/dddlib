@@ -36,7 +36,7 @@ To fix this issue:
 - ensure that there is only a single instance of a bootstrapper class declared in the assembly.",
                     type.Assembly.GetName()))
             {
-                HelpLink = "https://github.com/dddlib/dddlib/wiki/Bootstrapper",
+                HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/bootstrapper.md",
             };
         }
 
@@ -51,7 +51,7 @@ To fix this issue:
 - add a default constructor to the bootstrapper.",
                     bootstrapperType))
             {
-                HelpLink = "https://github.com/dddlib/dddlib/wiki/Bootstrapper",
+                HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/bootstrapper.md",
             };
         }
 

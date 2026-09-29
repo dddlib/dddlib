@@ -33,14 +33,15 @@ AS
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 
-DECLARE @TypeId INT = (SELECT [Id] FROM [dbo].[Types] WHERE [Name] = @AggregateRootTypeName);
+-- Register the type atomically: two concurrent callers must not both insert it.
+MERGE INTO [dbo].[Types] WITH (HOLDLOCK) AS [Target]
+USING (SELECT @AggregateRootTypeName AS [Name]) AS [Source]
+ON [Target].[Name] = [Source].[Name] COLLATE SQL_Latin1_General_CP1_CS_AS
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT ([Name])
+    VALUES ([Source].[Name]);
 
-IF @TypeId IS NULL
-BEGIN
-    INSERT INTO [dbo].[Types] ([Name])
-    VALUES (@AggregateRootTypeName);
-    SET @TypeId = SCOPE_IDENTITY();
-END
+DECLARE @TypeId INT = (SELECT [Id] FROM [dbo].[Types] WHERE [Name] = @AggregateRootTypeName COLLATE SQL_Latin1_General_CP1_CS_AS);
 
 DECLARE @NaturalKeys TABLE ([Id] uniqueidentifier, [Checkpoint] bigint);
 

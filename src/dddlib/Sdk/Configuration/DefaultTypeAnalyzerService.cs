@@ -51,7 +51,7 @@ To fix this issue:
 - ensure that there is only a single natural key defined for the entity.",
                     runtimeType))
             {
-                HelpLink = "https://github.com/dddlib/dddlib/wiki/Entity-Equality",
+                HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/entity-equality.md",
             };
         }
 

@@ -129,7 +129,7 @@ To fix this issue, check that the natural key:
                 naturalKeyType,
                 aggregateRootType))
         {
-            HelpLink = "https://github.com/dddlib/dddlib/wiki/Value-Object-Serialization",
+            HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/value-object-serialization.md",
         };
     }
 

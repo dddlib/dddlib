@@ -5,10 +5,10 @@ namespace dddlib.Generators;
 internal static class DiagnosticDescriptors
 {
     private const string Category = "dddlib";
-    private const string WikiEntityEquality = "https://github.com/dddlib/dddlib/wiki/Entity-Equality";
-    private const string WikiEventApplication = "https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Event-Application";
-    private const string WikiValueObjectEquality = "https://github.com/dddlib/dddlib/wiki/Value-Object-Equality";
-    private const string WikiBootstrapper = "https://github.com/dddlib/dddlib/wiki/Bootstrapper";
+    private const string WikiEntityEquality = "https://github.com/dddlib/dddlib/blob/main/docs/entity-equality.md";
+    private const string WikiEventApplication = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-event-application.md";
+    private const string WikiValueObjectEquality = "https://github.com/dddlib/dddlib/blob/main/docs/value-object-equality.md";
+    private const string WikiBootstrapper = "https://github.com/dddlib/dddlib/blob/main/docs/bootstrapper.md";
 
     public static readonly DiagnosticDescriptor MultipleNaturalKeys = new(
         "DDDLIB001",
