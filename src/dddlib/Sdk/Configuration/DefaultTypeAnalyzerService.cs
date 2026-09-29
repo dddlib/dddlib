@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
 using dddlib.Runtime;
+using dddlib.Sdk.Generated;
 using dddlib.Sdk.Configuration.Model;
 
 namespace dddlib.Sdk.Configuration;
@@ -27,6 +28,14 @@ public class DefaultTypeAnalyzerService : ITypeAnalyzerService
     public NaturalKey? GetNaturalKey(Type runtimeType)
     {
         ArgumentNullException.ThrowIfNull(runtimeType);
+
+        // Generated metadata is authoritative for the natural key declared on the type itself.
+        if (GeneratedMetadata.TryGet<IGeneratedEntityMetadata>(runtimeType) is { } generated)
+        {
+            return generated is { NaturalKeyPropertyName: { } propertyName, NaturalKeyPropertyType: { } propertyType }
+                ? new NaturalKey(runtimeType, propertyName, propertyType, generated.GetNaturalKeyValue)
+                : null;
+        }
 
         var naturalKeys = runtimeType.GetProperties(DeclaredPublicInstance)
             .Where(static property => property.GetCustomAttribute<NaturalKeyAttribute>(inherit: false) is not null)
@@ -58,6 +67,11 @@ To fix this issue:
     public Delegate? GetUninitializedFactory(Type runtimeType)
     {
         ArgumentNullException.ThrowIfNull(runtimeType);
+
+        if (GeneratedMetadata.TryGet<IGeneratedAggregateRootMetadata>(runtimeType) is { } generated)
+        {
+            return generated.UninitializedFactory;
+        }
 
         if (runtimeType.IsAbstract)
         {

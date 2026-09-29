@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.Linq.Expressions;
 
@@ -39,6 +40,23 @@ public sealed class NaturalKey : IEquatable<NaturalKey>
         this.PropertyName = propertyName;
         this.PropertyType = propertyType;
         this.getValue = CompileGetValue(runtimeType, propertyName);
+    }
+
+    /// <summary>
+    /// Creates a natural key with a pre-built accessor, as emitted by the source generator. No validation is performed.
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public NaturalKey(Type runtimeType, string propertyName, Type propertyType, Func<Entity, object?> getValue)
+    {
+        ArgumentNullException.ThrowIfNull(runtimeType);
+        ArgumentException.ThrowIfNullOrEmpty(propertyName);
+        ArgumentNullException.ThrowIfNull(propertyType);
+        ArgumentNullException.ThrowIfNull(getValue);
+
+        this.RuntimeType = runtimeType;
+        this.PropertyName = propertyName;
+        this.PropertyType = propertyType;
+        this.getValue = getValue;
     }
 
     public Type RuntimeType { get; }

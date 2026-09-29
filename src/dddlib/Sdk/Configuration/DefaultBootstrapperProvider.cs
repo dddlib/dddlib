@@ -1,6 +1,7 @@
 using System.Globalization;
 using dddlib.Configuration;
 using dddlib.Runtime;
+using dddlib.Sdk.Generated;
 
 namespace dddlib.Sdk.Configuration;
 
@@ -13,9 +14,12 @@ public class DefaultBootstrapperProvider : IBootstrapperProvider
     {
         ArgumentNullException.ThrowIfNull(type);
 
-        var bootstrapperTypes = type.Assembly.GetTypes()
-            .Where(static assemblyType => assemblyType.IsClass && !assemblyType.IsAbstract && typeof(IBootstrapper).IsAssignableFrom(assemblyType))
-            .ToArray();
+        // The source generator registers each assembly's bootstrapper at module initialization; scanning is the fallback.
+        var bootstrapperTypes = BootstrapperRegistry.TryGet(type.Assembly, out var registered)
+            ? registered is null ? [] : [registered]
+            : type.Assembly.GetTypes()
+                .Where(static assemblyType => assemblyType.IsClass && !assemblyType.IsAbstract && typeof(IBootstrapper).IsAssignableFrom(assemblyType))
+                .ToArray();
 
         if (bootstrapperTypes.Length == 0)
         {

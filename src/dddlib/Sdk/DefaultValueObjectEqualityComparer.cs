@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -7,19 +6,14 @@ using dddlib.Runtime;
 namespace dddlib.Sdk;
 
 /// <summary>
-/// Structural equality over the public readable properties of a value object, compiled once per type.
-/// Properties that are <see cref="IEnumerable"/> (other than <see cref="string"/>) compare element by element;
-/// everything else compares through <see cref="EqualityComparer{T}.Default"/>, so nested value objects and
-/// types that override <c>Equals</c> behave as expected. Hash codes follow the same rules.
+/// Structural equality over the public readable properties of a value object, compiled once per type, following
+/// the rules in <see cref="ValueObjectEquality"/>. This is the fallback for types the source generator does not cover.
 /// </summary>
 public sealed class DefaultValueObjectEqualityComparer<T> : IEqualityComparer<T>
     where T : ValueObject<T>
 {
-    private static readonly MethodInfo ValuesEqualMethod = typeof(DefaultValueObjectEqualityComparer<T>)
-        .GetMethod(nameof(ValuesEqual), BindingFlags.NonPublic | BindingFlags.Static)!;
-
-    private static readonly MethodInfo CombineHashMethod = typeof(DefaultValueObjectEqualityComparer<T>)
-        .GetMethod(nameof(CombineHash), BindingFlags.NonPublic | BindingFlags.Static)!;
+    private static readonly MethodInfo ValuesEqualMethod = typeof(ValueObjectEquality).GetMethod(nameof(ValueObjectEquality.ValuesEqual))!;
+    private static readonly MethodInfo CombineHashMethod = typeof(ValueObjectEquality).GetMethod(nameof(ValueObjectEquality.CombineHash))!;
 
     private readonly Func<T, T, bool> equals;
     private readonly Func<T, int> hashCode;
@@ -58,7 +52,7 @@ To fix this issue, either:
 
         var obj = Expression.Parameter(typeof(T), "obj");
         var hashCodeBody = properties.Aggregate(
-            (Expression)Expression.Constant(17),
+            (Expression)Expression.Constant(ValueObjectEquality.HashSeed),
             (current, property) => Expression.Call(
                 CombineHashMethod.MakeGenericMethod(property.PropertyType),
                 current,
@@ -82,28 +76,5 @@ To fix this issue, either:
         ArgumentNullException.ThrowIfNull(obj);
 
         return this.hashCode(obj);
-    }
-
-    private static bool ValuesEqual<TValue>(TValue left, TValue right)
-    {
-        if (left is IEnumerable leftItems and not string && right is IEnumerable rightItems and not string)
-        {
-            return leftItems.Cast<object?>().SequenceEqual(rightItems.Cast<object?>());
-        }
-
-        return EqualityComparer<TValue>.Default.Equals(left, right);
-    }
-
-    private static int CombineHash<TValue>(int seed, TValue value)
-    {
-        unchecked
-        {
-            if (value is IEnumerable items and not string)
-            {
-                return items.Cast<object?>().Aggregate(seed, static (hash, item) => (hash * 23) + (item?.GetHashCode() ?? 0));
-            }
-
-            return (seed * 23) + (value is null ? 0 : EqualityComparer<TValue>.Default.GetHashCode(value));
-        }
     }
 }

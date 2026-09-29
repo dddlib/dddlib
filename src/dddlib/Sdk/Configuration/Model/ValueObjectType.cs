@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using dddlib.Runtime;
+using dddlib.Sdk.Generated;
 
 namespace dddlib.Sdk.Configuration.Model;
 
@@ -26,7 +27,8 @@ public class ValueObjectType
         this.RuntimeType = runtimeType;
         this.Serializer = (IValueObjectSerializer)CreateGeneric(typeof(DefaultValueObjectSerializer<>), runtimeType);
         this.equalityComparer = new Lazy<object>(
-            () => CreateGeneric(typeof(DefaultValueObjectEqualityComparer<>), runtimeType),
+            () => GeneratedMetadata.TryGet<IGeneratedValueObjectMetadata>(runtimeType)?.EqualityComparer
+                ?? CreateGeneric(typeof(DefaultValueObjectEqualityComparer<>), runtimeType),
             LazyThreadSafetyMode.ExecutionAndPublication);
     }
 

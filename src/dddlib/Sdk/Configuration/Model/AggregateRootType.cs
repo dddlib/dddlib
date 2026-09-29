@@ -19,7 +19,7 @@ public class AggregateRootType : EntityType
         }
 
         this.UninitializedFactory = typeAnalyzerService.GetUninitializedFactory(runtimeType);
-        this.EventDispatcher = new DefaultEventDispatcher(runtimeType);
+        this.EventDispatcher = EventDispatchers.ForAggregateRoot(runtimeType);
     }
 
     public Delegate? UninitializedFactory { get; private set; }
