@@ -12,7 +12,9 @@ In scope:
 - `dddlib` core: `AggregateRoot`, `Entity`, natural keys, bootstrapper configuration, event application,
   entity and value object mapping, natural key serialization, lifecycle management.
 - `dddlib.Persistence`, SQL Server only: identity map, natural key repository, type cache, event store,
-  snapshot store, memento repository, and the event store repository built on them.
+  snapshot store, and the event store repository built on them. The memento-based `IRepository<T>` path
+  (`Repository<T>`, `MemoryRepository`, `SqlServerMementoRepository`, `SqlServerRepository`) is dropped;
+  event sourcing is the only persistence model. Snapshots still use mementos.
 - The in-memory persistence implementations, but only as far as they are needed to run the persistence
   scenarios without a database. They are cheap and make the repository tests fast.
 
@@ -25,8 +27,9 @@ test support project).
 | Topic | Decision |
 |---|---|
 | Approach | Port, not in-place upgrade. Mechanical port first, redesign second, both behind the ported scenarios. |
+| Package identity | Published under the existing `dddlib` NuGet package id as version 2.0. |
 | Compatibility | None. No existing databases must be readable by v2. Namespaces, JSON format and stored type names are free choices. |
-| Value objects | C# records. There is no `ValueObject<T>` base class in v2. See section 4. |
+| Value objects | `ValueObject<T>` base class, as in v1. Records were tried first and rejected because record equality includes private fields. See section 4. |
 | Target framework | `net10.0` for libraries and tests. `netstandard2.0` only for the source generator and analyzer projects, which Roslyn requires. |
 | Test framework | TUnit. No xunit, no Xbehave. |
 | Assertions | TUnit's built-in `Assert.That(...)`. No FluentAssertions. |
@@ -65,28 +68,29 @@ consumer needs the abstractions without the SqlClient dependency.
 
 ## 4. Architecture notes for the port
 
-### Value objects are records
+### Value objects
 
-The legacy `ValueObject<T>` base class provided structural equality over public properties, `==` and `!=`,
-a type-mismatch check, a configurable equality comparer, a configurable serializer, and event mappings.
-C# records provide the first three natively and System.Text.Json serializes records with positional
-constructors without help. What records do not provide:
+`ValueObject<T>` stays (decided 2026-09-29, reversing an earlier plan to use C# records). Records were tried
+first, but record equality includes every instance field, private ones included, which is the wrong semantics
+for a value object: a cached or derived private field breaks equality. The name also matches the vocabulary of
+the DDD book.
 
-- Sequence equality for collection-typed members. A record compares a `List<T>` member by reference. The
-  legacy comparer used `SequenceEqual`. In v2 this is the user's responsibility: override `Equals` and
-  `GetHashCode`, or use an immutable collection type that implements value equality. Phase 4 adds an
-  analyzer that warns when a record used as a natural key has a collection-typed member.
-- Case-insensitive or otherwise custom equality. Again an `Equals` override on the record. The
-  `ToUseEqualityComparer` bootstrapper hook is dropped.
+`ValueObject<T>` provides:
 
-What stays, because it is about how the runtime uses a value object rather than what the value object
-is: `configure.ValueObject<T>()` with `ToUseValueObjectSerializer(...)` (for natural key storage) and
-`ToMapToEvent<TEvent>(...)`. The generic constraint becomes `where T : notnull`. `Map.ValueObject(x)`
-on the aggregate keeps working for any type with a registered mapping.
+- Structural equality over public readable properties through `DefaultValueObjectEqualityComparer<T>`, compiled
+  once per type as an expression. Properties that are `IEnumerable` (other than `string`) compare element by
+  element; everything else compares through `EqualityComparer<TProperty>.Default`, so nested value objects and
+  types that override `Equals` behave. Hash codes follow the same rules, so sequence-equal collection members
+  hash equally (an improvement on v1).
+- `==` and `!=`, a runtime-type mismatch check, and a configurable comparer through
+  `configure.ValueObject<T>().ToUseEqualityComparer(...)`. The default comparer is created lazily so the
+  bootstrapper can replace it; configuring it after first use is an error (Bug0128).
+- `ToUseValueObjectSerializer(...)` and `ToMapToEvent<TEvent>(...)` as before. The generic constraint is
+  `where T : ValueObject<T>` everywhere; records and other plain types are not value objects as far as dddlib is
+  concerned.
 
-Test support types `Registration` and similar become records. The legacy ValueObjectEquality scenarios
-are ported as a small set of tests that document record behaviour and the collection-member gap, so the
-decision is executable rather than just written down.
+A value object with no public properties fails at construction with a runtime exception unless a comparer is
+configured. Phase 4 turns that into an analyzer diagnostic.
 
 ### Core
 
@@ -129,7 +133,7 @@ that are not `partial`:
 | Event handler dispatch by reflection | `switch` over event types in a partial aggregate |
 | Natural key discovery, uninitialized factory | Static type metadata registered via module initializer |
 | Bootstrapper discovery by assembly scan | Generated registration of `IBootstrapper` implementations |
-| Runtime "To fix this issue" exceptions | Analyzer diagnostics: duplicate natural key, missing reconstitution constructor, handler for a value-type event, collection member on a natural-key record, etc. |
+| Runtime "To fix this issue" exceptions | Analyzer diagnostics: duplicate natural key, missing reconstitution constructor, handler for a value-type event, value object without public properties, etc. |
 | Reflection-based JSON | `JsonSerializerContext` for events and natural keys |
 
 ## 5. Phases
@@ -150,8 +154,8 @@ Exit: `dotnet build` and `dotnet test` succeed on an empty suite.
 
 Port in this order, writing the scenarios for each piece before or alongside it:
 
-1. Value object conventions: `Registration` as a record in the support project, the record-behaviour tests
-   described in section 4. Scenarios: ValueObjectEquality (re-expressed for records).
+1. Value object conventions: `ValueObject<T>`, `DefaultValueObjectEqualityComparer<T>`, `Registration` in the
+   support project. Scenarios: ValueObjectEquality.
 2. `Entity`, natural keys, `NaturalKeyAttribute`, `DefaultTypeAnalyzerService`, `Application`.
    Scenarios: EntityEquality (18), EntityLifecycleManagement (1).
 3. `AggregateRoot`, event application, `DefaultEventDispatcher`, reconstitution factory.
@@ -168,11 +172,11 @@ Exit: every scenario in section 7 for the core library is green.
 ### Phase 2: persistence abstractions and in-memory implementations
 
 - `IIdentityMap`, `DefaultIdentityMap`, `INaturalKeyRepository`, `INaturalKeySerializer`, `IEventStore`,
-  `ISnapshotStore`, `Snapshot`, `ITypeCache`, `AggregateRootFactory`, `EventStoreRepository`,
-  `Repository<T>`, exceptions.
+  `ISnapshotStore`, `Snapshot`, `ITypeCache`, `EventStoreRepository`, exceptions. (`AggregateRootFactory`
+  already lives in the core `dddlib.Sdk` namespace.)
 - `MemoryEventStore`, `MemoryNaturalKeyRepository`, `MemorySnapshotStore`, `MemoryIdentityMap`,
-  `MemoryEventStoreRepository`, `MemoryRepository`.
-- Scenarios: MemoryEventPersistence (9), MemoryMementoPersistence, MemoryEventStoreTests (5),
+  `MemoryEventStoreRepository`.
+- Scenarios: MemoryEventPersistence (9), MemoryEventStoreTests (5),
   JsonSerializerTests (4), bug regressions Bug0043, 0064, 0081, 0109, 0127.
 
 Exit: all memory persistence scenarios green with no database.
@@ -184,10 +188,10 @@ Exit: all memory persistence scenarios green with no database.
   own database from the container's connection string and drops it on dispose.
 - Embedded scripts and the version table, replacing Meld. Since there is no upgrade path from v1, the
   scripts can be consolidated into one script per component (`Persistence`, `TypeCache`, `NaturalKey`,
-  `EventStore`, `SnapshotStore`, `MementoRepository`), each at version 01.
+  `EventStore`, `SnapshotStore`), each at version 01.
 - `SqlServerTypeCache`, `SqlServerNaturalKeyRepository`, `SqlServerIdentityMap`, `SqlServerEventStore`,
-  `SqlServerSnapshotStore`, `SqlServerMementoRepository`, `SqlServerRepository`, `SqlServerEventStoreRepository`.
-- Scenarios: SqlServerEventPersistence (9), SqlServerMementoPersistence (1), SqlServerEventStoreTests (6),
+  `SqlServerSnapshotStore`, `SqlServerEventStoreRepository`.
+- Scenarios: SqlServerEventPersistence (9), SqlServerEventStoreTests (6),
   SqlServerIdentityMapTests (7), SqlServerNaturalKeyRepositoryTests (1), SqlServerSnapshotStoreTests (2),
   UpgradeDatabaseVersionTests (port the intent: a database at script version N upgrades to N+1 cleanly;
   needs a second script to exist, so it can wait until one does).
@@ -283,36 +287,35 @@ Core (`tests/dddlib.Tests/Feature`):
   NestedNaturalKeySelectorWithBothInstancesHavingNullReference, NestedNaturalKeySelectorWithSingleInstanceHavingNullReference
 - EntityLifecycleManagement: EntityLifecycle
 - ModelValidationFeature: InvalidMementoImplementation, ValidMementoImplementation
-- ValueObjectEquality (re-expressed for records): CaseSensitiveUndefinedEqualityComparer, CaseInsensitiveEqualityViaEqualsOverride,
-  CollectionMemberComparesByReference, CollectionMemberComparesBySequenceViaEqualsOverride
+- ValueObjectEquality: UndefinedEqualityComparer, EqualityComparerDefinedInBootstrapper, CaseSensitiveUndefinedEqualityComparer,
+  CaseInsensitiveStringEqualityComparerDefinedInBootstrapper, CollectionMemberComparesBySequence, PrivateFieldsDoNotParticipateInEquality
 - ValueObjectSerialization: CustomValueObjectSerializer, CustomValueObjectSerializerViaDelegates
-- Bug: 0001, 0017, 0092, 0128, 0129 (0128 concerned `ValueObject<T>` equality comparer laziness; port it as a record test or drop it with a note)
+- Bug: 0001, 0017, 0092, 0128, 0129
 - Unit: AggregateRootTests, ApplicationTests, DefaultTypeAnalyzerServiceTests, natural key serializer tests
 
 Persistence (`tests/dddlib.Persistence.Tests`):
 
 - MemoryEventPersistence and SqlServerEventPersistence, each: UndefinedNaturalKey, UndefinedUnititializedFactory, NullNaturalKey,
   SaveAndLoad, SaveAndSaveAndLoad, SaveAndLoadAndSaveAndLoad, SnapshotAndLoad, SnapshotAndSaveAndLoad, SaveAndEndLifecycleAndSaveAndCreate
-- MemoryMementoPersistence, SqlServerMementoPersistence: DefaultSqlServerPersistence
 - Integration: MemoryEventStoreTests, SqlServerEventStoreTests, SqlServerIdentityMapTests, SqlServerNaturalKeyRepositoryTests,
   SqlServerSnapshotStoreTests, UpgradeDatabaseVersionTests
 - Bug: 0043, 0064, 0081, 0109, 0127
 - Unit: JsonSerializerTests
 
-Shared model (`tests/dddlib.Tests.Support`): Vehicle, Registration (record), Wheel, NewVehicle, IRegistrationService, Bootstrapper.
+Shared model (`tests/dddlib.Tests.Support`): Vehicle, Registration, Wheel, NewVehicle, IRegistrationService, Bootstrapper.
 
 ## 8. Open questions for Cameron
 
 Answered so far:
 
 - Existing databases: none need to be supported. No compatibility constraints on JSON, type names or namespaces.
-- `ValueObject<T>`: dropped in favour of records. See section 4.
+- Package identity: publish under the existing `dddlib` package id as 2.0.
+- Memento-based `IRepository<T>`: dropped. Event sourcing is the only persistence model. The
+  MemoryMementoPersistence and SqlServerMementoPersistence scenarios go with it.
 
-Still open. Answer before phase 3 starts:
+- `ValueObject<T>`: kept, with the legacy constraint `where T : ValueObject<T>`. See section 4.
 
-1. Package identity: republish as `dddlib` 2.0 or as a new package id?
-2. Is the memento-based `Repository<T>` path still wanted, or is event sourcing the only supported
-   persistence model? It is small, so the plan keeps it.
+Nothing is open.
 
 ## 9. Working rules for the implementing session
 
