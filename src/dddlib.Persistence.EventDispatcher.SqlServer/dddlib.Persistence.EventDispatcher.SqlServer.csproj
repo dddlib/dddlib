@@ -24,8 +24,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Scripts/*.sql" LogicalName="dddlib.Persistence.EventDispatcher.Scripts.%(Filename)%(Extension)" />
-    <Content Include="Scripts/*.sql" Pack="true" PackagePath="content/Scripts;contentFiles/any/any/Scripts" CopyToOutputDirectory="Never" />
+    <!-- The numbered schema scripts, the same in every SQL Server package: embedded for SqlServerSchemaInstaller and
+         shipped as content for running by hand. -->
+    <EmbeddedResource Include="../Shared/SqlServer/Scripts/*.sql" Link="Scripts/%(Filename)%(Extension)" LogicalName="dddlib.SqlServer.Scripts.%(Filename)%(Extension)" />
+    <Content Include="../Shared/SqlServer/Scripts/*.sql" Link="Scripts/%(Filename)%(Extension)" Pack="true" PackagePath="content/Scripts;contentFiles/any/any/Scripts" CopyToOutputDirectory="Never" />
   </ItemGroup>
 
 </Project>

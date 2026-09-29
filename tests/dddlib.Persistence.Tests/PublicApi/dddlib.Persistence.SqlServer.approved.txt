@@ -35,11 +35,10 @@ namespace dddlib.Persistence.SqlServer
         protected string ConnectionString { get; }
         protected System.Threading.Tasks.Task AppendEventsAsync(Microsoft.Data.SqlClient.SqlTransaction transaction, System.Guid id, System.Collections.Generic.IReadOnlyList<object> events, string state, System.Threading.CancellationToken cancellationToken) { }
     }
-    public static class SqlServerScripts
+    public static class SqlServerSchema
     {
-        public static System.Collections.Generic.IReadOnlyList<string> Names { get; }
-        public static string Read(string name, string schema = "dbo") { }
-        public static System.Collections.Generic.IReadOnlyList<string> SplitBatches(string script) { }
+        public static System.Threading.Tasks.Task EnsureAsync(string connectionString, string schema = "dbo", System.Threading.CancellationToken cancellationToken = default) { }
+        public static string GetScript(string schema = "dbo") { }
     }
     public sealed class SqlServerSnapshotStore : dddlib.Persistence.Sdk.ISnapshotStore
     {

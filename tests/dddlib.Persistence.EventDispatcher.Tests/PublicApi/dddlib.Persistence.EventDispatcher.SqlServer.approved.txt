@@ -11,9 +11,9 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         public SqlServerEventDispatcher(string connectionString, System.Action<long, object> dispatch, dddlib.Persistence.EventDispatcher.EventDispatcherOptions? options = null, string schema = "dbo") { }
         public SqlServerEventDispatcher(string connectionString, dddlib.Persistence.EventDispatcher.IEventDispatcher dispatcher, dddlib.Persistence.EventDispatcher.EventDispatcherOptions? options = null, string schema = "dbo") { }
     }
-    public static class SqlServerEventDispatcherScripts
+    public static class SqlServerEventDispatcherSchema
     {
-        public const string Name = "06-SqlServerEventDispatcher.sql";
-        public static string Read(string schema = "dbo") { }
+        public static System.Threading.Tasks.Task EnsureAsync(string connectionString, string schema = "dbo", System.Threading.CancellationToken cancellationToken = default) { }
+        public static string GetScript(string schema = "dbo") { }
     }
 }
