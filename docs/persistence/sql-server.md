@@ -1,3 +1,4 @@
+| `06-SqlServerEventDispatcher.sql` | `Batches`, `DispatchedEvents` and procedures | [event dispatcher](event-dispatcher.md); shipped in **dddlib.Persistence.EventDispatcher** |
 # SQL Server
 
 ## Schema
@@ -33,7 +34,9 @@ parameters and `sp_getapplock`, all available there. The client library is `Micr
 | 50500 | commit lock not acquired within one second | `ConcurrencyException` |
 | 1222 | read lock request timed out | `ConcurrencyException` |
 
-Commits take an exclusive application lock on the stream identity for the duration of the transaction. Reads hold the
+Commits take an exclusive application lock on the stream identity for the duration of the transaction, and a
+store-wide one (`dddlib.Events.Commit`) while sequence numbers are assigned, so the sequence reflects commit order
+for the [event dispatcher](event-dispatcher.md). Reads hold the
 stream row under `HOLDLOCK` inside a short transaction so the state token and the events come from the same committed
 version.
 

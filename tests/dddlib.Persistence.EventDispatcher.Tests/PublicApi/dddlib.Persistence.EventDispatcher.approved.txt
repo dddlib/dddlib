@@ -1,0 +1,86 @@
+namespace dddlib.Persistence.EventDispatcher
+{
+    public sealed class CustomEventDispatcher : dddlib.Persistence.EventDispatcher.IEventDispatcher
+    {
+        public CustomEventDispatcher(System.Action<long, object> dispatch) { }
+        public CustomEventDispatcher(System.Func<long, object, System.Threading.CancellationToken, System.Threading.Tasks.Task> dispatch) { }
+        public System.Threading.Tasks.Task DispatchAsync(long sequenceNumber, object @event, System.Threading.CancellationToken cancellationToken) { }
+    }
+    public sealed class EventDispatcherOptions
+    {
+        public EventDispatcherOptions() { }
+        public int BatchSize { get; init; }
+        public System.TimeSpan BatchTimeout { get; init; }
+        public System.Guid DispatcherId { get; init; }
+        public System.TimeSpan MaxPollingInterval { get; init; }
+        public System.TimeSpan PollingInterval { get; init; }
+    }
+    public interface IEventDispatcher
+    {
+        System.Threading.Tasks.Task DispatchAsync(long sequenceNumber, object @event, System.Threading.CancellationToken cancellationToken);
+    }
+}
+namespace dddlib.Persistence.EventDispatcher.Memory
+{
+    public sealed class MemoryEventBatchStore : dddlib.Persistence.EventDispatcher.Sdk.IEventBatchStore
+    {
+        public MemoryEventBatchStore(dddlib.Persistence.Memory.MemoryEventStore eventStore) { }
+        public MemoryEventBatchStore(dddlib.Persistence.Memory.MemoryEventStore eventStore, System.TimeProvider timeProvider) { }
+        public System.Threading.Tasks.Task<dddlib.Persistence.EventDispatcher.Sdk.EventBatch?> GetNextBatchAsync(System.Guid dispatcherId, int batchSize, System.TimeSpan batchTimeout, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task MarkDispatchedAsync(System.Guid dispatcherId, long sequenceNumber, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class MemoryEventDispatcher : dddlib.Persistence.EventDispatcher.Sdk.EventDispatcher
+    {
+        public MemoryEventDispatcher(dddlib.Persistence.Memory.MemoryEventStore eventStore, System.Action<long, object> dispatch, dddlib.Persistence.EventDispatcher.EventDispatcherOptions? options = null) { }
+        public MemoryEventDispatcher(dddlib.Persistence.Memory.MemoryEventStore eventStore, dddlib.Persistence.EventDispatcher.IEventDispatcher dispatcher, dddlib.Persistence.EventDispatcher.EventDispatcherOptions? options = null) { }
+    }
+}
+namespace dddlib.Persistence.EventDispatcher.Sdk
+{
+    public sealed class DispatchFailedEventArgs : System.EventArgs
+    {
+        public DispatchFailedEventArgs(long sequenceNumber, object @event, System.Exception exception) { }
+        public object Event { get; }
+        public System.Exception Exception { get; }
+        public long SequenceNumber { get; }
+    }
+    public sealed class EventBatch : System.IEquatable<dddlib.Persistence.EventDispatcher.Sdk.EventBatch>
+    {
+        public EventBatch(long Id, System.Collections.Generic.IReadOnlyList<dddlib.Persistence.Sdk.SequencedEvent> Events) { }
+        public System.Collections.Generic.IReadOnlyList<dddlib.Persistence.Sdk.SequencedEvent> Events { get; init; }
+        public long Id { get; init; }
+    }
+    public class EventDispatcher : System.IAsyncDisposable
+    {
+        public EventDispatcher(dddlib.Persistence.EventDispatcher.IEventDispatcher dispatcher, dddlib.Persistence.EventDispatcher.Sdk.IEventBatchStore batchStore, dddlib.Persistence.EventDispatcher.EventDispatcherOptions? options = null) { }
+        public event System.EventHandler<dddlib.Persistence.EventDispatcher.Sdk.DispatchFailedEventArgs>? DispatchFailed;
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task RunAsync(System.Threading.CancellationToken cancellationToken) { }
+        public void Start() { }
+        public System.Threading.Tasks.Task StopAsync() { }
+    }
+    public interface IEventBatchStore
+    {
+        System.Threading.Tasks.Task<dddlib.Persistence.EventDispatcher.Sdk.EventBatch?> GetNextBatchAsync(System.Guid dispatcherId, int batchSize, System.TimeSpan batchTimeout, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task MarkDispatchedAsync(System.Guid dispatcherId, long sequenceNumber, System.Threading.CancellationToken cancellationToken = default);
+    }
+}
+namespace dddlib.Persistence.EventDispatcher.SqlServer
+{
+    public sealed class SqlServerEventBatchStore : dddlib.Persistence.EventDispatcher.Sdk.IEventBatchStore
+    {
+        public SqlServerEventBatchStore(string connectionString, string schema = "dbo") { }
+        public System.Threading.Tasks.Task<dddlib.Persistence.EventDispatcher.Sdk.EventBatch?> GetNextBatchAsync(System.Guid dispatcherId, int batchSize, System.TimeSpan batchTimeout, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task MarkDispatchedAsync(System.Guid dispatcherId, long sequenceNumber, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class SqlServerEventDispatcher : dddlib.Persistence.EventDispatcher.Sdk.EventDispatcher
+    {
+        public SqlServerEventDispatcher(string connectionString, System.Action<long, object> dispatch, dddlib.Persistence.EventDispatcher.EventDispatcherOptions? options = null, string schema = "dbo") { }
+        public SqlServerEventDispatcher(string connectionString, dddlib.Persistence.EventDispatcher.IEventDispatcher dispatcher, dddlib.Persistence.EventDispatcher.EventDispatcherOptions? options = null, string schema = "dbo") { }
+    }
+    public static class SqlServerEventDispatcherScripts
+    {
+        public const string Name = "06-SqlServerEventDispatcher.sql";
+        public static string Read(string schema = "dbo") { }
+    }
+}

@@ -9,3 +9,5 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
 - Persistence: async event store and memento repositories for in-memory and SQL Server, System.Text.Json
   serialization, manually run schema scripts.
 - Test framework: helpers to inspect uncommitted events, mementos and revisions and to validate mementos.
+- Event dispatcher: `dddlib.Persistence.EventDispatcher` delivers committed events in sequence order with
+  at-least-once delivery, polling the in-memory or SQL Server event store (no `SqlDependency`, so Azure SQL works).

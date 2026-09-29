@@ -100,6 +100,12 @@ BEGIN TRANSACTION;
     IF @Lock < 0
         THROW 50500, 'Concurrency error (server side). Failed to acquire commit lock for stream.', 1;
 
+    -- Commits are serialized so that sequence numbers are assigned in commit order: a dispatcher that has passed
+    -- sequence number N can rely on every event below N being committed or permanently rolled back.
+    EXEC @Lock = sp_getapplock @Resource = 'dddlib.Events.Commit', @LockMode = 'Exclusive', @LockTimeout = 10000;
+    IF @Lock < 0
+        THROW 50500, 'Concurrency error (server side). Failed to acquire the event sequence lock.', 1;
+
     DECLARE @StreamRevision INT = 0;
     DECLARE @Stream TABLE ([LinkId] BIGINT, [Revision] INT);
 

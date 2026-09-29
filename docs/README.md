@@ -102,3 +102,4 @@ dddlib.Persistence
 - [Event Sourcing Persistence](persistence/event-sourcing-persistence.md) (in-memory, SQL Server, snapshotting)
 - [SQL Server](persistence/sql-server.md)
 - [Serialization](persistence/serialization.md)
+- [Event Dispatcher](persistence/event-dispatcher.md) (dddlib.Persistence.EventDispatcher)

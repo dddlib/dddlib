@@ -39,10 +39,16 @@ is no compatibility with data written by v1.
   across processes are gone.
 - The memento repository still does not store events; see [issue 1](https://github.com/dddlib/dddlib/issues/1).
 
+## Event dispatcher
+
+`dddlib.Persistence.EventDispatcher` is back with the same batch model but polls the event store instead of using
+`SqlDependency`, which Azure SQL does not support. `IEventDispatcher.Dispatch` is now `DispatchAsync` with a
+`CancellationToken`; the host takes `EventDispatcherOptions` and runs with `RunAsync(token)` or `Start`/`StopAsync`;
+the dispatcher schema is one script, `06-SqlServerEventDispatcher.sql`. See [Event dispatcher](persistence/event-dispatcher.md).
+
 ## Not yet ported
 
-- `dddlib.Persistence.EventDispatcher` and `dddlib.Projections`. When the dispatcher returns it will poll the event
-  store rather than use `SqlDependency`, which Azure SQL does not support.
+- `dddlib.Projections`.
 
 `dddlib.TestFramework` is back with the same three extension methods plus `ModelValidator`; see
 [Testing a Domain Model](testing.md).

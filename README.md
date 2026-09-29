@@ -32,4 +32,5 @@ Then reference the packages as usual, allowing prereleases:
 dotnet add package dddlib --prerelease
 dotnet add package dddlib.Persistence --prerelease
 dotnet add package dddlib.TestFramework --prerelease
+dotnet add package dddlib.Persistence.EventDispatcher --prerelease
 ```

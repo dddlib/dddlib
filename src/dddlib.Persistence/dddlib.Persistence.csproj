@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="dddlib.Persistence.EventDispatcher" />
     <InternalsVisibleTo Include="dddlib.Persistence.Tests" />
     <InternalsVisibleTo Include="dddlib.Tests.Support" />
   </ItemGroup>

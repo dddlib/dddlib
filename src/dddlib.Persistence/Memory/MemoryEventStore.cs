@@ -12,6 +12,8 @@ public sealed class MemoryEventStore : IEventStore
 {
     private readonly Lock sync = new();
     private readonly Dictionary<Guid, List<StoredEvent>> streams = [];
+    private readonly List<StoredEvent> log = [];
+    private long sequenceNumber;
 
     public Task<StreamResult> GetStreamAsync(Guid streamId, int streamRevision, CancellationToken cancellationToken = default)
     {
@@ -64,12 +66,39 @@ public sealed class MemoryEventStore : IEventStore
             foreach (var @event in events)
             {
                 state = Guid.NewGuid().ToString("N")[..8];
-                stream.Add(new StoredEvent(@event.GetType(), JsonSerializer.Serialize(@event, @event.GetType(), JsonSerialization.Options), state));
+                var stored = new StoredEvent(++this.sequenceNumber, @event.GetType(), JsonSerializer.Serialize(@event, @event.GetType(), JsonSerialization.Options), state);
+                stream.Add(stored);
+                this.log.Add(stored);
             }
 
             return Task.FromResult(state);
         }
     }
 
-    private sealed record StoredEvent(Type Type, string Payload, string State);
+    /// <summary>
+    /// Reads committed events in sequence order, starting after the specified sequence number. This is the feed
+    /// the event dispatcher batches from.
+    /// </summary>
+    public Task<IReadOnlyList<SequencedEvent>> ReadEventsAsync(long afterSequenceNumber, int maxCount, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return Task.FromResult(this.ReadEvents(afterSequenceNumber, maxCount));
+    }
+
+    internal IReadOnlyList<SequencedEvent> ReadEvents(long afterSequenceNumber, int maxCount)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxCount);
+
+        lock (this.sync)
+        {
+            return this.log
+                .Where(stored => stored.SequenceNumber > afterSequenceNumber)
+                .Take(maxCount)
+                .Select(static stored => new SequencedEvent(stored.SequenceNumber, JsonSerializer.Deserialize(stored.Payload, stored.Type, JsonSerialization.Options)!))
+                .ToArray();
+        }
+    }
+
+    private sealed record StoredEvent(long SequenceNumber, Type Type, string Payload, string State);
 }

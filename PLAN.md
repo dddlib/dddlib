@@ -20,8 +20,8 @@ In scope:
 
 Out of scope until everything above is green: `dddlib.Projections` and `perftest`. The old `dddlib.TestFramework`
 package returns in phase 5 (its extension methods are needed by users testing their own models), and
-`dddlib.Persistence.EventDispatcher` is ported in phase 6. When the event dispatcher is ported, its SQL Server notification service must not use
-`SqlDependency`, which Azure SQL does not support; it should poll the event store instead (a polling listener).
+`dddlib.Persistence.EventDispatcher` was ported in phase 6. Its SQL Server implementation polls the event store
+rather than use `SqlDependency`, which Azure SQL does not support.
 
 ## 2. Decisions already made
 
@@ -267,6 +267,26 @@ meanwhile.
   others, and the three legacy test files: MemoryEventDispatcher, SqlServerEventDispatcher, SqlServerEventStoreTests.
 - Issue dddlib/dddlib#1 (events on the memento path) is the natural follow-on once the dispatcher exists.
 
+Done 2026-09-29. What was built, and where it departs from v1:
+
+- `IEventDispatcher.DispatchAsync(sequenceNumber, event, token)` and `CustomEventDispatcher` (delegate) are what
+  users implement, as in v1. `Sdk.EventDispatcher` is the polling host over `Sdk.IEventBatchStore`
+  (`GetNextBatchAsync` / `MarkDispatchedAsync`); `MemoryEventDispatcher` and `SqlServerEventDispatcher` compose it
+  with `MemoryEventBatchStore` and `SqlServerEventBatchStore`. `EventDispatcherOptions` holds dispatcher id, batch
+  size, polling interval with doubling backoff to a maximum, and the batch timeout. `RunAsync(token)` is the hosted
+  shape; `Start`/`StopAsync`/`DisposeAsync` for everything else. A throwing dispatcher raises `DispatchFailed`,
+  abandons the batch and waits the batch timeout so the batch is retried in order.
+- `MemoryEventStore` keeps a store-wide sequenced log and exposes `ReadEventsAsync(after, max)`; `SequencedEvent`
+  is in `dddlib.Persistence.Sdk`.
+- SQL: one script, `06-SqlServerEventDispatcher.sql`, with `Batches` (first and last sequence number per batch,
+  UTC timestamp, complete flag), `DispatchedEvents` as one high-water-mark row per dispatcher instead of one row per
+  event, and `GetNextBatch` / `MarkDispatched`. Script 03 now also takes a store-wide application lock
+  (`dddlib.Events.Commit`) while assigning sequence numbers so they reflect commit order; without it a dispatcher
+  could pass a number whose commit was still in flight.
+- Tests (16): MemoryEventDispatcher.CanDispatch, SqlServerEventDispatcher.CanDispatch, SqlServerEventStoreTests (7,
+  `[NotInParallel]` because the batch feed is store-wide), MemoryEventBatchStoreTests (6, using a fake
+  `TimeProvider` for the timeout and a dispatcher retry-in-order case), public API snapshot.
+
 
 ## 6. Test conventions with TUnit
 
@@ -355,6 +375,14 @@ Persistence (`tests/dddlib.Persistence.Tests`):
   SqlServerSnapshotStoreTests
 - Bug: 0043, 0064, 0081, 0109, 0127
 - Unit: JsonSerializerTests
+
+Event dispatcher (`tests/dddlib.Persistence.EventDispatcher.Tests`):
+
+- MemoryEventDispatcher: CanDispatch; SqlServerEventDispatcher: CanDispatch
+- Integration: SqlServerEventStoreTests (TryGetBatchFromEmptyEventStore, TryGetBatchFromEventStoreWithSingleEvent,
+  TryGetBatchTwiceFromEventStoreWithSingleEvent, TryGetBatchTwiceFromEventStoreWithSingleEventAndDifferentDispatchers,
+  TryGetMultipleBatchesFromEventStoreWithManyEvents, MarkingDispatchedCompletesTheBatchAndAdvances,
+  AnAbandonedBatchIsHandedOutAgainAfterTheTimeout), MemoryEventBatchStoreTests
 
 Shared model (`tests/dddlib.Tests.Support`): Vehicle, Registration, Wheel, NewVehicle, IRegistrationService, Bootstrapper.
 

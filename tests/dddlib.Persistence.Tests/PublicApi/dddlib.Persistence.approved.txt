@@ -41,6 +41,7 @@ namespace dddlib.Persistence.Memory
         public MemoryEventStore() { }
         public System.Threading.Tasks.Task<string> CommitStreamAsync(System.Guid streamId, System.Collections.Generic.IReadOnlyList<object> events, System.Guid correlationId, string? preCommitState, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.StreamResult> GetStreamAsync(System.Guid streamId, int streamRevision, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<dddlib.Persistence.Sdk.SequencedEvent>> ReadEventsAsync(long afterSequenceNumber, int maxCount, System.Threading.CancellationToken cancellationToken = default) { }
     }
     public sealed class MemoryEventStoreRepository : dddlib.Persistence.Sdk.EventStoreRepository
     {
@@ -160,6 +161,12 @@ namespace dddlib.Persistence.Sdk
         public System.Threading.Tasks.Task<T> LoadAsync(object naturalKey, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task SaveAsync(T aggregateRoot, System.Threading.CancellationToken cancellationToken = default) { }
         protected abstract System.Threading.Tasks.Task<string> SaveAsync(System.Guid id, object memento, string? preCommitState, System.Threading.CancellationToken cancellationToken);
+    }
+    public sealed class SequencedEvent : System.IEquatable<dddlib.Persistence.Sdk.SequencedEvent>
+    {
+        public SequencedEvent(long SequenceNumber, object Event) { }
+        public object Event { get; init; }
+        public long SequenceNumber { get; init; }
     }
     public sealed class Snapshot : System.IEquatable<dddlib.Persistence.Sdk.Snapshot>
     {
