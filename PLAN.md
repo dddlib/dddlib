@@ -18,9 +18,9 @@ In scope:
 - The in-memory persistence implementations, but only as far as they are needed to run the persistence
   scenarios without a database. They are cheap and make the repository tests fast.
 
-Out of scope until everything above is green: `dddlib.Projections`, `dddlib.Persistence.EventDispatcher`,
-`perftest`, and the old `dddlib.TestFramework` package (its three extension methods fold into the
-test support project). When the event dispatcher is ported, its SQL Server notification service must not use
+Out of scope until everything above is green: `dddlib.Projections` and `perftest`. The old `dddlib.TestFramework`
+package returns in phase 5 (its extension methods are needed by users testing their own models), and
+`dddlib.Persistence.EventDispatcher` is ported in phase 6. When the event dispatcher is ported, its SQL Server notification service must not use
 `SqlDependency`, which Azure SQL does not support; it should poll the event store instead (a polling listener).
 
 ## 2. Decisions already made
@@ -245,6 +245,28 @@ Exit: benchmarks (optional BenchmarkDotNet project) show the generated paths all
 - NuGet metadata, SourceLink, deterministic builds, `RELEASE_NOTES.md`, GitHub Actions running
   `dotnet test` with the SQL container. The `dddlib` package carries the analyzer assembly under
   `analyzers/dotnet/cs` so consumers get generation and diagnostics without a second package.
+- `dddlib.TestFramework` package (`src/dddlib.TestFramework`): the `GetUncommittedEvents`, `GetMemento` and
+  `GetRevision` extension methods and `ModelValidator`, moved out of the test support project and given
+  `InternalsVisibleTo` access to the core. The test support project consumes it.
+- Publishing: Cameron has lost nuget.org access (support ticket raised, 2026-09-29). Until it is restored, packages
+  are pushed as MinVer prereleases to a private GitHub Packages feed from GitHub Actions, which needs the repository
+  on GitHub (no remote exists yet) and a token with `write:packages`. nuget.org publishing is added when access
+  returns; the package ids stay `dddlib`, `dddlib.Persistence`, `dddlib.TestFramework`.
+
+### Phase 6: event dispatcher
+
+Port `dddlib.Persistence.EventDispatcher` as its own package, after phase 5 so the other packages are usable
+meanwhile.
+
+- Keep the batch model: the dispatcher event store hands out numbered batches of undispatched events per
+  dispatcher id and marks events dispatched; the `EventDispatcher` host processes one buffered batch at a time.
+- Replace the SqlDependency-based `INotificationService` with polling: a configurable interval with backoff when no
+  events are found, a `CancellationToken` throughout, and a shape that hosts as an `IHostedService`. Azure SQL does
+  not support `SqlDependency`. The in-memory implementation may notify in-process.
+- Memory and SQL Server implementations, the dispatcher scripts consolidated to one file run manually like the
+  others, and the three legacy test files: MemoryEventDispatcher, SqlServerEventDispatcher, SqlServerEventStoreTests.
+- Issue dddlib/dddlib#149 (events on the memento path) is the natural follow-on once the dispatcher exists.
+
 
 ## 6. Test conventions with TUnit
 
