@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetLibVersion)</TargetFramework>
+    <RootNamespace>dddlib</RootNamespace>
+    <Description>A domain driven design library for .NET.</Description>
+  </PropertyGroup>
+
+</Project>

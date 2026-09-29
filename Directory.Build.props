@@ -1,0 +1,32 @@
+<Project>
+
+  <PropertyGroup>
+    <Authors>dddlib contributors</Authors>
+    <Product>dddlib</Product>
+    <Copyright>Copyright © dddlib contributors</Copyright>
+    <PackageProjectUrl>https://github.com/dddlib/dddlib</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/dddlib/dddlib</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <VersionPrefix>2.0.0</VersionPrefix>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NetLibVersion>net10.0</NetLibVersion>
+    <NetTestVersion>net10.0</NetTestVersion>
+    <NetGeneratorVersion>netstandard2.0</NetGeneratorVersion>
+  </PropertyGroup>
+
+</Project>

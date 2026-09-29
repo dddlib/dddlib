@@ -1,0 +1,18 @@
+<Project>
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TUnitVersion>1.71.0</TUnitVersion>
+  </PropertyGroup>
+
+  <ItemGroup Label="Test Dependencies">
+    <PackageVersion Include="TUnit" Version="$(TUnitVersion)" />
+    <PackageVersion Include="TUnit.Core" Version="$(TUnitVersion)" />
+    <PackageVersion Include="TUnit.Assertions" Version="$(TUnitVersion)" />
+  </ItemGroup>
+
+</Project>
