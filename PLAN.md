@@ -12,9 +12,9 @@ In scope:
 - `dddlib` core: `AggregateRoot`, `Entity`, natural keys, bootstrapper configuration, event application,
   entity and value object mapping, natural key serialization, lifecycle management.
 - `dddlib.Persistence`, SQL Server only: identity map, natural key repository, type cache, event store,
-  snapshot store, and the event store repository built on them. The memento-based `IRepository<T>` path
-  (`Repository<T>`, `MemoryRepository`, `SqlServerMementoRepository`, `SqlServerRepository`) is dropped;
-  event sourcing is the only persistence model. Snapshots still use mementos.
+  snapshot store, the event store repository built on them, and the memento-based `IRepository<T>` path
+  (`Repository<T>`, `MemoryRepository<T>`, `SqlServerRepository<T>` for custom storage and
+  `SqlServerMementoRepository<T>`).
 - The in-memory persistence implementations, but only as far as they are needed to run the persistence
   scenarios without a database. They are cheap and make the repository tests fast.
 
@@ -177,13 +177,13 @@ Exit: every scenario in section 7 for the core library is green.
 ### Phase 2: persistence abstractions and in-memory implementations
 
 - `IIdentityMap`, `DefaultIdentityMap`, `INaturalKeyRepository`, `INaturalKeySerializer`, `IEventStore`,
-  `ISnapshotStore`, `Snapshot`, `ITypeCache`, `EventStoreRepository`, exceptions. (`AggregateRootFactory`
-  already lives in the core `dddlib.Sdk` namespace.)
+  `ISnapshotStore`, `Snapshot`, `ITypeCache`, `EventStoreRepository`, `IRepository<T>`, `Repository<T>`,
+  exceptions. (`AggregateRootFactory` already lives in the core `dddlib.Sdk` namespace.)
 - `MemoryEventStore`, `MemoryNaturalKeyRepository`, `MemorySnapshotStore`, `MemoryIdentityMap`,
-  `MemoryEventStoreRepository`.
-- Scenarios: MemoryEventPersistence (9), MemoryEventStoreTests (6), JsonSerializerTests (4), bug regressions
-  Bug0043, 0064, 0081, 0109 (their memory parts, re-expressed against the event store repository where they
-  used the dropped memento repository). Bug0127 and the SQL Server part of Bug0109 land in phase 3.
+  `MemoryEventStoreRepository`, `MemoryRepository<T>`.
+- Scenarios: MemoryEventPersistence (9), MemoryMementoPersistence (1), MemoryEventStoreTests (6),
+  JsonSerializerTests (4), bug regressions Bug0043, 0064, 0081, 0109 (their memory parts, covering both
+  repositories). Bug0127 and the SQL Server parts of Bug0109 land in phase 3.
 
 Exit: all memory persistence scenarios green with no database.
 
@@ -193,11 +193,11 @@ Exit: all memory persistence scenarios green with no database.
   `[ClassDataSource<SqlServerContainer>(Shared = SharedType.PerTestSession)]`. Each test class creates its
   own database from the container's connection string and drops it on dispose.
 - SQL scripts under `src/dddlib.Persistence/Scripts`, packaged as content and run manually. Since there is no
-  upgrade path from v1, one script per component (`Persistence`, `TypeCache`, `NaturalKey`, `EventStore`,
-  `SnapshotStore`). The test fixture runs them on each per-class database.
+  upgrade path from v1, one script per component (`Persistence`, `NaturalKey`, `EventStore`, `SnapshotStore`,
+  `MementoRepository`). The test fixture runs them on each per-class database.
 - `SqlServerTypeCache`, `SqlServerNaturalKeyRepository`, `SqlServerIdentityMap`, `SqlServerEventStore`,
-  `SqlServerSnapshotStore`, `SqlServerEventStoreRepository`.
-- Scenarios: SqlServerEventPersistence (9), SqlServerEventStoreTests (6),
+  `SqlServerSnapshotStore`, `SqlServerEventStoreRepository`, `SqlServerRepository<T>`, `SqlServerMementoRepository<T>`.
+- Scenarios: SqlServerEventPersistence (9), SqlServerMementoPersistence (2), SqlServerEventStoreTests (6),
   SqlServerIdentityMapTests (7), SqlServerNaturalKeyRepositoryTests (1), SqlServerSnapshotStoreTests (2),
   and the SQL Server parts of Bug0109 plus Bug0127. UpgradeDatabaseVersionTests is dropped while schema setup
   is manual.
@@ -303,6 +303,8 @@ Persistence (`tests/dddlib.Persistence.Tests`):
 
 - MemoryEventPersistence and SqlServerEventPersistence, each: UndefinedNaturalKey, UndefinedUnititializedFactory, NullNaturalKey,
   SaveAndLoad, SaveAndSaveAndLoad, SaveAndLoadAndSaveAndLoad, SnapshotAndLoad, SnapshotAndSaveAndLoad, SaveAndEndLifecycleAndSaveAndCreate
+- MemoryMementoPersistence: DefaultMemoryPersistence; SqlServerMementoPersistence: DefaultSqlServerPersistence,
+  DefaultMementoRepositoryPersistence
 - Integration: MemoryEventStoreTests, SqlServerEventStoreTests, SqlServerIdentityMapTests, SqlServerNaturalKeyRepositoryTests,
   SqlServerSnapshotStoreTests
 - Bug: 0043, 0064, 0081, 0109, 0127
@@ -316,8 +318,8 @@ Answered so far:
 
 - Existing databases: none need to be supported. No compatibility constraints on JSON, type names or namespaces.
 - Package identity: publish under the existing `dddlib` package id as 2.0.
-- Memento-based `IRepository<T>`: dropped. Event sourcing is the only persistence model. The
-  MemoryMementoPersistence and SqlServerMementoPersistence scenarios go with it.
+- Memento-based `IRepository<T>`: kept. It was dropped on 2026-09-29 and reinstated the same day because it has
+  a use case. Async like the rest of persistence; `MementoResult` replaces the out parameters.
 
 - `ValueObject<T>`: kept, with the legacy constraint `where T : ValueObject<T>`. See section 4.
 

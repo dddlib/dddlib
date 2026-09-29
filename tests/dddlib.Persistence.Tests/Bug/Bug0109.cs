@@ -6,7 +6,6 @@ namespace dddlib.Persistence.Tests.Bug;
 
 // https://github.com/dddlib/dddlib/issues/109
 // Saving a stale instance after the aggregate root was destroyed and saved is a concurrency error.
-// The legacy ShouldThrowForMemoryRepository case covered the dropped memento-based repository;
 // The SQL Server case runs against a per-class database created by the fixture.
 public class Bug0109 : SqlServerIntegration
 {
@@ -42,6 +41,60 @@ public class Bug0109 : SqlServerIntegration
         var action = () => repository.SaveAsync(sameSubject);
 
         await Assert.That(action).Throws<ConcurrencyException>();
+    }
+
+    [Test]
+    public async Task ShouldThrowForMemoryRepository()
+    {
+        var repository = new MemoryRepository<ConventionalSubject>();
+        await ShouldThrowForRepository(repository);
+    }
+
+    [Test]
+    public async Task ShouldThrowForSqlServerMementoRepository()
+    {
+        var repository = new SqlServerMementoRepository<ConventionalSubject>(this.ConnectionString);
+        await ShouldThrowForRepository(repository);
+    }
+
+    private static async Task ShouldThrowForRepository(IRepository<ConventionalSubject> repository)
+    {
+        var naturalKey = "key";
+        var subject = new ConventionalSubject(naturalKey);
+        await repository.SaveAsync(subject);
+        var sameSubject = await repository.LoadAsync(subject.NaturalKey!);
+        subject.Destroy();
+        await repository.SaveAsync(subject);
+
+        var action = () => repository.SaveAsync(sameSubject);
+
+        await Assert.That(action).Throws<ConcurrencyException>();
+    }
+
+    private sealed class ConventionalSubject : AggregateRoot
+    {
+        public ConventionalSubject(string naturalKey)
+        {
+            this.NaturalKey = naturalKey;
+        }
+
+        internal ConventionalSubject()
+        {
+        }
+
+        [NaturalKey]
+        public string? NaturalKey { get; private set; }
+
+        public void Destroy() => this.EndLifecycle();
+
+        protected override object? GetState() => new Memento { NaturalKey = this.NaturalKey };
+
+        protected override void SetState(object memento) => this.NaturalKey = ((Memento)memento).NaturalKey;
+
+        public sealed class Memento
+        {
+            public string? NaturalKey { get; set; }
+        }
     }
 
     private sealed class EventBasedSubject : AggregateRoot

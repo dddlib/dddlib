@@ -4,7 +4,7 @@ namespace dddlib.Persistence.Tests.Bug;
 
 // https://github.com/dddlib/dddlib/issues/43
 // Loading with a natural key of the wrong type must fail with an argument exception rather than a lookup miss.
-// The legacy test used the memento-based repository, which is dropped in v2; the event store repository behaves the same.
+// The legacy test used the memento-based repository; both repositories behave the same.
 public class Bug0043
 {
     [Test]
@@ -16,6 +16,19 @@ public class Bug0043
         await repository.SaveAsync(car);
 
         Func<Task> action = () => repository.LoadAsync<Car>(registration);
+
+        await Assert.That(action).Throws<ArgumentException>();
+    }
+
+    [Test]
+    public async Task ShouldThrowForMemoryRepository()
+    {
+        var repository = new MemoryRepository<Car>();
+        var registration = new Registraion { Number = "abc" };
+        var car = new Car(registration);
+        await repository.SaveAsync(car);
+
+        Func<Task> action = () => repository.LoadAsync(registration);
 
         await Assert.That(action).Throws<ArgumentException>();
     }
@@ -37,6 +50,10 @@ public class Bug0043
         public string? RegistrationNumber { get; private set; }
 
         private void Handle(NewCar @event) => this.RegistrationNumber = @event.RegistrationNumber;
+
+        protected override object? GetState() => this.RegistrationNumber;
+
+        protected override void SetState(object memento) => this.RegistrationNumber = memento.ToString();
     }
 
     public class NewCar
