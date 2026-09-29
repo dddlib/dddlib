@@ -119,9 +119,7 @@ public class AggregateRootTests
     {
         var memento = default(object);
         var events = new[] { new SomethingHappened() };
-        var factory = new AggregateRootFactory();
-
-        var aggregateRoot = factory.Create<PersistedAggregate>(memento, 0, events, "state");
+        var aggregateRoot = AggregateRootFactory.Create<PersistedAggregate>(memento, 0, events, "state");
         aggregateRoot.MakeSomethingHappen();
 
         await Assert.That(aggregateRoot.ThingsThatHappened).Count().IsEqualTo(2);

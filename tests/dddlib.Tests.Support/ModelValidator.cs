@@ -8,7 +8,6 @@ namespace dddlib.Tests.Support;
 /// </summary>
 public static class ModelValidator
 {
-    private static readonly AggregateRootFactory Factory = new();
 
     /// <summary>
     /// Validates that the memento produced by the aggregate root round-trips: reconstituting a new instance from the
@@ -22,7 +21,7 @@ public static class ModelValidator
 
         var memento = aggregate.GetMemento() ?? throw new InvalidOperationException("No memento defined!");
 
-        var sameAggregate = Factory.Create<T>(memento, aggregate.Revision, [], "test");
+        var sameAggregate = AggregateRootFactory.Create<T>(memento, aggregate.Revision, [], "test");
         var sameMemento = sameAggregate.GetMemento();
 
         var expected = JsonSerializer.Serialize(memento, memento.GetType());

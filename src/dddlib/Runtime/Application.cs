@@ -34,12 +34,12 @@ public sealed class Application : IDisposable
     {
     }
 
-    public Application(IBootstrapperProvider bootstrapperProvider)
+    internal Application(IBootstrapperProvider bootstrapperProvider)
         : this(DefaultTypeAnalyzerService, bootstrapperProvider, isDefault: false)
     {
     }
 
-    public Application(ITypeAnalyzerService typeAnalyzerService, IBootstrapperProvider bootstrapperProvider)
+    internal Application(ITypeAnalyzerService typeAnalyzerService, IBootstrapperProvider bootstrapperProvider)
         : this(typeAnalyzerService, bootstrapperProvider, isDefault: false)
     {
     }
@@ -116,16 +116,13 @@ public sealed class Application : IDisposable
         }
     }
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public AggregateRootType GetAggregateRootType(Type type) =>
+    internal AggregateRootType GetAggregateRootType(Type type) =>
         this.GetRuntimeType(type, this.aggregateRootTypes, this.aggregateRootTypeFactory);
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public EntityType GetEntityType(Type type) =>
+    internal EntityType GetEntityType(Type type) =>
         this.GetRuntimeType(type, this.entityTypes, this.entityTypeFactory);
 
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public ValueObjectType GetValueObjectType(Type type) =>
+    internal ValueObjectType GetValueObjectType(Type type) =>
         this.GetRuntimeType(type, this.valueObjectTypes, this.valueObjectTypeFactory);
 
     private static T Create<T>(Type type, Func<Type, T> factory)

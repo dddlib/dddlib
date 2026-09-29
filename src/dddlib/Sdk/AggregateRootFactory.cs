@@ -6,9 +6,9 @@ namespace dddlib.Sdk;
 /// <summary>
 /// Creates aggregate roots from persisted state: an optional memento and the events that follow it.
 /// </summary>
-public sealed class AggregateRootFactory
+internal static class AggregateRootFactory
 {
-    public T Create<T>(object? memento, int revision, IEnumerable<object> events, string? state)
+    public static T Create<T>(object? memento, int revision, IEnumerable<object> events, string? state)
         where T : AggregateRoot
     {
         ArgumentNullException.ThrowIfNull(events);

@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="dddlib.Persistence" />
+    <InternalsVisibleTo Include="dddlib.Tests" />
     <InternalsVisibleTo Include="dddlib.Persistence.Tests" />
     <InternalsVisibleTo Include="dddlib.Tests.Support" />
   </ItemGroup>

@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Globalization;
 using System.Linq.Expressions;
 
@@ -45,8 +44,7 @@ public sealed class NaturalKey : IEquatable<NaturalKey>
     /// <summary>
     /// Creates a natural key with a pre-built accessor, as emitted by the source generator. No validation is performed.
     /// </summary>
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public NaturalKey(Type runtimeType, string propertyName, Type propertyType, Func<Entity, object?> getValue)
+    internal NaturalKey(Type runtimeType, string propertyName, Type propertyType, Func<Entity, object?> getValue)
     {
         ArgumentNullException.ThrowIfNull(runtimeType);
         ArgumentException.ThrowIfNullOrEmpty(propertyName);
@@ -72,8 +70,7 @@ public sealed class NaturalKey : IEquatable<NaturalKey>
     /// <summary>
     /// Gets the accessor itself, for callers on a hot path that already hold a non-null entity.
     /// </summary>
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public Func<Entity, object?> Accessor => this.getValue;
+    internal Func<Entity, object?> Accessor => this.getValue;
 
     public object? GetValue(Entity entity)
     {

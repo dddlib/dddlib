@@ -90,13 +90,8 @@ namespace dddlib.Runtime
     public sealed class Application : System.IDisposable
     {
         public Application() { }
-        public Application(dddlib.Sdk.Configuration.IBootstrapperProvider bootstrapperProvider) { }
-        public Application(dddlib.Sdk.Configuration.Model.ITypeAnalyzerService typeAnalyzerService, dddlib.Sdk.Configuration.IBootstrapperProvider bootstrapperProvider) { }
         public static dddlib.Runtime.Application Current { get; }
         public void Dispose() { }
-        public dddlib.Sdk.Configuration.Model.AggregateRootType GetAggregateRootType(System.Type type) { }
-        public dddlib.Sdk.Configuration.Model.EntityType GetEntityType(System.Type type) { }
-        public dddlib.Sdk.Configuration.Model.ValueObjectType GetValueObjectType(System.Type type) { }
     }
     public interface IEntityMapper<TEntity> : dddlib.Sdk.IFluentExtensions
         where TEntity : dddlib.Entity
@@ -144,89 +139,6 @@ namespace dddlib.Runtime
         public RuntimeException(string? message) { }
         public RuntimeException(string? message, System.Exception? innerException) { }
         public override string Message { get; }
-    }
-}
-namespace dddlib.Sdk
-{
-    public sealed class AggregateRootFactory
-    {
-        public AggregateRootFactory() { }
-        public T Create<T>(object? memento, int revision, System.Collections.Generic.IEnumerable<object> events, string? state)
-            where T : dddlib.AggregateRoot { }
-    }
-    public sealed class CustomValueObjectSerializer<T> : dddlib.Runtime.IValueObjectSerializer
-        where T : dddlib.ValueObject<T>
-    {
-        public CustomValueObjectSerializer(System.Func<T, string> serialize, System.Func<string, T> deserialize) { }
-        public T Deserialize(string serializedValueObject) { }
-        public string Serialize(T valueObject) { }
-    }
-    public sealed class DefaultEventDispatcher : dddlib.Runtime.IEventDispatcher
-    {
-        public DefaultEventDispatcher(System.Type type) { }
-        public DefaultEventDispatcher(System.Type type, string methodName, System.Reflection.BindingFlags bindingFlags) { }
-        public void Dispatch(object target, object @event) { }
-        public static dddlib.Sdk.DefaultEventDispatcher ForDeclaredHandlers(System.Type type) { }
-    }
-    public sealed class DefaultMapperProvider : dddlib.Runtime.IMapperProvider, dddlib.Sdk.IFluentExtensions
-    {
-        public DefaultMapperProvider() { }
-        public dddlib.Runtime.IEntityMapper<T> Entity<T>(T entity)
-            where T : dddlib.Entity { }
-        public dddlib.Runtime.IEventMapper<T> Event<T>(T @event)
-            where T :  notnull { }
-        public dddlib.Runtime.IValueObjectMapper<T> ValueObject<T>(T valueObject)
-            where T : dddlib.ValueObject<T> { }
-    }
-    public sealed class DefaultValueObjectEqualityComparer<T> : System.Collections.Generic.IEqualityComparer<T>
-        where T : dddlib.ValueObject<T>
-    {
-        public DefaultValueObjectEqualityComparer() { }
-        public bool Equals(T? x, T? y) { }
-        public int GetHashCode(T obj) { }
-    }
-    public sealed class DefaultValueObjectSerializer<T> : dddlib.Runtime.IValueObjectSerializer
-        where T : dddlib.ValueObject<T>
-    {
-        public DefaultValueObjectSerializer() { }
-        public object Deserialize(string serializedValueObject) { }
-        public string Serialize(object valueObject) { }
-    }
-    public static class EventDispatchers
-    {
-        public static dddlib.Runtime.IEventDispatcher ForAggregateRoot(System.Type type) { }
-    }
-    public interface IFluentExtensions
-    {
-        bool Equals(object? obj);
-        int GetHashCode();
-        System.Type GetType();
-        string? ToString();
-    }
-    public static class JsonSerialization
-    {
-        public static System.Text.Json.JsonSerializerOptions Options { get; }
-        public static void AddTypeInfoResolver(System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver resolver) { }
-    }
-    public sealed class MapperCollection
-    {
-        public MapperCollection() { }
-        public void AddOrUpdate<TSource, TDestination>(System.Action<TSource, TDestination> mapping) { }
-        public void AddOrUpdate<TSource, TDestination>(System.Func<TSource, TDestination> mapping) { }
-        public bool TryGet<TSource, TDestination>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Action<TSource, TDestination>? mapping) { }
-        public bool TryGet<TSource, TDestination>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Func<TSource, TDestination>? mapping) { }
-    }
-    public static class TypeExtensions
-    {
-        public static string GetSerializedName(this System.Type sourceType) { }
-        public static System.Collections.Generic.IEnumerable<System.Type> GetTypeHierarchyUntil(this System.Type sourceType, System.Type type) { }
-        public static bool IsSubclassOfRawGeneric(this System.Type sourceType, System.Type genericTypeDefinition) { }
-    }
-    public static class ValueObjectEquality
-    {
-        public const int HashSeed = 17;
-        public static int CombineHash<TValue>(int seed, TValue value) { }
-        public static bool ValuesEqual<TValue>(TValue left, TValue right) { }
     }
 }
 namespace dddlib.Sdk.Configuration
@@ -281,9 +193,7 @@ namespace dddlib.Sdk.Configuration.Model
     }
     public sealed class NaturalKey : System.IEquatable<dddlib.Sdk.Configuration.Model.NaturalKey>
     {
-        public NaturalKey(System.Type runtimeType, string propertyName, System.Type propertyType, System.Func<dddlib.Entity, object?> getValue) { }
         public NaturalKey(System.Type runtimeType, string propertyName, System.Type propertyType, dddlib.Sdk.Configuration.Model.ITypeAnalyzerService typeAnalyzerService) { }
-        public System.Func<dddlib.Entity, object?> Accessor { get; }
         public string PropertyName { get; }
         public System.Type PropertyType { get; }
         public System.Type RuntimeType { get; }
@@ -303,6 +213,78 @@ namespace dddlib.Sdk.Configuration.Model
         public dddlib.Runtime.IValueObjectSerializer Serializer { get; }
         public void ConfigureEqualityComparer<T>(System.Collections.Generic.IEqualityComparer<T> equalityComparer) { }
         public void ConfigureSerializer(dddlib.Runtime.IValueObjectSerializer valueObjectSerializer) { }
+    }
+}
+namespace dddlib.Sdk
+{
+    public sealed class CustomValueObjectSerializer<T> : dddlib.Runtime.IValueObjectSerializer
+        where T : dddlib.ValueObject<T>
+    {
+        public CustomValueObjectSerializer(System.Func<T, string> serialize, System.Func<string, T> deserialize) { }
+        public T Deserialize(string serializedValueObject) { }
+        public string Serialize(T valueObject) { }
+    }
+    public sealed class DefaultEventDispatcher : dddlib.Runtime.IEventDispatcher
+    {
+        public DefaultEventDispatcher(System.Type type) { }
+        public DefaultEventDispatcher(System.Type type, string methodName, System.Reflection.BindingFlags bindingFlags) { }
+        public void Dispatch(object target, object @event) { }
+    }
+    public sealed class DefaultMapperProvider : dddlib.Runtime.IMapperProvider, dddlib.Sdk.IFluentExtensions
+    {
+        public DefaultMapperProvider() { }
+        public dddlib.Runtime.IEntityMapper<T> Entity<T>(T entity)
+            where T : dddlib.Entity { }
+        public dddlib.Runtime.IEventMapper<T> Event<T>(T @event)
+            where T :  notnull { }
+        public dddlib.Runtime.IValueObjectMapper<T> ValueObject<T>(T valueObject)
+            where T : dddlib.ValueObject<T> { }
+    }
+    public sealed class DefaultValueObjectEqualityComparer<T> : System.Collections.Generic.IEqualityComparer<T>
+        where T : dddlib.ValueObject<T>
+    {
+        public DefaultValueObjectEqualityComparer() { }
+        public bool Equals(T? x, T? y) { }
+        public int GetHashCode(T obj) { }
+    }
+    public sealed class DefaultValueObjectSerializer<T> : dddlib.Runtime.IValueObjectSerializer
+        where T : dddlib.ValueObject<T>
+    {
+        public DefaultValueObjectSerializer() { }
+        public object Deserialize(string serializedValueObject) { }
+        public string Serialize(object valueObject) { }
+    }
+    public interface IFluentExtensions
+    {
+        bool Equals(object? obj);
+        int GetHashCode();
+        System.Type GetType();
+        string? ToString();
+    }
+    public static class JsonSerialization
+    {
+        public static System.Text.Json.JsonSerializerOptions Options { get; }
+        public static void AddTypeInfoResolver(System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver resolver) { }
+    }
+    public sealed class MapperCollection
+    {
+        public MapperCollection() { }
+        public void AddOrUpdate<TSource, TDestination>(System.Action<TSource, TDestination> mapping) { }
+        public void AddOrUpdate<TSource, TDestination>(System.Func<TSource, TDestination> mapping) { }
+        public bool TryGet<TSource, TDestination>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Action<TSource, TDestination>? mapping) { }
+        public bool TryGet<TSource, TDestination>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Func<TSource, TDestination>? mapping) { }
+    }
+    public static class TypeExtensions
+    {
+        public static string GetSerializedName(this System.Type sourceType) { }
+        public static System.Collections.Generic.IEnumerable<System.Type> GetTypeHierarchyUntil(this System.Type sourceType, System.Type type) { }
+        public static bool IsSubclassOfRawGeneric(this System.Type sourceType, System.Type genericTypeDefinition) { }
+    }
+    public static class ValueObjectEquality
+    {
+        public const int HashSeed = 17;
+        public static int CombineHash<TValue>(int seed, TValue value) { }
+        public static bool ValuesEqual<TValue>(TValue left, TValue right) { }
     }
 }
 namespace dddlib.Sdk.Generated

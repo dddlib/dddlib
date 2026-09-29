@@ -11,7 +11,6 @@ namespace dddlib.Persistence.Sdk;
 public abstract class Repository<T> : IRepository<T>
     where T : AggregateRoot
 {
-    private readonly AggregateRootFactory factory = new();
     private readonly IIdentityMap identityMap;
 
     protected Repository(IIdentityMap identityMap)
@@ -120,7 +119,7 @@ To fix this issue:
             runtimeType.ThrowNotFound(naturalKey);
         }
 
-        var aggregateRoot = this.factory.Create<T>(result.Memento, 0, [], result.State);
+        var aggregateRoot = AggregateRootFactory.Create<T>(result.Memento, 0, [], result.State);
         if (aggregateRoot.IsDestroyed)
         {
             await this.identityMap.RemoveAsync(id.Value, cancellationToken).ConfigureAwait(false);

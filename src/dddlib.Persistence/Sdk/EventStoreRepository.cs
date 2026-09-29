@@ -10,7 +10,6 @@ namespace dddlib.Persistence.Sdk;
 /// </summary>
 public class EventStoreRepository : IEventStoreRepository
 {
-    private readonly AggregateRootFactory factory = new();
     private readonly IIdentityMap identityMap;
     private readonly IEventStore eventStore;
     private readonly ISnapshotStore snapshotStore;
@@ -129,7 +128,7 @@ Further information: https://github.com/dddlib/dddlib/wiki/Aggregate-Root-Event-
             runtimeType.ThrowNotFound(naturalKey);
         }
 
-        var aggregateRoot = this.factory.Create<T>(snapshot.Memento, snapshot.StreamRevision, stream.Events, stream.State);
+        var aggregateRoot = AggregateRootFactory.Create<T>(snapshot.Memento, snapshot.StreamRevision, stream.Events, stream.State);
         if (aggregateRoot.IsDestroyed)
         {
             await this.identityMap.RemoveAsync(streamId.Value, cancellationToken).ConfigureAwait(false);

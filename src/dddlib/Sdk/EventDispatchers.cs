@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using dddlib.Runtime;
 using dddlib.Sdk.Generated;
 
@@ -8,8 +7,7 @@ namespace dddlib.Sdk;
 /// Builds the event dispatcher for an aggregate root type: one dispatcher per level of the type hierarchy, generated
 /// where the level is a partial type covered by the source generator and reflection-based otherwise.
 /// </summary>
-[EditorBrowsable(EditorBrowsableState.Never)]
-public static class EventDispatchers
+internal static class EventDispatchers
 {
     public static IEventDispatcher ForAggregateRoot(Type type)
     {

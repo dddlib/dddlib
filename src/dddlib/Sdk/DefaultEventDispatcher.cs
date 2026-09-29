@@ -45,7 +45,7 @@ public sealed class DefaultEventDispatcher : IEventDispatcher
     /// <summary>
     /// Creates a dispatcher for the handlers declared on the type itself, ignoring its base types.
     /// </summary>
-    public static DefaultEventDispatcher ForDeclaredHandlers(Type type)
+    internal static DefaultEventDispatcher ForDeclaredHandlers(Type type)
     {
         ArgumentNullException.ThrowIfNull(type);
 
