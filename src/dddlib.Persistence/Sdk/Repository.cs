@@ -51,8 +51,11 @@ public abstract class Repository<T> : IRepository<T>
     /// <summary>
     /// Stores the memento under the identity and returns the new state token. <paramref name="preCommitState"/>
     /// is null for a new aggregate root; a mismatch with the stored state is a <see cref="ConcurrencyException"/>.
+    /// <paramref name="events"/> are the uncommitted events of the aggregate root, possibly none. Storing them in the
+    /// same transaction as the memento lets the event dispatcher deliver them; they are never used for
+    /// reconstitution, and an implementation that has no use for them may ignore them.
     /// </summary>
-    protected abstract Task<string> SaveAsync(Guid id, object memento, string? preCommitState, CancellationToken cancellationToken);
+    protected abstract Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken);
 
     /// <summary>
     /// Loads the memento stored under the identity, or null if there is none.
@@ -92,7 +95,8 @@ To fix this issue:
                 HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-mementos.md",
             };
 
-        var postCommitState = await this.SaveAsync(id, memento, preCommitState, cancellationToken).ConfigureAwait(false);
+        var events = aggregateRoot.GetUncommittedEvents().ToArray();
+        var postCommitState = await this.SaveAsync(id, memento, events, preCommitState, cancellationToken).ConfigureAwait(false);
         aggregateRoot.CommitEvents(postCommitState);
 
         if (aggregateRoot.IsDestroyed)

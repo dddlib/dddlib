@@ -63,8 +63,9 @@ namespace dddlib.Persistence.Memory
     {
         public MemoryRepository() { }
         public MemoryRepository(dddlib.Persistence.Sdk.IIdentityMap identityMap) { }
+        public MemoryRepository(dddlib.Persistence.Sdk.IIdentityMap identityMap, dddlib.Persistence.Memory.MemoryEventStore eventStore) { }
         protected override System.Threading.Tasks.Task<dddlib.Persistence.Sdk.MementoResult?> LoadAsync(System.Guid id, System.Threading.CancellationToken cancellationToken) { }
-        protected override System.Threading.Tasks.Task<string> SaveAsync(System.Guid id, object memento, string? preCommitState, System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task<string> SaveAsync(System.Guid id, object memento, System.Collections.Generic.IReadOnlyList<object> events, string? preCommitState, System.Threading.CancellationToken cancellationToken) { }
     }
     public sealed class MemorySnapshotStore : dddlib.Persistence.Sdk.ISnapshotStore
     {
@@ -160,7 +161,7 @@ namespace dddlib.Persistence.Sdk
         protected abstract System.Threading.Tasks.Task<dddlib.Persistence.Sdk.MementoResult?> LoadAsync(System.Guid id, System.Threading.CancellationToken cancellationToken);
         public System.Threading.Tasks.Task<T> LoadAsync(object naturalKey, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task SaveAsync(T aggregateRoot, System.Threading.CancellationToken cancellationToken = default) { }
-        protected abstract System.Threading.Tasks.Task<string> SaveAsync(System.Guid id, object memento, string? preCommitState, System.Threading.CancellationToken cancellationToken);
+        protected abstract System.Threading.Tasks.Task<string> SaveAsync(System.Guid id, object memento, System.Collections.Generic.IReadOnlyList<object> events, string? preCommitState, System.Threading.CancellationToken cancellationToken);
     }
     public sealed class SequencedEvent : System.IEquatable<dddlib.Persistence.Sdk.SequencedEvent>
     {
@@ -202,7 +203,7 @@ namespace dddlib.Persistence.SqlServer
     {
         public SqlServerMementoRepository(string connectionString, string schema = "dbo") { }
         protected override System.Threading.Tasks.Task<dddlib.Persistence.Sdk.MementoResult?> LoadAsync(System.Guid id, System.Threading.CancellationToken cancellationToken) { }
-        protected override System.Threading.Tasks.Task<string> SaveAsync(System.Guid id, object memento, string? preCommitState, System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task<string> SaveAsync(System.Guid id, object memento, System.Collections.Generic.IReadOnlyList<object> events, string? preCommitState, System.Threading.CancellationToken cancellationToken) { }
     }
     public sealed class SqlServerNaturalKeyRepository : dddlib.Persistence.Sdk.INaturalKeyRepository
     {
@@ -216,6 +217,7 @@ namespace dddlib.Persistence.SqlServer
     {
         protected SqlServerRepository(string connectionString, string schema = "dbo") { }
         protected string ConnectionString { get; }
+        protected System.Threading.Tasks.Task AppendEventsAsync(Microsoft.Data.SqlClient.SqlTransaction transaction, System.Guid id, System.Collections.Generic.IReadOnlyList<object> events, string state, System.Threading.CancellationToken cancellationToken) { }
     }
     public static class SqlServerScripts
     {

@@ -4,7 +4,6 @@ using System.Transactions;
 using dddlib.Persistence.Sdk;
 using dddlib.Sdk;
 using Microsoft.Data.SqlClient;
-using Microsoft.Data.SqlClient.Server;
 
 namespace dddlib.Persistence.SqlServer;
 
@@ -13,14 +12,6 @@ namespace dddlib.Persistence.SqlServer;
 /// </summary>
 public sealed class SqlServerEventStore : IEventStore
 {
-    private static readonly string Hostname = Environment.MachineName;
-    private static readonly SqlMetaData[] EventColumns =
-    [
-        new("Index", SqlDbType.Int),
-        new("TypeId", SqlDbType.Int),
-        new("Payload", SqlDbType.NVarChar, -1),
-    ];
-
     private readonly SqlServerTypeCache typeCache;
     private readonly string connectionString;
     private readonly string schema;
@@ -90,17 +81,7 @@ public sealed class SqlServerEventStore : IEventStore
             throw new ArgumentException("At least one event is required.", nameof(events));
         }
 
-        var records = new List<SqlDataRecord>(events.Count);
-        foreach (var @event in events)
-        {
-            var record = new SqlDataRecord(EventColumns);
-            record.SetInt32(0, records.Count + 1);
-            record.SetInt32(1, await this.typeCache.GetTypeIdAsync(@event.GetType(), cancellationToken).ConfigureAwait(false));
-            record.SetString(2, JsonSerializer.Serialize(@event, @event.GetType(), JsonSerialization.Options));
-            records.Add(record);
-        }
-
-        var metadata = JsonSerializer.Serialize(new Metadata(Hostname, DateTime.UtcNow), JsonSerialization.Options);
+        var records = await SqlServerEvents.ToRecordsAsync(events, this.typeCache, cancellationToken).ConfigureAwait(false);
 
         using var scope = new TransactionScope(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled);
         await using var connection = new SqlConnection(this.connectionString);
@@ -109,10 +90,8 @@ public sealed class SqlServerEventStore : IEventStore
         command.CommandType = CommandType.StoredProcedure;
         command.CommandText = string.Concat(this.schema, ".[CommitStream]");
         command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = streamId;
-        var eventsParameter = command.Parameters.Add("@Events", SqlDbType.Structured);
-        eventsParameter.TypeName = string.Concat(this.schema, ".[EventList]");
-        eventsParameter.Value = records;
-        command.Parameters.Add("@Metadata", SqlDbType.NVarChar, -1).Value = metadata;
+        SqlServerEvents.AddEventsParameter(command, this.schema, records);
+        command.Parameters.Add("@Metadata", SqlDbType.NVarChar, -1).Value = SqlServerEvents.CreateMetadata();
         command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = correlationId;
         command.Parameters.Add("@PreCommitState", SqlDbType.VarChar, 36).Value = (object?)preCommitState ?? DBNull.Value;
         var postCommitStateParameter = command.Parameters.Add("@PostCommitState", SqlDbType.VarChar, 36);
@@ -137,6 +116,4 @@ public sealed class SqlServerEventStore : IEventStore
 
         return (string)postCommitStateParameter.Value;
     }
-
-    private sealed record Metadata(string Hostname, DateTime Timestamp);
 }

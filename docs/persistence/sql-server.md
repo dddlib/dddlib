@@ -12,7 +12,7 @@ package under `content/Scripts`, one per component, and must be run in order bef
 | `02-SqlServerNaturalKey.sql` | `NaturalKeys` table and procedures | identity map (both models) |
 | `03-SqlServerEventStore.sql` | `Streams`, `Events`, the `EventList` table type, the `SequenceNumber` sequence and procedures | event store |
 | `04-SqlServerSnapshotStore.sql` | `Snapshots` table and procedures | snapshots |
-| `05-SqlServerMementoRepository.sql` | `Mementos` table and procedures | memento repository |
+| `05-SqlServerMementoRepository.sql` | `Mementos` table and procedures, including `AppendEvents` | memento repository; needs script 03 because saves append events |
 
 The scripts are idempotent (`CREATE OR ALTER`, guarded table creation), so they can be rerun. They target the `dbo`
 schema; to use another schema, replace `[dbo]` in the scripts and pass the schema name to the constructors. The same
@@ -36,7 +36,8 @@ parameters and `sp_getapplock`, all available there. The client library is `Micr
 
 Commits take an exclusive application lock on the stream identity for the duration of the transaction, and a
 store-wide one (`dddlib.Events.Commit`) while sequence numbers are assigned, so the sequence reflects commit order
-for the [event dispatcher](event-dispatcher.md). Reads hold the
+for the [event dispatcher](event-dispatcher.md). The memento repository takes the same locks when a save appends
+events. Reads hold the
 stream row under `HOLDLOCK` inside a short transaction so the state token and the events come from the same committed
 version.
 

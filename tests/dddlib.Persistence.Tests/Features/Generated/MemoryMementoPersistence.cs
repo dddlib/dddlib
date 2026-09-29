@@ -69,4 +69,107 @@ public abstract partial class MemoryMementoPersistence : Feature
             }
         }
     }
+
+    // Events applied to the aggregate root are appended to its stream when the memento is saved, so that they can be
+    // dispatched. The memento remains the source of state; the events are not used for reconstitution.
+    public sealed partial class EventsAreStoredForDispatch : MemoryMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given an event store
+            var eventStore = new MemoryEventStore();
+
+            // And a repository composed with that event store
+            var identityMap = new MemoryIdentityMap();
+            var repository = new MemoryRepository<Subject>(identityMap, eventStore);
+
+            // And an instance of an aggregate root with a natural key
+            var instance = new Subject("key");
+
+            // When that instance is saved to the repository
+            await repository.SaveAsync(instance);
+
+            // Then its event is in the event store and the instance has no uncommitted events
+            var events = await eventStore.ReadEventsAsync(0, 10);
+            await Assert.That(events).Count().IsEqualTo(1);
+            await Assert.That(((NewSubject)events[0].Event).NaturalKey).IsEqualTo("key");
+            await Assert.That(instance.GetUncommittedEvents()).IsEmpty();
+
+            // When the instance is loaded, changed and saved again
+            var loaded = await repository.LoadAsync("key");
+            loaded.Rename("name");
+            await repository.SaveAsync(loaded);
+
+            // Then the stream has both events and carries the memento's state token
+            var id = await identityMap.TryGetAsync(typeof(Subject), typeof(string), "key");
+            var stream = await eventStore.GetStreamAsync(id!.Value, 0);
+            await Assert.That(stream.Events).Count().IsEqualTo(2);
+            await Assert.That(((SubjectRenamed)stream.Events[1]).Name).IsEqualTo("name");
+            await Assert.That(stream.State).IsEqualTo(loaded.State);
+
+            // When the instance is saved again without changes
+            await repository.SaveAsync(loaded);
+
+            // Then nothing more is appended
+            await Assert.That(await eventStore.ReadEventsAsync(0, 10)).Count().IsEqualTo(2);
+        }
+
+        public partial class Subject : AggregateRoot
+        {
+            public Subject(string naturalKey)
+            {
+                this.Apply(new NewSubject { NaturalKey = naturalKey });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? NaturalKey { get; private set; }
+
+            public string? Name { get; private set; }
+
+            public void Rename(string name) => this.Apply(new SubjectRenamed { Name = name });
+
+            protected override object? GetState() => new Memento { NaturalKey = this.NaturalKey, Name = this.Name };
+
+            protected override void SetState(object memento)
+            {
+                var subject = (Memento)memento;
+                this.NaturalKey = subject.NaturalKey;
+                this.Name = subject.Name;
+            }
+
+            private void Handle(NewSubject @event) => this.NaturalKey = @event.NaturalKey;
+
+            private void Handle(SubjectRenamed @event) => this.Name = @event.Name;
+
+            public sealed partial class Memento
+            {
+                public string? NaturalKey { get; set; }
+
+                public string? Name { get; set; }
+            }
+        }
+
+        public partial class NewSubject
+        {
+            public string? NaturalKey { get; set; }
+        }
+
+        public partial class SubjectRenamed
+        {
+            public string? Name { get; set; }
+        }
+
+        private sealed partial class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
 }

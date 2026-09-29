@@ -8,8 +8,9 @@ using Microsoft.Data.SqlClient;
 namespace dddlib.Persistence.SqlServer;
 
 /// <summary>
-/// A memento repository backed by the <c>Mementos</c> table on SQL Server. The schema must have been created
-/// with the shipped scripts.
+/// A memento repository backed by the <c>Mementos</c> table on SQL Server. The events of each save are appended to
+/// the aggregate root's stream in the same transaction, so that they can be dispatched. The schema must have been
+/// created with the shipped scripts.
 /// </summary>
 public sealed class SqlServerMementoRepository<T> : Repository<T>
     where T : AggregateRoot
@@ -58,11 +59,13 @@ public sealed class SqlServerMementoRepository<T> : Repository<T>
         return new MementoResult(memento, state);
     }
 
-    protected override async Task<string> SaveAsync(Guid id, object memento, string? preCommitState, CancellationToken cancellationToken)
+    protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(memento);
+        ArgumentNullException.ThrowIfNull(events);
 
         var typeId = await this.typeCache.GetTypeIdAsync(memento.GetType(), cancellationToken).ConfigureAwait(false);
+        var records = await SqlServerEvents.ToRecordsAsync(events, this.typeCache, cancellationToken).ConfigureAwait(false);
 
         using var scope = new TransactionScope(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled);
         await using var connection = new SqlConnection(this.connectionString);
@@ -76,6 +79,15 @@ public sealed class SqlServerMementoRepository<T> : Repository<T>
         command.Parameters.Add("@PreCommitState", SqlDbType.VarChar, 36).Value = (object?)preCommitState ?? DBNull.Value;
         var postCommitStateParameter = command.Parameters.Add("@PostCommitState", SqlDbType.VarChar, 36);
         postCommitStateParameter.Direction = ParameterDirection.Output;
+
+        // The procedure appends the events to the aggregate root's stream in the memento's transaction. An omitted
+        // table-valued parameter is an empty table.
+        if (records.Count > 0)
+        {
+            SqlServerEvents.AddEventsParameter(command, this.schema, records);
+            command.Parameters.Add("@Metadata", SqlDbType.NVarChar, -1).Value = SqlServerEvents.CreateMetadata();
+            command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = Guid.NewGuid();
+        }
 
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 

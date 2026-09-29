@@ -14,6 +14,9 @@ Every committed event has a store-wide **sequence number**. A dispatcher is iden
 position in that sequence, so several independent consumers (say, a read model and an audit log) can each dispatch
 every event once by using different dispatcher ids. Two hosts sharing a dispatcher id share the work instead.
 
+Aggregate roots saved through the [memento repositories](memento-persistence.md) have their events appended to the
+same store when the memento is saved, so they are dispatched the same way.
+
 Events are handed out in numbered **batches** of consecutive events. The host delivers a batch one event at a time,
 marking each event dispatched as it goes. If your code throws, the batch is abandoned: the events already marked stay
 marked, and the rest of the batch is handed out again after the batch timeout, so order is preserved and nothing is

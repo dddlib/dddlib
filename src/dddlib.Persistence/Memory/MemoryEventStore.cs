@@ -51,9 +51,6 @@ public sealed class MemoryEventStore : IEventStore
                 {
                     throw new ConcurrencyException("Aggregate root does not exist.");
                 }
-
-                stream = [];
-                this.streams.Add(streamId, stream);
             }
             else if (stream[^1].State != preCommitState)
             {
@@ -62,14 +59,8 @@ public sealed class MemoryEventStore : IEventStore
                     : new ConcurrencyException();
             }
 
-            var state = string.Empty;
-            foreach (var @event in events)
-            {
-                state = Guid.NewGuid().ToString("N")[..8];
-                var stored = new StoredEvent(++this.sequenceNumber, @event.GetType(), JsonSerializer.Serialize(@event, @event.GetType(), JsonSerialization.Options), state);
-                stream.Add(stored);
-                this.log.Add(stored);
-            }
+            var state = Guid.NewGuid().ToString("N")[..8];
+            this.Append(streamId, events, state);
 
             return Task.FromResult(state);
         }
@@ -97,6 +88,47 @@ public sealed class MemoryEventStore : IEventStore
                 .Take(maxCount)
                 .Select(static stored => new SequencedEvent(stored.SequenceNumber, JsonSerializer.Deserialize(stored.Payload, stored.Type, JsonSerialization.Options)!))
                 .ToArray();
+        }
+    }
+
+    /// <summary>
+    /// Appends events to a stream on behalf of a memento save and sets the stream's state token to the token the
+    /// memento was saved with. The memento's token is authoritative for concurrency, so there is no state check here.
+    /// </summary>
+    internal void AppendEvents(Guid streamId, IReadOnlyList<object> events, string state)
+    {
+        ArgumentNullException.ThrowIfNull(events);
+        ArgumentException.ThrowIfNullOrEmpty(state);
+
+        if (events.Count == 0)
+        {
+            return;
+        }
+
+        lock (this.sync)
+        {
+            this.Append(streamId, events, state);
+        }
+    }
+
+    private void Append(Guid streamId, IReadOnlyList<object> events, string state)
+    {
+        // Serialize everything first so that a failure leaves the store untouched.
+        var stored = events
+            .Select(@event => new StoredEvent(0, @event.GetType(), JsonSerializer.Serialize(@event, @event.GetType(), JsonSerialization.Options), state))
+            .ToArray();
+
+        if (!this.streams.TryGetValue(streamId, out var stream))
+        {
+            stream = [];
+            this.streams.Add(streamId, stream);
+        }
+
+        foreach (var storedEvent in stored)
+        {
+            var sequenced = storedEvent with { SequenceNumber = ++this.sequenceNumber };
+            stream.Add(sequenced);
+            this.log.Add(sequenced);
         }
     }
 
