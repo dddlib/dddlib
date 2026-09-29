@@ -113,7 +113,11 @@ configured. Phase 4 turns that into an analyzer diagnostic.
 
 - Port the T-SQL scripts nearly verbatim. They rely on `sp_getapplock`, `MERGE`, `SEQUENCE`, `THROW`
   and table-valued parameters, all of which work on SQL Server 2019+ and the container image.
-- Error numbers 50409 (commit state mismatch) and 50500 (lock timeout) still map to `ConcurrencyException`.
+- Error numbers 50409 (commit state mismatch) and 50500 (lock timeout) still map to `ConcurrencyException`. So does
+  1222 (lock request timeout): `GetStream` reads the stream row under `HOLDLOCK` in a short transaction with a lock
+  timeout instead of the legacy session-owned applock in tempdb, which could leak through connection pooling. The
+  legacy single-event `CommitStream2` shortcut is dropped; one table-valued-parameter procedure commits all events.
+  JSON columns are `NVARCHAR(MAX)` so unicode payloads survive.
 - Interfaces become async: `IEventStore.GetStreamAsync`, `CommitStreamAsync`, `ISnapshotStore`,
   `INaturalKeyRepository`, `ITypeCache`, `IIdentityMap`, `IRepository<T>`, `IEventStoreRepository`.
   Return small records instead of `out` parameters, for example `StreamResult(IReadOnlyList<object> Events, string? State)`.

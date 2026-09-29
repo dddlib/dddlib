@@ -8,10 +8,21 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="dddlib.Persistence.Tests" />
+    <InternalsVisibleTo Include="dddlib.Tests.Support" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../dddlib/dddlib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The schema scripts. They are run manually before first use and are also embedded so tooling can read them. -->
+    <EmbeddedResource Include="Scripts/*.sql" LogicalName="dddlib.Persistence.Scripts.%(Filename)%(Extension)" />
+    <Content Include="Scripts/*.sql" Pack="true" PackagePath="content/Scripts;contentFiles/any/any/Scripts" CopyToOutputDirectory="Never" />
   </ItemGroup>
 
 </Project>

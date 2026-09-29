@@ -9,7 +9,12 @@
     <TUnitVersion>1.71.0</TUnitVersion>
   </PropertyGroup>
 
+  <ItemGroup Label="App Dependencies">
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.0" />
+  </ItemGroup>
+
   <ItemGroup Label="Test Dependencies">
+    <PackageVersion Include="Testcontainers.MsSql" Version="4.15.0" />
     <PackageVersion Include="TUnit" Version="$(TUnitVersion)" />
     <PackageVersion Include="TUnit.Core" Version="$(TUnitVersion)" />
     <PackageVersion Include="TUnit.Assertions" Version="$(TUnitVersion)" />

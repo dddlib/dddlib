@@ -1,17 +1,36 @@
 using dddlib.Persistence.Memory;
+using dddlib.Persistence.SqlServer;
+using dddlib.Tests.Support;
 
 namespace dddlib.Persistence.Tests.Bug;
 
 // https://github.com/dddlib/dddlib/issues/109
 // Saving a stale instance after the aggregate root was destroyed and saved is a concurrency error.
 // The legacy ShouldThrowForMemoryRepository case covered the dropped memento-based repository;
-// ShouldThrowForSqlServerEventStoreRepository lands with the SQL Server implementation in phase 3.
-public class Bug0109
+// The SQL Server case runs against a per-class database created by the fixture.
+public class Bug0109 : SqlServerIntegration
 {
     [Test]
     public async Task ShouldThrowForMemoryEventStoreRepository()
     {
         var repository = new MemoryEventStoreRepository();
+        var naturalKey = "key";
+        var subject = new EventBasedSubject(naturalKey);
+        await repository.SaveAsync(subject);
+        var sameSubject = await repository.LoadAsync<EventBasedSubject>(subject.NaturalKey!);
+        subject.Destroy();
+        await repository.SaveAsync(subject);
+        sameSubject.Change();
+
+        var action = () => repository.SaveAsync(sameSubject);
+
+        await Assert.That(action).Throws<ConcurrencyException>();
+    }
+
+    [Test]
+    public async Task ShouldThrowForSqlServerEventStoreRepository()
+    {
+        var repository = new SqlServerEventStoreRepository(this.ConnectionString);
         var naturalKey = "key";
         var subject = new EventBasedSubject(naturalKey);
         await repository.SaveAsync(subject);

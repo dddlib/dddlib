@@ -9,10 +9,13 @@
   <ItemGroup>
     <PackageReference Include="TUnit.Core" />
     <PackageReference Include="TUnit.Assertions" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Testcontainers.MsSql" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../src/dddlib/dddlib.csproj" />
+    <ProjectReference Include="../../src/dddlib.Persistence/dddlib.Persistence.csproj" />
   </ItemGroup>
 
 </Project>
