@@ -1,0 +1,325 @@
+# dddlib v2 port plan
+
+This repository is a ground-up port of [dddlib](https://github.com/dddlib/dddlib) to modern .NET.
+The legacy source lives at `C:\Users\cameronfletcher\Development\code\git\dddlib\dddlib` (branch `dev`,
+last commit March 2017, .NET Framework 4.5). It is the reference, not the starting point: nothing is
+copied wholesale, but its feature tests define the behaviour this port must reproduce.
+
+## 1. Scope
+
+In scope:
+
+- `dddlib` core: `AggregateRoot`, `Entity`, natural keys, bootstrapper configuration, event application,
+  entity and value object mapping, natural key serialization, lifecycle management.
+- `dddlib.Persistence`, SQL Server only: identity map, natural key repository, type cache, event store,
+  snapshot store, memento repository, and the event store repository built on them.
+- The in-memory persistence implementations, but only as far as they are needed to run the persistence
+  scenarios without a database. They are cheap and make the repository tests fast.
+
+Out of scope until everything above is green: `dddlib.Projections`, `dddlib.Persistence.EventDispatcher`,
+`perftest`, and the old `dddlib.TestFramework` package (its three extension methods fold into the
+test support project).
+
+## 2. Decisions already made
+
+| Topic | Decision |
+|---|---|
+| Approach | Port, not in-place upgrade. Mechanical port first, redesign second, both behind the ported scenarios. |
+| Compatibility | None. No existing databases must be readable by v2. Namespaces, JSON format and stored type names are free choices. |
+| Value objects | C# records. There is no `ValueObject<T>` base class in v2. See section 4. |
+| Target framework | `net10.0` for libraries and tests. `netstandard2.0` only for the source generator and analyzer projects, which Roslyn requires. |
+| Test framework | TUnit. No xunit, no Xbehave. |
+| Assertions | TUnit's built-in `Assert.That(...)`. No FluentAssertions. |
+| Test databases | Testcontainers for .NET with the `mcr.microsoft.com/mssql/server` image, one container per test session, one database per test class. Docker is installed on the dev machine. |
+| SQL client | `Microsoft.Data.SqlClient`. Table-valued parameters via `Microsoft.Data.SqlClient.Server.SqlDataRecord`. |
+| JSON | `System.Text.Json`. The legacy `JavaScriptSerializer` does not exist on modern .NET. |
+| Schema migrations | Embedded `.sql` resources applied in order with a small version table. Replaces Meld. No ILMerge. |
+| Guards | `ArgumentNullException.ThrowIfNull` and friends. Replaces Guardian's expression-based `Guard.Against`. |
+| API shape | Persistence is async end to end. `out` parameters become return records. Nullable reference types on everywhere. |
+| Strong naming | Dropped unless a consumer needs it. The old `.snk` stays in the legacy repo. |
+| Project layout | `slnx` solution, `Directory.Build.props`, `Directory.Packages.props` with central package management, `global.json` pinned to the installed 10.0.x SDK. |
+| Code style | `.editorconfig` with the built-in .NET analyzers at their recommended level. No StyleCop ruleset. File-scoped namespaces, `var`, expression-bodied members where they read well. |
+
+## 3. Target repository layout
+
+```
+dddlibv2/
+  PLAN.md
+  CLAUDE.md
+  global.json
+  Directory.Build.props
+  Directory.Packages.props
+  dddlib.slnx
+  src/
+    dddlib/                          core library
+    dddlib.Persistence/              Sdk abstractions, Memory implementations, SqlServer implementations, Scripts/
+    dddlib.Generators/               source generator + analyzers (phase 4)
+  tests/
+    dddlib.Tests/                    core feature scenarios, bug regressions, unit tests
+    dddlib.Persistence.Tests/        persistence scenarios, integration tests
+    dddlib.Tests.Support/            shared domain model (Vehicle, Registration, Wheel), test bootstrapper helpers, SQL container fixture
+```
+
+Persistence stays one assembly with `Memory` and `SqlServer` namespaces, as before. Split it only if a
+consumer needs the abstractions without the SqlClient dependency.
+
+## 4. Architecture notes for the port
+
+### Value objects are records
+
+The legacy `ValueObject<T>` base class provided structural equality over public properties, `==` and `!=`,
+a type-mismatch check, a configurable equality comparer, a configurable serializer, and event mappings.
+C# records provide the first three natively and System.Text.Json serializes records with positional
+constructors without help. What records do not provide:
+
+- Sequence equality for collection-typed members. A record compares a `List<T>` member by reference. The
+  legacy comparer used `SequenceEqual`. In v2 this is the user's responsibility: override `Equals` and
+  `GetHashCode`, or use an immutable collection type that implements value equality. Phase 4 adds an
+  analyzer that warns when a record used as a natural key has a collection-typed member.
+- Case-insensitive or otherwise custom equality. Again an `Equals` override on the record. The
+  `ToUseEqualityComparer` bootstrapper hook is dropped.
+
+What stays, because it is about how the runtime uses a value object rather than what the value object
+is: `configure.ValueObject<T>()` with `ToUseValueObjectSerializer(...)` (for natural key storage) and
+`ToMapToEvent<TEvent>(...)`. The generic constraint becomes `where T : notnull`. `Map.ValueObject(x)`
+on the aggregate keeps working for any type with a registered mapping.
+
+Test support types `Registration` and similar become records. The legacy ValueObjectEquality scenarios
+are ported as a small set of tests that document record behaviour and the collection-member gap, so the
+decision is executable rather than just written down.
+
+### Core
+
+- `Application` remains the ambient registry of runtime type metadata (`AggregateRootType`, `EntityType`,
+  `ValueObjectType`) so the mechanical port stays close to the original. Replace the global
+  `List<Application>` stack with an `AsyncLocal<Application?>` scope so tests that push a per-test
+  `Application` are safe under TUnit's parallel execution. Phase 4 makes most of the registry
+  unnecessary by generating the metadata statically.
+- `DefaultEventDispatcher` ports as reflection plus a compiled delegate (`Delegate.CreateDelegate` on an
+  open instance method, or a cached expression) rather than `DynamicMethod` IL emit. It is the fallback
+  path once the generator exists.
+- Natural key serialization and value object serialization move to `System.Text.Json`. Keep a
+  `JsonSerializerOptions` singleton that writes `DateTime` as ISO 8601 round-trip.
+- `DefaultBootstrapperProvider` keeps assembly scanning for `IBootstrapper` in the mechanical phase.
+- Runtime error messages keep their "To fix this issue" shape and wiki help links. They become analyzer
+  diagnostics later, but the runtime checks stay for non-generated types.
+
+### Persistence
+
+- Port the T-SQL scripts nearly verbatim. They rely on `sp_getapplock`, `MERGE`, `SEQUENCE`, `THROW`
+  and table-valued parameters, all of which work on SQL Server 2019+ and the container image.
+- Error numbers 50409 (commit state mismatch) and 50500 (lock timeout) still map to `ConcurrencyException`.
+- Interfaces become async: `IEventStore.GetStreamAsync`, `CommitStreamAsync`, `ISnapshotStore`,
+  `INaturalKeyRepository`, `ITypeCache`, `IIdentityMap`, `IRepository<T>`, `IEventStoreRepository`.
+  Return small records instead of `out` parameters, for example `StreamResult(IReadOnlyList<object> Events, string? State)`.
+- Stored type names: since nothing must stay compatible, store a stable name that does not include
+  assembly version, for example `Namespace.TypeName, AssemblyName`, and resolve through a registry rather
+  than `Type.GetType` on an assembly-qualified string.
+- Schema initialisation happens explicitly through an `EnsureSchemaAsync` call or a factory method, not in
+  constructors as the legacy code does. Constructors must not do I/O.
+- `TransactionScopeOption.Suppress` wrapping is kept so callers' ambient transactions do not leak in.
+
+### Source generators and analyzers (phase 4)
+
+Each generator replaces one runtime mechanism and must leave the reflection path working for types
+that are not `partial`:
+
+| Runtime mechanism today | Generated replacement |
+|---|---|
+| Event handler dispatch by reflection | `switch` over event types in a partial aggregate |
+| Natural key discovery, uninitialized factory | Static type metadata registered via module initializer |
+| Bootstrapper discovery by assembly scan | Generated registration of `IBootstrapper` implementations |
+| Runtime "To fix this issue" exceptions | Analyzer diagnostics: duplicate natural key, missing reconstitution constructor, handler for a value-type event, collection member on a natural-key record, etc. |
+| Reflection-based JSON | `JsonSerializerContext` for events and natural keys |
+
+## 5. Phases
+
+Each phase ends with a green test run and a commit. Do not start a later phase with a red earlier one.
+
+### Phase 0: scaffold
+
+- `global.json`, `Directory.Build.props` (nullable, implicit usings, warnings as errors, latest C#),
+  `Directory.Packages.props`, `.editorconfig`, `.gitignore`, `dddlib.slnx`.
+- Empty `src/dddlib`, `tests/dddlib.Tests`, `tests/dddlib.Tests.Support` projects. Use `dotnet new TUnit`
+  for the test projects, then move them under central package management.
+- One smoke test proving TUnit runs from `dotnet test`.
+
+Exit: `dotnet build` and `dotnet test` succeed on an empty suite.
+
+### Phase 1: core library, mechanical port
+
+Port in this order, writing the scenarios for each piece before or alongside it:
+
+1. Value object conventions: `Registration` as a record in the support project, the record-behaviour tests
+   described in section 4. Scenarios: ValueObjectEquality (re-expressed for records).
+2. `Entity`, natural keys, `NaturalKeyAttribute`, `DefaultTypeAnalyzerService`, `Application`.
+   Scenarios: EntityEquality (18), EntityLifecycleManagement (1).
+3. `AggregateRoot`, event application, `DefaultEventDispatcher`, reconstitution factory.
+   Scenarios: AggregateRootEquality (16), AggregateRootEventApplication (3), AggregateRootLifecycleManagement (2).
+4. Mapping: `IMapperProvider`, entity and value object mappers, reverse mappings.
+   Scenarios: AggregateRootEntityMapping (2), AggregateRootValueObjectMapping (6).
+5. Natural key and value object serialization on STJ. Scenarios: ValueObjectSerialization (2).
+6. Memento support and the model validator helper. Scenarios: ModelValidationFeature (2).
+7. `BusinessException` (1), bug regressions Bug0001, 0017, 0092, 0128, 0129, and the unit tests
+   (AggregateRootTests 11, ApplicationTests 5, DefaultTypeAnalyzerServiceTests 1, serializer tests 2).
+
+Exit: every scenario in section 7 for the core library is green.
+
+### Phase 2: persistence abstractions and in-memory implementations
+
+- `IIdentityMap`, `DefaultIdentityMap`, `INaturalKeyRepository`, `INaturalKeySerializer`, `IEventStore`,
+  `ISnapshotStore`, `Snapshot`, `ITypeCache`, `AggregateRootFactory`, `EventStoreRepository`,
+  `Repository<T>`, exceptions.
+- `MemoryEventStore`, `MemoryNaturalKeyRepository`, `MemorySnapshotStore`, `MemoryIdentityMap`,
+  `MemoryEventStoreRepository`, `MemoryRepository`.
+- Scenarios: MemoryEventPersistence (9), MemoryMementoPersistence, MemoryEventStoreTests (5),
+  JsonSerializerTests (4), bug regressions Bug0043, 0064, 0081, 0109, 0127.
+
+Exit: all memory persistence scenarios green with no database.
+
+### Phase 3: SQL Server persistence
+
+- Testcontainers fixture in `dddlib.Tests.Support`, shared per test session with
+  `[ClassDataSource<SqlServerContainer>(Shared = SharedType.PerTestSession)]`. Each test class creates its
+  own database from the container's connection string and drops it on dispose.
+- Embedded scripts and the version table, replacing Meld. Since there is no upgrade path from v1, the
+  scripts can be consolidated into one script per component (`Persistence`, `TypeCache`, `NaturalKey`,
+  `EventStore`, `SnapshotStore`, `MementoRepository`), each at version 01.
+- `SqlServerTypeCache`, `SqlServerNaturalKeyRepository`, `SqlServerIdentityMap`, `SqlServerEventStore`,
+  `SqlServerSnapshotStore`, `SqlServerMementoRepository`, `SqlServerRepository`, `SqlServerEventStoreRepository`.
+- Scenarios: SqlServerEventPersistence (9), SqlServerMementoPersistence (1), SqlServerEventStoreTests (6),
+  SqlServerIdentityMapTests (7), SqlServerNaturalKeyRepositoryTests (1), SqlServerSnapshotStoreTests (2),
+  UpgradeDatabaseVersionTests (port the intent: a database at script version N upgrades to N+1 cleanly;
+  needs a second script to exist, so it can wait until one does).
+
+Exit: all SQL Server scenarios green against the container. CI can run them because Docker is the
+only prerequisite.
+
+### Phase 4: generators, analyzers, and API polish
+
+- Add `src/dddlib.Generators` and reference it from the test projects as an analyzer.
+- Introduce one generator at a time in the order of the table in section 4, keeping every scenario green.
+  Add a second copy of the affected scenarios that uses `partial` types so both paths are covered.
+- Convert the runtime checks that are statically detectable into diagnostics with the same wording.
+- Review the public API: seal what should be sealed, mark SDK types with `EditorBrowsable(Never)` as
+  before, and produce a public API snapshot test.
+
+Exit: benchmarks (optional BenchmarkDotNet project) show the generated paths allocate nothing on
+`Apply` and on natural key lookup.
+
+### Phase 5: packaging
+
+- NuGet metadata, SourceLink, deterministic builds, `RELEASE_NOTES.md`, GitHub Actions running
+  `dotnet test` with the SQL container.
+
+## 6. Test conventions with TUnit
+
+Keep the structure that made the old suite readable: one feature per file, one nested class per
+scenario, with the scenario's own `Subject` types and its own bootstrapper nested inside it. Replace
+Xbehave's string steps with plain code and Given/When/Then comments.
+
+```csharp
+// As someone who uses dddlib [with event sourcing]
+// In order to persist events
+// I need to be able to record changes in state
+public abstract class AggregateRootEventApplication : Feature
+{
+    public sealed class EventsAreStoredOnAggregate : AggregateRootEventApplication
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a natural key
+            var naturalKey = "key";
+
+            // When an aggregate root is instantiated with that natural key
+            var aggregateRoot = new Subject(naturalKey);
+
+            // Then an event is raised with that natural key
+            var events = aggregateRoot.GetUncommittedEvents();
+            await Assert.That(events).HasSingleItem();
+            await Assert.That(((NewSubject)events.Single()).NaturalKey).IsEqualTo(naturalKey);
+        }
+
+        public class Subject : AggregateRoot { /* as in the legacy test */ }
+        private class NewSubject { public string? NaturalKey { get; set; } }
+        private class Bootstrapper : IBootstrap<Subject> { /* configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject()); */ }
+    }
+}
+```
+
+Rules:
+
+- `Feature` base class creates a fresh `Application` in a `[Before(HookType.Test)]` hook using a
+  bootstrapper provider that finds the nested `IBootstrap<T>` classes of the scenario, exactly as the
+  legacy `FeatureBootstrapperProvider` does, and disposes it in `[After(HookType.Test)]`.
+- Because the ambient `Application` is `AsyncLocal`, scenarios can run in parallel. If that proves
+  flaky, put `[NotInParallel("Application")]` on `Feature` and remove it once phase 4 removes the need.
+- SQL Server scenarios inherit `SqlServerFeature`, which injects the shared container and creates the
+  per-class database. Mark them `[NotInParallel("SqlServer")]` only if the container shows lock
+  contention; per-class databases should make parallel runs safe.
+- Bug regressions live in `Bug/Bug0001.cs` and so on, named after the original GitHub issue number, with
+  a link to the issue in a comment.
+- Every legacy scenario name in section 7 must exist in the new suite with the same name, so parity can
+  be checked with a grep. New scenarios are welcome, deleted ones are not.
+
+## 7. Scenario inventory to port
+
+Core (`tests/dddlib.Tests/Feature`):
+
+- AggregateRootEntityMapping: EntityMappingWithEventCreation, EntityMappingWithEventMutation
+- AggregateRootEquality: CaseInsensitiveEqualityComparerDefinedInBootstrapper, CaseSensitiveUndefinedEqualityComparer,
+  CompositeNaturalKeyEqualityComparer, ConflictingNaturalKeySelectors, InheritedNaturalKeySelector,
+  InheritedNaturalKeySelectorOveriddenInBootstrapper, InheritedNaturalKeySelectorOveriddenInSubclass,
+  NaturalKeySelectorDefinedISubclass, NaturalKeySelectorDefinedInBaseClass, NaturalKeySelectorDefinedInBootstrapper,
+  NaturalKeySelectorDefinedInBothBaseClassAndSubclass, NaturalKeySelectorDefinedInMetadata, NonConflictingNaturalKeySelectors,
+  UndefinedNaturalKeySelector, UndefinedNaturalKeySelectorWithInheritance
+- AggregateRootEventApplication: EventsAreStoredOnAggregate, EventsAreStoredOnInheritedAggregate, InheritedEventsAreStoredOnInheritedAggregate
+- AggregateRootLifecycleManagement: DefaultLifecycle, EventBasedLifecycle
+- AggregateRootValueObjectMapping: EntityMappingPartiallyUndefined, EntityMappingUndefined, ValueObjectMappingPartiallyUndefined,
+  ValueObjectMappingUndefined, ValueObjectMappingWithEventCreation, ValueObjectMappingWithEventMutation
+- BusinessException
+- EntityEquality: same sixteen names as AggregateRootEquality plus NestedNaturalKeySelector,
+  NestedNaturalKeySelectorWithBothInstancesHavingNullReference, NestedNaturalKeySelectorWithSingleInstanceHavingNullReference
+- EntityLifecycleManagement: EntityLifecycle
+- ModelValidationFeature: InvalidMementoImplementation, ValidMementoImplementation
+- ValueObjectEquality (re-expressed for records): CaseSensitiveUndefinedEqualityComparer, CaseInsensitiveEqualityViaEqualsOverride,
+  CollectionMemberComparesByReference, CollectionMemberComparesBySequenceViaEqualsOverride
+- ValueObjectSerialization: CustomValueObjectSerializer, CustomValueObjectSerializerViaDelegates
+- Bug: 0001, 0017, 0092, 0128, 0129 (0128 concerned `ValueObject<T>` equality comparer laziness; port it as a record test or drop it with a note)
+- Unit: AggregateRootTests, ApplicationTests, DefaultTypeAnalyzerServiceTests, natural key serializer tests
+
+Persistence (`tests/dddlib.Persistence.Tests`):
+
+- MemoryEventPersistence and SqlServerEventPersistence, each: UndefinedNaturalKey, UndefinedUnititializedFactory, NullNaturalKey,
+  SaveAndLoad, SaveAndSaveAndLoad, SaveAndLoadAndSaveAndLoad, SnapshotAndLoad, SnapshotAndSaveAndLoad, SaveAndEndLifecycleAndSaveAndCreate
+- MemoryMementoPersistence, SqlServerMementoPersistence: DefaultSqlServerPersistence
+- Integration: MemoryEventStoreTests, SqlServerEventStoreTests, SqlServerIdentityMapTests, SqlServerNaturalKeyRepositoryTests,
+  SqlServerSnapshotStoreTests, UpgradeDatabaseVersionTests
+- Bug: 0043, 0064, 0081, 0109, 0127
+- Unit: JsonSerializerTests
+
+Shared model (`tests/dddlib.Tests.Support`): Vehicle, Registration (record), Wheel, NewVehicle, IRegistrationService, Bootstrapper.
+
+## 8. Open questions for Cameron
+
+Answered so far:
+
+- Existing databases: none need to be supported. No compatibility constraints on JSON, type names or namespaces.
+- `ValueObject<T>`: dropped in favour of records. See section 4.
+
+Still open. Answer before phase 3 starts:
+
+1. Package identity: republish as `dddlib` 2.0 or as a new package id?
+2. Is the memento-based `Repository<T>` path still wanted, or is event sourcing the only supported
+   persistence model? It is small, so the plan keeps it.
+
+## 9. Working rules for the implementing session
+
+- Red, green, refactor. Port a scenario, watch it fail, port the code, watch it pass, commit.
+- Never delete or skip a scenario to get green. If a scenario cannot be ported yet, leave it with
+  `[Skip("reason")]` and list it in the commit message.
+- Consult the legacy source for behaviour, error message text and help links. Do not copy the
+  StyleCop suppressions, the Guardian guards, or the `JavaScriptSerializer` code.
+- Keep commits scoped to one phase step. Prefix messages with the phase, for example `P1: port EntityEquality scenarios`.
+- Run `dotnet test` before every commit. SQL Server tests need Docker running.
