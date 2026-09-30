@@ -29,6 +29,11 @@ internal sealed class BootstrapperModel
     public bool IsKnown { get; }
 
     /// <summary>
+    /// Gets every type the bootstrapper configures, with its configuration.
+    /// </summary>
+    public IEnumerable<KeyValuePair<INamedTypeSymbol, BootstrapperTypeConfiguration>> Configurations => this.configurations;
+
+    /// <summary>
     /// Gets the model of the compilation, built on first use and shared by every analyzer: symbol actions run
     /// concurrently and most compilations never need it.
     /// </summary>
@@ -238,6 +243,11 @@ internal sealed class BootstrapperTypeConfiguration
     /// Gets a value indicating whether <c>ToUseValueObjectSerializer</c> is called.
     /// </summary>
     public bool HasValueObjectSerializer { get; }
+
+    /// <summary>
+    /// Gets the event type of every <c>ToMapToEvent&lt;TEvent&gt;</c> call, and whether any of them has a reverse mapping.
+    /// </summary>
+    public IEnumerable<KeyValuePair<ITypeSymbol, bool>> EventMappings => this.eventMappings;
 
     /// <summary>
     /// Whether <c>ToMapToEvent&lt;TEvent&gt;</c> is called for the event type, with or without a reverse mapping.

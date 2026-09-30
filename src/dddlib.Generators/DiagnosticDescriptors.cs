@@ -77,6 +77,36 @@ internal static class DiagnosticDescriptors
         description: "Add a public default constructor to the bootstrapper.",
         helpLinkUri: WikiBootstrapper);
 
+    public static readonly DiagnosticDescriptor MappingNotConfigured = new(
+        "DDDLIB020",
+        "Mapping is not configured",
+        "No mapping from '{0}' to '{1}' is configured, so this throws at runtime; call {2} in the bootstrapper",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Map converts between entities or value objects and events with the mappings that the bootstrapper configures through ToMapToEvent. Mapping an event back needs the overload that takes a reverse mapping.",
+        helpLinkUri: WikiBootstrapper);
+
+    public static readonly DiagnosticDescriptor ConflictingNaturalKeySelector = new(
+        "DDDLIB021",
+        "Bootstrapper selects a different natural key",
+        "The bootstrapper selects '{0}' as the natural key of '{1}', which declares '{2}' as its natural key with [NaturalKey]",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "An entity has a single natural key. Remove the attribute or the selector, or make them agree.",
+        helpLinkUri: WikiEntityEquality);
+
+    public static readonly DiagnosticDescriptor InvalidNaturalKeySelector = new(
+        "DDDLIB022",
+        "Natural key selector is not a property of the entity",
+        "The natural key selector must return a property of its parameter, such as 'entity => entity.Id'",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "ToUseNaturalKey reads the name of the selected property from the expression and rejects any other expression when the bootstrapper runs.",
+        helpLinkUri: WikiEntityEquality);
+
     public static readonly DiagnosticDescriptor TypeShouldBePartial = new(
         "DDDLIB007",
         "Domain type could be partial",

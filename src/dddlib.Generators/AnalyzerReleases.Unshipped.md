@@ -24,3 +24,6 @@ DDDLIB016 | dddlib | Error | Natural key attribute has no effect
 DDDLIB017 | dddlib | Warning | Natural key does not round-trip
 DDDLIB018 | dddlib | Error | Value object does not derive from ValueObject of itself
 DDDLIB019 | dddlib | Warning | Value object property is compared by reference
+DDDLIB020 | dddlib | Warning | Mapping is not configured
+DDDLIB021 | dddlib | Error | Bootstrapper selects a different natural key
+DDDLIB022 | dddlib | Error | Natural key selector is not a property of the entity

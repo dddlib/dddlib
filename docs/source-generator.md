@@ -47,6 +47,9 @@ Roslyn generators do not see each other's output. You can write one yourself and
 | DDDLIB017 | Warning | The natural key of an aggregate root is a class compared by reference, or a value object that the default serializer cannot read back and that has no serializer configured |
 | DDDLIB018 | Error | A value object derives from `ValueObject<T>` of a type other than itself |
 | DDDLIB019 | Warning | A public property of a value object is a class compared by reference, so equal content does not make equal value objects |
+| DDDLIB020 | Warning | `Map` is used to convert to or from an event for which the bootstrapper configures no mapping (or no reverse mapping) |
+| DDDLIB021 | Error | The bootstrapper's `ToUseNaturalKey` selects a different property from the one marked `[NaturalKey]` on the same type |
+| DDDLIB022 | Error | A `ToUseNaturalKey` selector is not a property of its parameter |
 
 DDDLIB004 is not reported for a value object that the bootstrapper configures a comparer for.
 
