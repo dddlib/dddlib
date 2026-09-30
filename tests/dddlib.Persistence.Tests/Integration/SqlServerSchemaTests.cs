@@ -42,6 +42,29 @@ public class SqlServerSchemaTests : SqlServerIntegration
     }
 
     [Test]
+    public async Task EnsuringACurrentSchemaDoesNotWaitForTheUpgradeLock()
+    {
+        var schema = NewSchema();
+        await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
+
+        // Another instance holds the upgrade lock, as it does for as long as it takes to apply a newer script.
+        await using var connection = new SqlConnection(this.ConnectionString);
+        await connection.OpenAsync();
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+        await using (var command = connection.CreateCommand())
+        {
+            command.Transaction = transaction;
+            command.CommandText = $"EXEC sp_getapplock @Resource = N'dddlib.Schema.{schema}', @LockMode = 'Exclusive', @LockOwner = 'Transaction';";
+            await command.ExecuteNonQueryAsync();
+        }
+
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var version = await SqlServerSchema.EnsureAsync(this.ConnectionString, schema, timeout.Token);
+
+        await Assert.That(version).IsEqualTo(new SqlServerSchemaVersion(schema, RequiredVersion, RequiredVersion, 1));
+    }
+
+    [Test]
     public async Task UpgradeAppliesOnlyTheMissingVersion()
     {
         var schema = NewSchema();

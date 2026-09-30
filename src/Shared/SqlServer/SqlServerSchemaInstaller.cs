@@ -36,9 +36,10 @@ internal static class SqlServerSchemaInstaller
 
     /// <summary>
     /// Applies the scripts the schema is missing, in order, in one transaction under an exclusive application lock on
-    /// the schema, so concurrent callers apply each version once. A schema already ahead of these scripts is left as
-    /// it is and reported, not refused: older code keeps working against a newer schema during a rolling upgrade,
-    /// until a script records that the schema no longer supports it.
+    /// the schema, so concurrent callers apply each version once. When there is nothing to apply it only reads the
+    /// versions, and takes no lock. A schema already ahead of these scripts is left as it is and reported, not refused:
+    /// older code keeps working against a newer schema during a rolling upgrade, until a script records that the schema
+    /// no longer supports it.
     /// </summary>
     public static async Task<(int Version, int RequiredVersion, int MinimumRequiredVersion)> EnsureAsync(string connectionString, string schema, IReadOnlyList<SqlServerScript> scripts, CancellationToken cancellationToken)
     {
@@ -50,6 +51,16 @@ internal static class SqlServerSchemaInstaller
         using var scope = new TransactionScope(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled);
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        // Nothing to apply is the usual case when every instance calls this at startup. A read settles it, without
+        // queueing for the lock behind an instance that is applying a newer script.
+        var applied = await ReadVersionsAsync(connection, null, quotedSchema, cancellationToken).ConfigureAwait(false);
+        if (applied.Version >= required && !scripts.Any(script => applied.IsMissingScript(script.Version)))
+        {
+            ThrowIfTooOld(quotedSchema, applied.Version, applied.MinimumRequiredVersion, required);
+            return (applied.Version, required, applied.MinimumRequiredVersion);
+        }
+
         await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 
         await using (var command = CreateCommand(connection, transaction, @"DECLARE @Result INT;
@@ -65,7 +76,7 @@ IF SCHEMA_ID(@Schema) IS NULL
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        var applied = await ReadVersionsAsync(connection, transaction, quotedSchema, cancellationToken).ConfigureAwait(false);
+        applied = await ReadVersionsAsync(connection, transaction, quotedSchema, cancellationToken).ConfigureAwait(false);
         ThrowIfTooOld(quotedSchema, applied.Version, applied.MinimumRequiredVersion, required);
 
         var current = applied.Version;
@@ -79,7 +90,7 @@ IF SCHEMA_ID(@Schema) IS NULL
         }
 
         // Record what was applied, and fill in the text of versions that were applied by hand.
-        foreach (var script in scripts.Where(script => script.Version > current || (applied.HasScript.TryGetValue(script.Version, out var hasScript) && !hasScript)))
+        foreach (var script in scripts.Where(script => script.Version > current || applied.IsMissingScript(script.Version)))
         {
             await using var command = CreateCommand(connection, transaction, string.Concat(
                 "MERGE ", quotedSchema, @".[Versions] AS [Target]
@@ -267,5 +278,10 @@ Further information: https://github.com/dddlib/dddlib/blob/main/docs/persistence
     private sealed record AppliedVersions(Dictionary<int, bool> HasScript, int MinimumRequiredVersion)
     {
         public int Version => this.HasScript.Count == 0 ? 0 : this.HasScript.Keys.Max();
+
+        /// <summary>
+        /// Gets whether the version was applied by hand, so that its row has no script text yet.
+        /// </summary>
+        public bool IsMissingScript(int version) => this.HasScript.TryGetValue(version, out var hasScript) && !hasScript;
     }
 }
