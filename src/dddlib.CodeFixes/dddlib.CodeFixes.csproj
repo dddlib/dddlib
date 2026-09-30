@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetGeneratorVersion)</TargetFramework>
+    <RootNamespace>dddlib.CodeFixes</RootNamespace>
+    <Description>Code fixes for the dddlib analyzers.</Description>
+    <IsPackable>false</IsPackable>
+    <!-- Roslyn components target netstandard2.0; PolySharp supplies the newer language feature shims. -->
+    <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Code fixes need the workspace APIs, which an assembly the compiler loads analyzers from must not reference
+         (RS1038); hence this assembly beside dddlib.Generators rather than inside it. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+    <PackageReference Include="PolySharp" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../dddlib.Generators/dddlib.Generators.csproj" />
+  </ItemGroup>
+
+</Project>

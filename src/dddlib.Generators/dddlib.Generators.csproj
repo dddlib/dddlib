@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="dddlib.CodeFixes" />
     <InternalsVisibleTo Include="dddlib.Generators.Tests" />
   </ItemGroup>
 
