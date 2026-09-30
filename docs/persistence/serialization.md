@@ -15,7 +15,11 @@ test works in production.
   JSON of its public properties by default.
 
 The analyzer reports a property of an event or memento that is saved but never loaded, because it has neither a
-public setter nor a constructor parameter of the same name (DDDLIB012).
+public setter nor a constructor parameter of the same name (DDDLIB012). It also reports an event or memento that is
+saved but fails to load (DDDLIB023): one with several public constructors and none of them parameterless or marked
+`[JsonConstructor]`, one with no public constructor, and one with a constructor parameter that no property matches.
+Saving does not use the constructor, so without the analyzer the first sign is an exception when the aggregate root
+is loaded.
 
 A natural key must round-trip: deserializing the serialized key must produce a value equal to the original. The
 identity map checks this the first time it sees each aggregate root type and throws a `PersistenceException` if it

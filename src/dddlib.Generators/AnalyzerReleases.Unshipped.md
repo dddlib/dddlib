@@ -27,3 +27,4 @@ DDDLIB019 | dddlib | Warning | Value object property is compared by reference
 DDDLIB020 | dddlib | Warning | Mapping is not configured
 DDDLIB021 | dddlib | Error | Bootstrapper selects a different natural key
 DDDLIB022 | dddlib | Error | Natural key selector is not a property of the entity
+DDDLIB023 | dddlib | Warning | Event or memento cannot be loaded

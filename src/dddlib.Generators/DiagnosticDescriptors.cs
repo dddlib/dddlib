@@ -166,6 +166,16 @@ internal static class DiagnosticDescriptors
         description: "Events and mementos are serialized with System.Text.Json, which sets a property through its public setter or a constructor parameter of the same name.",
         helpLinkUri: WikiSerialization);
 
+    public static readonly DiagnosticDescriptor CannotBeLoaded = new(
+        "DDDLIB023",
+        "Event or memento cannot be loaded",
+        "The {0} '{1}' can be saved but not loaded, because {2}",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Events and mementos are serialized with System.Text.Json, which creates one with its public parameterless constructor, its only public constructor or the constructor marked [JsonConstructor], and needs a property for every parameter of that constructor. Saving does not need the constructor, so the failure only shows on load.",
+        helpLinkUri: WikiSerialization);
+
     public static readonly DiagnosticDescriptor IncompleteMemento = new(
         "DDDLIB013",
         "Aggregate root overrides only one of GetState and SetState",

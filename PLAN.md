@@ -444,6 +444,13 @@ As built, where it departs from the plan above:
 - Not verified here: the code fixes loading in Visual Studio from the packed `analyzers/dotnet/cs` folder. The
   package contents were checked (`dddlib.Generators.dll` and `dddlib.CodeFixes.dll`), the editor was not.
 
+Added 2026-09-30 for dddlib/dddlib#48: DDDLIB023 (warning, `EventApplicationAnalyzer`), an event or memento that is
+saved but fails to load. `IsDefaultSerializable` already told these cases apart and DDDLIB012 dropped them: no
+constructor the serializer can use (several public ones with none parameterless or marked `[JsonConstructor]`, or
+none public), and a constructor parameter that no property matches. While `Apply<T>` required `new()` the first could
+not happen to an applied event; mementos never had that guard. Reported at the type, not for abstract types, and like
+DDDLIB012 only for types declared in the compilation.
+
 Considered and left out: a handler whose event is never applied (events arrive from subclasses and mappings, so it
 is noisy), publicly settable value object properties (a shape the serialization docs sanction), a public bootstrapper
 (only a recommendation), and reporting DDDLIB015 for entities.
