@@ -5,8 +5,8 @@ using Microsoft.Data.SqlClient;
 namespace dddlib.Persistence.SqlServer;
 
 /// <summary>
-/// A memento repository with the identity map on SQL Server and custom storage supplied by the derived class,
-/// for example a table shaped for the aggregate root. <see cref="AppendEventsAsync"/> appends the events of a save
+/// A memento repository with custom storage supplied by the derived class, for example a table shaped for the
+/// aggregate root, and the identity map on SQL Server unless one is supplied. <see cref="AppendEventsAsync"/> appends the events of a save
 /// to the aggregate root's stream inside the derived class's transaction, so that they can be dispatched.
 /// </summary>
 public abstract class SqlServerRepository<T> : Repository<T>
@@ -16,7 +16,17 @@ public abstract class SqlServerRepository<T> : Repository<T>
     private readonly string schema;
 
     protected SqlServerRepository(string connectionString, string schema = "dbo")
-        : base(new SqlServerIdentityMap(connectionString, schema))
+        : this(connectionString, new SqlServerIdentityMap(connectionString, schema), schema)
+    {
+    }
+
+    /// <summary>
+    /// Creates the repository with an identity map other than <see cref="SqlServerIdentityMap"/>, for example one
+    /// that reads the identity from the derived class's own table. <paramref name="schema"/> is still the dddlib
+    /// schema that <see cref="AppendEventsAsync"/> appends to.
+    /// </summary>
+    protected SqlServerRepository(string connectionString, IIdentityMap identityMap, string schema = "dbo")
+        : base(identityMap)
     {
         this.ConnectionString = connectionString;
         this.schema = SqlServerIdentifier.Quote(schema);
