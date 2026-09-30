@@ -303,7 +303,7 @@ Done 2026-09-29. What was built, and where it departs from v1:
 
 ### Phase 7: analyzer coverage (dddlib/dddlib#2)
 
-Planned 2026-09-29, not started. Turns the remaining runtime-only model mistakes into diagnostics, adds the code fixes
+Planned 2026-09-29, started 2026-09-30 on the `analyzers` branch (7.0 done). Turns the remaining runtime-only model mistakes into diagnostics, adds the code fixes
 the issue lists, and refines DDDLIB004. Everything stays inside the `dddlib` package: the analyzers in
 `dddlib.Generators`, the code fixes in a new `dddlib.CodeFixes` assembly packed into the same `analyzers/dotnet/cs`
 folder. Roslyn stays at 4.14 (.NET 9.0.300 SDK, Visual Studio 17.14).
@@ -329,10 +329,16 @@ Constraints that shape the work:
    `configure.Entity<T>()` or `configure.ValueObject<T>()` yields, per `T`, the set of `ToReconstituteUsing`,
    `ToUseNaturalKey` (with the selected property symbol when the lambda body is a member access, otherwise a marker),
    `ToUseEqualityComparer`, `ToUseValueObjectSerializer` and `ToMapToEvent<TEvent>` (with a flag for the reverse
-   mapping overload) calls. The model is `Unknown` when there is no bootstrapper, more than one, or the `configure`
-   parameter is used anywhere other than as the receiver of one of those three methods (helpers, loops, assignments).
+   mapping overload) calls. The model is `Unknown` when there is no bootstrapper, more than one, the `configure`
+   parameter is used anywhere other than as the receiver of one of those three methods (helpers, loops, assignments),
+   a wrapper leaves its chain (stored in a variable, passed on), or any other method in the compilation takes an
+   `IConfiguration`. The last was added while implementing: a custom `IBootstrapperProvider` can hand the
+   configuration to classes that are not the bootstrapper, as the nested `IBootstrap<T>` classes of the feature
+   scenarios do, and the single `IBootstrapper` of dddlib.Tests would otherwise make every such scenario look
+   unconfigured.
    Bootstrapper-aware rules do not report against an `Unknown` model. Exposed through a `Lazy<BootstrapperModel>`
-   created in the compilation-start action and shared by all analyzers, since symbol actions run concurrently.
+   (`BootstrapperModel.GetLazy`, one per compilation) shared by all analyzers, since symbol actions run concurrently.
+   The generator's pipeline record that had the name is now `BootstrapperRegistration`.
    Tests: `BootstrapperModelTests` covering each call kind, the reverse-mapping flag, the member-access marker, and
    each `Unknown` trigger.
 2. `KnownSymbols` gains the symbols the new rules need: `IConfiguration` and the three wrapper interfaces,
@@ -341,7 +347,9 @@ Constraints that shape the work:
    types overriding `Equals(object)` or implementing `IEquatable<T>`) and `IsDefaultSerializable(INamedTypeSymbol)`
    (a public parameterless constructor with every public property settable or init-able, or exactly one public
    constructor whose parameters match the public properties by name, case-insensitively) with a result naming the
-   offending property, reused by DDDLIB012 and DDDLIB017.
+   offending property, reused by DDDLIB012 and DDDLIB017. As built: `[JsonConstructor]`, `[JsonIgnore]` and
+   `[JsonInclude]` are honoured, a computed property (no setter, no backing field) is not an offender, and a
+   constructor parameter that matches no property is reported separately (`UnboundParameter`).
 
 #### 7.1 Event application rules (new `EventApplicationAnalyzer`, operation actions)
 
