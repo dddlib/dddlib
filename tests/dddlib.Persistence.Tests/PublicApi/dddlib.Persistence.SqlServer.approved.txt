@@ -42,8 +42,9 @@ namespace dddlib.Persistence.SqlServer
     }
     public sealed class SqlServerSchemaVersion : System.IEquatable<dddlib.Persistence.SqlServer.SqlServerSchemaVersion>
     {
-        public SqlServerSchemaVersion(string Schema, int Version, int RequiredVersion) { }
+        public SqlServerSchemaVersion(string Schema, int Version, int RequiredVersion, int MinimumRequiredVersion) { }
         public bool IsAhead { get; }
+        public int MinimumRequiredVersion { get; init; }
         public int RequiredVersion { get; init; }
         public string Schema { get; init; }
         public int Version { get; init; }

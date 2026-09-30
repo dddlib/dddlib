@@ -101,7 +101,7 @@ public class SqlServerSchemaTests : SqlServerIntegration
         var installed = await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
         var ensuredAgain = await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
 
-        await Assert.That(installed).IsEqualTo(new SqlServerSchemaVersion(schema, RequiredVersion, RequiredVersion));
+        await Assert.That(installed).IsEqualTo(new SqlServerSchemaVersion(schema, RequiredVersion, RequiredVersion, 1));
         await Assert.That(installed.IsAhead).IsFalse();
         await Assert.That(ensuredAgain).IsEqualTo(installed);
     }
@@ -115,7 +115,7 @@ public class SqlServerSchemaTests : SqlServerIntegration
 
         var version = await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
 
-        await Assert.That(version).IsEqualTo(new SqlServerSchemaVersion(schema, 99, RequiredVersion));
+        await Assert.That(version).IsEqualTo(new SqlServerSchemaVersion(schema, 99, RequiredVersion, 1));
         await Assert.That(version.IsAhead).IsTrue();
         await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(RequiredVersion + 1);
     }
@@ -133,9 +133,32 @@ public class SqlServerSchemaTests : SqlServerIntegration
         var stream = await new SqlServerEventStore(this.ConnectionString, schema).GetStreamAsync(Guid.NewGuid(), 0);
         var processB = await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
 
-        await Assert.That(processA).IsEqualTo((RequiredVersion + 1, RequiredVersion + 1));
+        await Assert.That(processA).IsEqualTo((RequiredVersion + 1, RequiredVersion + 1, 1));
         await Assert.That(stream.Events).IsEmpty();
-        await Assert.That(processB).IsEqualTo(new SqlServerSchemaVersion(schema, RequiredVersion + 1, RequiredVersion));
+        await Assert.That(processB).IsEqualTo(new SqlServerSchemaVersion(schema, RequiredVersion + 1, RequiredVersion, 1));
+        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(RequiredVersion + 1);
+    }
+
+    [Test]
+    public async Task OlderCodeFailsLoudlyAfterAContractingUpgrade()
+    {
+        // Process A, on a newer package, applies a script that removes something this package uses and records the
+        // oldest required version that still works; process B, on this package, is now too old.
+        var schema = NewSchema();
+        var contracting = new SqlServerScript(
+            RequiredVersion + 1,
+            $"DROP PROCEDURE [dbo].[GetStream];\nGO\nINSERT INTO [dbo].[Versions] ([Version], [MinimumRequiredVersion]) VALUES ({RequiredVersion + 1}, {RequiredVersion + 1});\nGO\n");
+        await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
+
+        var processA = await SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, [.. SqlServerSchemaInstaller.Scripts, contracting], CancellationToken.None);
+
+        await Assert.That(processA).IsEqualTo((RequiredVersion + 1, RequiredVersion + 1, RequiredVersion + 1));
+        await Assert.That(() => (Task)new SqlServerEventStore(this.ConnectionString, schema).GetStreamAsync(Guid.NewGuid(), 0))
+            .Throws<PersistenceException>()
+            .WithMessageContaining($"The SQL Server schema [{schema}] is at version {RequiredVersion + 1}, which supports packages that require version {RequiredVersion + 1} or later, but dddlib.Persistence.SqlServer ");
+        await Assert.That(() => (Task)SqlServerSchema.EnsureAsync(this.ConnectionString, schema))
+            .Throws<PersistenceException>()
+            .WithMessageContaining("To fix this issue");
         await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(RequiredVersion + 1);
     }
 

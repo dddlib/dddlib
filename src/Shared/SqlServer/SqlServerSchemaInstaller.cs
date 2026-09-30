@@ -31,19 +31,21 @@ internal static class SqlServerSchemaInstaller
     /// </summary>
     public static string Description { get; } = GetDescription();
 
-    public static Task<(int Version, int RequiredVersion)> EnsureAsync(string connectionString, string schema, CancellationToken cancellationToken) =>
+    public static Task<(int Version, int RequiredVersion, int MinimumRequiredVersion)> EnsureAsync(string connectionString, string schema, CancellationToken cancellationToken) =>
         EnsureAsync(connectionString, schema, Scripts, cancellationToken);
 
     /// <summary>
     /// Applies the scripts the schema is missing, in order, in one transaction under an exclusive application lock on
-    /// the schema, so concurrent callers apply each version once. A database already ahead of these scripts is left as
-    /// it is and reported, not refused: older code keeps working against a newer schema during a rolling upgrade.
+    /// the schema, so concurrent callers apply each version once. A schema already ahead of these scripts is left as
+    /// it is and reported, not refused: older code keeps working against a newer schema during a rolling upgrade,
+    /// until a script records that the schema no longer supports it.
     /// </summary>
-    public static async Task<(int Version, int RequiredVersion)> EnsureAsync(string connectionString, string schema, IReadOnlyList<SqlServerScript> scripts, CancellationToken cancellationToken)
+    public static async Task<(int Version, int RequiredVersion, int MinimumRequiredVersion)> EnsureAsync(string connectionString, string schema, IReadOnlyList<SqlServerScript> scripts, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(connectionString);
         var quotedSchema = SqlServerIdentifier.Quote(schema);
         scripts = Validate(scripts);
+        var required = scripts[^1].Version;
 
         using var scope = new TransactionScope(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled);
         await using var connection = new SqlConnection(connectionString);
@@ -64,7 +66,9 @@ IF SCHEMA_ID(@Schema) IS NULL
         }
 
         var applied = await ReadVersionsAsync(connection, transaction, quotedSchema, cancellationToken).ConfigureAwait(false);
-        var current = applied.Count == 0 ? 0 : applied.Keys.Max();
+        ThrowIfTooOld(quotedSchema, applied.Version, applied.MinimumRequiredVersion, required);
+
+        var current = applied.Version;
         foreach (var script in scripts.Where(script => script.Version > current))
         {
             foreach (var batch in SqlServerScript.SplitBatches(script.For(schema)))
@@ -75,7 +79,7 @@ IF SCHEMA_ID(@Schema) IS NULL
         }
 
         // Record what was applied, and fill in the text of versions that were applied by hand.
-        foreach (var script in scripts.Where(script => script.Version > current || (applied.TryGetValue(script.Version, out var hasScript) && !hasScript)))
+        foreach (var script in scripts.Where(script => script.Version > current || (applied.HasScript.TryGetValue(script.Version, out var hasScript) && !hasScript)))
         {
             await using var command = CreateCommand(connection, transaction, string.Concat(
                 "MERGE ", quotedSchema, @".[Versions] AS [Target]
@@ -93,9 +97,15 @@ WHEN NOT MATCHED BY TARGET THEN
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        if (current < required)
+        {
+            // A script that was applied may have raised the oldest required version the schema supports.
+            applied = await ReadVersionsAsync(connection, transaction, quotedSchema, cancellationToken).ConfigureAwait(false);
+        }
+
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 
-        return (Math.Max(current, scripts[^1].Version), scripts[^1].Version);
+        return (applied.Version, required, applied.MinimumRequiredVersion);
     }
 
     /// <summary>
@@ -117,31 +127,60 @@ WHEN NOT MATCHED BY TARGET THEN
     }
 
     /// <summary>
-    /// Reads the version the schema is at; zero when the <c>Versions</c> table does not exist.
+    /// Reads the version the schema is at, zero when the <c>Versions</c> table does not exist, and the oldest required
+    /// version the schema still supports.
     /// </summary>
-    public static async Task<int> ReadVersionAsync(SqlConnection connection, string quotedSchema, CancellationToken cancellationToken)
+    public static async Task<(int Version, int MinimumRequiredVersion)> ReadVersionAsync(SqlConnection connection, string quotedSchema, CancellationToken cancellationToken)
     {
-        var versions = await ReadVersionsAsync(connection, null, quotedSchema, cancellationToken).ConfigureAwait(false);
-        return versions.Count == 0 ? 0 : versions.Keys.Max();
+        var applied = await ReadVersionsAsync(connection, null, quotedSchema, cancellationToken).ConfigureAwait(false);
+        return (applied.Version, applied.MinimumRequiredVersion);
     }
 
+    /// <summary>
+    /// Fails when the schema no longer supports a package that requires this version: a later script removed or changed
+    /// something the package uses, and recorded the oldest required version that still works.
+    /// </summary>
+    public static void ThrowIfTooOld(string quotedSchema, int version, int minimumRequiredVersion, int requiredVersion)
+    {
+        if (requiredVersion >= minimumRequiredVersion)
+        {
+            return;
+        }
 
-    private static async Task<Dictionary<int, bool>> ReadVersionsAsync(SqlConnection connection, SqlTransaction? transaction, string quotedSchema, CancellationToken cancellationToken)
+        throw new PersistenceException(
+            string.Format(
+                CultureInfo.InvariantCulture,
+                @"The SQL Server schema {0} is at version {1}, which supports packages that require version {2} or later, but {3} requires version {4}.
+To fix this issue, update the dddlib packages this process uses to the version that upgraded the schema, or to any version that requires schema version {2} or later.
+Further information: https://github.com/dddlib/dddlib/blob/main/docs/persistence/sql-server.md",
+                quotedSchema,
+                version,
+                minimumRequiredVersion,
+                Description,
+                requiredVersion));
+    }
+
+    private static async Task<AppliedVersions> ReadVersionsAsync(SqlConnection connection, SqlTransaction? transaction, string quotedSchema, CancellationToken cancellationToken)
     {
         var table = string.Concat(quotedSchema, ".[Versions]");
 
         await using var command = CreateCommand(connection, transaction, string.Concat(
             "IF OBJECT_ID(N'", table, "', N'U') IS NOT NULL", Environment.NewLine,
-            "    SELECT [Version], CAST(CASE WHEN [Script] IS NULL THEN 0 ELSE 1 END AS BIT) FROM ", table, ";"));
+            "    SELECT [Version], CAST(CASE WHEN [Script] IS NULL THEN 0 ELSE 1 END AS BIT), [MinimumRequiredVersion] FROM ", table, ";"));
 
-        var versions = new Dictionary<int, bool>();
+        var hasScript = new Dictionary<int, bool>();
+        var minimumRequiredVersion = 1;
         await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
-            versions.Add(reader.GetInt32(0), reader.GetBoolean(1));
+            hasScript.Add(reader.GetInt32(0), reader.GetBoolean(1));
+            if (!await reader.IsDBNullAsync(2, cancellationToken).ConfigureAwait(false))
+            {
+                minimumRequiredVersion = Math.Max(minimumRequiredVersion, reader.GetInt32(2));
+            }
         }
 
-        return versions;
+        return new AppliedVersions(hasScript, minimumRequiredVersion);
     }
 
     private static SqlCommand CreateCommand(SqlConnection connection, SqlTransaction? transaction, string commandText)
@@ -202,5 +241,14 @@ WHEN NOT MATCHED BY TARGET THEN
             ?? assembly.GetName().Version?.ToString();
 
         return string.Concat(assembly.GetName().Name, " ", version);
+    }
+
+    /// <summary>
+    /// The rows of the <c>Versions</c> table: whether each applied version has its script text, and the oldest required
+    /// version any of them says the schema still supports.
+    /// </summary>
+    private sealed record AppliedVersions(Dictionary<int, bool> HasScript, int MinimumRequiredVersion)
+    {
+        public int Version => this.HasScript.Count == 0 ? 0 : this.HasScript.Keys.Max();
     }
 }

@@ -18,8 +18,9 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
     }
     public sealed class SqlServerEventDispatcherSchemaVersion : System.IEquatable<dddlib.Persistence.EventDispatcher.SqlServer.SqlServerEventDispatcherSchemaVersion>
     {
-        public SqlServerEventDispatcherSchemaVersion(string Schema, int Version, int RequiredVersion) { }
+        public SqlServerEventDispatcherSchemaVersion(string Schema, int Version, int RequiredVersion, int MinimumRequiredVersion) { }
         public bool IsAhead { get; }
+        public int MinimumRequiredVersion { get; init; }
         public int RequiredVersion { get; init; }
         public string Schema { get; init; }
         public int Version { get; init; }
