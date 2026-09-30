@@ -13,7 +13,21 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
     }
     public static class SqlServerEventDispatcherSchema
     {
-        public static System.Threading.Tasks.Task EnsureAsync(string connectionString, string schema = "dbo", System.Threading.CancellationToken cancellationToken = default) { }
+        public static event System.EventHandler<dddlib.Persistence.EventDispatcher.SqlServer.SqlServerEventDispatcherSchemaVersionEventArgs>? DatabaseAhead;
+        public static System.Threading.Tasks.Task<dddlib.Persistence.EventDispatcher.SqlServer.SqlServerEventDispatcherSchemaVersion> EnsureAsync(string connectionString, string schema = "dbo", System.Threading.CancellationToken cancellationToken = default) { }
         public static string GetScript(string schema = "dbo") { }
+    }
+    public sealed class SqlServerEventDispatcherSchemaVersion : System.IEquatable<dddlib.Persistence.EventDispatcher.SqlServer.SqlServerEventDispatcherSchemaVersion>
+    {
+        public SqlServerEventDispatcherSchemaVersion(string Schema, int DatabaseVersion, int CodeVersion) { }
+        public int CodeVersion { get; init; }
+        public int DatabaseVersion { get; init; }
+        public bool IsDatabaseAhead { get; }
+        public string Schema { get; init; }
+    }
+    public sealed class SqlServerEventDispatcherSchemaVersionEventArgs : System.EventArgs
+    {
+        public SqlServerEventDispatcherSchemaVersionEventArgs(dddlib.Persistence.EventDispatcher.SqlServer.SqlServerEventDispatcherSchemaVersion version) { }
+        public dddlib.Persistence.EventDispatcher.SqlServer.SqlServerEventDispatcherSchemaVersion Version { get; }
     }
 }

@@ -66,7 +66,7 @@ public class SqlServerSchemaTests : SqlServerIntegration
 
         await SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, [version1], CancellationToken.None);
 
-        await Assert.That(() => SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, [version1, version2], CancellationToken.None))
+        await Assert.That(() => (Task)SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, [version1, version2], CancellationToken.None))
             .Throws<SqlException>();
         await Assert.That(await this.Database.ExecuteScalarAsync($"SELECT OBJECT_ID(N'[{schema}].[Partial]', N'U');")).IsNull();
         await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(1);
@@ -78,7 +78,7 @@ public class SqlServerSchemaTests : SqlServerIntegration
         var schema = NewSchema();
         var broken = new SqlServerScript(1, "CREATE TABLE [dbo].[Partial] ([Id] INT NOT NULL);\nGO\nTHROW 50000, 'Broken install.', 1;\nGO\n");
 
-        await Assert.That(() => SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, [broken], CancellationToken.None))
+        await Assert.That(() => (Task)SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, [broken], CancellationToken.None))
             .Throws<SqlException>();
         await Assert.That(await this.Database.ExecuteScalarAsync($"SELECT SCHEMA_ID(N'{schema}');")).IsNull();
     }
@@ -94,15 +94,59 @@ public class SqlServerSchemaTests : SqlServerIntegration
     }
 
     [Test]
-    public async Task ThrowsWhenTheSchemaIsNewerThanThePackage()
+    public async Task WarnsWhenTheDatabaseIsAheadOfTheCode()
     {
         var schema = NewSchema();
+        var warnings = new List<SqlServerSchemaVersion>();
+        void OnDatabaseAhead(object? sender, SqlServerSchemaVersionEventArgs e)
+        {
+            if (e.Version.Schema == schema)
+            {
+                lock (warnings)
+                {
+                    warnings.Add(e.Version);
+                }
+            }
+        }
+
         await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
         await this.Database.ExecuteScriptAsync($"INSERT INTO [{schema}].[Versions] ([Version]) VALUES (99);");
 
-        await Assert.That(() => SqlServerSchema.EnsureAsync(this.ConnectionString, schema))
-            .Throws<PersistenceException>()
-            .WithMessageContaining("is at version 99, which is newer than version 1");
+        SqlServerSchema.DatabaseAhead += OnDatabaseAhead;
+        try
+        {
+            var version = await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
+            var eventStore = new SqlServerEventStore(this.ConnectionString, schema);
+            await eventStore.GetStreamAsync(Guid.NewGuid(), 0);
+            await eventStore.GetStreamAsync(Guid.NewGuid(), 0);
+
+            await Assert.That(version).IsEqualTo(new SqlServerSchemaVersion(schema, 99, 1));
+            await Assert.That(version.IsDatabaseAhead).IsTrue();
+            await Assert.That(warnings).IsEquivalentTo(new[] { version, version });
+        }
+        finally
+        {
+            SqlServerSchema.DatabaseAhead -= OnDatabaseAhead;
+        }
+
+        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task OlderCodeKeepsWorkingAfterNewerCodeUpgrades()
+    {
+        // Process A (code 2) upgrades the schema while process B (code 1) is still running and later restarts.
+        var schema = NewSchema();
+        var version1 = SqlServerSchemaInstaller.Scripts[0];
+        var version2 = new SqlServerScript(2, "CREATE TABLE [dbo].[Upgraded] ([Id] INT NOT NULL);\nGO\n");
+        await SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, [version1], CancellationToken.None);
+
+        var processA = await SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, [version1, version2], CancellationToken.None);
+        var processB = await SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, [version1], CancellationToken.None);
+
+        await Assert.That(processA).IsEqualTo((2, 2));
+        await Assert.That(processB).IsEqualTo((2, 1));
+        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(2);
     }
 
     [Test]
@@ -172,7 +216,7 @@ public class SqlServerSchemaTests : SqlServerIntegration
     [Test]
     public async Task RejectsAnInvalidSchemaName()
     {
-        await Assert.That(() => SqlServerSchema.EnsureAsync(this.ConnectionString, "bad name")).Throws<ArgumentException>();
+        await Assert.That(() => (Task)SqlServerSchema.EnsureAsync(this.ConnectionString, "bad name")).Throws<ArgumentException>();
     }
 
     private static string NewSchema() => string.Concat("s", Guid.NewGuid().ToString("N"));

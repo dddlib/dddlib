@@ -54,12 +54,43 @@ idempotent, so `EnsureAsync` later adopts a database installed either way.
 Batches are separated by a line holding only `GO` (optionally followed by a `--` comment). `GO` with a repeat count
 is not supported.
 
-### When the schema is behind
+### Rolling upgrades
+
+Code works against a database at its own version or newer, so processes can be upgraded one at a time. With two
+processes A and B at version 2, A restarts on version 3 and upgrades the database to 3; B keeps running on version 2
+against it, and can restart on version 2 and call `EnsureAsync` again:
+
+| Code | Database | Result |
+|---|---|---|
+| same as the database | | works |
+| behind the database | ahead | works, and warns |
+| ahead of the database | behind | fails |
 
 Before its first command, each SQL Server class reads the schema version once per connection string and schema. If
 the schema is older than the package requires, or has no `Versions` table, the call fails with a
 `PersistenceException` naming the versions and how to fix it, rather than with a SQL error about a missing procedure.
-A schema newer than the package is accepted at runtime, but `EnsureAsync` refuses to run against it.
+
+If the database is newer than the package, `EnsureAsync` applies nothing and returns a `SqlServerSchemaVersion` with
+`IsDatabaseAhead` set, and the `SqlServerSchema.DatabaseAhead` event is raised, by `EnsureAsync` and by the first
+command per connection string and schema. dddlib has no logging dependency; subscribe and log it:
+
+```csharp
+SqlServerSchema.DatabaseAhead += (_, e) => logger.LogWarning(
+    "Schema {Schema} is at version {DatabaseVersion}; this process is at {CodeVersion} and should be upgraded.",
+    e.Version.Schema, e.Version.DatabaseVersion, e.Version.CodeVersion);
+```
+
+`SqlServerEventDispatcherSchema` has the same `EnsureAsync` result and `DatabaseAhead` event with its own types.
+
+This only holds because every script is written expand-then-contract: script N+1 must keep code N working.
+
+- Allowed: new tables, new nullable or defaulted columns, new indexes, new procedures.
+- Not allowed: changing the parameters or result columns of a procedure that code N calls, renaming or dropping
+  anything code N uses, adding a column code N's inserts cannot satisfy, or tightening a constraint code N can
+  violate. To change a procedure's contract, add a new procedure and have the new code call it.
+- Removing what code N used happens in a later script, once no process can still be running code N.
+- A changed procedure body with the same contract reaches running processes on older code as soon as it is
+  applied, so it must keep the behaviour they expect.
 
 There is no compatibility with v1 databases.
 

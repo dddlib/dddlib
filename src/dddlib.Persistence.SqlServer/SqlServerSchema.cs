@@ -7,13 +7,22 @@ namespace dddlib.Persistence.SqlServer;
 /// </summary>
 public static class SqlServerSchema
 {
+    static SqlServerSchema()
+    {
+        SqlServerSchemaCheck.DatabaseAhead += static (schema, databaseVersion, codeVersion) =>
+            DatabaseAhead?.Invoke(null, new SqlServerSchemaVersionEventArgs(new SqlServerSchemaVersion(schema, databaseVersion, codeVersion)));
+    }
+
     /// <summary>
     /// Creates the schema if it does not exist and applies the versions it is missing, in one transaction. Concurrent
     /// callers wait for each other, so it is safe to call from every instance at startup. A database ahead of this
     /// package is left as it is, reported in the result and through <see cref="DatabaseAhead"/>.
     /// </summary>
-    public static Task<SchemaVersion> EnsureAsync(string connectionString, string schema = "dbo", CancellationToken cancellationToken = default) =>
-        SqlServerSchemaInstaller.EnsureAsync(connectionString, schema, cancellationToken);
+    public static async Task<SqlServerSchemaVersion> EnsureAsync(string connectionString, string schema = "dbo", CancellationToken cancellationToken = default)
+    {
+        var (databaseVersion, codeVersion) = await SqlServerSchemaInstaller.EnsureAsync(connectionString, schema, cancellationToken).ConfigureAwait(false);
+        return new SqlServerSchemaVersion(schema, databaseVersion, codeVersion);
+    }
 
     /// <summary>
     /// Gets the whole schema as one idempotent script for the schema, with batches separated by <c>GO</c>.
@@ -24,9 +33,5 @@ public static class SqlServerSchema
     /// Raised when the database is ahead of this package: by <see cref="EnsureAsync"/>, and by the first command of a
     /// SQL Server class per connection string and schema. The database keeps working; log it and upgrade this process.
     /// </summary>
-    public static event EventHandler<SchemaVersionEventArgs>? DatabaseAhead
-    {
-        add => SqlServerSchemaCheck.DatabaseAhead += value;
-        remove => SqlServerSchemaCheck.DatabaseAhead -= value;
-    }
+    public static event EventHandler<SqlServerSchemaVersionEventArgs>? DatabaseAhead;
 }

@@ -31,7 +31,7 @@ internal static class SqlServerSchemaInstaller
     /// </summary>
     public static string Description { get; } = GetDescription();
 
-    public static Task<SchemaVersion> EnsureAsync(string connectionString, string schema, CancellationToken cancellationToken) =>
+    public static Task<(int DatabaseVersion, int CodeVersion)> EnsureAsync(string connectionString, string schema, CancellationToken cancellationToken) =>
         EnsureAsync(connectionString, schema, Scripts, cancellationToken);
 
     /// <summary>
@@ -39,7 +39,7 @@ internal static class SqlServerSchemaInstaller
     /// the schema, so concurrent callers apply each version once. A database already ahead of these scripts is left as
     /// it is and reported, not refused: older code keeps working against a newer schema during a rolling upgrade.
     /// </summary>
-    public static async Task<SchemaVersion> EnsureAsync(string connectionString, string schema, IReadOnlyList<SqlServerScript> scripts, CancellationToken cancellationToken)
+    public static async Task<(int DatabaseVersion, int CodeVersion)> EnsureAsync(string connectionString, string schema, IReadOnlyList<SqlServerScript> scripts, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(connectionString);
         var quotedSchema = SqlServerIdentifier.Quote(schema);
@@ -95,13 +95,12 @@ WHEN NOT MATCHED BY TARGET THEN
 
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 
-        var version = new SchemaVersion(schema, Math.Max(current, scripts[^1].Version), scripts[^1].Version);
-        if (version.IsDatabaseAhead)
+        if (current > scripts[^1].Version)
         {
-            SqlServerSchemaCheck.OnDatabaseAhead(version);
+            SqlServerSchemaCheck.OnDatabaseAhead(schema, current, scripts[^1].Version);
         }
 
-        return version;
+        return (Math.Max(current, scripts[^1].Version), scripts[^1].Version);
     }
 
     /// <summary>

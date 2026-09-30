@@ -16,12 +16,13 @@ internal static class SqlServerSchemaCheck
     private static readonly ConcurrentDictionary<(string ConnectionString, string Schema), bool> CurrentSchemas = new();
 
     /// <summary>
-    /// Raised when a database is found to be ahead of this assembly: by the first command against it per connection
-    /// string and schema, and by every <c>EnsureAsync</c>.
+    /// Raised with the schema, the database version and the code version when a database is found to be ahead of this
+    /// assembly: by the first command against it per connection string and schema, and by every <c>EnsureAsync</c>. Each
+    /// package's public schema class turns it into its own public event.
     /// </summary>
-    public static event EventHandler<SchemaVersionEventArgs>? DatabaseAhead;
+    public static event Action<string, int, int>? DatabaseAhead;
 
-    public static void OnDatabaseAhead(SchemaVersion version) => DatabaseAhead?.Invoke(null, new SchemaVersionEventArgs(version));
+    public static void OnDatabaseAhead(string schema, int databaseVersion, int codeVersion) => DatabaseAhead?.Invoke(schema, databaseVersion, codeVersion);
 
     public static ValueTask EnsureCurrentAsync(string connectionString, string quotedSchema, CancellationToken cancellationToken) =>
         CurrentSchemas.ContainsKey((connectionString, quotedSchema))
@@ -56,7 +57,7 @@ Further information: https://github.com/dddlib/dddlib/blob/main/docs/persistence
 
         if (CurrentSchemas.TryAdd((connectionString, quotedSchema), true) && version > SqlServerSchemaInstaller.RequiredVersion)
         {
-            OnDatabaseAhead(new SchemaVersion(quotedSchema[1..^1], version, SqlServerSchemaInstaller.RequiredVersion));
+            OnDatabaseAhead(quotedSchema[1..^1], version, SqlServerSchemaInstaller.RequiredVersion);
         }
     }
 }
