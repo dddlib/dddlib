@@ -22,7 +22,8 @@ var repository = new SqlServerEventStoreRepository(connectionString, "dddlib");
 
 `EnsureAsync` creates the schema if it does not exist and applies the versions it is missing, in order, in one
 transaction under an exclusive application lock on the schema, so it is safe to call from every instance at startup
-and a failure leaves nothing behind. A dedicated schema such as `dddlib` keeps dddlib's tables and procedures apart
+and a failure leaves nothing behind. When there is nothing to apply it only reads the versions and takes no lock. A
+dedicated schema such as `dddlib` keeps dddlib's tables and procedures apart
 from yours; the constructors default to `dbo`.
 
 The schema is one series of numbered scripts, `dddlib01.sql`, `dddlib02.sql` and so on, the same in every SQL Server
@@ -54,47 +55,59 @@ idempotent, so `EnsureAsync` later adopts a database installed either way.
 Batches are separated by a line holding only `GO` (optionally followed by a `--` comment). `GO` with a repeat count
 is not supported.
 
-### Rolling upgrades
+### Schema version check
 
-Code works against a database at its own version or newer, so processes can be upgraded one at a time. With two
-processes A and B at version 2, A restarts on version 3 and upgrades the database to 3; B keeps running on version 2
-against it, and can restart on version 2 and call `EnsureAsync` again:
+Before its first command, each SQL Server class reads the schema version once per connection string and schema, and
+compares it with the version the package requires, which is the number of its latest script:
 
-| Code | Database | Result |
-|---|---|---|
-| same as the database | | works |
-| behind the database | ahead | works; `EnsureAsync` reports it |
-| ahead of the database | behind | fails |
+| Schema compared with the package | Result |
+|---|---|
+| at the required version | works |
+| newer | works; the returned version has `IsAhead` set |
+| older, or without a `Versions` table | fails with a `PersistenceException` |
+| newer, and no longer supporting the package | fails with a `PersistenceException` |
 
-Before its first command, each SQL Server class reads the schema version once per connection string and schema. If
-the schema is older than the package requires, or has no `Versions` table, the call fails with a
-`PersistenceException` naming the versions and how to fix it, rather than with a SQL error about a missing procedure.
+The exception names the versions and how to fix it, rather than leaving a SQL error about a missing procedure. A
+process whose schema was behind recovers without a restart once the schema has been upgraded.
 
-If the database is newer than the package, the SQL Server classes work as normal and `EnsureAsync` applies nothing.
-It returns a `SqlServerSchemaVersion` (`Schema`, `DatabaseVersion`, `CodeVersion`, `IsDatabaseAhead`), so the caller
-decides what to do, for example log a warning that this process should be upgraded:
+`EnsureAsync` returns a `SqlServerSchemaVersion`: `Schema`, `Version` (what the schema is at), `RequiredVersion` (what
+the package requires), `MinimumRequiredVersion` (the oldest required version the schema still supports), `IsAhead`
+and `IsCompatible`. A process that leaves the DDL to a migration tool or a DBA gets the same record from
+`SqlServerSchema.GetVersionAsync`, which only reads, and reports a schema the package cannot use through
+`IsCompatible` instead of throwing. That suits a startup log or a health check:
 
 ```csharp
-var version = await SqlServerSchema.EnsureAsync(connectionString, "dddlib", cancellationToken);
-if (version.IsDatabaseAhead)
+var version = await SqlServerSchema.GetVersionAsync(connectionString, "dddlib", cancellationToken);
+if (!version.IsCompatible)
+{
+    // The schema is behind this package, or no longer supports it: the first command will fail.
+}
+else if (version.IsAhead)
 {
     logger.LogWarning(
-        "Schema {Schema} is at version {DatabaseVersion}; this process is at {CodeVersion} and should be upgraded.",
-        version.Schema, version.DatabaseVersion, version.CodeVersion);
+        "Schema {Schema} is at version {Version}; this process requires {RequiredVersion} and should be upgraded.",
+        version.Schema, version.Version, version.RequiredVersion);
 }
 ```
 
-`SqlServerEventDispatcherSchema.EnsureAsync` returns the same information as a `SqlServerEventDispatcherSchemaVersion`.
+`SqlServerEventDispatcherSchema` has the same two methods and returns a `SqlServerEventDispatcherSchemaVersion`.
 
-This only holds because every script is written expand-then-contract: script N+1 must keep code N working.
+### Rolling upgrades
 
-- Allowed: new tables, new nullable or defaulted columns, new indexes, new procedures.
-- Not allowed: changing the parameters or result columns of a procedure that code N calls, renaming or dropping
-  anything code N uses, adding a column code N's inserts cannot satisfy, or tightening a constraint code N can
-  violate. To change a procedure's contract, add a new procedure and have the new code call it.
-- Removing what code N used happens in a later script, once no process can still be running code N.
-- A changed procedure body with the same contract reaches running processes on older code as soon as it is
-  applied, so it must keep the behaviour they expect.
+A package works against a schema at the version it requires or newer, so processes can be upgraded one at a time.
+With two processes A and B on a package that requires version 2, A restarts on a package that requires version 3 and
+upgrades the schema to 3. B keeps running against it, and can restart on its old package and call `EnsureAsync`
+again, which applies nothing and returns a version with `IsAhead` set.
+
+How far behind a process may be is recorded in the schema. Scripts only add to the schema until one has to remove or
+change something that older packages use. That script records the oldest required version that still works in the
+`MinimumRequiredVersion` column of its `Versions` row, and from then on a package that requires less fails the
+version check with a `PersistenceException` telling it to upgrade. Until a script does that, every package works
+against every later schema. The release notes say when a version raises the minimum.
+
+The check runs once per process, before its first command, so a process that is already running is not told when
+the schema stops supporting it. Upgrade every process to at least the new minimum before applying a version that
+raises it.
 
 There is no compatibility with v1 databases.
 

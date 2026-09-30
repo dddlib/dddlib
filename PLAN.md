@@ -133,7 +133,8 @@ configured. Phase 4 turns that into an analyzer diagnostic.
 - Nothing in the library changes the schema implicitly. `SqlServerSchema.EnsureAsync` (or
   `SqlServerEventDispatcherSchema.EnsureAsync`) creates or upgrades it when the consumer calls it; the test fixture
   calls it on each per-class database. Each SQL Server class checks the schema version before its first command and
-  fails with a `PersistenceException` when the schema is behind. Constructors must not do I/O.
+  fails with a `PersistenceException` when the schema is behind, or has recorded that it no longer supports the
+  package. Constructors must not do I/O.
 - `TransactionScopeOption.Suppress` wrapping is kept so callers' ambient transactions do not leak in.
 
 ### Source generators and analyzers (phase 4)
@@ -419,15 +420,28 @@ Done 2026-09-29, in three commits, each green:
    is ahead; step 4 dropped that for rolling upgrades.)
    Changed: explicit and async, the `Versions` table in the named schema, one transaction for the whole upgrade under
    an exclusive `sp_getapplock` on the schema, no AppDomain scanning, no server-version directives, `PersistenceException`
-   instead of a forged `SqlException`, and (from step 4) a database ahead is reported rather than refused. `GetScript(schema)` returns the whole series for migration tools. Batches are
-   split on `GO` lines; `GO <count>` is rejected.
+   instead of a forged `SqlException`, and (from step 4) a database ahead is reported rather than refused.
+   `GetScript(schema)` returns the whole series for migration tools. Batches are split on `GO` lines; `GO <count>` is
+   rejected.
 3. Fail loudly when behind: `SqlServerSchemaCheck` reads the version once per connection string and schema before
-   the first command of every SQL Server class and caches only a current schema.
-4. Rolling upgrades (2026-09-30): a database ahead of the code is accepted instead of failing, so a process on older
+   the first command of every SQL Server class and caches only a compatible schema.
+4. Rolling upgrades (2026-09-30): a schema ahead of the package is accepted instead of failing, so a process on older
    code keeps working after a newer one upgrades the schema. `EnsureAsync` returns a version record
    (`SqlServerSchemaVersion`, `SqlServerEventDispatcherSchemaVersion`, one per SQL Server package, not in
-   dddlib.Persistence, whose API has no SQL Server concepts) with `IsDatabaseAhead`; the caller decides whether to
-   warn. There is no event: everything is evaluated from the returned version.
+   dddlib.Persistence, whose API has no SQL Server concepts) with `IsAhead`; the caller decides whether to warn.
+   There is no event: everything is evaluated from the returned version.
+5. Review follow-ups (2026-09-30):
+   - Vocabulary: the record is `(Schema, Version, RequiredVersion, MinimumRequiredVersion)` with `IsAhead` and
+     `IsCompatible`, matching "the schema is at version X, the package requires version Y" in the exception text.
+     Versions are per schema, not per database.
+   - A bound on "ahead": the `Versions` table has a nullable `MinimumRequiredVersion`. A contracting script sets it on
+     its own row to the oldest required version that still works; the schema check and `EnsureAsync` throw a
+     `PersistenceException` for a package that requires less. It had to be in `dddlib01.sql` and in the first release,
+     because a package that does not read the column can never be told it is too old. Meld had no equivalent.
+   - `GetVersionAsync` on both schema classes returns the same record from a read alone and never throws for an
+     incompatible schema, for processes that leave the DDL to a migration tool and so never call `EnsureAsync`.
+   - `EnsureAsync` reads the versions first and takes the upgrade lock only when there is something to apply or a
+     script text to fill in, so instance startups do not queue behind an upgrade.
 
 Superseded from the issue: "only what is used". The whole schema is one series, so installing the dispatcher
 installs the event store.
@@ -517,11 +531,13 @@ Persistence (`tests/dddlib.Persistence.Tests`):
   DefaultMementoRepositoryPersistence, EventsAreStoredForDispatch, CustomStorageStoresEvents
 - Integration: MemoryEventStoreTests, SqlServerEventStoreTests, SqlServerIdentityMapTests, SqlServerNaturalKeyRepositoryTests,
   SqlServerSnapshotStoreTests, SqlServerSchemaTests (CreatesTheSchemaWithEveryObject, EnsuringTwiceChangesNothing,
-  UpgradeAppliesOnlyTheMissingVersion, FailedUpgradeRollsBackEntirely, FailedInstallLeavesNoSchema,
-  ConcurrentCallersApplyEachVersionOnce, ReportsWhenTheDatabaseIsAheadOfTheCode,
-  OlderCodeKeepsWorkingAfterNewerCodeUpgrades, AdoptsAScriptRunByHand,
-  GetScriptInstallsTheSchema, FailsLoudlyWhenTheSchemaIsBehind, FailsLoudlyWhenTheVersionIsMissing,
-  RejectsAnInvalidSchemaName)
+  EnsuringACurrentSchemaDoesNotWaitForTheUpgradeLock, UpgradeAppliesOnlyTheMissingVersion,
+  FailedUpgradeRollsBackEntirely, FailedInstallLeavesNoSchema, ConcurrentCallersApplyEachVersionOnce,
+  ReportsTheVersionOfACurrentSchema, ReportsWhenTheSchemaIsAheadOfThePackage,
+  OlderCodeKeepsWorkingAfterNewerCodeUpgrades, OlderCodeFailsLoudlyAfterAContractingUpgrade,
+  GetVersionReadsWithoutChangingAnything, GetVersionReportsASchemaThatIsAheadOrNoLongerSupportsThePackage,
+  AdoptsAScriptRunByHand, GetScriptInstallsTheSchema, FailsLoudlyWhenTheSchemaIsBehind,
+  FailsLoudlyWhenTheVersionIsMissing, RejectsAnInvalidSchemaName)
 - Bug: 0043, 0064, 0081, 0109, 0127
 - Unit: JsonSerializerTests, SqlServerScriptTests
 
@@ -532,7 +548,9 @@ Event dispatcher (`tests/dddlib.Persistence.EventDispatcher.Tests`):
   TryGetBatchTwiceFromEventStoreWithSingleEvent, TryGetBatchTwiceFromEventStoreWithSingleEventAndDifferentDispatchers,
   TryGetMultipleBatchesFromEventStoreWithManyEvents, MarkingDispatchedCompletesTheBatchAndAdvances,
   AnAbandonedBatchIsHandedOutAgainAfterTheTimeout), MemoryEventBatchStoreTests, SqlServerEventDispatcherSchemaTests
-  (InstallingTheDispatcherInstallsTheEventStore, FailsLoudlyWhenTheSchemaIsBehind, BothPackagesProduceTheSameScript)
+  (InstallingTheDispatcherInstallsTheEventStore, ReportsWhenTheSchemaIsAheadOfThePackage,
+  GetVersionReadsWithoutChangingAnything, FailsLoudlyWhenThePackageIsTooOldForTheSchema,
+  FailsLoudlyWhenTheSchemaIsBehind, BothPackagesProduceTheSameScript)
 
 Shared model (`tests/dddlib.Tests.Support`): Vehicle, Registration, Wheel, NewVehicle, IRegistrationService, Bootstrapper.
 
@@ -568,7 +586,15 @@ has a public home for `docs/`.
   that ends by recording its own version, like `dddlib01.sql`.
 - Code must keep working against a database ahead of it (rolling upgrades: a process on version N runs against a
   database a newer process upgraded to N+1). Code ahead of the database throws; a database ahead of the code is
-  reported by `EnsureAsync` through `IsDatabaseAhead` on the returned version. So every script is
-  expand-then-contract: only additive changes (new tables, nullable or defaulted columns, indexes, new procedures);
-  never change the parameters or result columns of a procedure older code calls, or rename or drop what it uses, in
-  the same version that stops using it. See docs/persistence/sql-server.md, *Rolling upgrades*.
+  reported by `EnsureAsync` and `GetVersionAsync` through `IsAhead` on the returned version. So every script is
+  expand-then-contract:
+  - Expand: only additive changes (new tables, nullable or defaulted columns, indexes, new procedures). Never change
+    the parameters or result columns of a procedure older code calls, rename or drop what it uses, add a column its
+    inserts cannot satisfy, or tighten a constraint it can violate, in the same version that stops using it. To change
+    a procedure's contract, add a new procedure and have the new code call it. A changed procedure body with the same
+    contract reaches running processes on older code as soon as it is applied, so it must keep the behaviour they
+    expect.
+  - Contract: removing what code N used happens in a later script, which must record the oldest required version that
+    still works: `INSERT INTO [dbo].[Versions] ([Version], [MinimumRequiredVersion]) VALUES (NN, M);`. Older packages
+    then fail loudly instead of with a SQL error. Say so in `RELEASE_NOTES.md`; docs/persistence/sql-server.md,
+    *Rolling upgrades*, promises that.

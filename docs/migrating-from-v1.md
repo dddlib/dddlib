@@ -37,7 +37,9 @@ is no compatibility with data written by v1.
 - Meld is gone. Constructors no longer create or upgrade the schema; call `SqlServerSchema.EnsureAsync` from a
   migration step or at startup, or run `SqlServerSchema.GetScript` through a migration tool. The schema is versioned
   in its own `Versions` table as before, and a schema behind the package fails the first call with a
-  `PersistenceException`. Unlike Meld, a schema ahead of the package is accepted (and reported by `EnsureAsync`), for rolling upgrades. The single-event `CommitStream2` procedure is gone. JSON columns are `NVARCHAR(MAX)`.
+  `PersistenceException`. Unlike Meld, a schema ahead of the package is accepted (and reported by `EnsureAsync`), for
+  rolling upgrades, until a script records that it no longer supports the package. The single-event `CommitStream2`
+  procedure is gone. JSON columns are `NVARCHAR(MAX)`.
 - The in-memory implementations are in-process only; the memory-mapped files and global mutexes that shared them
   across processes are gone.
 - The memento repository also appends the aggregate root's uncommitted events to its event stream, in the same
