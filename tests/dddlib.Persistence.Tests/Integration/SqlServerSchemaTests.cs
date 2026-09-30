@@ -163,6 +163,43 @@ public class SqlServerSchemaTests : SqlServerIntegration
     }
 
     [Test]
+    public async Task GetVersionReadsWithoutChangingAnything()
+    {
+        var schema = NewSchema();
+
+        var missing = await SqlServerSchema.GetVersionAsync(this.ConnectionString, schema);
+        var schemaId = await this.Database.ExecuteScalarAsync($"SELECT SCHEMA_ID(N'{schema}');");
+        await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
+        var current = await SqlServerSchema.GetVersionAsync(this.ConnectionString, schema);
+
+        await Assert.That(missing).IsEqualTo(new SqlServerSchemaVersion(schema, 0, RequiredVersion, 1));
+        await Assert.That(missing.IsCompatible).IsFalse();
+        await Assert.That(schemaId).IsNull();
+        await Assert.That(current).IsEqualTo(new SqlServerSchemaVersion(schema, RequiredVersion, RequiredVersion, 1));
+        await Assert.That(current.IsCompatible).IsTrue();
+        await Assert.That(current.IsAhead).IsFalse();
+    }
+
+    [Test]
+    public async Task GetVersionReportsASchemaThatIsAheadOrNoLongerSupportsThePackage()
+    {
+        var schema = NewSchema();
+        await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
+
+        await this.Database.ExecuteScriptAsync($"INSERT INTO [{schema}].[Versions] ([Version]) VALUES (98);");
+        var ahead = await SqlServerSchema.GetVersionAsync(this.ConnectionString, schema);
+        await this.Database.ExecuteScriptAsync($"INSERT INTO [{schema}].[Versions] ([Version], [MinimumRequiredVersion]) VALUES (99, 98);");
+        var unsupported = await SqlServerSchema.GetVersionAsync(this.ConnectionString, schema);
+
+        await Assert.That(ahead).IsEqualTo(new SqlServerSchemaVersion(schema, 98, RequiredVersion, 1));
+        await Assert.That(ahead.IsAhead).IsTrue();
+        await Assert.That(ahead.IsCompatible).IsTrue();
+        await Assert.That(unsupported).IsEqualTo(new SqlServerSchemaVersion(schema, 99, RequiredVersion, 98));
+        await Assert.That(unsupported.IsAhead).IsTrue();
+        await Assert.That(unsupported.IsCompatible).IsFalse();
+    }
+
+    [Test]
     public async Task AdoptsAScriptRunByHand()
     {
         var schema = NewSchema();
@@ -230,6 +267,7 @@ public class SqlServerSchemaTests : SqlServerIntegration
     public async Task RejectsAnInvalidSchemaName()
     {
         await Assert.That(() => (Task)SqlServerSchema.EnsureAsync(this.ConnectionString, "bad name")).Throws<ArgumentException>();
+        await Assert.That(() => (Task)SqlServerSchema.GetVersionAsync(this.ConnectionString, "bad name")).Throws<ArgumentException>();
     }
 
     private static int RequiredVersion => SqlServerSchemaInstaller.RequiredVersion;

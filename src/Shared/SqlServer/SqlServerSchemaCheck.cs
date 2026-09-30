@@ -1,7 +1,5 @@
 using System.Collections.Concurrent;
 using System.Globalization;
-using System.Transactions;
-using Microsoft.Data.SqlClient;
 
 namespace dddlib.Persistence.SqlServer;
 
@@ -23,15 +21,7 @@ internal static class SqlServerSchemaCheck
 
     private static async Task CheckAsync(string connectionString, string quotedSchema, CancellationToken cancellationToken)
     {
-        int version;
-        int minimumRequiredVersion;
-        using (new TransactionScope(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled))
-        await using (var connection = new SqlConnection(connectionString))
-        {
-            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-            (version, minimumRequiredVersion) = await SqlServerSchemaInstaller.ReadVersionAsync(connection, quotedSchema, cancellationToken).ConfigureAwait(false);
-        }
-
+        var (version, minimumRequiredVersion) = await SqlServerSchemaInstaller.ReadVersionAsync(connectionString, quotedSchema, cancellationToken).ConfigureAwait(false);
         if (version < SqlServerSchemaInstaller.RequiredVersion)
         {
             throw new PersistenceException(

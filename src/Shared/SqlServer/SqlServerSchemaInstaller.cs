@@ -127,11 +127,28 @@ WHEN NOT MATCHED BY TARGET THEN
     }
 
     /// <summary>
+    /// Reads the version the schema is at without changing anything, for a process that reports on the schema but does
+    /// not upgrade it.
+    /// </summary>
+    public static async Task<(int Version, int RequiredVersion, int MinimumRequiredVersion)> GetVersionAsync(string connectionString, string schema, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(connectionString);
+        var quotedSchema = SqlServerIdentifier.Quote(schema);
+
+        var (version, minimumRequiredVersion) = await ReadVersionAsync(connectionString, quotedSchema, cancellationToken).ConfigureAwait(false);
+        return (version, RequiredVersion, minimumRequiredVersion);
+    }
+
+    /// <summary>
     /// Reads the version the schema is at, zero when the <c>Versions</c> table does not exist, and the oldest required
     /// version the schema still supports.
     /// </summary>
-    public static async Task<(int Version, int MinimumRequiredVersion)> ReadVersionAsync(SqlConnection connection, string quotedSchema, CancellationToken cancellationToken)
+    public static async Task<(int Version, int MinimumRequiredVersion)> ReadVersionAsync(string connectionString, string quotedSchema, CancellationToken cancellationToken)
     {
+        using var scope = new TransactionScope(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled);
+        await using var connection = new SqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
         var applied = await ReadVersionsAsync(connection, null, quotedSchema, cancellationToken).ConfigureAwait(false);
         return (applied.Version, applied.MinimumRequiredVersion);
     }

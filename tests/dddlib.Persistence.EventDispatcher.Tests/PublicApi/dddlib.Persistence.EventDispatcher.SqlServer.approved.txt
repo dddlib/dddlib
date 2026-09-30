@@ -15,11 +15,13 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
     {
         public static System.Threading.Tasks.Task<dddlib.Persistence.EventDispatcher.SqlServer.SqlServerEventDispatcherSchemaVersion> EnsureAsync(string connectionString, string schema = "dbo", System.Threading.CancellationToken cancellationToken = default) { }
         public static string GetScript(string schema = "dbo") { }
+        public static System.Threading.Tasks.Task<dddlib.Persistence.EventDispatcher.SqlServer.SqlServerEventDispatcherSchemaVersion> GetVersionAsync(string connectionString, string schema = "dbo", System.Threading.CancellationToken cancellationToken = default) { }
     }
     public sealed class SqlServerEventDispatcherSchemaVersion : System.IEquatable<dddlib.Persistence.EventDispatcher.SqlServer.SqlServerEventDispatcherSchemaVersion>
     {
         public SqlServerEventDispatcherSchemaVersion(string Schema, int Version, int RequiredVersion, int MinimumRequiredVersion) { }
         public bool IsAhead { get; }
+        public bool IsCompatible { get; }
         public int MinimumRequiredVersion { get; init; }
         public int RequiredVersion { get; init; }
         public string Schema { get; init; }

@@ -20,4 +20,10 @@ public sealed record SqlServerEventDispatcherSchemaVersion(string Schema, int Ve
     /// process should be upgraded.
     /// </summary>
     public bool IsAhead => this.Version > this.RequiredVersion;
+
+    /// <summary>
+    /// Gets a value indicating whether this package works against the schema: the schema is at the version the package
+    /// requires or newer, and still supports a package that requires that version.
+    /// </summary>
+    public bool IsCompatible => this.Version >= this.RequiredVersion && this.RequiredVersion >= this.MinimumRequiredVersion;
 }

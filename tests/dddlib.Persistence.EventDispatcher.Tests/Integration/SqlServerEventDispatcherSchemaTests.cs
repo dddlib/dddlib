@@ -39,6 +39,23 @@ public class SqlServerEventDispatcherSchemaTests : SqlServerIntegration
     }
 
     [Test]
+    public async Task GetVersionReadsWithoutChangingAnything()
+    {
+        var schema = string.Concat("s", Guid.NewGuid().ToString("N"));
+
+        var missing = await SqlServerEventDispatcherSchema.GetVersionAsync(this.ConnectionString, schema);
+        var schemaId = await this.Database.ExecuteScalarAsync($"SELECT SCHEMA_ID(N'{schema}');");
+        var installed = await SqlServerEventDispatcherSchema.EnsureAsync(this.ConnectionString, schema);
+        var current = await SqlServerEventDispatcherSchema.GetVersionAsync(this.ConnectionString, schema);
+
+        await Assert.That(missing).IsEqualTo(new SqlServerEventDispatcherSchemaVersion(schema, 0, installed.RequiredVersion, 1));
+        await Assert.That(missing.IsCompatible).IsFalse();
+        await Assert.That(schemaId).IsNull();
+        await Assert.That(current).IsEqualTo(installed);
+        await Assert.That(current.IsCompatible).IsTrue();
+    }
+
+    [Test]
     public async Task FailsLoudlyWhenThePackageIsTooOldForTheSchema()
     {
         var schema = string.Concat("s", Guid.NewGuid().ToString("N"));

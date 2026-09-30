@@ -23,6 +23,18 @@ public static class SqlServerEventDispatcherSchema
     }
 
     /// <summary>
+    /// Reads the version of the schema without changing anything, for a startup log or a health check in a process
+    /// that does not upgrade the schema itself. A schema that is not installed is at version 0. Unlike
+    /// <see cref="EnsureAsync"/> it does not fail when this package cannot use the schema: see
+    /// <see cref="SqlServerEventDispatcherSchemaVersion.IsCompatible"/>.
+    /// </summary>
+    public static async Task<SqlServerEventDispatcherSchemaVersion> GetVersionAsync(string connectionString, string schema = "dbo", CancellationToken cancellationToken = default)
+    {
+        var (version, requiredVersion, minimumRequiredVersion) = await SqlServerSchemaInstaller.GetVersionAsync(connectionString, schema, cancellationToken).ConfigureAwait(false);
+        return new SqlServerEventDispatcherSchemaVersion(schema, version, requiredVersion, minimumRequiredVersion);
+    }
+
+    /// <summary>
     /// Gets the whole schema as one idempotent script for the schema, with batches separated by <c>GO</c>.
     /// </summary>
     public static string GetScript(string schema = "dbo") => SqlServerSchemaInstaller.GetScript(schema);
