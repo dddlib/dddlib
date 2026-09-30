@@ -31,14 +31,15 @@ internal static class SqlServerSchemaInstaller
     /// </summary>
     public static string Description { get; } = GetDescription();
 
-    public static Task EnsureAsync(string connectionString, string schema, CancellationToken cancellationToken) =>
+    public static Task<SchemaVersion> EnsureAsync(string connectionString, string schema, CancellationToken cancellationToken) =>
         EnsureAsync(connectionString, schema, Scripts, cancellationToken);
 
     /// <summary>
     /// Applies the scripts the schema is missing, in order, in one transaction under an exclusive application lock on
-    /// the schema, so concurrent callers apply each version once.
+    /// the schema, so concurrent callers apply each version once. A database already ahead of these scripts is left as
+    /// it is and reported, not refused: older code keeps working against a newer schema during a rolling upgrade.
     /// </summary>
-    public static async Task EnsureAsync(string connectionString, string schema, IReadOnlyList<SqlServerScript> scripts, CancellationToken cancellationToken)
+    public static async Task<SchemaVersion> EnsureAsync(string connectionString, string schema, IReadOnlyList<SqlServerScript> scripts, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(connectionString);
         var quotedSchema = SqlServerIdentifier.Quote(schema);
@@ -64,19 +65,6 @@ IF SCHEMA_ID(@Schema) IS NULL
 
         var applied = await ReadVersionsAsync(connection, transaction, quotedSchema, cancellationToken).ConfigureAwait(false);
         var current = applied.Count == 0 ? 0 : applied.Keys.Max();
-        if (current > scripts[^1].Version)
-        {
-            throw new PersistenceException(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    @"The SQL Server schema {0} is at version {1}, which is newer than version {2} supported by {3}.
-To fix this issue, update the dddlib packages to the version that upgraded the schema.",
-                    quotedSchema,
-                    current,
-                    scripts[^1].Version,
-                    Description));
-        }
-
         foreach (var script in scripts.Where(script => script.Version > current))
         {
             foreach (var batch in SqlServerScript.SplitBatches(script.For(schema)))
@@ -106,6 +94,14 @@ WHEN NOT MATCHED BY TARGET THEN
         }
 
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+        var version = new SchemaVersion(schema, Math.Max(current, scripts[^1].Version), scripts[^1].Version);
+        if (version.IsDatabaseAhead)
+        {
+            SqlServerSchemaCheck.OnDatabaseAhead(version);
+        }
+
+        return version;
     }
 
     /// <summary>
