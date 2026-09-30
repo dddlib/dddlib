@@ -570,7 +570,8 @@ Persistence (`tests/dddlib.Persistence.Tests`):
 - MemoryEventPersistence and SqlServerEventPersistence, each: UndefinedNaturalKey, UndefinedUnititializedFactory, NullNaturalKey,
   SaveAndLoad, SaveAndSaveAndLoad, SaveAndLoadAndSaveAndLoad, SnapshotAndLoad, SnapshotAndSaveAndLoad, SaveAndEndLifecycleAndSaveAndCreate
 - MemoryMementoPersistence: DefaultMemoryPersistence, EventsAreStoredForDispatch; SqlServerMementoPersistence: DefaultSqlServerPersistence,
-  DefaultMementoRepositoryPersistence, EventsAreStoredForDispatch, CustomStorageStoresEvents
+  DefaultMementoRepositoryPersistence, EventsAreStoredForDispatch, CustomStorageStoresEvents, CustomIdentityMap
+  (dddlib/dddlib#45: `SqlServerRepository<T>` has a second constructor taking an `IIdentityMap`)
 - Integration: MemoryEventStoreTests, SqlServerEventStoreTests, SqlServerIdentityMapTests, SqlServerNaturalKeyRepositoryTests,
   SqlServerSnapshotStoreTests, SqlServerSchemaTests (CreatesTheSchemaWithEveryObject, EnsuringTwiceChangesNothing,
   EnsuringACurrentSchemaDoesNotWaitForTheUpgradeLock, UpgradeAppliesOnlyTheMissingVersion,

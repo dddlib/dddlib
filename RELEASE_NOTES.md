@@ -15,7 +15,8 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   package (issue 43). Processes can be upgraded one at a time: a package keeps working against a newer schema until
   a script records that it no longer supports it, and `EnsureAsync` and `GetVersionAsync` return the schema version
   with `IsAhead` and `IsCompatible`. The memento repositories append the aggregate root's events to its
-  stream in the same transaction, so the event dispatcher delivers them too.
+  stream in the same transaction, so the event dispatcher delivers them too. `SqlServerRepository<T>` accepts an
+  `IIdentityMap`, for identities kept in the consumer's own tables (issue 45).
 - Test framework: helpers to inspect uncommitted events, mementos and revisions and to validate mementos.
 - Event dispatcher: `dddlib.Persistence.EventDispatcher` delivers committed events in sequence order with
   at-least-once delivery, polling the in-memory or (with `dddlib.Persistence.EventDispatcher.SqlServer`) SQL Server

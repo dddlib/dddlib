@@ -405,4 +405,196 @@ OUTPUT inserted.[State];";
             }
         }
     }
+
+    // A repository whose identities come from its own table instead of dddlib's natural keys, so that rows that
+    // already exist can be loaded without anything having written to the dddlib schema (issue 45).
+    public sealed partial class CustomIdentityMap : SqlServerMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a SQL table for the subject that holds the identity of its stream
+            await this.Database.ExecuteScriptAsync(@"CREATE TABLE [dbo].[Subjects]
+(
+    [NaturalKey] [nvarchar](450) NOT NULL,
+    [Name] [nvarchar](MAX) NULL,
+    [StreamId] [uniqueidentifier] NOT NULL,
+    [State] [varchar](36) NOT NULL,
+    CONSTRAINT [PK_Subject] PRIMARY KEY CLUSTERED ([NaturalKey])
+);");
+
+            // And a row in that table that dddlib did not save
+            var streamId = Guid.NewGuid();
+            await this.Database.ExecuteScriptAsync(
+                $"INSERT INTO [dbo].[Subjects] ([NaturalKey], [Name], [StreamId], [State]) VALUES ('key', 'first', '{streamId}', 'seeded');");
+
+            // And a repository with an identity map that reads that table
+            var repository = new SubjectRepository(this.ConnectionString, new SubjectIdentityMap(this.ConnectionString));
+
+            // When an instance is loaded from the repository
+            var instance = await repository.LoadAsync("key");
+
+            // Then it is the aggregate root in that row
+            await Assert.That(instance.NaturalKey).IsEqualTo("key");
+            await Assert.That(instance.Name).IsEqualTo("first");
+
+            // When that instance is changed and saved
+            instance.Rename("second");
+            await repository.SaveAsync(instance);
+
+            // Then its event is in the stream the row identifies, with the memento's state token
+            var stream = await new SqlServerEventStore(this.ConnectionString).GetStreamAsync(streamId, 0);
+            await Assert.That(stream.Events).Count().IsEqualTo(1);
+            await Assert.That(((SubjectRenamed)stream.Events[0]).Name).IsEqualTo("second");
+            await Assert.That(stream.State).IsEqualTo(instance.State);
+
+            // And an other instance loaded from the repository carries the change
+            var otherInstance = await repository.LoadAsync("key");
+            await Assert.That(otherInstance).IsEqualTo(instance);
+            await Assert.That(otherInstance.Name).IsEqualTo("second");
+
+            // When a new instance is saved to the repository
+            var newInstance = new Subject("new");
+            await repository.SaveAsync(newInstance);
+
+            // Then it can be loaded too
+            await Assert.That(await repository.LoadAsync("new")).IsEqualTo(newInstance);
+
+            // And the dddlib identity map has neither
+            var identityMap = new SqlServerIdentityMap(this.ConnectionString);
+            await Assert.That(await identityMap.TryGetAsync(typeof(Subject), typeof(string), "key")).IsNull();
+            await Assert.That(await identityMap.TryGetAsync(typeof(Subject), typeof(string), "new")).IsNull();
+        }
+
+        public partial class Subject : AggregateRoot
+        {
+            public Subject(string naturalKey)
+            {
+                this.Apply(new NewSubject { NaturalKey = naturalKey });
+            }
+
+            internal Subject()
+            {
+            }
+
+            public string? NaturalKey { get; private set; }
+
+            public string? Name { get; private set; }
+
+            public void Rename(string name) => this.Apply(new SubjectRenamed { Name = name });
+
+            protected override object? GetState() => new Memento { NaturalKey = this.NaturalKey, Name = this.Name };
+
+            protected override void SetState(object memento)
+            {
+                var subject = (Memento)memento;
+                this.NaturalKey = subject.NaturalKey;
+                this.Name = subject.Name;
+            }
+
+            private void Handle(NewSubject @event) => this.NaturalKey = @event.NaturalKey;
+
+            private void Handle(SubjectRenamed @event) => this.Name = @event.Name;
+
+            public sealed partial class Memento
+            {
+                public string? NaturalKey { get; set; }
+
+                public string? Name { get; set; }
+            }
+        }
+
+        public partial class NewSubject
+        {
+            public string? NaturalKey { get; set; }
+        }
+
+        public partial class SubjectRenamed
+        {
+            public string? Name { get; set; }
+        }
+
+        // Reads the identity of the stream from the subject's own row. The identity of a new subject is stored
+        // when the repository inserts its row, so there is nothing to add or remove here.
+        public sealed partial class SubjectIdentityMap(string connectionString) : IIdentityMap
+        {
+            public async Task<Guid> GetOrAddAsync(Type aggregateRootType, Type naturalKeyType, object naturalKey, CancellationToken cancellationToken = default) =>
+                await this.TryGetAsync(aggregateRootType, naturalKeyType, naturalKey, cancellationToken) ?? Guid.NewGuid();
+
+            public async Task<Guid?> TryGetAsync(Type aggregateRootType, Type naturalKeyType, object naturalKey, CancellationToken cancellationToken = default)
+            {
+                await using var connection = new SqlConnection(connectionString);
+                await using var command = connection.CreateCommand();
+                command.CommandText = "SELECT [StreamId] FROM [dbo].[Subjects] WHERE [NaturalKey] = @NaturalKey;";
+                command.Parameters.Add("@NaturalKey", SqlDbType.NVarChar, 450).Value = (string)naturalKey;
+
+                await connection.OpenAsync(cancellationToken);
+
+                return await command.ExecuteScalarAsync(cancellationToken) as Guid?;
+            }
+
+            public Task RemoveAsync(Guid identity, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        }
+
+        public sealed partial class SubjectRepository(string connectionString, IIdentityMap identityMap) : SqlServerRepository<Subject>(connectionString, identityMap)
+        {
+            protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
+            {
+                var subject = (Subject.Memento)memento;
+
+                await using var connection = new SqlConnection(this.ConnectionString);
+                await connection.OpenAsync(cancellationToken);
+                await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
+
+                await using var command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = @"MERGE [dbo].[Subjects] AS [Target]
+USING (SELECT @StreamId AS [StreamId], @NaturalKey AS [NaturalKey], @Name AS [Name], @State AS [State]) AS [Source]
+ON [Target].[StreamId] = [Source].[StreamId]
+WHEN MATCHED AND [Target].[State] = [Source].[State] THEN
+    UPDATE SET [Target].[Name] = [Source].[Name], [Target].[State] = LEFT(NEWID(), 8)
+WHEN NOT MATCHED AND [Source].[State] IS NULL THEN
+    INSERT ([NaturalKey], [Name], [StreamId], [State]) VALUES ([Source].[NaturalKey], [Source].[Name], [Source].[StreamId], LEFT(NEWID(), 8))
+OUTPUT inserted.[State];";
+                command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = id;
+                command.Parameters.Add("@NaturalKey", SqlDbType.NVarChar, 450).Value = subject.NaturalKey;
+                command.Parameters.Add("@Name", SqlDbType.NVarChar, -1).Value = (object?)subject.Name ?? DBNull.Value;
+                command.Parameters.Add("@State", SqlDbType.VarChar, 36).Value = (object?)preCommitState ?? DBNull.Value;
+
+                var state = await command.ExecuteScalarAsync(cancellationToken) as string ?? throw new ConcurrencyException("Commit state mismatch.");
+
+                await this.AppendEventsAsync(transaction, id, events, state, cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                return state;
+            }
+
+            protected override async Task<MementoResult?> LoadAsync(Guid id, CancellationToken cancellationToken)
+            {
+                await using var connection = new SqlConnection(this.ConnectionString);
+                await using var command = connection.CreateCommand();
+                command.CommandText = "SELECT [NaturalKey], [Name], [State] FROM [dbo].[Subjects] WHERE [StreamId] = @StreamId;";
+                command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = id;
+
+                await connection.OpenAsync(cancellationToken);
+                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+                return await reader.ReadAsync(cancellationToken)
+                    ? new MementoResult(
+                        new Subject.Memento { NaturalKey = reader.GetString(0), Name = await reader.IsDBNullAsync(1, cancellationToken) ? null : reader.GetString(1) },
+                        reader.GetString(2))
+                    : null;
+            }
+        }
+
+        private sealed partial class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>()
+                    .ToUseNaturalKey(subject => subject.NaturalKey)
+                    .ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
 }

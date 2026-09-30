@@ -32,6 +32,7 @@ namespace dddlib.Persistence.SqlServer
         where T : dddlib.AggregateRoot
     {
         protected SqlServerRepository(string connectionString, string schema = "dbo") { }
+        protected SqlServerRepository(string connectionString, dddlib.Persistence.Sdk.IIdentityMap identityMap, string schema = "dbo") { }
         protected string ConnectionString { get; }
         protected System.Threading.Tasks.Task AppendEventsAsync(Microsoft.Data.SqlClient.SqlTransaction transaction, System.Guid id, System.Collections.Generic.IReadOnlyList<object> events, string state, System.Threading.CancellationToken cancellationToken) { }
     }

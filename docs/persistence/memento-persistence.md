@@ -61,7 +61,7 @@ An optional second argument selects the schema (default `dbo`); see [SQL Server]
 ## Custom storage
 
 To store the state in a table shaped for the aggregate root, derive from `SqlServerRepository<T>` (which supplies
-the identity map on SQL Server) and implement the two storage methods. The pre-commit state is null for a new
+the identity map on SQL Server, unless you [pass your own](#custom-identity-map)) and implement the two storage methods. The pre-commit state is null for a new
 aggregate root; the stored state must match it or the save is a `ConcurrencyException`. The events are the
 uncommitted events of the aggregate root, possibly none. To have them dispatched, write the memento in a transaction
 and call `AppendEventsAsync` with that transaction and the new state token before committing, so that a dispatcher
@@ -97,6 +97,23 @@ public sealed class CarRepository(string connectionString)
 
 `AppendEventsAsync` calls the `AppendEvents` procedure, which takes the same locks as the event
 store's commit so that sequence numbers reflect commit order.
+
+### Custom identity map
+
+By default the repository maps natural keys to stream identities with `SqlServerIdentityMap`, which writes to the
+`NaturalKeys` table of the dddlib schema. When the identity already lives somewhere else, for example in a column of
+the aggregate root's own table, pass a `dddlib.Persistence.Sdk.IIdentityMap` to the base constructor instead:
+
+```csharp
+public sealed class CarRepository(string connectionString)
+    : dddlib.Persistence.SqlServer.SqlServerRepository<Car>(connectionString, new CarIdentityMap(connectionString))
+```
+
+`TryGetAsync` returns the identity stored for a natural key, or null. `GetOrAddAsync` is called when a new aggregate
+root is saved and returns the identity its memento is then saved under. `RemoveAsync` is called when a destroyed
+aggregate root is saved or loaded. Rows that existed before dddlib was adopted can then be loaded and saved without
+anything being written to `NaturalKeys`. The events still go to the dddlib schema, named by the optional last
+argument.
 
 ## Concurrency
 
