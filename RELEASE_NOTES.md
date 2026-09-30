@@ -6,7 +6,8 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
 
 - Core: `AggregateRoot`, `Entity`, `ValueObject<T>`, natural keys, bootstrappers, event application, mapping,
   mementos, all as in v1. Source generator and analyzers ship in the `dddlib` package. `Apply` no longer requires
-  an event to have a public parameterless constructor, so a positional record can be an event (issue 48).
+  an event to have a public parameterless constructor, so a positional record can be an event, and `ToMapToEvent`
+  takes mappings that create such an event or return a copy of it (issue 48).
 - Analyzers: DDDLIB001 to DDDLIB023 report at compile time the model mistakes that v1 reported at runtime or not at
   all, including the ones that depend on the bootstrapper (no reconstitution factory, no natural key, a mapping
   that is not configured), with code fixes for six of them (issue 2). DDDLIB023 reports an event or memento that

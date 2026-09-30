@@ -17,4 +17,12 @@ public interface IValueObjectConfigurationWrapper<T> : IFluentExtensions
     IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping);
 
     IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping, Func<TEvent, T> reverseMapping);
+
+    IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent> mapping);
+
+    IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent> mapping, Func<TEvent, T> reverseMapping);
+
+    IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent, TEvent> mapping);
+
+    IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent, TEvent> mapping, Func<TEvent, T> reverseMapping);
 }

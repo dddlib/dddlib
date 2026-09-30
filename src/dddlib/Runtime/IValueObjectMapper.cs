@@ -7,8 +7,7 @@ namespace dddlib.Runtime;
 public interface IValueObjectMapper<TValueObject> : IFluentExtensions
     where TValueObject : ValueObject<TValueObject>
 {
-    T ToEvent<T>()
-        where T : new();
+    T ToEvent<T>();
 
     T ToEvent<T>(T @event);
 }

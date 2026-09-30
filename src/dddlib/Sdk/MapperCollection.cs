@@ -7,45 +7,45 @@ namespace dddlib.Sdk;
 /// </summary>
 public sealed class MapperCollection
 {
-    private readonly Dictionary<MappingId, object> mappings = [];
+    private readonly Dictionary<Type, Delegate> mappings = [];
 
     public void AddOrUpdate<TSource, TDestination>(Func<TSource, TDestination> mapping)
     {
         ArgumentNullException.ThrowIfNull(mapping);
 
-        this.mappings[new MappingId(typeof(TSource), typeof(TDestination), IsAction: false)] = mapping;
+        this.mappings[typeof(Func<TSource, TDestination>)] = mapping;
     }
 
     public void AddOrUpdate<TSource, TDestination>(Action<TSource, TDestination> mapping)
     {
         ArgumentNullException.ThrowIfNull(mapping);
 
-        this.mappings[new MappingId(typeof(TSource), typeof(TDestination), IsAction: true)] = mapping;
+        // A destination that exists is mapped to in one way, the one configured last: changed, or returned as a copy.
+        this.mappings.Remove(typeof(Func<TSource, TDestination, TDestination>));
+        this.mappings[typeof(Action<TSource, TDestination>)] = mapping;
     }
 
-    public bool TryGet<TSource, TDestination>([NotNullWhen(true)] out Func<TSource, TDestination>? mapping)
+    public void AddOrUpdate<TSource, TDestination>(Func<TSource, TDestination, TDestination> mapping)
     {
-        if (this.mappings.TryGetValue(new MappingId(typeof(TSource), typeof(TDestination), IsAction: false), out var value))
-        {
-            mapping = (Func<TSource, TDestination>)value;
-            return true;
-        }
+        ArgumentNullException.ThrowIfNull(mapping);
 
-        mapping = null;
-        return false;
+        this.mappings.Remove(typeof(Action<TSource, TDestination>));
+        this.mappings[typeof(Func<TSource, TDestination, TDestination>)] = mapping;
     }
 
-    public bool TryGet<TSource, TDestination>([NotNullWhen(true)] out Action<TSource, TDestination>? mapping)
+    public bool TryGet<TSource, TDestination>([NotNullWhen(true)] out Func<TSource, TDestination>? mapping) =>
+        this.TryGetMapping(out mapping);
+
+    public bool TryGet<TSource, TDestination>([NotNullWhen(true)] out Action<TSource, TDestination>? mapping) =>
+        this.TryGetMapping(out mapping);
+
+    public bool TryGet<TSource, TDestination>([NotNullWhen(true)] out Func<TSource, TDestination, TDestination>? mapping) =>
+        this.TryGetMapping(out mapping);
+
+    private bool TryGetMapping<TMapping>([NotNullWhen(true)] out TMapping? mapping)
+        where TMapping : Delegate
     {
-        if (this.mappings.TryGetValue(new MappingId(typeof(TSource), typeof(TDestination), IsAction: true), out var value))
-        {
-            mapping = (Action<TSource, TDestination>)value;
-            return true;
-        }
-
-        mapping = null;
-        return false;
+        mapping = this.mappings.TryGetValue(typeof(TMapping), out var value) ? (TMapping)value : null;
+        return mapping is not null;
     }
-
-    private readonly record struct MappingId(Type Source, Type Destination, bool IsAction);
 }

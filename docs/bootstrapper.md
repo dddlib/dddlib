@@ -69,9 +69,15 @@ private void Handle(CarRegistered @event)
 Using a mapping that has not been registered throws a `RuntimeException` that names the missing mapping. The
 analyzer reports such a use at compile time (DDDLIB020).
 
-A forward mapping assigns to the properties of an event that already exists, so a mapped event needs settable
-properties, and `ToEvent<T>()` creates it with its public parameterless constructor. A positional record, whose
-properties can only be set when it is created, is an event to apply directly rather than to map to.
+The forward mapping takes one of three shapes, each with an optional reverse mapping as a second argument:
+
+| Forward mapping | Used by | For |
+|---|---|---|
+| `(registration, @event) => @event.Registration = registration.Number` | `ToEvent<T>()`, `ToEvent(@event)` | Events with settable properties. `ToEvent<T>()` creates the event with its public parameterless constructor |
+| `registration => new CarRegistered(registration.Number)` | `ToEvent<T>()` | Events created through a constructor, such as positional records |
+| `(data, @event) => @event with { Value = data.Value }` | `ToEvent(@event)` | Records the aggregate root creates and the mapping completes, by returning a copy |
+
+An event type can have a mapping that creates it and one that is given it.
 
 ## What the analyzers read from the bootstrapper
 

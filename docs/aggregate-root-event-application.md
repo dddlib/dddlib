@@ -75,8 +75,8 @@ public record CarRegistered(string Registration);
 this.Apply(new CarRegistered(registration));
 ```
 
-An event that is persisted must also be [serializable](persistence/serialization.md), and an event that a value
-object or an entity is [mapped to](bootstrapper.md#mapping) needs settable properties.
+An event that is persisted must also be [serializable](persistence/serialization.md). A value object or an entity
+can be [mapped to](bootstrapper.md#mapping) either kind of event.
 
 ## Handler Rules
 

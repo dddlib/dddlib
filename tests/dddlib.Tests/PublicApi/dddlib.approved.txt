@@ -72,14 +72,22 @@ namespace dddlib.Configuration
         where T : dddlib.Entity
     {
         dddlib.Configuration.IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Action<T, TEvent> mapping);
+        dddlib.Configuration.IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Func<T, TEvent> mapping);
+        dddlib.Configuration.IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Func<T, TEvent, TEvent> mapping);
         dddlib.Configuration.IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Action<T, TEvent> mapping, System.Func<TEvent, T> reverseMapping);
+        dddlib.Configuration.IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Func<T, TEvent> mapping, System.Func<TEvent, T> reverseMapping);
+        dddlib.Configuration.IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Func<T, TEvent, TEvent> mapping, System.Func<TEvent, T> reverseMapping);
         dddlib.Configuration.IEntityConfigurationWrapper<T> ToUseNaturalKey<TKey>(System.Linq.Expressions.Expression<System.Func<T, TKey>> naturalKeySelector);
     }
     public interface IValueObjectConfigurationWrapper<T> : dddlib.Sdk.IFluentExtensions
         where T : dddlib.ValueObject<T>
     {
         dddlib.Configuration.IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Action<T, TEvent> mapping);
+        dddlib.Configuration.IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Func<T, TEvent> mapping);
+        dddlib.Configuration.IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Func<T, TEvent, TEvent> mapping);
         dddlib.Configuration.IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Action<T, TEvent> mapping, System.Func<TEvent, T> reverseMapping);
+        dddlib.Configuration.IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Func<T, TEvent> mapping, System.Func<TEvent, T> reverseMapping);
+        dddlib.Configuration.IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(System.Func<T, TEvent, TEvent> mapping, System.Func<TEvent, T> reverseMapping);
         dddlib.Configuration.IValueObjectConfigurationWrapper<T> ToUseEqualityComparer(System.Collections.Generic.IEqualityComparer<T> equalityComparer);
         dddlib.Configuration.IValueObjectConfigurationWrapper<T> ToUseValueObjectSerializer(dddlib.Runtime.IValueObjectSerializer valueObjectSerializer);
         dddlib.Configuration.IValueObjectConfigurationWrapper<T> ToUseValueObjectSerializer(System.Func<T, string> serialize, System.Func<string, T> deserialize);
@@ -96,8 +104,7 @@ namespace dddlib.Runtime
     public interface IEntityMapper<TEntity> : dddlib.Sdk.IFluentExtensions
         where TEntity : dddlib.Entity
     {
-        T ToEvent<T>()
-            where T : new();
+        T ToEvent<T>();
         T ToEvent<T>(T @event);
     }
     public interface IEventDispatcher
@@ -123,8 +130,7 @@ namespace dddlib.Runtime
     public interface IValueObjectMapper<TValueObject> : dddlib.Sdk.IFluentExtensions
         where TValueObject : dddlib.ValueObject<TValueObject>
     {
-        T ToEvent<T>()
-            where T : new();
+        T ToEvent<T>();
         T ToEvent<T>(T @event);
     }
     public interface IValueObjectSerializer
@@ -271,8 +277,10 @@ namespace dddlib.Sdk
         public MapperCollection() { }
         public void AddOrUpdate<TSource, TDestination>(System.Action<TSource, TDestination> mapping) { }
         public void AddOrUpdate<TSource, TDestination>(System.Func<TSource, TDestination> mapping) { }
+        public void AddOrUpdate<TSource, TDestination>(System.Func<TSource, TDestination, TDestination> mapping) { }
         public bool TryGet<TSource, TDestination>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Action<TSource, TDestination>? mapping) { }
         public bool TryGet<TSource, TDestination>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Func<TSource, TDestination>? mapping) { }
+        public bool TryGet<TSource, TDestination>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Func<TSource, TDestination, TDestination>? mapping) { }
     }
     public static class TypeExtensions
     {
