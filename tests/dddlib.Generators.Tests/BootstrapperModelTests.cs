@@ -156,6 +156,34 @@ public class BootstrapperModelTests
     }
 
     [Test]
+    public async Task RecordsWhetherAMappingCreatesTheEventOrIsGivenIt()
+    {
+        var (model, compilation) = Bootstrap("""
+            configure.Entity<Line>().ToMapToEvent<LineAdded>(line => new LineAdded());
+            configure.ValueObject<Money>().ToMapToEvent<MoneyChanged>((money, @event) => @event, @event => new Money());
+            configure.ValueObject<Money>().ToMapToEvent<LineAdded>((money, @event) => { });
+            configure.ValueObject<Money>().ToMapToEvent<LineAdded>(money => new LineAdded(), @event => new Money());
+            """);
+
+        var line = model.GetConfiguration(Type(compilation, "Line"));
+        var money = model.GetConfiguration(Type(compilation, "Money"));
+        var lineAdded = Type(compilation, "LineAdded");
+        var moneyChanged = Type(compilation, "MoneyChanged");
+
+        await Assert.That(model.IsKnown).IsTrue();
+        await Assert.That(line.MapsToEvent(lineAdded)).IsTrue();
+        await Assert.That(line.MapsToNewEvent(lineAdded)).IsTrue();
+        await Assert.That(line.MapsToExistingEvent(lineAdded)).IsFalse();
+        await Assert.That(line.MapsFromEvent(lineAdded)).IsFalse();
+        await Assert.That(money.MapsToNewEvent(moneyChanged)).IsFalse();
+        await Assert.That(money.MapsToExistingEvent(moneyChanged)).IsTrue();
+        await Assert.That(money.MapsFromEvent(moneyChanged)).IsTrue();
+        await Assert.That(money.MapsToNewEvent(lineAdded)).IsTrue();
+        await Assert.That(money.MapsToExistingEvent(lineAdded)).IsTrue();
+        await Assert.That(money.MapsFromEvent(lineAdded)).IsTrue();
+    }
+
+    [Test]
     public async Task MergesEveryChainForTheSameType()
     {
         var (model, compilation) = Bootstrap("""

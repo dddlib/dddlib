@@ -17,6 +17,7 @@ public sealed class BootstrapperAnalyzer : DiagnosticAnalyzer
         DiagnosticDescriptors.MultipleBootstrappers,
         DiagnosticDescriptors.BootstrapperWithoutDefaultConstructor,
         DiagnosticDescriptors.MappingNotConfigured,
+        DiagnosticDescriptors.MappingDoesNotFit,
         DiagnosticDescriptors.ConflictingNaturalKeySelector,
         DiagnosticDescriptors.InvalidNaturalKeySelector);
 
@@ -141,19 +142,50 @@ public sealed class BootstrapperAnalyzer : DiagnosticAnalyzer
         }
 
         // The mapping is looked up by the runtime type of what Map is given, which may derive from the type seen here.
-        var isConfigured = model.Value.Configurations.Any(configuration =>
-            (isReverse ? SymbolEqualityComparer.Default.Equals(configuration.Key, mapped) : configuration.Key.IsOrDerivesFrom(mapped)) &&
-            configuration.Value.EventMappings.Any(mapping =>
-                isReverse ? mapping.Value && mapping.Key.IsOrDerivesFrom(@event) : SymbolEqualityComparer.Default.Equals(mapping.Key, @event)));
+        var configured = model.Value.Configurations
+            .Where(configuration => isReverse ? SymbolEqualityComparer.Default.Equals(configuration.Key, mapped) : configuration.Key.IsOrDerivesFrom(mapped))
+            .SelectMany(static configuration => configuration.Value.EventMappings)
+            .Where(mapping => isReverse
+                ? (mapping.Value & EventMappingKinds.Reverse) != 0 && mapping.Key.IsOrDerivesFrom(@event)
+                : SymbolEqualityComparer.Default.Equals(mapping.Key, @event))
+            .Aggregate(EventMappingKinds.None, static (kinds, mapping) => kinds | mapping.Value);
 
-        if (!isConfigured)
+        var eventName = @event.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+
+        if (configured == EventMappingKinds.None)
         {
             context.ReportDiagnostic(Diagnostic.Create(
                 DiagnosticDescriptors.MappingNotConfigured,
                 invocation.Syntax.GetLocation(),
                 (isReverse ? @event : mapped).ToDisplayString(),
                 (isReverse ? mapped : @event).ToDisplayString(),
-                $"ToMapToEvent<{@event.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)}> for '{mapped.ToDisplayString()}'{(isReverse ? " with a reverse mapping" : string.Empty)}"));
+                $"ToMapToEvent<{eventName}> for '{mapped.ToDisplayString()}'{(isReverse ? " with a reverse mapping" : string.Empty)}"));
         }
+        else if (!isReverse)
+        {
+            // ToEvent<T>() needs a mapping that creates the event, or an event it can create for a mapping that is
+            // given one. ToEvent(@event) needs a mapping that is given the event.
+            if (method.Parameters.Length == 0)
+            {
+                if ((configured & EventMappingKinds.NewEvent) == 0 && !((INamedTypeSymbol)@event).HasPublicParameterlessConstructor())
+                {
+                    Report("does not create the event, which has no public parameterless constructor", "creates the event");
+                }
+            }
+            else if ((configured & EventMappingKinds.ExistingEvent) == 0)
+            {
+                Report("creates the event and cannot map to one that exists", "takes the event");
+            }
+        }
+
+        void Report(string problem, string needed) =>
+            context.ReportDiagnostic(Diagnostic.Create(
+                DiagnosticDescriptors.MappingDoesNotFit,
+                invocation.Syntax.GetLocation(),
+                mapped.ToDisplayString(),
+                @event.ToDisplayString(),
+                problem,
+                eventName,
+                needed));
     }
 }

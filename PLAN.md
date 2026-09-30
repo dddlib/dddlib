@@ -457,6 +457,13 @@ none public), and a constructor parameter that no property matches. While `Apply
 not happen to an applied event; mementos never had that guard. Reported at the type, not for abstract types, and like
 DDDLIB012 only for types declared in the compilation.
 
+Also for dddlib/dddlib#48: DDDLIB024 (warning, `BootstrapperAnalyzer`), a mapping that does not fit how `Map` uses
+it. `BootstrapperModel` records per event whether the `ToMapToEvent` calls create the event (a forward mapping with
+one parameter), are given it (two parameters) and have a reverse mapping (`EventMappingKinds`). Reported for
+`ToEvent<T>()` when no mapping creates the event and it has no public parameterless constructor, which the `new()`
+constraint used to catch, and for `ToEvent(@event)` when the only mapping creates the event. DDDLIB020 stays the rule
+for no mapping at all.
+
 Considered and left out: a handler whose event is never applied (events arrive from subclasses and mappings, so it
 is noisy), publicly settable value object properties (a shape the serialization docs sanction), a public bootstrapper
 (only a recommendation), and reporting DDDLIB015 for entities.

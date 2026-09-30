@@ -77,13 +77,14 @@ The forward mapping takes one of three shapes, each with an optional reverse map
 | `registration => new CarRegistered(registration.Number)` | `ToEvent<T>()` | Events created through a constructor, such as positional records |
 | `(data, @event) => @event with { Value = data.Value }` | `ToEvent(@event)` | Records the aggregate root creates and the mapping completes, by returning a copy |
 
-An event type can have a mapping that creates it and one that is given it.
+An event type can have a mapping that creates it and one that is given it. Using `ToEvent` in a way the configured
+mapping does not support throws a `RuntimeException`, which the analyzer also reports at compile time (DDDLIB024).
 
 ## What the analyzers read from the bootstrapper
 
 Several diagnostics depend on what the bootstrapper configures: a missing reconstitution factory (DDDLIB014), a
-missing natural key (DDDLIB015), a natural key that does not round-trip (DDDLIB017), a missing mapping (DDDLIB020),
-and the value object rules that a custom comparer switches off (DDDLIB004, DDDLIB019). The analyzers read the body of
+missing natural key (DDDLIB015), a natural key that does not round-trip (DDDLIB017), a missing or unsuitable mapping
+(DDDLIB020, DDDLIB024), and the value object rules that a custom comparer switches off (DDDLIB004, DDDLIB019). The analyzers read the body of
 the `Bootstrap` method to find out, and understand exactly one shape: statements that start at the `configure`
 parameter and chain the configuration methods, as in every example on this page.
 

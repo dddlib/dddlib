@@ -41,6 +41,40 @@ public class BootstrapperAnalyzerTests
 
         """;
 
+    // the same model with positional records for events, which have no parameterless constructor and no setters
+    private const string RecordModel = """
+        using dddlib;
+        using dddlib.Configuration;
+
+        public partial class Order : AggregateRoot
+        {
+            [NaturalKey] public string? Id { get; set; }
+
+            public void Add(Line line) => this.Apply(this.Map.Entity(line).ToEvent<LineAdded>());
+
+            public void Price(Money money) => this.Apply(this.Map.ValueObject(money).ToEvent(new Priced(this.Id!)));
+
+            private void Handle(LineAdded @event) => _ = this.Map.Event(@event).ToEntity<Line>();
+
+            private void Handle(Priced @event) => _ = this.Map.Event(@event).ToValueObject<Money>();
+        }
+
+        public partial class Line : Entity
+        {
+            public string? Sku { get; set; }
+        }
+
+        public partial class Money : ValueObject<Money>
+        {
+            public decimal Amount { get; set; }
+        }
+
+        public record LineAdded(string? Sku);
+
+        public record Priced(string OrderId, decimal Amount = 0);
+
+        """;
+
     [Test]
     public async Task ReportsMappingsTheBootstrapperDoesNotConfigure()
     {
@@ -122,6 +156,45 @@ public class BootstrapperAnalyzerTests
             """);
 
         await Assert.That(diagnostics).IsEmpty();
+    }
+
+    [Test]
+    public async Task DoesNotReportMappingsThatCreateOrCopyAPositionalRecord()
+    {
+        var diagnostics = await AnalyzeAsync(RecordModel + """
+            internal sealed class Bootstrapper : IBootstrapper
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.Entity<Line>().ToMapToEvent<LineAdded>(line => new LineAdded(line.Sku), @event => new Line());
+                    configure.ValueObject<Money>().ToMapToEvent<Priced>((money, @event) => @event with { Amount = money.Amount }, @event => new Money());
+                }
+            }
+            """);
+
+        await Assert.That(diagnostics).IsEmpty();
+    }
+
+    [Test]
+    public async Task ReportsMappingsThatDoNotFitHowTheyAreUsed()
+    {
+        var diagnostics = await AnalyzeAsync(RecordModel + """
+            internal sealed class Bootstrapper : IBootstrapper
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.Entity<Line>().ToMapToEvent<LineAdded>((line, @event) => @event with { Sku = line.Sku }, @event => new Line());
+                    configure.ValueObject<Money>().ToMapToEvent<Priced>(money => new Priced("order", money.Amount), @event => new Money());
+                }
+            }
+            """);
+
+        var messages = diagnostics.Where(static d => d.Id == "DDDLIB024").Select(static d => d.GetMessage(CultureInfo.InvariantCulture)).ToList();
+
+        await Assert.That(diagnostics).Count().IsEqualTo(2);
+        await Assert.That(diagnostics.All(static d => d.Severity == DiagnosticSeverity.Warning)).IsTrue();
+        await Assert.That(messages.Count(static m => m.StartsWith("The mapping from 'Line' to 'LineAdded' does not create the event, which has no public parameterless constructor", StringComparison.Ordinal) && m.Contains("ToMapToEvent<LineAdded> with a mapping that creates the event", StringComparison.Ordinal))).IsEqualTo(1);
+        await Assert.That(messages.Count(static m => m.StartsWith("The mapping from 'Money' to 'Priced' creates the event and cannot map to one that exists", StringComparison.Ordinal) && m.Contains("ToMapToEvent<Priced> with a mapping that takes the event", StringComparison.Ordinal))).IsEqualTo(1);
     }
 
     [Test]
