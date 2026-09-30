@@ -423,11 +423,11 @@ Done 2026-09-29, in three commits, each green:
    split on `GO` lines; `GO <count>` is rejected.
 3. Fail loudly when behind: `SqlServerSchemaCheck` reads the version once per connection string and schema before
    the first command of every SQL Server class and caches only a current schema.
-4. Rolling upgrades (2026-09-30): a database ahead of the code warns instead of failing, so a process on older code
-   keeps working after a newer one upgrades the schema. `EnsureAsync` returns a version record and each package has
-   a `DatabaseAhead` event; the record and event args are defined in each SQL Server package
-   (`SqlServerSchemaVersion`, `SqlServerEventDispatcherSchemaVersion`), not in dddlib.Persistence, whose API has no
-   SQL Server concepts.
+4. Rolling upgrades (2026-09-30): a database ahead of the code is accepted instead of failing, so a process on older
+   code keeps working after a newer one upgrades the schema. `EnsureAsync` returns a version record
+   (`SqlServerSchemaVersion`, `SqlServerEventDispatcherSchemaVersion`, one per SQL Server package, not in
+   dddlib.Persistence, whose API has no SQL Server concepts) with `IsDatabaseAhead`; the caller decides whether to
+   warn. There is no event: everything is evaluated from the returned version.
 
 Superseded from the issue: "only what is used". The whole schema is one series, so installing the dispatcher
 installs the event store.
@@ -518,7 +518,7 @@ Persistence (`tests/dddlib.Persistence.Tests`):
 - Integration: MemoryEventStoreTests, SqlServerEventStoreTests, SqlServerIdentityMapTests, SqlServerNaturalKeyRepositoryTests,
   SqlServerSnapshotStoreTests, SqlServerSchemaTests (CreatesTheSchemaWithEveryObject, EnsuringTwiceChangesNothing,
   UpgradeAppliesOnlyTheMissingVersion, FailedUpgradeRollsBackEntirely, FailedInstallLeavesNoSchema,
-  ConcurrentCallersApplyEachVersionOnce, WarnsWhenTheDatabaseIsAheadOfTheCode,
+  ConcurrentCallersApplyEachVersionOnce, ReportsWhenTheDatabaseIsAheadOfTheCode,
   OlderCodeKeepsWorkingAfterNewerCodeUpgrades, AdoptsAScriptRunByHand,
   GetScriptInstallsTheSchema, FailsLoudlyWhenTheSchemaIsBehind, FailsLoudlyWhenTheVersionIsMissing,
   RejectsAnInvalidSchemaName)
@@ -567,8 +567,8 @@ has a public home for `docs/`.
 - Released SQL Server schema scripts never change. Any schema change is a new `dddlibNN.sql` in `src/Shared/SqlServer/Scripts`
   that ends by recording its own version, like `dddlib01.sql`.
 - Code must keep working against a database ahead of it (rolling upgrades: a process on version N runs against a
-  database a newer process upgraded to N+1). Code ahead of the database throws; a database ahead of the code warns
-  through `DatabaseAhead`. So every script is expand-then-contract: only additive changes (new tables, nullable or
-  defaulted columns, indexes, new procedures); never change the parameters or result columns of a procedure older
-  code calls, or rename or drop what it uses, in the same version that stops using it. See
-  docs/persistence/sql-server.md, *Rolling upgrades*.
+  database a newer process upgraded to N+1). Code ahead of the database throws; a database ahead of the code is
+  reported by `EnsureAsync` through `IsDatabaseAhead` on the returned version. So every script is
+  expand-then-contract: only additive changes (new tables, nullable or defaulted columns, indexes, new procedures);
+  never change the parameters or result columns of a procedure older code calls, or rename or drop what it uses, in
+  the same version that stops using it. See docs/persistence/sql-server.md, *Rolling upgrades*.

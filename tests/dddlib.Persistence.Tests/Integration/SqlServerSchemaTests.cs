@@ -94,41 +94,18 @@ public class SqlServerSchemaTests : SqlServerIntegration
     }
 
     [Test]
-    public async Task WarnsWhenTheDatabaseIsAheadOfTheCode()
+    public async Task ReportsWhenTheDatabaseIsAheadOfTheCode()
     {
         var schema = NewSchema();
-        var warnings = new List<SqlServerSchemaVersion>();
-        void OnDatabaseAhead(object? sender, SqlServerSchemaVersionEventArgs e)
-        {
-            if (e.Version.Schema == schema)
-            {
-                lock (warnings)
-                {
-                    warnings.Add(e.Version);
-                }
-            }
-        }
-
         await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
         await this.Database.ExecuteScriptAsync($"INSERT INTO [{schema}].[Versions] ([Version]) VALUES (99);");
 
-        SqlServerSchema.DatabaseAhead += OnDatabaseAhead;
-        try
-        {
-            var version = await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
-            var eventStore = new SqlServerEventStore(this.ConnectionString, schema);
-            await eventStore.GetStreamAsync(Guid.NewGuid(), 0);
-            await eventStore.GetStreamAsync(Guid.NewGuid(), 0);
+        var version = await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
+        var stream = await new SqlServerEventStore(this.ConnectionString, schema).GetStreamAsync(Guid.NewGuid(), 0);
 
-            await Assert.That(version).IsEqualTo(new SqlServerSchemaVersion(schema, 99, 1));
-            await Assert.That(version.IsDatabaseAhead).IsTrue();
-            await Assert.That(warnings).IsEquivalentTo(new[] { version, version });
-        }
-        finally
-        {
-            SqlServerSchema.DatabaseAhead -= OnDatabaseAhead;
-        }
-
+        await Assert.That(version).IsEqualTo(new SqlServerSchemaVersion(schema, 99, 1));
+        await Assert.That(version.IsDatabaseAhead).IsTrue();
+        await Assert.That(stream.Events).IsEmpty();
         await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(2);
     }
 

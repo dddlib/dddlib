@@ -63,24 +63,28 @@ against it, and can restart on version 2 and call `EnsureAsync` again:
 | Code | Database | Result |
 |---|---|---|
 | same as the database | | works |
-| behind the database | ahead | works, and warns |
+| behind the database | ahead | works; `EnsureAsync` reports it |
 | ahead of the database | behind | fails |
 
 Before its first command, each SQL Server class reads the schema version once per connection string and schema. If
 the schema is older than the package requires, or has no `Versions` table, the call fails with a
 `PersistenceException` naming the versions and how to fix it, rather than with a SQL error about a missing procedure.
 
-If the database is newer than the package, `EnsureAsync` applies nothing and returns a `SqlServerSchemaVersion` with
-`IsDatabaseAhead` set, and the `SqlServerSchema.DatabaseAhead` event is raised, by `EnsureAsync` and by the first
-command per connection string and schema. dddlib has no logging dependency; subscribe and log it:
+If the database is newer than the package, the SQL Server classes work as normal and `EnsureAsync` applies nothing.
+It returns a `SqlServerSchemaVersion` (`Schema`, `DatabaseVersion`, `CodeVersion`, `IsDatabaseAhead`), so the caller
+decides what to do, for example log a warning that this process should be upgraded:
 
 ```csharp
-SqlServerSchema.DatabaseAhead += (_, e) => logger.LogWarning(
-    "Schema {Schema} is at version {DatabaseVersion}; this process is at {CodeVersion} and should be upgraded.",
-    e.Version.Schema, e.Version.DatabaseVersion, e.Version.CodeVersion);
+var version = await SqlServerSchema.EnsureAsync(connectionString, "dddlib", cancellationToken);
+if (version.IsDatabaseAhead)
+{
+    logger.LogWarning(
+        "Schema {Schema} is at version {DatabaseVersion}; this process is at {CodeVersion} and should be upgraded.",
+        version.Schema, version.DatabaseVersion, version.CodeVersion);
+}
 ```
 
-`SqlServerEventDispatcherSchema` has the same `EnsureAsync` result and `DatabaseAhead` event with its own types.
+`SqlServerEventDispatcherSchema.EnsureAsync` returns the same information as a `SqlServerEventDispatcherSchemaVersion`.
 
 This only holds because every script is written expand-then-contract: script N+1 must keep code N working.
 

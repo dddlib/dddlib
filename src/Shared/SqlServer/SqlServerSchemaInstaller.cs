@@ -95,11 +95,6 @@ WHEN NOT MATCHED BY TARGET THEN
 
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 
-        if (current > scripts[^1].Version)
-        {
-            SqlServerSchemaCheck.OnDatabaseAhead(schema, current, scripts[^1].Version);
-        }
-
         return (Math.Max(current, scripts[^1].Version), scripts[^1].Version);
     }
 

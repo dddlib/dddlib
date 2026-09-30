@@ -37,7 +37,6 @@ namespace dddlib.Persistence.SqlServer
     }
     public static class SqlServerSchema
     {
-        public static event System.EventHandler<dddlib.Persistence.SqlServer.SqlServerSchemaVersionEventArgs>? DatabaseAhead;
         public static System.Threading.Tasks.Task<dddlib.Persistence.SqlServer.SqlServerSchemaVersion> EnsureAsync(string connectionString, string schema = "dbo", System.Threading.CancellationToken cancellationToken = default) { }
         public static string GetScript(string schema = "dbo") { }
     }
@@ -48,11 +47,6 @@ namespace dddlib.Persistence.SqlServer
         public int DatabaseVersion { get; init; }
         public bool IsDatabaseAhead { get; }
         public string Schema { get; init; }
-    }
-    public sealed class SqlServerSchemaVersionEventArgs : System.EventArgs
-    {
-        public SqlServerSchemaVersionEventArgs(dddlib.Persistence.SqlServer.SqlServerSchemaVersion version) { }
-        public dddlib.Persistence.SqlServer.SqlServerSchemaVersion Version { get; }
     }
     public sealed class SqlServerSnapshotStore : dddlib.Persistence.Sdk.ISnapshotStore
     {

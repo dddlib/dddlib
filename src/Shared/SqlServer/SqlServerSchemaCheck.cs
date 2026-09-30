@@ -7,22 +7,13 @@ namespace dddlib.Persistence.SqlServer;
 
 /// <summary>
 /// Fails loudly when the schema is older than this assembly requires, instead of with a SQL error about a missing
-/// object, and warns through <see cref="DatabaseAhead"/> when it is newer, which is supported so that older code keeps
-/// working during a rolling upgrade. The version is read once per connection string and schema; only a schema that is
-/// current or newer is remembered, so a process recovers without a restart once the schema has been upgraded.
+/// object. A newer schema is accepted, so that older code keeps working during a rolling upgrade. The version is read
+/// once per connection string and schema; only a schema that is current or newer is remembered, so a process recovers
+/// without a restart once the schema has been upgraded.
 /// </summary>
 internal static class SqlServerSchemaCheck
 {
     private static readonly ConcurrentDictionary<(string ConnectionString, string Schema), bool> CurrentSchemas = new();
-
-    /// <summary>
-    /// Raised with the schema, the database version and the code version when a database is found to be ahead of this
-    /// assembly: by the first command against it per connection string and schema, and by every <c>EnsureAsync</c>. Each
-    /// package's public schema class turns it into its own public event.
-    /// </summary>
-    public static event Action<string, int, int>? DatabaseAhead;
-
-    public static void OnDatabaseAhead(string schema, int databaseVersion, int codeVersion) => DatabaseAhead?.Invoke(schema, databaseVersion, codeVersion);
 
     public static ValueTask EnsureCurrentAsync(string connectionString, string quotedSchema, CancellationToken cancellationToken) =>
         CurrentSchemas.ContainsKey((connectionString, quotedSchema))
@@ -55,9 +46,6 @@ Further information: https://github.com/dddlib/dddlib/blob/main/docs/persistence
                     SqlServerSchemaInstaller.RequiredVersion));
         }
 
-        if (CurrentSchemas.TryAdd((connectionString, quotedSchema), true) && version > SqlServerSchemaInstaller.RequiredVersion)
-        {
-            OnDatabaseAhead(quotedSchema[1..^1], version, SqlServerSchemaInstaller.RequiredVersion);
-        }
+        CurrentSchemas.TryAdd((connectionString, quotedSchema), true);
     }
 }
