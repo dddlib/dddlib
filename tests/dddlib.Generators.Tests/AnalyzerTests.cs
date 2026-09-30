@@ -65,6 +65,8 @@ public class AnalyzerTests
 
             public partial class Subject : AggregateRoot
             {
+                [NaturalKey] public string? Id { get; set; }
+
                 private void Handle(Changed @event) { }
                 private void Handle(IChanged @event) { }
                 private void Handle(Renamed @event) { }

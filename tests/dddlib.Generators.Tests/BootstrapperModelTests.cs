@@ -235,9 +235,23 @@ public class BootstrapperModelTests
     }
 
     [Test]
-    public async Task IsUnknownWithoutABootstrapper()
+    public async Task IsKnownAndConfiguresNothingWithoutABootstrapper()
     {
-        var (model, _) = Compile(string.Empty);
+        var (model, compilation) = Compile(string.Empty);
+
+        await Assert.That(model.IsKnown).IsTrue();
+        await Assert.That(model.GetConfiguration(Type(compilation, "Order")).HasReconstitutionFactory).IsFalse();
+    }
+
+    [Test]
+    public async Task IsUnknownWithoutABootstrapperWhenAMethodTakesTheConfiguration()
+    {
+        var (model, _) = Compile("""
+            internal sealed class OrderConfiguration
+            {
+                public void Bootstrap(IConfiguration configure) => configure.AggregateRoot<Order>().ToReconstituteUsing(() => new Order());
+            }
+            """);
 
         await Assert.That(model.IsKnown).IsFalse();
     }
@@ -308,10 +322,14 @@ public class BootstrapperModelTests
     [Test]
     public async Task UnknownConfiguresNothing()
     {
-        var (model, compilation) = Compile(string.Empty);
+        var (model, compilation) = Bootstrap("""
+            var copy = configure;
+            copy.AggregateRoot<Order>().ToReconstituteUsing(() => new Order());
+            """);
 
         var order = model.GetConfiguration(Type(compilation, "Order"));
 
+        await Assert.That(model.IsKnown).IsFalse();
         await Assert.That(order.HasReconstitutionFactory).IsFalse();
         await Assert.That(order.NaturalKeys.Length).IsEqualTo(0);
     }

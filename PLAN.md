@@ -316,7 +316,9 @@ Constraints that shape the work:
   `dddlib.csproj` packs both DLLs.
 - `TreatWarningsAsErrors` is on repo-wide and every test project references the generator as an analyzer, so a new
   rule that fires on the test models fails the build. Each rule lands only when the whole solution builds; a hit in
-  a test model is either a test model fix or a false positive to fix in the rule, never a suppression.
+  a test model is either a test model fix or a false positive to fix in the rule, never a suppression. The exception,
+  as for DDDLIB001 and DDDLIB004 before: code that breaks a rule on purpose carries a scoped `#pragma` with the reason
+  (the double-dispatch probe in the shared `Vehicle`, the benchmark subjects that must not record events).
 - Every rule keeps the existing style: `DiagnosticDescriptors` entry with a `helpLinkUri` into `docs/`, a row in
   `AnalyzerReleases.Unshipped.md`, a row in the table in `docs/source-generator.md`, a sentence on the feature page
   it relates to, and a red and a green test in `tests/dddlib.Generators.Tests`.
@@ -329,13 +331,16 @@ Constraints that shape the work:
    `configure.Entity<T>()` or `configure.ValueObject<T>()` yields, per `T`, the set of `ToReconstituteUsing`,
    `ToUseNaturalKey` (with the selected property symbol when the lambda body is a member access, otherwise a marker),
    `ToUseEqualityComparer`, `ToUseValueObjectSerializer` and `ToMapToEvent<TEvent>` (with a flag for the reverse
-   mapping overload) calls. The model is `Unknown` when there is no bootstrapper, more than one, the `configure`
+   mapping overload) calls. The model is `Unknown` when there is more than one bootstrapper, the `configure`
    parameter is used anywhere other than as the receiver of one of those three methods (helpers, loops, assignments),
    a wrapper leaves its chain (stored in a variable, passed on), or any other method in the compilation takes an
    `IConfiguration`. The last was added while implementing: a custom `IBootstrapperProvider` can hand the
    configuration to classes that are not the bootstrapper, as the nested `IBootstrap<T>` classes of the feature
    scenarios do, and the single `IBootstrapper` of dddlib.Tests would otherwise make every such scenario look
-   unconfigured.
+   unconfigured. With that trigger in place, an assembly with no bootstrapper is known to configure nothing (changed
+   in 7.2 from the original plan, which made it `Unknown`): the default provider only looks in the type's own
+   assembly, and otherwise DDDLIB014 and DDDLIB015 would stay silent for exactly the model that has no bootstrapper
+   yet.
    Bootstrapper-aware rules do not report against an `Unknown` model. Exposed through a `Lazy<BootstrapperModel>`
    (`BootstrapperModel.GetLazy`, one per compilation) shared by all analyzers, since symbol actions run concurrently.
    The generator's pipeline record that had the name is now `BootstrapperRegistration`.

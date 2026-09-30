@@ -18,5 +18,7 @@ DDDLIB010 | dddlib | Warning | Event handler applies an event
 DDDLIB011 | dddlib | Warning | Event handler throws
 DDDLIB012 | dddlib | Warning | Property is saved but never loaded
 DDDLIB013 | dddlib | Warning | Aggregate root overrides only one of GetState and SetState
+DDDLIB014 | dddlib | Warning | Aggregate root cannot be reconstituted
+DDDLIB015 | dddlib | Warning | Aggregate root has no natural key
 DDDLIB016 | dddlib | Error | Natural key attribute has no effect
 DDDLIB018 | dddlib | Error | Value object does not derive from ValueObject of itself

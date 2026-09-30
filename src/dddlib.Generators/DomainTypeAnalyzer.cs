@@ -17,6 +17,8 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
         DiagnosticDescriptors.ValueObjectWithoutProperties,
         DiagnosticDescriptors.AbstractEventHandler,
         DiagnosticDescriptors.IncompleteMemento,
+        DiagnosticDescriptors.NoReconstitutionFactory,
+        DiagnosticDescriptors.NoNaturalKey,
         DiagnosticDescriptors.IgnoredNaturalKey,
         DiagnosticDescriptors.ValueObjectOfAnotherType,
         DiagnosticDescriptors.TypeShouldBePartial);
@@ -29,13 +31,15 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
         {
             if (KnownSymbols.Create(startContext.Compilation) is { } known)
             {
-                startContext.RegisterSymbolAction(symbolContext => Analyze(symbolContext, known), SymbolKind.NamedType);
+                var bootstrapper = BootstrapperModel.GetLazy(startContext.Compilation, known);
+
+                startContext.RegisterSymbolAction(symbolContext => Analyze(symbolContext, known, bootstrapper), SymbolKind.NamedType);
                 startContext.RegisterSymbolAction(symbolContext => AnalyzeProperty(symbolContext, known), SymbolKind.Property);
             }
         });
     }
 
-    private static void Analyze(SymbolAnalysisContext context, KnownSymbols known)
+    private static void Analyze(SymbolAnalysisContext context, KnownSymbols known, Lazy<BootstrapperModel> bootstrapper)
     {
         var type = (INamedTypeSymbol)context.Symbol;
         var kind = known.GetDomainTypeKind(type);
@@ -94,6 +98,19 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
                     getState is null ? known.GetState.Name : known.SetState.Name,
                     getState is null ? "saved" : "loaded"));
             }
+
+            if (!type.IsGenericType &&
+                !type.InstanceConstructors.Any(static constructor => constructor.Parameters.Length == 0) &&
+                bootstrapper.Value.IsKnown &&
+                !bootstrapper.Value.GetConfiguration(type).HasReconstitutionFactory)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.NoReconstitutionFactory, location, type.ToDisplayString()));
+            }
+
+            if (!type.IsGenericType && !HasNaturalKey(type, known, bootstrapper))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.NoNaturalKey, location, type.ToDisplayString()));
+            }
         }
 
         if (kind == DomainTypeKind.ValueObject &&
@@ -108,7 +125,10 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
                 valueObject.TypeArguments[0].ToDisplayString()));
         }
 
-        if (kind == DomainTypeKind.ValueObject && !type.IsAbstract && !known.GetValueObjectProperties(type).Any())
+        if (kind == DomainTypeKind.ValueObject &&
+            !type.IsAbstract &&
+            !known.GetValueObjectProperties(type).Any() &&
+            !(bootstrapper.Value.IsKnown && bootstrapper.Value.GetConfiguration(type).HasEqualityComparer))
         {
             context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.ValueObjectWithoutProperties, location, type.ToDisplayString()));
         }
@@ -117,6 +137,36 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
         {
             context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.TypeShouldBePartial, location, type.Name));
         }
+    }
+
+    /// <summary>
+    /// Whether the aggregate root has, or may have, a natural key: an attribute anywhere in its hierarchy, or a
+    /// selector in the bootstrapper, which cannot be ruled out when the bootstrapper model is unknown.
+    /// </summary>
+    private static bool HasNaturalKey(INamedTypeSymbol type, KnownSymbols known, Lazy<BootstrapperModel> bootstrapper)
+    {
+        for (var current = type; current is not null && !SymbolEqualityComparer.Default.Equals(current, known.Entity); current = current.BaseType)
+        {
+            if (known.GetDeclaredNaturalKeyProperties(current).Any())
+            {
+                return true;
+            }
+        }
+
+        if (!bootstrapper.Value.IsKnown)
+        {
+            return true;
+        }
+
+        for (var current = type; current is not null && !SymbolEqualityComparer.Default.Equals(current, known.Entity); current = current.BaseType)
+        {
+            if (!bootstrapper.Value.GetConfiguration(current).NaturalKeys.IsEmpty)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void AnalyzeProperty(SymbolAnalysisContext context, KnownSymbols known)

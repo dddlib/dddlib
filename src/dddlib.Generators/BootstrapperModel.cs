@@ -8,8 +8,9 @@ namespace dddlib.Generators;
 /// <summary>
 /// What the assembly's bootstrapper configures, read from the body of its <c>Bootstrap</c> method: every fluent chain
 /// rooted at <c>configure.AggregateRoot&lt;T&gt;()</c>, <c>configure.Entity&lt;T&gt;()</c> or
-/// <c>configure.ValueObject&lt;T&gt;()</c>. The model is <see cref="Unknown"/> when configuration may happen somewhere
-/// the analyzer cannot follow; rules that depend on the bootstrapper must not report against an unknown model.
+/// <c>configure.ValueObject&lt;T&gt;()</c>. An assembly without a bootstrapper configures nothing, and that is known.
+/// The model is <see cref="Unknown"/> when configuration may happen somewhere the analyzer cannot follow; rules that
+/// depend on the bootstrapper must not report against an unknown model.
 /// </summary>
 internal sealed class BootstrapperModel
 {
@@ -55,14 +56,21 @@ internal sealed class BootstrapperModel
                 method.Parameters.Any(parameter => SymbolEqualityComparer.Default.Equals(parameter.Type, known.Configuration))));
         }
 
-        if (bootstrapper?.FindImplementationForInterfaceMember(known.Bootstrap) is not IMethodSymbol bootstrap)
-        {
-            return Unknown;
-        }
+        var bootstrap = bootstrapper?.FindImplementationForInterfaceMember(known.Bootstrap) as IMethodSymbol;
 
         // Any other method that takes the configuration may be configuring types too: a helper of the bootstrapper, or
         // a class that a custom bootstrapper provider calls.
         if (configurationMethods.Any(method => !SymbolEqualityComparer.Default.Equals(method, bootstrap)))
+        {
+            return Unknown;
+        }
+
+        if (bootstrapper is null)
+        {
+            return new BootstrapperModel(isKnown: true, new Dictionary<INamedTypeSymbol, BootstrapperTypeConfiguration>(SymbolEqualityComparer.Default));
+        }
+
+        if (bootstrap is null)
         {
             return Unknown;
         }

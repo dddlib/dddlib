@@ -9,6 +9,8 @@ internal static class DiagnosticDescriptors
     private const string WikiEventApplication = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-event-application.md";
     private const string WikiValueObjectEquality = "https://github.com/dddlib/dddlib/blob/main/docs/value-object-equality.md";
     private const string WikiBootstrapper = "https://github.com/dddlib/dddlib/blob/main/docs/bootstrapper.md";
+    private const string WikiAggregateRootEquality = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-equality.md";
+    private const string WikiReconstitution = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-reconstitution.md";
     private const string WikiMementos = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-mementos.md";
     private const string WikiValueObjects = "https://github.com/dddlib/dddlib/blob/main/docs/value-objects.md";
     private const string WikiSerialization = "https://github.com/dddlib/dddlib/blob/main/docs/persistence/serialization.md";
@@ -142,6 +144,26 @@ internal static class DiagnosticDescriptors
         isEnabledByDefault: true,
         description: "An aggregate root that is persisted as a memento produces it in GetState and consumes it in SetState. Override both or neither.",
         helpLinkUri: WikiMementos);
+
+    public static readonly DiagnosticDescriptor NoReconstitutionFactory = new(
+        "DDDLIB014",
+        "Aggregate root cannot be reconstituted",
+        "The aggregate root '{0}' has no parameterless constructor and no reconstitution factory, so it cannot be persisted and the events it applies are not recorded; add a parameterless constructor, which need not be public, or call ToReconstituteUsing in the bootstrapper",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Reconstituting an aggregate root requires an uninitialized instance to apply the saved state to. The runtime creates it with the parameterless constructor, whatever its accessibility, or with the factory configured in the bootstrapper.",
+        helpLinkUri: WikiReconstitution);
+
+    public static readonly DiagnosticDescriptor NoNaturalKey = new(
+        "DDDLIB015",
+        "Aggregate root has no natural key",
+        "The aggregate root '{0}' has no natural key, so it cannot be persisted; mark a property with [NaturalKey] or call ToUseNaturalKey in the bootstrapper",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "An aggregate root is saved and loaded by its natural key.",
+        helpLinkUri: WikiAggregateRootEquality);
 
     public static readonly DiagnosticDescriptor IgnoredNaturalKey = new(
         "DDDLIB016",

@@ -67,6 +67,192 @@ public class DomainTypeAnalyzerTests
     }
 
     [Test]
+    [Arguments("")]
+    [Arguments("internal sealed class Bootstrapper : IBootstrapper { public void Bootstrap(IConfiguration configure) { configure.AggregateRoot<Other>().ToReconstituteUsing(() => new Other()); } }")]
+    public async Task ReportsAnAggregateRootThatCannotBeReconstituted(string bootstrapper)
+    {
+        var diagnostics = await AnalyzeAsync($$"""
+            using dddlib;
+            using dddlib.Configuration;
+
+            public partial class Subject : AggregateRoot
+            {
+                public Subject(string id) { this.Id = id; }
+
+                [NaturalKey] public string Id { get; }
+            }
+
+            public partial class Other : AggregateRoot
+            {
+                [NaturalKey] public string? Id { get; set; }
+            }
+
+            {{bootstrapper}}
+            """);
+
+        await Assert.That(diagnostics).Count().IsEqualTo(1);
+        await Assert.That(diagnostics[0].Id).IsEqualTo("DDDLIB014");
+        await Assert.That(diagnostics[0].Severity).IsEqualTo(DiagnosticSeverity.Warning);
+        await Assert.That(diagnostics[0].GetMessage(CultureInfo.InvariantCulture)).Contains("'Subject'");
+    }
+
+    [Test]
+    public async Task DoesNotReportAnAggregateRootThatCanBeReconstituted()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using dddlib;
+            using dddlib.Configuration;
+
+            public partial class WithConstructor : AggregateRoot
+            {
+                public WithConstructor(string id) { this.Id = id; }
+
+                private WithConstructor() { this.Id = string.Empty; }
+
+                [NaturalKey] public string Id { get; }
+            }
+
+            public partial class WithFactory : AggregateRoot
+            {
+                public WithFactory(string id) { this.Id = id; }
+
+                [NaturalKey] public string Id { get; }
+            }
+
+            public abstract partial class Abstract : AggregateRoot
+            {
+                protected Abstract(string id) { this.Id = id; }
+
+                [NaturalKey] public string Id { get; }
+            }
+
+            internal sealed class Bootstrapper : IBootstrapper
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.AggregateRoot<WithFactory>().ToReconstituteUsing(() => new WithFactory(string.Empty));
+                }
+            }
+            """);
+
+        await Assert.That(diagnostics).IsEmpty();
+    }
+
+    [Test]
+    public async Task ReportsAnAggregateRootWithoutANaturalKey()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using dddlib;
+
+            public partial class Subject : AggregateRoot
+            {
+                public string? Id { get; set; }
+            }
+
+            // an entity without a natural key is legal
+            public partial class Line : Entity
+            {
+            }
+            """);
+
+        await Assert.That(diagnostics).Count().IsEqualTo(1);
+        await Assert.That(diagnostics[0].Id).IsEqualTo("DDDLIB015");
+        await Assert.That(diagnostics[0].Severity).IsEqualTo(DiagnosticSeverity.Warning);
+        await Assert.That(diagnostics[0].GetMessage(CultureInfo.InvariantCulture)).Contains("'Subject'");
+    }
+
+    [Test]
+    public async Task DoesNotReportAnAggregateRootWithANaturalKey()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using dddlib;
+            using dddlib.Configuration;
+
+            public abstract partial class Base : AggregateRoot
+            {
+                [NaturalKey] public string? Id { get; set; }
+            }
+
+            public partial class Inheriting : Base
+            {
+            }
+
+            public partial class Configured : AggregateRoot
+            {
+                public string? Id { get; set; }
+            }
+
+            public abstract partial class Abstract : AggregateRoot
+            {
+            }
+
+            internal sealed class Bootstrapper : IBootstrapper
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.AggregateRoot<Configured>().ToUseNaturalKey(configured => configured.Id);
+                }
+            }
+            """);
+
+        await Assert.That(diagnostics).IsEmpty();
+    }
+
+    [Test]
+    public async Task DoesNotReportAgainstABootstrapperItCannotRead()
+    {
+        // OrderConfiguration stands for whatever a custom bootstrapper provider calls
+        var diagnostics = await AnalyzeAsync("""
+            using dddlib;
+            using dddlib.Configuration;
+
+            public partial class Subject : AggregateRoot
+            {
+                public Subject(string id) { this.Id = id; }
+
+                public string Id { get; }
+            }
+
+            public partial class Opaque : ValueObject<Opaque>
+            {
+            }
+
+            internal sealed class SubjectConfiguration
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                }
+            }
+            """);
+
+        await Assert.That(diagnostics.Select(static d => d.Id)).IsEquivalentTo(["DDDLIB004"]);
+    }
+
+    [Test]
+    public async Task DoesNotReportAValueObjectWithoutPropertiesThatHasAConfiguredComparer()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using System.Collections.Generic;
+            using dddlib;
+            using dddlib.Configuration;
+
+            public partial class Opaque : ValueObject<Opaque>
+            {
+            }
+
+            internal sealed class Bootstrapper : IBootstrapper
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.ValueObject<Opaque>().ToUseEqualityComparer(EqualityComparer<Opaque>.Default);
+                }
+            }
+            """);
+
+        await Assert.That(diagnostics).IsEmpty();
+    }
+
+    [Test]
     public async Task ReportsNaturalKeyAttributesThatAreIgnored()
     {
         var diagnostics = await AnalyzeAsync("""
