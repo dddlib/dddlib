@@ -207,6 +207,38 @@ internal static class SymbolExtensions
         method.IsHandlerCandidate() && method.DeclaredAccessibility != Accessibility.Public && method.Parameters[0].Type.IsEventClass();
 
     /// <summary>
+    /// Whether the method overrides the specified method, directly or through other overrides.
+    /// </summary>
+    public static bool Overrides(this IMethodSymbol method, IMethodSymbol baseMethod)
+    {
+        for (var current = method.OverriddenMethod; current is not null; current = current.OverriddenMethod)
+        {
+            if (SymbolEqualityComparer.Default.Equals(current, baseMethod))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Gets the override of the specified method that the type declares or inherits, if there is one.
+    /// </summary>
+    public static IMethodSymbol? FindOverride(this INamedTypeSymbol type, IMethodSymbol baseMethod)
+    {
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            if (current.GetMembers(baseMethod.Name).OfType<IMethodSymbol>().FirstOrDefault(method => method.Overrides(baseMethod)) is { } found)
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// Whether the type is the specified type or derives from it.
     /// </summary>
     public static bool IsOrDerivesFrom(this ITypeSymbol type, ITypeSymbol baseType)

@@ -16,6 +16,9 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
         DiagnosticDescriptors.PublicEventHandler,
         DiagnosticDescriptors.ValueObjectWithoutProperties,
         DiagnosticDescriptors.AbstractEventHandler,
+        DiagnosticDescriptors.IncompleteMemento,
+        DiagnosticDescriptors.IgnoredNaturalKey,
+        DiagnosticDescriptors.ValueObjectOfAnotherType,
         DiagnosticDescriptors.TypeShouldBePartial);
 
     public override void Initialize(AnalysisContext context)
@@ -27,6 +30,7 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
             if (KnownSymbols.Create(startContext.Compilation) is { } known)
             {
                 startContext.RegisterSymbolAction(symbolContext => Analyze(symbolContext, known), SymbolKind.NamedType);
+                startContext.RegisterSymbolAction(symbolContext => AnalyzeProperty(symbolContext, known), SymbolKind.Property);
             }
         });
     }
@@ -75,6 +79,35 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
             }
         }
 
+        if (kind == DomainTypeKind.AggregateRoot && !type.IsAbstract)
+        {
+            var getState = type.FindOverride(known.GetState);
+            var setState = type.FindOverride(known.SetState);
+
+            if ((getState ?? setState) is { } only && (getState is null || setState is null))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    DiagnosticDescriptors.IncompleteMemento,
+                    SymbolEqualityComparer.Default.Equals(only.ContainingType, type) ? only.Locations.FirstOrDefault() ?? location : location,
+                    type.ToDisplayString(),
+                    only.Name,
+                    getState is null ? known.GetState.Name : known.SetState.Name,
+                    getState is null ? "saved" : "loaded"));
+            }
+        }
+
+        if (kind == DomainTypeKind.ValueObject &&
+            type.BaseType is { } valueObject &&
+            SymbolEqualityComparer.Default.Equals(valueObject.OriginalDefinition, known.ValueObject) &&
+            !SymbolEqualityComparer.Default.Equals(valueObject.TypeArguments[0], type))
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                DiagnosticDescriptors.ValueObjectOfAnotherType,
+                location,
+                type.ToDisplayString(),
+                valueObject.TypeArguments[0].ToDisplayString()));
+        }
+
         if (kind == DomainTypeKind.ValueObject && !type.IsAbstract && !known.GetValueObjectProperties(type).Any())
         {
             context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.ValueObjectWithoutProperties, location, type.ToDisplayString()));
@@ -83,6 +116,34 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
         if (!type.IsGenericType && !type.IsPartialIncludingContainers())
         {
             context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.TypeShouldBePartial, location, type.Name));
+        }
+    }
+
+    private static void AnalyzeProperty(SymbolAnalysisContext context, KnownSymbols known)
+    {
+        var property = (IPropertySymbol)context.Symbol;
+        var attribute = property.GetAttributes().FirstOrDefault(candidate => SymbolEqualityComparer.Default.Equals(candidate.AttributeClass, known.NaturalKeyAttribute));
+        if (attribute is null)
+        {
+            return;
+        }
+
+        // the same conditions as KnownSymbols.GetDeclaredNaturalKeyProperties, and the runtime
+        var reason =
+            known.GetDomainTypeKind(property.ContainingType) is not (DomainTypeKind.Entity or DomainTypeKind.AggregateRoot) ? $"'{property.ContainingType.ToDisplayString()}' is not an entity or an aggregate root"
+            : property.IsStatic ? "it is static"
+            : property.IsIndexer ? "it is an indexer"
+            : property.GetMethod is null ? "it has no getter"
+            : property.DeclaredAccessibility != Accessibility.Public ? "it is not public"
+            : null;
+
+        if (reason is not null)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                DiagnosticDescriptors.IgnoredNaturalKey,
+                attribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation() ?? property.Locations.FirstOrDefault() ?? Location.None,
+                property.ToDisplayString(),
+                reason));
         }
     }
 }

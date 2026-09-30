@@ -17,3 +17,6 @@ DDDLIB009 | dddlib | Warning | Event handler takes an abstract class or an inter
 DDDLIB010 | dddlib | Warning | Event handler applies an event
 DDDLIB011 | dddlib | Warning | Event handler throws
 DDDLIB012 | dddlib | Warning | Property is saved but never loaded
+DDDLIB013 | dddlib | Warning | Aggregate root overrides only one of GetState and SetState
+DDDLIB016 | dddlib | Error | Natural key attribute has no effect
+DDDLIB018 | dddlib | Error | Value object does not derive from ValueObject of itself

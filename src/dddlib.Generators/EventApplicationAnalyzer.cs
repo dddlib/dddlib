@@ -95,7 +95,7 @@ public sealed class EventApplicationAnalyzer : DiagnosticAnalyzer
         if (((IReturnOperation)context.Operation).ReturnedValue is { } returned &&
             Unwrap(returned) is IObjectCreationOperation { Type: { } mementoType } &&
             context.ContainingSymbol is IMethodSymbol method &&
-            Overrides(method, known.GetState))
+            method.Overrides(known.GetState))
         {
             AnalyzeSerialized(mementoType, "memento", context.Compilation, serialized, context.ReportDiagnostic);
         }
@@ -117,19 +117,6 @@ public sealed class EventApplicationAnalyzer : DiagnosticAnalyzer
                 report(Diagnostic.Create(DiagnosticDescriptors.PropertySavedButNotLoaded, location, property.Name, kind, serializedType.ToDisplayString()));
             }
         }
-    }
-
-    private static bool Overrides(IMethodSymbol method, IMethodSymbol baseMethod)
-    {
-        for (var current = method.OverriddenMethod; current is not null; current = current.OverriddenMethod)
-        {
-            if (SymbolEqualityComparer.Default.Equals(current, baseMethod))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private static IOperation Unwrap(IOperation operation)

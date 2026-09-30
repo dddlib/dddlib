@@ -9,6 +9,8 @@ internal static class DiagnosticDescriptors
     private const string WikiEventApplication = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-event-application.md";
     private const string WikiValueObjectEquality = "https://github.com/dddlib/dddlib/blob/main/docs/value-object-equality.md";
     private const string WikiBootstrapper = "https://github.com/dddlib/dddlib/blob/main/docs/bootstrapper.md";
+    private const string WikiMementos = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-mementos.md";
+    private const string WikiValueObjects = "https://github.com/dddlib/dddlib/blob/main/docs/value-objects.md";
     private const string WikiSerialization = "https://github.com/dddlib/dddlib/blob/main/docs/persistence/serialization.md";
 
     public static readonly DiagnosticDescriptor MultipleNaturalKeys = new(
@@ -130,4 +132,34 @@ internal static class DiagnosticDescriptors
         isEnabledByDefault: true,
         description: "Events and mementos are serialized with System.Text.Json, which sets a property through its public setter or a constructor parameter of the same name.",
         helpLinkUri: WikiSerialization);
+
+    public static readonly DiagnosticDescriptor IncompleteMemento = new(
+        "DDDLIB013",
+        "Aggregate root overrides only one of GetState and SetState",
+        "The aggregate root '{0}' overrides '{1}' but not '{2}', so its memento cannot be {3}",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "An aggregate root that is persisted as a memento produces it in GetState and consumes it in SetState. Override both or neither.",
+        helpLinkUri: WikiMementos);
+
+    public static readonly DiagnosticDescriptor IgnoredNaturalKey = new(
+        "DDDLIB016",
+        "Natural key attribute has no effect",
+        "The [NaturalKey] on '{0}' is ignored because {1}",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "A natural key is a public instance property with a getter, declared on an entity or an aggregate root.",
+        helpLinkUri: WikiEntityEquality);
+
+    public static readonly DiagnosticDescriptor ValueObjectOfAnotherType = new(
+        "DDDLIB018",
+        "Value object does not derive from ValueObject of itself",
+        "The value object '{0}' derives from 'ValueObject<{1}>'; it must derive from 'ValueObject<{0}>'",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "The type argument of ValueObject<T> is the value object itself. Equality, serialization and configuration are all keyed on it.",
+        helpLinkUri: WikiValueObjects);
 }
