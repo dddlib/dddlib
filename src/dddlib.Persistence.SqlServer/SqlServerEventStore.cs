@@ -43,6 +43,7 @@ public sealed class SqlServerEventStore : IEventStore
             var stateParameter = command.Parameters.Add("@State", SqlDbType.VarChar, 36);
             stateParameter.Direction = ParameterDirection.Output;
 
+            await SqlServerSchemaCheck.EnsureCurrentAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
             await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
             try
@@ -97,6 +98,7 @@ public sealed class SqlServerEventStore : IEventStore
         var postCommitStateParameter = command.Parameters.Add("@PostCommitState", SqlDbType.VarChar, 36);
         postCommitStateParameter.Direction = ParameterDirection.Output;
 
+        await SqlServerSchemaCheck.EnsureCurrentAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
         try

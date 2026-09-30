@@ -31,6 +31,7 @@ public sealed class SqlServerSnapshotStore : ISnapshotStore
         command.CommandText = string.Concat(this.schema, ".[GetSnapshot]");
         command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = streamId;
 
+        await SqlServerSchemaCheck.EnsureCurrentAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
@@ -74,6 +75,7 @@ Further information: https://github.com/dddlib/dddlib/blob/main/docs/persistence
         command.Parameters.Add("@Payload", SqlDbType.NVarChar, -1).Value =
             JsonSerializer.Serialize(snapshot.Memento, snapshot.Memento.GetType(), JsonSerialization.Options);
 
+        await SqlServerSchemaCheck.EnsureCurrentAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }

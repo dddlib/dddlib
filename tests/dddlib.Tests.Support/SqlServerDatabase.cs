@@ -5,7 +5,7 @@ using TUnit.Core.Interfaces;
 namespace dddlib.Tests.Support;
 
 /// <summary>
-/// A database created in the shared container with the dddlib schema scripts applied, dropped on dispose. Inject with
+/// A database created in the shared container with the dddlib schema installed, dropped on dispose. Inject with
 /// <c>[ClassDataSource&lt;SqlServerDatabase&gt;(Shared = SharedType.PerClass)]</c> for one database per test class.
 /// </summary>
 public sealed class SqlServerDatabase : IAsyncInitializer, IAsyncDisposable
@@ -25,27 +25,36 @@ public sealed class SqlServerDatabase : IAsyncInitializer, IAsyncDisposable
 
         this.connectionString = new SqlConnectionStringBuilder(this.Container.ConnectionString) { InitialCatalog = this.DatabaseName }.ConnectionString;
 
-        await this.RunScriptsAsync("dbo").ConfigureAwait(false);
+        await SqlServerSchema.EnsureAsync(this.connectionString).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// Creates a schema and applies the dddlib scripts to it, for tests that use a schema other than dbo.
+    /// Installs the dddlib schema in a schema other than dbo.
     /// </summary>
-    public async Task CreateSchemaAsync(string schema)
-    {
-        await this.ExecuteScriptAsync($"CREATE SCHEMA [{schema}];").ConfigureAwait(false);
-        await this.RunScriptsAsync(schema).ConfigureAwait(false);
-    }
+    public Task CreateSchemaAsync(string schema) => SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
 
     /// <summary>
     /// Runs a script against the database, batch by batch.
     /// </summary>
     public async Task ExecuteScriptAsync(string script)
     {
-        foreach (var batch in SqlServerScripts.SplitBatches(script))
+        foreach (var batch in SqlServerScript.SplitBatches(script))
         {
             await ExecuteAsync(this.ConnectionString, batch).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// Runs a query against the database and returns the first column of the first row.
+    /// </summary>
+    public async Task<object?> ExecuteScalarAsync(string commandText)
+    {
+        await using var connection = new SqlConnection(this.ConnectionString);
+        await using var command = connection.CreateCommand();
+        command.CommandText = commandText;
+        await connection.OpenAsync().ConfigureAwait(false);
+        var result = await command.ExecuteScalarAsync().ConfigureAwait(false);
+        return result is DBNull ? null : result;
     }
 
     public async ValueTask DisposeAsync()
@@ -73,13 +82,5 @@ public sealed class SqlServerDatabase : IAsyncInitializer, IAsyncDisposable
         command.CommandText = commandText;
         await connection.OpenAsync().ConfigureAwait(false);
         await command.ExecuteNonQueryAsync().ConfigureAwait(false);
-    }
-
-    private async Task RunScriptsAsync(string schema)
-    {
-        foreach (var name in SqlServerScripts.Names)
-        {
-            await this.ExecuteScriptAsync(SqlServerScripts.Read(name, schema)).ConfigureAwait(false);
-        }
     }
 }

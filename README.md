@@ -31,6 +31,8 @@ Then reference the packages as usual, allowing prereleases:
 ```shell
 dotnet add package dddlib --prerelease
 dotnet add package dddlib.Persistence --prerelease
+dotnet add package dddlib.Persistence.SqlServer --prerelease
 dotnet add package dddlib.TestFramework --prerelease
 dotnet add package dddlib.Persistence.EventDispatcher --prerelease
+dotnet add package dddlib.Persistence.EventDispatcher.SqlServer --prerelease
 ```

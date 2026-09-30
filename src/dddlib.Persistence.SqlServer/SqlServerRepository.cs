@@ -43,6 +43,7 @@ public abstract class SqlServerRepository<T> : Repository<T>
         }
 
         var connection = transaction.Connection ?? throw new ArgumentException("The transaction has already completed.", nameof(transaction));
+        await SqlServerSchemaCheck.EnsureCurrentAsync(this.ConnectionString, this.schema, cancellationToken).ConfigureAwait(false);
         var records = await SqlServerEvents.ToRecordsAsync(events, this.typeCache, cancellationToken).ConfigureAwait(false);
 
         await using var command = connection.CreateCommand();

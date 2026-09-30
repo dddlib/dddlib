@@ -3,27 +3,19 @@
   <PropertyGroup>
     <TargetFramework>$(NetLibVersion)</TargetFramework>
     <RootNamespace>dddlib.Persistence</RootNamespace>
-    <Description>Persistence for dddlib: event store repository with in-memory and SQL Server implementations.</Description>
+    <Description>Persistence for dddlib: event store and memento repositories with an in-memory implementation. SQL Server is in dddlib.Persistence.SqlServer.</Description>
   </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="dddlib.Persistence.EventDispatcher" />
+    <InternalsVisibleTo Include="dddlib.Persistence.EventDispatcher.SqlServer" />
+    <InternalsVisibleTo Include="dddlib.Persistence.SqlServer" />
     <InternalsVisibleTo Include="dddlib.Persistence.Tests" />
     <InternalsVisibleTo Include="dddlib.Tests.Support" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.SqlClient" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="../dddlib/dddlib.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- The schema scripts. They are run manually before first use and are also embedded so tooling can read them. -->
-    <EmbeddedResource Include="Scripts/*.sql" LogicalName="dddlib.Persistence.Scripts.%(Filename)%(Extension)" />
-    <Content Include="Scripts/*.sql" Pack="true" PackagePath="content/Scripts;contentFiles/any/any/Scripts" CopyToOutputDirectory="Never" />
   </ItemGroup>
 
 </Project>

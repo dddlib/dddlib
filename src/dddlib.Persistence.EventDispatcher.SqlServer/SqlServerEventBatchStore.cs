@@ -16,7 +16,6 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer;
 /// </summary>
 public sealed class SqlServerEventBatchStore : IEventBatchStore
 {
-    private readonly SqlServerTypeCache typeCache;
     private readonly string connectionString;
     private readonly string schema;
 
@@ -26,7 +25,6 @@ public sealed class SqlServerEventBatchStore : IEventBatchStore
 
         this.connectionString = connectionString;
         this.schema = SqlServerIdentifier.Quote(schema);
-        this.typeCache = new SqlServerTypeCache(connectionString, schema);
     }
 
     public async Task<EventBatch?> GetNextBatchAsync(Guid dispatcherId, int batchSize, TimeSpan batchTimeout, CancellationToken cancellationToken = default)
@@ -34,7 +32,7 @@ public sealed class SqlServerEventBatchStore : IEventBatchStore
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(batchSize);
 
         long? batchId = null;
-        var rows = new List<(long SequenceNumber, int TypeId, string Payload)>();
+        var rows = new List<(long SequenceNumber, string TypeName, string Payload)>();
 
         using (new TransactionScope(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled))
         await using (var connection = new SqlConnection(this.connectionString))
@@ -46,6 +44,7 @@ public sealed class SqlServerEventBatchStore : IEventBatchStore
             command.Parameters.Add("@MaxBatchSize", SqlDbType.Int).Value = batchSize;
             command.Parameters.Add("@BatchTimeoutMilliseconds", SqlDbType.Int).Value = (int)Math.Clamp(Math.Ceiling(batchTimeout.TotalMilliseconds), 0, int.MaxValue);
 
+            await SqlServerSchemaCheck.EnsureCurrentAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
             await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
             try
@@ -59,7 +58,7 @@ public sealed class SqlServerEventBatchStore : IEventBatchStore
                 await reader.NextResultAsync(cancellationToken).ConfigureAwait(false);
                 while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                 {
-                    rows.Add((reader.GetInt64(0), reader.GetInt32(1), reader.GetString(2)));
+                    rows.Add((reader.GetInt64(0), reader.GetString(1), reader.GetString(2)));
                 }
             }
             catch (SqlException ex) when (ex.Has(SqlServerErrors.LockTimeout) || ex.Has(SqlServerErrors.LockRequestTimeout))
@@ -76,7 +75,7 @@ public sealed class SqlServerEventBatchStore : IEventBatchStore
         var events = new SequencedEvent[rows.Count];
         for (var index = 0; index < rows.Count; index++)
         {
-            var payloadType = await this.typeCache.GetTypeAsync(rows[index].TypeId, cancellationToken).ConfigureAwait(false);
+            var payloadType = TypeNameResolver.ResolveOrThrow(rows[index].TypeName);
             events[index] = new SequencedEvent(rows[index].SequenceNumber, JsonSerializer.Deserialize(rows[index].Payload, payloadType, JsonSerialization.Options)!);
         }
 
@@ -94,6 +93,7 @@ public sealed class SqlServerEventBatchStore : IEventBatchStore
         command.Parameters.Add("@DispatcherId", SqlDbType.UniqueIdentifier).Value = dispatcherId;
         command.Parameters.Add("@SequenceNumber", SqlDbType.BigInt).Value = sequenceNumber;
 
+        await SqlServerSchemaCheck.EnsureCurrentAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }

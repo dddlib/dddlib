@@ -1,9 +1,10 @@
 # Quickstart (Persistence)
 
-1. Install the **dddlib.Persistence** package into your project:
+1. Install the **dddlib.Persistence** package into your project, and **dddlib.Persistence.SqlServer** for SQL Server:
 
    ```shell
    dotnet add package dddlib.Persistence
+   dotnet add package dddlib.Persistence.SqlServer
    ```
 
 2. Create your domain model. For best results follow the [guidelines](guidelines.md).
@@ -83,5 +84,5 @@
    var sameCar = await repository.LoadAsync<Car>(car.Registration!);
    ```
 
-4. For SQL Server, create the schema before first use by running the scripts shipped in the package. See
-   [SQL Server](persistence/sql-server.md).
+4. For SQL Server, create the schema before first use with `await SqlServerSchema.EnsureAsync(connectionString)`,
+   from a migration step or at startup. See [SQL Server](persistence/sql-server.md).

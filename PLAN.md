@@ -37,7 +37,7 @@ rather than use `SqlDependency`, which Azure SQL does not support.
 | Test databases | Testcontainers for .NET with the `mcr.microsoft.com/mssql/server` image, one container per test session, one database per test class. Docker is installed on the dev machine. |
 | SQL client | `Microsoft.Data.SqlClient`. Table-valued parameters via `Microsoft.Data.SqlClient.Server.SqlDataRecord`. |
 | JSON | `System.Text.Json`. The legacy `JavaScriptSerializer` does not exist on modern .NET. |
-| Schema setup | SQL scripts shipped with the package and run manually before first use. No Meld, no runtime migration and no version table for now. No ILMerge. |
+| Schema setup | Changed 2026-09-29 for dddlib/dddlib#43: dddlib provides and upgrades its own schema. One linear series of numbered scripts (`dddlib01.sql`, ...) shared by every SQL Server package, applied explicitly by `SqlServerSchema.EnsureAsync` and recorded in the schema's `Versions` table, as Meld did in v1 but explicit and async. The scripts still ship as content and record their own version when run by hand. No Meld, no ILMerge. |
 | Guards | `ArgumentNullException.ThrowIfNull` and friends. Replaces Guardian's expression-based `Guard.Against`. |
 | API shape | Persistence is async end to end. `out` parameters become return records. Nullable reference types on everywhere. |
 | Strong naming | Dropped unless a consumer needs it. The old `.snk` stays in the legacy repo. |
@@ -56,7 +56,11 @@ dddlibv2/
   dddlib.slnx
   src/
     dddlib/                          core library
-    dddlib.Persistence/              Sdk abstractions, Memory implementations, SqlServer implementations, Scripts/
+    dddlib.Persistence/              Sdk abstractions, Memory implementations
+    dddlib.Persistence.SqlServer/    SqlServer implementations, SqlServerSchema
+    dddlib.Persistence.EventDispatcher/            dispatcher host, Memory implementation
+    dddlib.Persistence.EventDispatcher.SqlServer/  SqlServer batch store and host, SqlServerEventDispatcherSchema
+    Shared/SqlServer/                SQL Server infrastructure and Scripts/, linked into both SqlServer packages
     dddlib.Generators/               source generator + analyzers (phase 4)
   tests/
     dddlib.Tests/                    core feature scenarios, bug regressions, unit tests
@@ -64,8 +68,10 @@ dddlibv2/
     dddlib.Tests.Support/            shared domain model (Vehicle, Registration, Wheel), test bootstrapper helpers, SQL container fixture
 ```
 
-Persistence stays one assembly with `Memory` and `SqlServer` namespaces, as before. Split it only if a
-consumer needs the abstractions without the SqlClient dependency.
+SQL Server was split out of dddlib.Persistence and dddlib.Persistence.EventDispatcher on 2026-09-29
+(dddlib/dddlib#43) so the core packages do not depend on SqlClient; the namespaces are unchanged. The two SQL Server
+packages do not reference each other: the schema installer, its scripts and the small internal helpers are compiled
+into both as linked files from `src/Shared/SqlServer`.
 
 ## 4. Architecture notes for the port
 
@@ -124,8 +130,10 @@ configured. Phase 4 turns that into an analyzer diagnostic.
 - Stored type names: since nothing must stay compatible, store a stable name that does not include
   assembly version, for example `Namespace.TypeName, AssemblyName`, and resolve through a registry rather
   than `Type.GetType` on an assembly-qualified string.
-- Nothing in the library touches the schema at runtime. The scripts are run manually before first use; the
-  test fixture runs them against the container database. Constructors must not do I/O.
+- Nothing in the library changes the schema implicitly. `SqlServerSchema.EnsureAsync` (or
+  `SqlServerEventDispatcherSchema.EnsureAsync`) creates or upgrades it when the consumer calls it; the test fixture
+  calls it on each per-class database. Each SQL Server class checks the schema version before its first command and
+  fails with a `PersistenceException` when the schema is behind. Constructors must not do I/O.
 - `TransactionScopeOption.Suppress` wrapping is kept so callers' ambient transactions do not leak in.
 
 ### Source generators and analyzers (phase 4)
@@ -219,8 +227,8 @@ Exit: all memory persistence scenarios green with no database.
   `SqlServerSnapshotStore`, `SqlServerEventStoreRepository`, `SqlServerRepository<T>`, `SqlServerMementoRepository<T>`.
 - Scenarios: SqlServerEventPersistence (9), SqlServerMementoPersistence (2), SqlServerEventStoreTests (6),
   SqlServerIdentityMapTests (7), SqlServerNaturalKeyRepositoryTests (1), SqlServerSnapshotStoreTests (2),
-  and the SQL Server parts of Bug0109 plus Bug0127. UpgradeDatabaseVersionTests is dropped while schema setup
-  is manual.
+  and the SQL Server parts of Bug0109 plus Bug0127. UpgradeDatabaseVersionTests was dropped while schema setup
+  was manual; its intent returned with phase 8 as SqlServerSchemaTests.
 
 Exit: all SQL Server scenarios green against the container. CI can run them because Docker is the
 only prerequisite.
@@ -397,6 +405,33 @@ Considered and left out: a handler whose event is never applied (events arrive f
 is noisy), publicly settable value object properties (a shape the serialization docs sanction), a public bootstrapper
 (only a recommendation), and reporting DDDLIB015 for entities.
 
+### Phase 8: dddlib provides and upgrades its own SQL Server schema (dddlib/dddlib#43)
+
+Done 2026-09-29, in three commits, each green:
+
+1. Package split: `dddlib.Persistence.SqlServer` and `dddlib.Persistence.EventDispatcher.SqlServer`, with the shared
+   internals linked from `src/Shared/SqlServer`. `GetNextBatch` returns the event type name so the dispatcher
+   resolves types through `TypeNameResolver` and needs no `SqlServerTypeCache` (which stays public in
+   dddlib.Persistence.SqlServer).
+2. One script series and `EnsureAsync`. Scripts 01-06 merged into `dddlib01.sql`, idempotent so it adopts a database
+   installed before versioning. Kept from Meld: numbered embedded scripts starting at 1 and contiguous, a `Versions`
+   row per applied script with the package description and the applied text. (Meld also refused a database that
+   is ahead; step 4 dropped that for rolling upgrades.)
+   Changed: explicit and async, the `Versions` table in the named schema, one transaction for the whole upgrade under
+   an exclusive `sp_getapplock` on the schema, no AppDomain scanning, no server-version directives, `PersistenceException`
+   instead of a forged `SqlException`, and (from step 4) a database ahead is reported rather than refused. `GetScript(schema)` returns the whole series for migration tools. Batches are
+   split on `GO` lines; `GO <count>` is rejected.
+3. Fail loudly when behind: `SqlServerSchemaCheck` reads the version once per connection string and schema before
+   the first command of every SQL Server class and caches only a current schema.
+4. Rolling upgrades (2026-09-30): a database ahead of the code is accepted instead of failing, so a process on older
+   code keeps working after a newer one upgrades the schema. `EnsureAsync` returns a version record
+   (`SqlServerSchemaVersion`, `SqlServerEventDispatcherSchemaVersion`, one per SQL Server package, not in
+   dddlib.Persistence, whose API has no SQL Server concepts) with `IsDatabaseAhead`; the caller decides whether to
+   warn. There is no event: everything is evaluated from the returned version.
+
+Superseded from the issue: "only what is used". The whole schema is one series, so installing the dispatcher
+installs the event store.
+
 ## 6. Test conventions with TUnit
 
 Keep the structure that made the old suite readable: one feature per file, one nested class per
@@ -481,9 +516,14 @@ Persistence (`tests/dddlib.Persistence.Tests`):
 - MemoryMementoPersistence: DefaultMemoryPersistence, EventsAreStoredForDispatch; SqlServerMementoPersistence: DefaultSqlServerPersistence,
   DefaultMementoRepositoryPersistence, EventsAreStoredForDispatch, CustomStorageStoresEvents
 - Integration: MemoryEventStoreTests, SqlServerEventStoreTests, SqlServerIdentityMapTests, SqlServerNaturalKeyRepositoryTests,
-  SqlServerSnapshotStoreTests
+  SqlServerSnapshotStoreTests, SqlServerSchemaTests (CreatesTheSchemaWithEveryObject, EnsuringTwiceChangesNothing,
+  UpgradeAppliesOnlyTheMissingVersion, FailedUpgradeRollsBackEntirely, FailedInstallLeavesNoSchema,
+  ConcurrentCallersApplyEachVersionOnce, ReportsWhenTheDatabaseIsAheadOfTheCode,
+  OlderCodeKeepsWorkingAfterNewerCodeUpgrades, AdoptsAScriptRunByHand,
+  GetScriptInstallsTheSchema, FailsLoudlyWhenTheSchemaIsBehind, FailsLoudlyWhenTheVersionIsMissing,
+  RejectsAnInvalidSchemaName)
 - Bug: 0043, 0064, 0081, 0109, 0127
-- Unit: JsonSerializerTests
+- Unit: JsonSerializerTests, SqlServerScriptTests
 
 Event dispatcher (`tests/dddlib.Persistence.EventDispatcher.Tests`):
 
@@ -491,7 +531,8 @@ Event dispatcher (`tests/dddlib.Persistence.EventDispatcher.Tests`):
 - Integration: SqlServerEventStoreTests (TryGetBatchFromEmptyEventStore, TryGetBatchFromEventStoreWithSingleEvent,
   TryGetBatchTwiceFromEventStoreWithSingleEvent, TryGetBatchTwiceFromEventStoreWithSingleEventAndDifferentDispatchers,
   TryGetMultipleBatchesFromEventStoreWithManyEvents, MarkingDispatchedCompletesTheBatchAndAdvances,
-  AnAbandonedBatchIsHandedOutAgainAfterTheTimeout), MemoryEventBatchStoreTests
+  AnAbandonedBatchIsHandedOutAgainAfterTheTimeout), MemoryEventBatchStoreTests, SqlServerEventDispatcherSchemaTests
+  (InstallingTheDispatcherInstallsTheEventStore, FailsLoudlyWhenTheSchemaIsBehind, BothPackagesProduceTheSameScript)
 
 Shared model (`tests/dddlib.Tests.Support`): Vehicle, Registration, Wheel, NewVehicle, IRegistrationService, Bootstrapper.
 
@@ -523,3 +564,11 @@ has a public home for `docs/`.
   StyleCop suppressions, the Guardian guards, or the `JavaScriptSerializer` code.
 - Keep commits scoped to one phase step. Prefix messages with the phase, for example `P1: port EntityEquality scenarios`.
 - Run `dotnet test` before every commit. SQL Server tests need Docker running.
+- Released SQL Server schema scripts never change. Any schema change is a new `dddlibNN.sql` in `src/Shared/SqlServer/Scripts`
+  that ends by recording its own version, like `dddlib01.sql`.
+- Code must keep working against a database ahead of it (rolling upgrades: a process on version N runs against a
+  database a newer process upgraded to N+1). Code ahead of the database throws; a database ahead of the code is
+  reported by `EnsureAsync` through `IsDatabaseAhead` on the returned version. So every script is
+  expand-then-contract: only additive changes (new tables, nullable or defaulted columns, indexes, new procedures);
+  never change the parameters or result columns of a procedure older code calls, or rename or drop what it uses, in
+  the same version that stops using it. See docs/persistence/sql-server.md, *Rolling upgrades*.

@@ -6,7 +6,8 @@ for [value objects](value-objects.md), [entities](entities.md), [aggregate roots
 can be packaged and distributed without any persistence-specific dependency, and support
 [domain model reuse](concepts.md#domain-model-reuse) while remaining [persistence ignorant](concepts.md#persistence-ignorance).
 
-**dddlib.Persistence** is the persistence companion: in-memory and SQL Server persistence for both
+**dddlib.Persistence** is the persistence companion, with **dddlib.Persistence.SqlServer** for SQL Server: in-memory
+and SQL Server persistence for both
 [memento-based](persistence/memento-persistence.md) and [event sourcing](persistence/event-sourcing-persistence.md)
 models.
 
@@ -48,15 +49,17 @@ public class CarRegistered
 }
 ```
 
-Persist it. Run the SQL scripts shipped in the package against your database first (see [SQL Server](persistence/sql-server.md)).
+Persist it. The schema is created or upgraded explicitly, here at startup (see [SQL Server](persistence/sql-server.md)).
 
 ```shell
-dotnet add package dddlib.Persistence
+dotnet add package dddlib.Persistence.SqlServer
 ```
 
 ```csharp
 // replace with a valid SQL Server connection string
 var connectionString = "Server=someServer;Database=someDatabase;";
+await dddlib.Persistence.SqlServer.SqlServerSchema.EnsureAsync(connectionString);
+
 var repository = new dddlib.Persistence.SqlServer.SqlServerEventStoreRepository(connectionString);
 
 var car = new Car("W807ASB");

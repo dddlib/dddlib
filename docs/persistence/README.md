@@ -17,8 +17,9 @@ Both models share:
   `AggregateRootNotFoundException` when nothing exists for a natural key or its lifecycle has ended;
 - asynchronous APIs throughout. Every operation takes an optional `CancellationToken`.
 
-The SQL Server implementations need their [schema scripts](sql-server.md) run before first use. Nothing in the library
-touches the schema at runtime, and constructors do no I/O.
+The SQL Server implementations are in **dddlib.Persistence.SqlServer** and need their [schema](sql-server.md) installed
+before first use with `SqlServerSchema.EnsureAsync`. Nothing in the library changes the schema implicitly, and
+constructors do no I/O.
 
 ## Requirements on the model
 

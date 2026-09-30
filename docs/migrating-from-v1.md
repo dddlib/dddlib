@@ -33,8 +33,11 @@ is no compatibility with data written by v1.
   `MementoResult`.
 - Serialization is System.Text.Json instead of `JavaScriptSerializer`. Stored JSON and type names are not compatible
   with v1. Type names are stored without assembly version.
-- The schema is created by running the shipped scripts manually. Meld and the runtime schema upgrade are gone, as is
-  the single-event `CommitStream2` procedure. JSON columns are `NVARCHAR(MAX)`.
+- The SQL Server implementations moved to the **dddlib.Persistence.SqlServer** package; the namespaces are unchanged.
+- Meld is gone. Constructors no longer create or upgrade the schema; call `SqlServerSchema.EnsureAsync` from a
+  migration step or at startup, or run `SqlServerSchema.GetScript` through a migration tool. The schema is versioned
+  in its own `Versions` table as before, and a schema behind the package fails the first call with a
+  `PersistenceException`. Unlike Meld, a schema ahead of the package is accepted (and reported by `EnsureAsync`), for rolling upgrades. The single-event `CommitStream2` procedure is gone. JSON columns are `NVARCHAR(MAX)`.
 - The in-memory implementations are in-process only; the memory-mapped files and global mutexes that shared them
   across processes are gone.
 - The memento repository also appends the aggregate root's uncommitted events to its event stream, in the same
@@ -47,7 +50,8 @@ is no compatibility with data written by v1.
 `dddlib.Persistence.EventDispatcher` is back with the same batch model but polls the event store instead of using
 `SqlDependency`, which Azure SQL does not support. `IEventDispatcher.Dispatch` is now `DispatchAsync` with a
 `CancellationToken`; the host takes `EventDispatcherOptions` and runs with `RunAsync(token)` or `Start`/`StopAsync`;
-the dispatcher schema is one script, `06-SqlServerEventDispatcher.sql`. See [Event dispatcher](persistence/event-dispatcher.md).
+the SQL Server host is in **dddlib.Persistence.EventDispatcher.SqlServer** and its tables are part of the one dddlib
+schema. See [Event dispatcher](persistence/event-dispatcher.md).
 
 ## Not yet ported
 

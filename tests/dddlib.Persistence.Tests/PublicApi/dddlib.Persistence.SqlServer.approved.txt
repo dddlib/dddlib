@@ -1,0 +1,64 @@
+namespace dddlib.Persistence.SqlServer
+{
+    public sealed class SqlServerEventStore : dddlib.Persistence.Sdk.IEventStore
+    {
+        public SqlServerEventStore(string connectionString, string schema = "dbo") { }
+        public System.Threading.Tasks.Task<string> CommitStreamAsync(System.Guid streamId, System.Collections.Generic.IReadOnlyList<object> events, System.Guid correlationId, string? preCommitState, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.StreamResult> GetStreamAsync(System.Guid streamId, int streamRevision, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class SqlServerEventStoreRepository : dddlib.Persistence.Sdk.EventStoreRepository
+    {
+        public SqlServerEventStoreRepository(string connectionString, string schema = "dbo") { }
+    }
+    public sealed class SqlServerIdentityMap : dddlib.Persistence.Sdk.DefaultIdentityMap
+    {
+        public SqlServerIdentityMap(string connectionString, string schema = "dbo") { }
+    }
+    public sealed class SqlServerMementoRepository<T> : dddlib.Persistence.Sdk.Repository<T>
+        where T : dddlib.AggregateRoot
+    {
+        public SqlServerMementoRepository(string connectionString, string schema = "dbo") { }
+        protected override System.Threading.Tasks.Task<dddlib.Persistence.Sdk.MementoResult?> LoadAsync(System.Guid id, System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task<string> SaveAsync(System.Guid id, object memento, System.Collections.Generic.IReadOnlyList<object> events, string? preCommitState, System.Threading.CancellationToken cancellationToken) { }
+    }
+    public sealed class SqlServerNaturalKeyRepository : dddlib.Persistence.Sdk.INaturalKeyRepository
+    {
+        public SqlServerNaturalKeyRepository(string connectionString, string schema = "dbo") { }
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<dddlib.Persistence.Sdk.NaturalKeyRecord>> GetNaturalKeysAsync(System.Type aggregateRootType, long checkpoint, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemoveAsync(System.Guid naturalKeyIdentity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.NaturalKeyRecord?> TryAddNaturalKeyAsync(System.Type aggregateRootType, string serializedNaturalKey, long checkpoint, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public abstract class SqlServerRepository<T> : dddlib.Persistence.Sdk.Repository<T>
+        where T : dddlib.AggregateRoot
+    {
+        protected SqlServerRepository(string connectionString, string schema = "dbo") { }
+        protected string ConnectionString { get; }
+        protected System.Threading.Tasks.Task AppendEventsAsync(Microsoft.Data.SqlClient.SqlTransaction transaction, System.Guid id, System.Collections.Generic.IReadOnlyList<object> events, string state, System.Threading.CancellationToken cancellationToken) { }
+    }
+    public static class SqlServerSchema
+    {
+        public static System.Threading.Tasks.Task<dddlib.Persistence.SqlServer.SqlServerSchemaVersion> EnsureAsync(string connectionString, string schema = "dbo", System.Threading.CancellationToken cancellationToken = default) { }
+        public static string GetScript(string schema = "dbo") { }
+    }
+    public sealed class SqlServerSchemaVersion : System.IEquatable<dddlib.Persistence.SqlServer.SqlServerSchemaVersion>
+    {
+        public SqlServerSchemaVersion(string Schema, int DatabaseVersion, int CodeVersion) { }
+        public int CodeVersion { get; init; }
+        public int DatabaseVersion { get; init; }
+        public bool IsDatabaseAhead { get; }
+        public string Schema { get; init; }
+    }
+    public sealed class SqlServerSnapshotStore : dddlib.Persistence.Sdk.ISnapshotStore
+    {
+        public SqlServerSnapshotStore(string connectionString, string schema = "dbo") { }
+        public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.Snapshot?> GetSnapshotAsync(System.Guid streamId, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PutSnapshotAsync(System.Guid streamId, dddlib.Persistence.Sdk.Snapshot snapshot, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class SqlServerTypeCache : dddlib.Persistence.Sdk.ITypeCache
+    {
+        public SqlServerTypeCache(string connectionString, string schema = "dbo") { }
+        public System.Threading.Tasks.Task<System.Type> GetTypeAsync(int typeId, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<int> GetTypeIdAsync(System.Type type, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<string> GetTypeNameAsync(int typeId, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+}
