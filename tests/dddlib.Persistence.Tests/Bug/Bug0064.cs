@@ -7,6 +7,7 @@ namespace dddlib.Persistence.Tests.Bug;
 // A null natural key is an argument error naming the property; a natural key type that does not round-trip through
 // serialization with value equality is a persistence error wrapping a runtime exception.
 // The legacy test used the memento-based repository; both repositories behave the same.
+#pragma warning disable DDDLIB017 // the natural key type below deliberately does not round-trip
 public class Bug0064
 {
     [Test]

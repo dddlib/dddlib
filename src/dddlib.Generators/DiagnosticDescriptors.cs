@@ -12,6 +12,7 @@ internal static class DiagnosticDescriptors
     private const string WikiAggregateRootEquality = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-equality.md";
     private const string WikiReconstitution = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-reconstitution.md";
     private const string WikiMementos = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-mementos.md";
+    private const string WikiValueObjectSerialization = "https://github.com/dddlib/dddlib/blob/main/docs/value-object-serialization.md";
     private const string WikiValueObjects = "https://github.com/dddlib/dddlib/blob/main/docs/value-objects.md";
     private const string WikiSerialization = "https://github.com/dddlib/dddlib/blob/main/docs/persistence/serialization.md";
 
@@ -175,6 +176,16 @@ internal static class DiagnosticDescriptors
         description: "A natural key is a public instance property with a getter, declared on an entity or an aggregate root.",
         helpLinkUri: WikiEntityEquality);
 
+    public static readonly DiagnosticDescriptor NaturalKeyDoesNotRoundTrip = new(
+        "DDDLIB017",
+        "Natural key does not round-trip",
+        "The natural key '{0}' has the type '{1}', which {2}",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "The natural key of an aggregate root is serialized when it is saved, and the deserialized key must equal the original. Use a string, a value type, or a value object that its serializer can read back.",
+        helpLinkUri: WikiValueObjectSerialization);
+
     public static readonly DiagnosticDescriptor ValueObjectOfAnotherType = new(
         "DDDLIB018",
         "Value object does not derive from ValueObject of itself",
@@ -184,4 +195,14 @@ internal static class DiagnosticDescriptors
         isEnabledByDefault: true,
         description: "The type argument of ValueObject<T> is the value object itself. Equality, serialization and configuration are all keyed on it.",
         helpLinkUri: WikiValueObjects);
+
+    public static readonly DiagnosticDescriptor ValueObjectPropertyComparedByReference = new(
+        "DDDLIB019",
+        "Value object property is compared by reference",
+        "The property '{0}' of the value object '{1}' has the type '{2}', which is compared by reference, so two value objects with the same content are not equal; use a value object or another type with value equality, or configure an equality comparer in the bootstrapper",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "The default equality comparer of a value object compares each public property with the equality of the property's type, and collections element by element.",
+        helpLinkUri: WikiValueObjectEquality);
 }

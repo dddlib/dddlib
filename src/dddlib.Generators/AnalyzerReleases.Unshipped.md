@@ -21,4 +21,6 @@ DDDLIB013 | dddlib | Warning | Aggregate root overrides only one of GetState and
 DDDLIB014 | dddlib | Warning | Aggregate root cannot be reconstituted
 DDDLIB015 | dddlib | Warning | Aggregate root has no natural key
 DDDLIB016 | dddlib | Error | Natural key attribute has no effect
+DDDLIB017 | dddlib | Warning | Natural key does not round-trip
 DDDLIB018 | dddlib | Error | Value object does not derive from ValueObject of itself
+DDDLIB019 | dddlib | Warning | Value object property is compared by reference

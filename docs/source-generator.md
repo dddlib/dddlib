@@ -44,7 +44,9 @@ Roslyn generators do not see each other's output. You can write one yourself and
 | DDDLIB014 | Warning | An aggregate root has no parameterless constructor and the bootstrapper does not call `ToReconstituteUsing` for it |
 | DDDLIB015 | Warning | An aggregate root has no `[NaturalKey]` in its class hierarchy and the bootstrapper does not call `ToUseNaturalKey` for it |
 | DDDLIB016 | Error | `[NaturalKey]` is on a property that is ignored: not public, static, an indexer, without a getter, or not on an entity |
+| DDDLIB017 | Warning | The natural key of an aggregate root is a class compared by reference, or a value object that the default serializer cannot read back and that has no serializer configured |
 | DDDLIB018 | Error | A value object derives from `ValueObject<T>` of a type other than itself |
+| DDDLIB019 | Warning | A public property of a value object is a class compared by reference, so equal content does not make equal value objects |
 
 DDDLIB004 is not reported for a value object that the bootstrapper configures a comparer for.
 

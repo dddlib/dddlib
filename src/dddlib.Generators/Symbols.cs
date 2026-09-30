@@ -364,6 +364,10 @@ internal static class SymbolExtensions
             SymbolEqualityComparer.Default.Equals(@interface.TypeArguments[0], type));
     }
 
+    public static bool IsEnumerable(this ITypeSymbol type) =>
+        type.SpecialType == SpecialType.System_Collections_IEnumerable ||
+        type.AllInterfaces.Any(static @interface => @interface.SpecialType == SpecialType.System_Collections_IEnumerable);
+
     /// <summary>
     /// Gets the public readable instance properties of the type, declared and inherited, most derived declaration first.
     /// </summary>

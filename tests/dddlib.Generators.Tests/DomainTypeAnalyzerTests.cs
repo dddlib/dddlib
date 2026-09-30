@@ -284,6 +284,194 @@ public class DomainTypeAnalyzerTests
     }
 
     [Test]
+    public async Task ReportsANaturalKeyThatDoesNotRoundTrip()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using dddlib;
+            using dddlib.Configuration;
+
+            public partial class ByReference : AggregateRoot
+            {
+                [NaturalKey] public Code? Id { get; set; }
+            }
+
+            public partial class ByUnreadableValueObject : AggregateRoot
+            {
+                [NaturalKey] public Reference? Id { get; set; }
+            }
+
+            public partial class ByBootstrapper : AggregateRoot
+            {
+                public Code? Id { get; set; }
+            }
+
+            public class Code
+            {
+                public string? Value { get; set; }
+            }
+
+            public partial class Reference : ValueObject<Reference>
+            {
+                public Reference(string value, int checksum) { this.Value = value + checksum; }
+
+                public string Value { get; }
+            }
+
+            internal sealed class Bootstrapper : IBootstrapper
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.AggregateRoot<ByBootstrapper>().ToUseNaturalKey(subject => subject.Id);
+                }
+            }
+            """);
+
+        var messages = diagnostics.Where(static d => d.Id == "DDDLIB017").Select(static d => d.GetMessage(CultureInfo.InvariantCulture)).ToList();
+
+        await Assert.That(diagnostics).Count().IsEqualTo(3);
+        await Assert.That(diagnostics.All(static d => d.Severity == DiagnosticSeverity.Warning)).IsTrue();
+        await Assert.That(messages.Count(static m => m.Contains("'ByReference.Id' has the type 'Code', which is compared by reference", StringComparison.Ordinal))).IsEqualTo(1);
+        await Assert.That(messages.Count(static m => m.Contains("'ByBootstrapper.Id' has the type 'Code', which is compared by reference", StringComparison.Ordinal))).IsEqualTo(1);
+        await Assert.That(messages.Count(static m => m.Contains("'ByUnreadableValueObject.Id' has the type 'Reference', which the default value object serializer cannot read back", StringComparison.Ordinal))).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task DoesNotReportANaturalKeyThatRoundTrips()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using System;
+            using dddlib;
+            using dddlib.Configuration;
+
+            public partial class ByString : AggregateRoot
+            {
+                [NaturalKey] public string? Id { get; set; }
+            }
+
+            public partial class ByGuid : AggregateRoot
+            {
+                [NaturalKey] public Guid Id { get; set; }
+            }
+
+            public partial class ByRecord : AggregateRoot
+            {
+                [NaturalKey] public Code? Id { get; set; }
+            }
+
+            public partial class ByValueObject : AggregateRoot
+            {
+                [NaturalKey] public Reference? Id { get; set; }
+            }
+
+            public partial class BySerializedValueObject : AggregateRoot
+            {
+                [NaturalKey] public Checked? Id { get; set; }
+            }
+
+            // the natural key of an entity is never serialized
+            public partial class Line : Entity
+            {
+                [NaturalKey] public Plain? Id { get; set; }
+            }
+
+            public record Code(string Value);
+
+            public class Plain { }
+
+            public partial class Reference : ValueObject<Reference>
+            {
+                public Reference(string value) { this.Value = value; }
+
+                public string Value { get; }
+            }
+
+            public partial class Checked : ValueObject<Checked>
+            {
+                public Checked(string value, int checksum) { this.Value = value + checksum; }
+
+                public string Value { get; }
+            }
+
+            internal sealed class Bootstrapper : IBootstrapper
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.ValueObject<Checked>().ToUseValueObjectSerializer(value => value.Value, text => new Checked(text, 0));
+                }
+            }
+            """);
+
+        await Assert.That(diagnostics).IsEmpty();
+    }
+
+    [Test]
+    public async Task ReportsAValueObjectPropertyComparedByReference()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using System.Collections.Generic;
+            using dddlib;
+
+            public partial class Address : ValueObject<Address>
+            {
+                public string? Street { get; set; }
+                public Country? Country { get; set; }
+                public List<string>? Lines { get; set; }
+                public Postcode? Postcode { get; set; }
+                public Region? Region { get; set; }
+                public object? Tag { get; set; }
+                public int Number { get; set; }
+            }
+
+            public class Country
+            {
+                public string? Name { get; set; }
+            }
+
+            public partial class Postcode : ValueObject<Postcode>
+            {
+                public string? Value { get; set; }
+            }
+
+            public record Region(string Name);
+            """);
+
+        await Assert.That(diagnostics).Count().IsEqualTo(1);
+        await Assert.That(diagnostics[0].Id).IsEqualTo("DDDLIB019");
+        await Assert.That(diagnostics[0].Severity).IsEqualTo(DiagnosticSeverity.Warning);
+        await Assert.That(diagnostics[0].GetMessage(CultureInfo.InvariantCulture)).Contains("The property 'Country' of the value object 'Address' has the type 'Country'");
+    }
+
+    [Test]
+    public async Task DoesNotReportAValueObjectPropertyWhenAComparerIsConfigured()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using System.Collections.Generic;
+            using dddlib;
+            using dddlib.Configuration;
+
+            public partial class Address : ValueObject<Address>
+            {
+                public Country? Country { get; set; }
+            }
+
+            public class Country
+            {
+                public string? Name { get; set; }
+            }
+
+            internal sealed class Bootstrapper : IBootstrapper
+            {
+                public void Bootstrap(IConfiguration configure)
+                {
+                    configure.ValueObject<Address>().ToUseEqualityComparer(EqualityComparer<Address>.Default);
+                }
+            }
+            """);
+
+        await Assert.That(diagnostics).IsEmpty();
+    }
+
+    [Test]
     public async Task ReportsAValueObjectOfAnotherType()
     {
         var diagnostics = await AnalyzeAsync("""

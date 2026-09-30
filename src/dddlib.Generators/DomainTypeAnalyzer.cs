@@ -20,7 +20,9 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
         DiagnosticDescriptors.NoReconstitutionFactory,
         DiagnosticDescriptors.NoNaturalKey,
         DiagnosticDescriptors.IgnoredNaturalKey,
+        DiagnosticDescriptors.NaturalKeyDoesNotRoundTrip,
         DiagnosticDescriptors.ValueObjectOfAnotherType,
+        DiagnosticDescriptors.ValueObjectPropertyComparedByReference,
         DiagnosticDescriptors.TypeShouldBePartial);
 
     public override void Initialize(AnalysisContext context)
@@ -83,6 +85,11 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
             }
         }
 
+        if (kind == DomainTypeKind.AggregateRoot)
+        {
+            AnalyzeNaturalKeyTypes(context, type, known, bootstrapper);
+        }
+
         if (kind == DomainTypeKind.AggregateRoot && !type.IsAbstract)
         {
             var getState = type.FindOverride(known.GetState);
@@ -125,6 +132,28 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
                 valueObject.TypeArguments[0].ToDisplayString()));
         }
 
+        if (kind == DomainTypeKind.ValueObject)
+        {
+            // Under the default comparer a property is compared with the equality of its own type.
+            var comparedByReference = known.GetValueObjectProperties(type)
+                .Where(property => SymbolEqualityComparer.Default.Equals(property.ContainingType, type))
+                .Where(static property => property.Type is { TypeKind: TypeKind.Class, SpecialType: SpecialType.None } propertyType && !propertyType.IsEnumerable() && !propertyType.HasValueEquality())
+                .ToList();
+
+            if (comparedByReference.Count > 0 && !(bootstrapper.Value.IsKnown && bootstrapper.Value.GetConfiguration(type).HasEqualityComparer))
+            {
+                foreach (var property in comparedByReference)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        DiagnosticDescriptors.ValueObjectPropertyComparedByReference,
+                        property.Locations.FirstOrDefault() ?? location,
+                        property.Name,
+                        type.ToDisplayString(),
+                        property.Type.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString()));
+                }
+            }
+        }
+
         if (kind == DomainTypeKind.ValueObject &&
             !type.IsAbstract &&
             !known.GetValueObjectProperties(type).Any() &&
@@ -136,6 +165,66 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
         if (!type.IsGenericType && !type.IsPartialIncludingContainers())
         {
             context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.TypeShouldBePartial, location, type.Name));
+        }
+    }
+
+    /// <summary>
+    /// Checks the type of every natural key the aggregate root type itself declares, by attribute or in the
+    /// bootstrapper: the key is serialized when the aggregate root is saved and must equal itself when read back.
+    /// </summary>
+    private static void AnalyzeNaturalKeyTypes(SymbolAnalysisContext context, INamedTypeSymbol type, KnownSymbols known, Lazy<BootstrapperModel> bootstrapper)
+    {
+        var declared = known.GetDeclaredNaturalKeyProperties(type).ToList();
+
+        foreach (var property in declared)
+        {
+            Check(property, property.Locations.FirstOrDefault() ?? Location.None);
+        }
+
+        // Only a class or a value object can be reported, so most types never need the bootstrapper read for this.
+        if (type.GetMembers().OfType<IPropertySymbol>().Any(static property => property.Type.TypeKind == TypeKind.Class && property.Type.SpecialType == SpecialType.None) &&
+            bootstrapper.Value.IsKnown)
+        {
+            foreach (var selection in bootstrapper.Value.GetConfiguration(type).NaturalKeys)
+            {
+                if (selection.Property is { } property && !declared.Contains(property, SymbolEqualityComparer.Default))
+                {
+                    Check(property, selection.Location);
+                }
+            }
+        }
+
+        void Check(IPropertySymbol property, Location location)
+        {
+            if (property.Type is not INamedTypeSymbol { TypeKind: TypeKind.Class, SpecialType: SpecialType.None } keyType)
+            {
+                return;
+            }
+
+            string? problem = null;
+            if (known.GetDomainTypeKind(keyType) == DomainTypeKind.ValueObject)
+            {
+                if (!keyType.IsDefaultSerializable().IsSerializable &&
+                    bootstrapper.Value.IsKnown &&
+                    !bootstrapper.Value.GetConfiguration(keyType).HasValueObjectSerializer)
+                {
+                    problem = "the default value object serializer cannot read back; give it a constructor whose parameters match its public properties, or settable properties, or call ToUseValueObjectSerializer in the bootstrapper";
+                }
+            }
+            else if (!keyType.HasValueEquality())
+            {
+                problem = "is compared by reference, so a loaded key never equals the key it was saved as; use a string, a value type or a value object";
+            }
+
+            if (problem is not null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    DiagnosticDescriptors.NaturalKeyDoesNotRoundTrip,
+                    location,
+                    property.ToDisplayString(),
+                    keyType.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString(),
+                    problem));
+            }
         }
     }
 
