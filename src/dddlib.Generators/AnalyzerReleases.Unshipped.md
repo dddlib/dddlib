@@ -13,3 +13,6 @@ DDDLIB005 | dddlib | Error | Assembly has more than one bootstrapper
 DDDLIB006 | dddlib | Error | Bootstrapper has no default constructor
 DDDLIB007 | dddlib | Info | Domain type could be partial
 DDDLIB008 | dddlib | Warning | Applied event has no handler
+DDDLIB009 | dddlib | Warning | Event handler takes an abstract class or an interface
+DDDLIB010 | dddlib | Warning | Event handler applies an event
+DDDLIB011 | dddlib | Warning | Event handler throws

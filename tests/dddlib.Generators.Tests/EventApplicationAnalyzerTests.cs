@@ -185,6 +185,133 @@ public class EventApplicationAnalyzerTests
         await Assert.That(diagnostics).IsEmpty();
     }
 
+    [Test]
+    public async Task ReportsAHandlerThatAppliesAnEvent()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using System;
+            using dddlib;
+
+            public partial class Subject : AggregateRoot
+            {
+                public void Rename() => this.Apply(new Renamed());
+
+                private void Handle(Renamed @event)
+                {
+                    this.Apply(new Audited());
+
+                    Action later = () => this.Apply(new Audited());
+                    later();
+                }
+
+                private void Handle(Audited @event) { }
+            }
+
+            public class Renamed { }
+
+            public class Audited { }
+            """);
+
+        var applied = diagnostics.Where(static d => d.Id == "DDDLIB010").ToList();
+
+        await Assert.That(diagnostics).Count().IsEqualTo(2);
+        await Assert.That(applied).Count().IsEqualTo(2);
+        await Assert.That(applied[0].Severity).IsEqualTo(DiagnosticSeverity.Warning);
+        await Assert.That(applied[0].GetMessage(CultureInfo.InvariantCulture)).Contains("Subject");
+    }
+
+    [Test]
+    public async Task DoesNotReportApplyOutsideAHandler()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using dddlib;
+
+            public partial class Subject : AggregateRoot
+            {
+                public void Rename() => this.Apply(new Renamed());
+
+                // public, so not a handler the dispatcher calls
+                public void Handle(Audited @event) => this.Apply(new Renamed());
+
+                private void Handle(Renamed @event) { }
+            }
+
+            public class Renamed { }
+
+            public class Audited { }
+            """);
+
+        await Assert.That(diagnostics).IsEmpty();
+    }
+
+    [Test]
+    public async Task ReportsAHandlerThatThrows()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using System;
+            using dddlib;
+
+            public partial class Subject : AggregateRoot
+            {
+                public string Name { get; private set; } = string.Empty;
+
+                private void Handle(Renamed @event)
+                {
+                    if (@event.Name == this.Name)
+                    {
+                        throw new BusinessException("The name has not changed.");
+                    }
+
+                    this.Name = @event.Name ?? throw new ArgumentException("The name is missing.");
+                }
+            }
+
+            public class Renamed
+            {
+                public string? Name { get; set; }
+            }
+            """);
+
+        var throwing = diagnostics.Where(static d => d.Id == "DDDLIB011").ToList();
+
+        await Assert.That(diagnostics).Count().IsEqualTo(2);
+        await Assert.That(throwing).Count().IsEqualTo(2);
+        await Assert.That(throwing[0].Severity).IsEqualTo(DiagnosticSeverity.Warning);
+        await Assert.That(throwing[0].GetMessage(CultureInfo.InvariantCulture)).Contains("Subject");
+    }
+
+    [Test]
+    public async Task DoesNotReportAThrowOutsideAHandler()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using dddlib;
+
+            public partial class Subject : AggregateRoot
+            {
+                public string Name { get; private set; } = string.Empty;
+
+                public void Rename(string name)
+                {
+                    if (name == this.Name)
+                    {
+                        throw new BusinessException("The name has not changed.");
+                    }
+
+                    this.Apply(new Renamed { Name = name });
+                }
+
+                private void Handle(Renamed @event) => this.Name = @event.Name!;
+            }
+
+            public class Renamed
+            {
+                public string? Name { get; set; }
+            }
+            """);
+
+        await Assert.That(diagnostics).IsEmpty();
+    }
+
     private static Task<ImmutableArray<Diagnostic>> AnalyzeAsync(string source) =>
         TestCompilation.AnalyzeAsync(source, new EventApplicationAnalyzer());
 }

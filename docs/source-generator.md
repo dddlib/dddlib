@@ -36,6 +36,9 @@ Roslyn generators do not see each other's output. You can write one yourself and
 | DDDLIB006 | Error | A bootstrapper has no public parameterless constructor |
 | DDDLIB007 | Info | A domain type (or one of its containing types) is not `partial` and could be |
 | DDDLIB008 | Warning | An aggregate root applies an event that no `Handle` method in its class hierarchy takes, so applying it changes no state |
+| DDDLIB009 | Warning | A `Handle` method takes an abstract class or an interface; dispatch is by exact type, so it would never be called |
+| DDDLIB010 | Warning | A `Handle` method applies an event; handlers run again on load, where the event would be recorded again |
+| DDDLIB011 | Warning | A `Handle` method throws; handlers run again on load, which must not fail |
 
 DDDLIB004 is a warning rather than an error because a comparer configured in the bootstrapper makes such a value
 object valid; suppress it on the type when that is the case.

@@ -58,6 +58,48 @@ public class AnalyzerTests
     }
 
     [Test]
+    public async Task ReportsHandlersForAbstractClassesAndInterfaces()
+    {
+        var diagnostics = await TestCompilation.AnalyzeAsync("""
+            using dddlib;
+
+            public partial class Subject : AggregateRoot
+            {
+                private void Handle(Changed @event) { }
+                private void Handle(IChanged @event) { }
+                private void Handle(Renamed @event) { }
+            }
+
+            public abstract class Changed { }
+            public interface IChanged { }
+            public class Renamed : Changed, IChanged { }
+            """, new DomainTypeAnalyzer());
+
+        var neverCalled = diagnostics.Where(static d => d.Id == "DDDLIB009").ToList();
+
+        await Assert.That(diagnostics).Count().IsEqualTo(2);
+        await Assert.That(neverCalled).Count().IsEqualTo(2);
+        await Assert.That(neverCalled.Count(static d => d.GetMessage(CultureInfo.InvariantCulture).Contains("abstract class 'Changed'", StringComparison.Ordinal))).IsEqualTo(1);
+        await Assert.That(neverCalled.Count(static d => d.GetMessage(CultureInfo.InvariantCulture).Contains("interface 'IChanged'", StringComparison.Ordinal))).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task DoesNotReportAHandlerForATypeParameter()
+    {
+        var diagnostics = await TestCompilation.AnalyzeAsync("""
+            using dddlib;
+
+            public abstract class Subject<T> : AggregateRoot
+                where T : class
+            {
+                private void Handle(T @event) { }
+            }
+            """, new DomainTypeAnalyzer());
+
+        await Assert.That(diagnostics).IsEmpty();
+    }
+
+    [Test]
     public async Task ReportsValueObjectWithoutPublicProperties()
     {
         var diagnostics = await TestCompilation.AnalyzeAsync("""

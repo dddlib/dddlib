@@ -89,4 +89,34 @@ internal static class DiagnosticDescriptors
         isEnabledByDefault: true,
         description: "An event is dispatched to the non-public 'Handle' method whose parameter type is exactly the type of the event. An event without one is recorded but changes nothing.",
         helpLinkUri: WikiEventApplication);
+
+    public static readonly DiagnosticDescriptor AbstractEventHandler = new(
+        "DDDLIB009",
+        "Event handler takes an abstract class or an interface",
+        "The event handler '{0}' on '{1}' takes the {2} '{3}' and will never be called; an event is dispatched to the handler for exactly its own type",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "The event dispatcher matches the runtime type of an event exactly, and no event has an abstract class or an interface as its runtime type.",
+        helpLinkUri: WikiEventApplication);
+
+    public static readonly DiagnosticDescriptor EventHandlerAppliesEvent = new(
+        "DDDLIB010",
+        "Event handler applies an event",
+        "The event handler '{0}' on '{1}' applies an event; handlers also run when the aggregate root is loaded, where the event would be recorded again",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "An event handler only changes state. Apply every event from the method that makes the decision.",
+        helpLinkUri: WikiEventApplication);
+
+    public static readonly DiagnosticDescriptor EventHandlerThrows = new(
+        "DDDLIB011",
+        "Event handler throws",
+        "The event handler '{0}' on '{1}' throws; handlers also run when the aggregate root is loaded, so validate before applying the event instead",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "An event handler only changes state. An event that was applied has happened, and replaying it must not fail.",
+        helpLinkUri: WikiEventApplication);
 }

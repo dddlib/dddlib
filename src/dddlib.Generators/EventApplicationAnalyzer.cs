@@ -13,7 +13,9 @@ namespace dddlib.Generators;
 public sealed class EventApplicationAnalyzer : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(
-        DiagnosticDescriptors.AppliedEventWithoutHandler);
+        DiagnosticDescriptors.AppliedEventWithoutHandler,
+        DiagnosticDescriptors.EventHandlerAppliesEvent,
+        DiagnosticDescriptors.EventHandlerThrows);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -24,6 +26,7 @@ public sealed class EventApplicationAnalyzer : DiagnosticAnalyzer
             if (KnownSymbols.Create(startContext.Compilation) is { } known)
             {
                 startContext.RegisterOperationAction(operationContext => AnalyzeInvocation(operationContext, known), OperationKind.Invocation);
+                startContext.RegisterOperationAction(operationContext => AnalyzeThrow(operationContext, known), OperationKind.Throw);
             }
         });
     }
@@ -34,6 +37,15 @@ public sealed class EventApplicationAnalyzer : DiagnosticAnalyzer
         if (!SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.OriginalDefinition, known.Apply) || invocation.Arguments.Length != 1)
         {
             return;
+        }
+
+        if (GetContainingHandler(context.ContainingSymbol, known) is { } handler)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                DiagnosticDescriptors.EventHandlerAppliesEvent,
+                invocation.Syntax.GetLocation(),
+                handler.Name,
+                handler.ContainingType.ToDisplayString()));
         }
 
         var argument = invocation.Arguments[0].Value;
@@ -57,6 +69,34 @@ public sealed class EventApplicationAnalyzer : DiagnosticAnalyzer
                 eventType.ToDisplayString(),
                 aggregateRootType.ToDisplayString()));
         }
+    }
+
+    private static void AnalyzeThrow(OperationAnalysisContext context, KnownSymbols known)
+    {
+        if (GetContainingHandler(context.ContainingSymbol, known) is { } handler)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                DiagnosticDescriptors.EventHandlerThrows,
+                context.Operation.Syntax.GetLocation(),
+                handler.Name,
+                handler.ContainingType.ToDisplayString()));
+        }
+    }
+
+    /// <summary>
+    /// Gets the event handler the code belongs to, looking out of any lambdas and local functions, if it is one the
+    /// runtime dispatches to.
+    /// </summary>
+    private static IMethodSymbol? GetContainingHandler(ISymbol symbol, KnownSymbols known)
+    {
+        while (symbol is IMethodSymbol { MethodKind: MethodKind.AnonymousFunction or MethodKind.LocalFunction })
+        {
+            symbol = symbol.ContainingSymbol;
+        }
+
+        return symbol is IMethodSymbol method && method.IsDispatchableHandler() && known.GetDomainTypeKind(method.ContainingType) == DomainTypeKind.AggregateRoot
+            ? method
+            : null;
     }
 
     private static bool MayBeHandled(INamedTypeSymbol aggregateRootType, INamedTypeSymbol eventType, bool isExactType, KnownSymbols known)

@@ -22,7 +22,9 @@ public partial class Vehicle : AggregateRoot
     {
         if (this.Registration is not null)
         {
+#pragma warning disable DDDLIB011 // a test probe, not model logic: it fails any scenario that dispatches an event twice
             throw new RuntimeException("Event processed twice!");
+#pragma warning restore DDDLIB011
         }
 
         this.Registration = new Registration(@event.RegistrationNumber!);

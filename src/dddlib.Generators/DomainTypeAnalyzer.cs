@@ -15,6 +15,7 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
         DiagnosticDescriptors.ValueTypeEventHandler,
         DiagnosticDescriptors.PublicEventHandler,
         DiagnosticDescriptors.ValueObjectWithoutProperties,
+        DiagnosticDescriptors.AbstractEventHandler,
         DiagnosticDescriptors.TypeShouldBePartial);
 
     public override void Initialize(AnalysisContext context)
@@ -60,6 +61,16 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
                 else if (handler.DeclaredAccessibility == Accessibility.Public && parameterType.IsEventClass())
                 {
                     context.ReportDiagnostic(Diagnostic.Create(DiagnosticDescriptors.PublicEventHandler, handlerLocation, handler.Name, type.ToDisplayString()));
+                }
+                else if (parameterType.TypeKind == TypeKind.Interface || parameterType is { TypeKind: TypeKind.Class, IsAbstract: true })
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        DiagnosticDescriptors.AbstractEventHandler,
+                        handlerLocation,
+                        handler.Name,
+                        type.ToDisplayString(),
+                        parameterType.TypeKind == TypeKind.Interface ? "interface" : "abstract class",
+                        parameterType.ToDisplayString()));
                 }
             }
         }
