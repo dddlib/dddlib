@@ -13,10 +13,10 @@ namespace dddlib.Persistence.SqlServer;
 /// </summary>
 internal static class SqlServerSchemaCheck
 {
-    private static readonly ConcurrentDictionary<(string ConnectionString, string Schema), bool> CurrentSchemas = new();
+    private static readonly ConcurrentDictionary<(string ConnectionString, string Schema), bool> CompatibleSchemas = new();
 
-    public static ValueTask EnsureCurrentAsync(string connectionString, string quotedSchema, CancellationToken cancellationToken) =>
-        CurrentSchemas.ContainsKey((connectionString, quotedSchema))
+    public static ValueTask EnsureCompatibleAsync(string connectionString, string quotedSchema, CancellationToken cancellationToken) =>
+        CompatibleSchemas.ContainsKey((connectionString, quotedSchema))
             ? ValueTask.CompletedTask
             : new ValueTask(CheckAsync(connectionString, quotedSchema, cancellationToken));
 
@@ -46,6 +46,6 @@ Further information: https://github.com/dddlib/dddlib/blob/main/docs/persistence
                     SqlServerSchemaInstaller.RequiredVersion));
         }
 
-        CurrentSchemas.TryAdd((connectionString, quotedSchema), true);
+        CompatibleSchemas.TryAdd((connectionString, quotedSchema), true);
     }
 }

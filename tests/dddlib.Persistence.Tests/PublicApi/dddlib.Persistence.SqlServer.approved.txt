@@ -42,11 +42,11 @@ namespace dddlib.Persistence.SqlServer
     }
     public sealed class SqlServerSchemaVersion : System.IEquatable<dddlib.Persistence.SqlServer.SqlServerSchemaVersion>
     {
-        public SqlServerSchemaVersion(string Schema, int DatabaseVersion, int CodeVersion) { }
-        public int CodeVersion { get; init; }
-        public int DatabaseVersion { get; init; }
-        public bool IsDatabaseAhead { get; }
+        public SqlServerSchemaVersion(string Schema, int Version, int RequiredVersion) { }
+        public bool IsAhead { get; }
+        public int RequiredVersion { get; init; }
         public string Schema { get; init; }
+        public int Version { get; init; }
     }
     public sealed class SqlServerSnapshotStore : dddlib.Persistence.Sdk.ISnapshotStore
     {

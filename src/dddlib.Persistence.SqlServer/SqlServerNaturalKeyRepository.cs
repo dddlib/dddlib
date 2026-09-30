@@ -32,7 +32,7 @@ public sealed class SqlServerNaturalKeyRepository : INaturalKeyRepository
         command.Parameters.Add("@AggregateRootTypeName", SqlDbType.VarChar, 511).Value = aggregateRootType.GetSerializedName();
         command.Parameters.Add("@Checkpoint", SqlDbType.BigInt).Value = checkpoint;
 
-        await SqlServerSchemaCheck.EnsureCurrentAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
+        await SqlServerSchemaCheck.EnsureCompatibleAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 
@@ -60,7 +60,7 @@ public sealed class SqlServerNaturalKeyRepository : INaturalKeyRepository
         command.Parameters.Add("@SerializedValue", SqlDbType.NVarChar, -1).Value = serializedNaturalKey;
         command.Parameters.Add("@Checkpoint", SqlDbType.BigInt).Value = checkpoint;
 
-        await SqlServerSchemaCheck.EnsureCurrentAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
+        await SqlServerSchemaCheck.EnsureCompatibleAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
         try
@@ -94,7 +94,7 @@ public sealed class SqlServerNaturalKeyRepository : INaturalKeyRepository
             command.CommandText = string.Concat(this.schema, ".[RemoveNaturalKey]");
             command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier).Value = naturalKeyIdentity;
 
-            await SqlServerSchemaCheck.EnsureCurrentAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
+            await SqlServerSchemaCheck.EnsureCompatibleAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
             await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
             try

@@ -9,13 +9,13 @@ public static class SqlServerSchema
 {
     /// <summary>
     /// Creates the schema if it does not exist and applies the versions it is missing, in one transaction. Concurrent
-    /// callers wait for each other, so it is safe to call from every instance at startup. A database ahead of this
-    /// package is left as it is and reported by <see cref="SqlServerSchemaVersion.IsDatabaseAhead"/>.
+    /// callers wait for each other, so it is safe to call from every instance at startup. A schema ahead of this
+    /// package is left as it is and reported by <see cref="SqlServerSchemaVersion.IsAhead"/>.
     /// </summary>
     public static async Task<SqlServerSchemaVersion> EnsureAsync(string connectionString, string schema = "dbo", CancellationToken cancellationToken = default)
     {
-        var (databaseVersion, codeVersion) = await SqlServerSchemaInstaller.EnsureAsync(connectionString, schema, cancellationToken).ConfigureAwait(false);
-        return new SqlServerSchemaVersion(schema, databaseVersion, codeVersion);
+        var (version, requiredVersion) = await SqlServerSchemaInstaller.EnsureAsync(connectionString, schema, cancellationToken).ConfigureAwait(false);
+        return new SqlServerSchemaVersion(schema, version, requiredVersion);
     }
 
     /// <summary>

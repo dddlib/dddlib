@@ -94,36 +94,49 @@ public class SqlServerSchemaTests : SqlServerIntegration
     }
 
     [Test]
-    public async Task ReportsWhenTheDatabaseIsAheadOfTheCode()
+    public async Task ReportsTheVersionOfACurrentSchema()
+    {
+        var schema = NewSchema();
+
+        var installed = await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
+        var ensuredAgain = await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
+
+        await Assert.That(installed).IsEqualTo(new SqlServerSchemaVersion(schema, RequiredVersion, RequiredVersion));
+        await Assert.That(installed.IsAhead).IsFalse();
+        await Assert.That(ensuredAgain).IsEqualTo(installed);
+    }
+
+    [Test]
+    public async Task ReportsWhenTheSchemaIsAheadOfThePackage()
     {
         var schema = NewSchema();
         await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
         await this.Database.ExecuteScriptAsync($"INSERT INTO [{schema}].[Versions] ([Version]) VALUES (99);");
 
         var version = await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
-        var stream = await new SqlServerEventStore(this.ConnectionString, schema).GetStreamAsync(Guid.NewGuid(), 0);
 
-        await Assert.That(version).IsEqualTo(new SqlServerSchemaVersion(schema, 99, 1));
-        await Assert.That(version.IsDatabaseAhead).IsTrue();
-        await Assert.That(stream.Events).IsEmpty();
-        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(2);
+        await Assert.That(version).IsEqualTo(new SqlServerSchemaVersion(schema, 99, RequiredVersion));
+        await Assert.That(version.IsAhead).IsTrue();
+        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(RequiredVersion + 1);
     }
 
     [Test]
     public async Task OlderCodeKeepsWorkingAfterNewerCodeUpgrades()
     {
-        // Process A (code 2) upgrades the schema while process B (code 1) is still running and later restarts.
+        // Process A, on a newer package, upgrades the schema; process B, on this package, then runs its first command
+        // against it and later restarts.
         var schema = NewSchema();
-        var version1 = SqlServerSchemaInstaller.Scripts[0];
-        var version2 = new SqlServerScript(2, "CREATE TABLE [dbo].[Upgraded] ([Id] INT NOT NULL);\nGO\n");
-        await SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, [version1], CancellationToken.None);
+        var next = new SqlServerScript(RequiredVersion + 1, "CREATE TABLE [dbo].[Upgraded] ([Id] INT NOT NULL);\nGO\n");
+        await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
 
-        var processA = await SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, [version1, version2], CancellationToken.None);
-        var processB = await SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, [version1], CancellationToken.None);
+        var processA = await SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, [.. SqlServerSchemaInstaller.Scripts, next], CancellationToken.None);
+        var stream = await new SqlServerEventStore(this.ConnectionString, schema).GetStreamAsync(Guid.NewGuid(), 0);
+        var processB = await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
 
-        await Assert.That(processA).IsEqualTo((2, 2));
-        await Assert.That(processB).IsEqualTo((2, 1));
-        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(2);
+        await Assert.That(processA).IsEqualTo((RequiredVersion + 1, RequiredVersion + 1));
+        await Assert.That(stream.Events).IsEmpty();
+        await Assert.That(processB).IsEqualTo(new SqlServerSchemaVersion(schema, RequiredVersion + 1, RequiredVersion));
+        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(RequiredVersion + 1);
     }
 
     [Test]
@@ -195,6 +208,8 @@ public class SqlServerSchemaTests : SqlServerIntegration
     {
         await Assert.That(() => (Task)SqlServerSchema.EnsureAsync(this.ConnectionString, "bad name")).Throws<ArgumentException>();
     }
+
+    private static int RequiredVersion => SqlServerSchemaInstaller.RequiredVersion;
 
     private static string NewSchema() => string.Concat("s", Guid.NewGuid().ToString("N"));
 

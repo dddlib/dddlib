@@ -10,7 +10,7 @@ public class SqlServerEventDispatcherSchemaTests : SqlServerIntegration
     {
         var schema = string.Concat("s", Guid.NewGuid().ToString("N"));
 
-        await SqlServerEventDispatcherSchema.EnsureAsync(this.ConnectionString, schema);
+        var version = await SqlServerEventDispatcherSchema.EnsureAsync(this.ConnectionString, schema);
 
         foreach (var table in new[] { "Types", "Streams", "Events", "Batches", "DispatchedEvents", "Versions" })
         {
@@ -19,6 +19,23 @@ public class SqlServerEventDispatcherSchemaTests : SqlServerIntegration
 
         await Assert.That((string?)await this.Database.ExecuteScalarAsync($"SELECT [Description] FROM [{schema}].[Versions] WHERE [Version] = 1;"))
             .StartsWith("dddlib.Persistence.EventDispatcher.SqlServer ");
+        await Assert.That(version).IsEqualTo(new SqlServerEventDispatcherSchemaVersion(schema, version.RequiredVersion, version.RequiredVersion));
+        await Assert.That(version.IsAhead).IsFalse();
+    }
+
+    [Test]
+    public async Task ReportsWhenTheSchemaIsAheadOfThePackage()
+    {
+        var schema = string.Concat("s", Guid.NewGuid().ToString("N"));
+        var installed = await SqlServerEventDispatcherSchema.EnsureAsync(this.ConnectionString, schema);
+        await this.Database.ExecuteScriptAsync($"INSERT INTO [{schema}].[Versions] ([Version]) VALUES (99);");
+
+        var version = await SqlServerEventDispatcherSchema.EnsureAsync(this.ConnectionString, schema);
+        var batch = await new SqlServerEventBatchStore(this.ConnectionString, schema).GetNextBatchAsync(Guid.NewGuid(), 10, TimeSpan.FromSeconds(30));
+
+        await Assert.That(version).IsEqualTo(new SqlServerEventDispatcherSchemaVersion(schema, 99, installed.RequiredVersion));
+        await Assert.That(version.IsAhead).IsTrue();
+        await Assert.That(batch).IsNull();
     }
 
     [Test]

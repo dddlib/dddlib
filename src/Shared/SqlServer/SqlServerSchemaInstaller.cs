@@ -31,7 +31,7 @@ internal static class SqlServerSchemaInstaller
     /// </summary>
     public static string Description { get; } = GetDescription();
 
-    public static Task<(int DatabaseVersion, int CodeVersion)> EnsureAsync(string connectionString, string schema, CancellationToken cancellationToken) =>
+    public static Task<(int Version, int RequiredVersion)> EnsureAsync(string connectionString, string schema, CancellationToken cancellationToken) =>
         EnsureAsync(connectionString, schema, Scripts, cancellationToken);
 
     /// <summary>
@@ -39,7 +39,7 @@ internal static class SqlServerSchemaInstaller
     /// the schema, so concurrent callers apply each version once. A database already ahead of these scripts is left as
     /// it is and reported, not refused: older code keeps working against a newer schema during a rolling upgrade.
     /// </summary>
-    public static async Task<(int DatabaseVersion, int CodeVersion)> EnsureAsync(string connectionString, string schema, IReadOnlyList<SqlServerScript> scripts, CancellationToken cancellationToken)
+    public static async Task<(int Version, int RequiredVersion)> EnsureAsync(string connectionString, string schema, IReadOnlyList<SqlServerScript> scripts, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(connectionString);
         var quotedSchema = SqlServerIdentifier.Quote(schema);
