@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -380,22 +381,18 @@ internal static class SymbolExtensions
         {
             if (!properties.Any(property => string.Equals(property.Name, parameter.Name, StringComparison.OrdinalIgnoreCase)))
             {
-                return new DefaultSerializability(false, null, parameter);
+                return new DefaultSerializability(false, ImmutableArray<IPropertySymbol>.Empty, parameter);
             }
         }
 
-        foreach (var property in properties)
-        {
-            var isSet = property.SetMethod is { } setter && (setter.DeclaredAccessibility == Accessibility.Public || property.HasJsonAttribute("JsonIncludeAttribute"));
-            if (!isSet &&
+        var unloaded = properties
+            .Where(property =>
+                !(property.SetMethod is { } setter && (setter.DeclaredAccessibility == Accessibility.Public || property.HasJsonAttribute("JsonIncludeAttribute"))) &&
                 property.IsStored() &&
                 !constructor.Parameters.Any(parameter => string.Equals(property.Name, parameter.Name, StringComparison.OrdinalIgnoreCase)))
-            {
-                return new DefaultSerializability(false, property, null);
-            }
-        }
+            .ToImmutableArray();
 
-        return new DefaultSerializability(true, null, null);
+        return new DefaultSerializability(unloaded.IsEmpty, unloaded, null);
     }
 
     /// <summary>
@@ -415,16 +412,16 @@ internal static class SymbolExtensions
 
 /// <summary>
 /// The outcome of <see cref="SymbolExtensions.IsDefaultSerializable"/>. When the type is not serializable, either the
-/// property that is written but never loaded, or the constructor parameter that matches no property, is given; both
-/// are <see langword="null"/> when the type has no constructor the serializer can use.
+/// properties that are written but never loaded, or the constructor parameter that matches no property, are given;
+/// neither is when the type has no constructor the serializer can use.
 /// </summary>
-internal readonly struct DefaultSerializability(bool isSerializable, IPropertySymbol? unloadedProperty, IParameterSymbol? unboundParameter)
+internal readonly struct DefaultSerializability(bool isSerializable, ImmutableArray<IPropertySymbol> unloadedProperties, IParameterSymbol? unboundParameter)
 {
-    public static readonly DefaultSerializability NoConstructor = new(false, null, null);
+    public static readonly DefaultSerializability NoConstructor = new(false, ImmutableArray<IPropertySymbol>.Empty, null);
 
     public bool IsSerializable { get; } = isSerializable;
 
-    public IPropertySymbol? UnloadedProperty { get; } = unloadedProperty;
+    public ImmutableArray<IPropertySymbol> UnloadedProperties { get; } = unloadedProperties;
 
     public IParameterSymbol? UnboundParameter { get; } = unboundParameter;
 }

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -15,7 +16,8 @@ public sealed class EventApplicationAnalyzer : DiagnosticAnalyzer
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(
         DiagnosticDescriptors.AppliedEventWithoutHandler,
         DiagnosticDescriptors.EventHandlerAppliesEvent,
-        DiagnosticDescriptors.EventHandlerThrows);
+        DiagnosticDescriptors.EventHandlerThrows,
+        DiagnosticDescriptors.PropertySavedButNotLoaded);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -23,15 +25,22 @@ public sealed class EventApplicationAnalyzer : DiagnosticAnalyzer
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.RegisterCompilationStartAction(static startContext =>
         {
-            if (KnownSymbols.Create(startContext.Compilation) is { } known)
+            if (KnownSymbols.Create(startContext.Compilation) is not { } known)
             {
-                startContext.RegisterOperationAction(operationContext => AnalyzeInvocation(operationContext, known), OperationKind.Invocation);
-                startContext.RegisterOperationAction(operationContext => AnalyzeThrow(operationContext, known), OperationKind.Throw);
+                return;
             }
+
+            // Event and memento types are found where they are used, from several places at once; each is checked once.
+            var serialized = new ConcurrentDictionary<ITypeSymbol, bool>(SymbolEqualityComparer.Default);
+
+            startContext.RegisterOperationAction(operationContext => AnalyzeInvocation(operationContext, known, serialized), OperationKind.Invocation);
+            startContext.RegisterOperationAction(operationContext => AnalyzeThrow(operationContext, known), OperationKind.Throw);
+            startContext.RegisterOperationAction(operationContext => AnalyzeReturn(operationContext, known, serialized), OperationKind.Return);
+            startContext.RegisterSymbolAction(symbolContext => AnalyzeMethod(symbolContext, known, serialized), SymbolKind.Method);
         });
     }
 
-    private static void AnalyzeInvocation(OperationAnalysisContext context, KnownSymbols known)
+    private static void AnalyzeInvocation(OperationAnalysisContext context, KnownSymbols known, ConcurrentDictionary<ITypeSymbol, bool> serialized)
     {
         var invocation = (IInvocationOperation)context.Operation;
         if (!SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.OriginalDefinition, known.Apply) || invocation.Arguments.Length != 1)
@@ -48,10 +57,10 @@ public sealed class EventApplicationAnalyzer : DiagnosticAnalyzer
                 handler.ContainingType.ToDisplayString()));
         }
 
-        var argument = invocation.Arguments[0].Value;
-        while (argument is IConversionOperation { IsImplicit: true } conversion)
+        var argument = Unwrap(invocation.Arguments[0].Value);
+        if (argument.Type is not null)
         {
-            argument = conversion.Operand;
+            AnalyzeSerialized(argument.Type, "event", context.Compilation, serialized, context.ReportDiagnostic);
         }
 
         // Only a concrete class can be said to have no handler; anything else is not known until runtime.
@@ -69,6 +78,68 @@ public sealed class EventApplicationAnalyzer : DiagnosticAnalyzer
                 eventType.ToDisplayString(),
                 aggregateRootType.ToDisplayString()));
         }
+    }
+
+    private static void AnalyzeMethod(SymbolAnalysisContext context, KnownSymbols known, ConcurrentDictionary<ITypeSymbol, bool> serialized)
+    {
+        var method = (IMethodSymbol)context.Symbol;
+        if (method.IsDispatchableHandler() && known.GetDomainTypeKind(method.ContainingType) == DomainTypeKind.AggregateRoot)
+        {
+            AnalyzeSerialized(method.Parameters[0].Type, "event", context.Compilation, serialized, context.ReportDiagnostic);
+        }
+    }
+
+    private static void AnalyzeReturn(OperationAnalysisContext context, KnownSymbols known, ConcurrentDictionary<ITypeSymbol, bool> serialized)
+    {
+        // The memento type is whatever an override of GetState creates and returns.
+        if (((IReturnOperation)context.Operation).ReturnedValue is { } returned &&
+            Unwrap(returned) is IObjectCreationOperation { Type: { } mementoType } &&
+            context.ContainingSymbol is IMethodSymbol method &&
+            Overrides(method, known.GetState))
+        {
+            AnalyzeSerialized(mementoType, "memento", context.Compilation, serialized, context.ReportDiagnostic);
+        }
+    }
+
+    private static void AnalyzeSerialized(ITypeSymbol type, string kind, Compilation compilation, ConcurrentDictionary<ITypeSymbol, bool> serialized, Action<Diagnostic> report)
+    {
+        if (type is not INamedTypeSymbol { TypeKind: TypeKind.Class } serializedType ||
+            !SymbolEqualityComparer.Default.Equals(serializedType.ContainingAssembly, compilation.Assembly) ||
+            !serialized.TryAdd(serializedType, true))
+        {
+            return;
+        }
+
+        foreach (var property in serializedType.IsDefaultSerializable().UnloadedProperties)
+        {
+            if (property.Locations.FirstOrDefault(static location => location.IsInSource) is { } location)
+            {
+                report(Diagnostic.Create(DiagnosticDescriptors.PropertySavedButNotLoaded, location, property.Name, kind, serializedType.ToDisplayString()));
+            }
+        }
+    }
+
+    private static bool Overrides(IMethodSymbol method, IMethodSymbol baseMethod)
+    {
+        for (var current = method.OverriddenMethod; current is not null; current = current.OverriddenMethod)
+        {
+            if (SymbolEqualityComparer.Default.Equals(current, baseMethod))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static IOperation Unwrap(IOperation operation)
+    {
+        while (operation is IConversionOperation { IsImplicit: true } conversion)
+        {
+            operation = conversion.Operand;
+        }
+
+        return operation;
     }
 
     private static void AnalyzeThrow(OperationAnalysisContext context, KnownSymbols known)

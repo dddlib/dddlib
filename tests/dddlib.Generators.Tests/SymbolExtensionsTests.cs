@@ -97,7 +97,7 @@ public class SymbolExtensionsTests
         var result = Serializability(type);
 
         await Assert.That(result.IsSerializable).IsTrue();
-        await Assert.That(result.UnloadedProperty).IsNull();
+        await Assert.That(result.UnloadedProperties).IsEmpty();
         await Assert.That(result.UnboundParameter).IsNull();
     }
 
@@ -111,7 +111,15 @@ public class SymbolExtensionsTests
         var result = Serializability(type);
 
         await Assert.That(result.IsSerializable).IsFalse();
-        await Assert.That(result.UnloadedProperty?.Name).IsEqualTo(property);
+        await Assert.That(result.UnloadedProperties.Select(static unloaded => unloaded.Name)).IsEquivalentTo([property]);
+    }
+
+    [Test]
+    public async Task NamesEveryPropertyThatIsNotLoaded()
+    {
+        var result = Serializability("SeveralGetOnlyProperties");
+
+        await Assert.That(result.UnloadedProperties.Select(static unloaded => unloaded.Name)).IsEquivalentTo(["First", "Second"]);
     }
 
     [Test]
@@ -121,7 +129,7 @@ public class SymbolExtensionsTests
 
         await Assert.That(result.IsSerializable).IsFalse();
         await Assert.That(result.UnboundParameter?.Name).IsEqualTo("other");
-        await Assert.That(result.UnloadedProperty).IsNull();
+        await Assert.That(result.UnloadedProperties).IsEmpty();
     }
 
     [Test]
@@ -133,7 +141,7 @@ public class SymbolExtensionsTests
         var result = Serializability(type);
 
         await Assert.That(result.IsSerializable).IsFalse();
-        await Assert.That(result.UnloadedProperty).IsNull();
+        await Assert.That(result.UnloadedProperties).IsEmpty();
         await Assert.That(result.UnboundParameter).IsNull();
     }
 
@@ -205,6 +213,13 @@ public class SymbolExtensionsTests
             public class GetOnlyProperty
             {
                 public string Value { get; } = string.Empty;
+            }
+
+            public class SeveralGetOnlyProperties
+            {
+                public string First { get; } = string.Empty;
+                public string Second { get; } = string.Empty;
+                public string? Third { get; set; }
             }
 
             public class PrivateSetter

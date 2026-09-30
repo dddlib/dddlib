@@ -9,6 +9,7 @@ internal static class DiagnosticDescriptors
     private const string WikiEventApplication = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-event-application.md";
     private const string WikiValueObjectEquality = "https://github.com/dddlib/dddlib/blob/main/docs/value-object-equality.md";
     private const string WikiBootstrapper = "https://github.com/dddlib/dddlib/blob/main/docs/bootstrapper.md";
+    private const string WikiSerialization = "https://github.com/dddlib/dddlib/blob/main/docs/persistence/serialization.md";
 
     public static readonly DiagnosticDescriptor MultipleNaturalKeys = new(
         "DDDLIB001",
@@ -119,4 +120,14 @@ internal static class DiagnosticDescriptors
         isEnabledByDefault: true,
         description: "An event handler only changes state. An event that was applied has happened, and replaying it must not fail.",
         helpLinkUri: WikiEventApplication);
+
+    public static readonly DiagnosticDescriptor PropertySavedButNotLoaded = new(
+        "DDDLIB012",
+        "Property is saved but never loaded",
+        "The property '{0}' of the {1} '{2}' is written when the {1} is saved but never read back; it has no public setter and no constructor parameter of the same name",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Events and mementos are serialized with System.Text.Json, which sets a property through its public setter or a constructor parameter of the same name.",
+        helpLinkUri: WikiSerialization);
 }

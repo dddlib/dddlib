@@ -312,6 +312,147 @@ public class EventApplicationAnalyzerTests
         await Assert.That(diagnostics).IsEmpty();
     }
 
+    [Test]
+    public async Task ReportsEventPropertiesThatAreSavedButNotLoaded()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using dddlib;
+
+            public partial class Subject : AggregateRoot
+            {
+                public void Rename(string name)
+                {
+                    this.Apply(new Renamed(name));
+                    this.Apply(new Renamed(name));
+                }
+
+                private void Handle(Renamed @event) { }
+
+                // handled only, as when it is applied by another class of the hierarchy
+                private void Handle(Moved @event) { }
+            }
+
+            public class Renamed
+            {
+                public Renamed() { }
+                public Renamed(string name) { this.Name = name; }
+                public string? Name { get; }
+                public string? Reason { get; set; }
+                public int Length => this.Name?.Length ?? 0;
+            }
+
+            public class Moved
+            {
+                public string? Place { get; private set; }
+            }
+            """);
+
+        var unloaded = diagnostics.Where(static d => d.Id == "DDDLIB012").Select(static d => d.GetMessage(CultureInfo.InvariantCulture)).ToList();
+
+        await Assert.That(diagnostics).Count().IsEqualTo(2);
+        await Assert.That(unloaded.Count(static message => message.Contains("'Name' of the event 'Renamed'", StringComparison.Ordinal))).IsEqualTo(1);
+        await Assert.That(unloaded.Count(static message => message.Contains("'Place' of the event 'Moved'", StringComparison.Ordinal))).IsEqualTo(1);
+        await Assert.That(diagnostics[0].Location.SourceTree!.GetText().ToString(diagnostics[0].Location.SourceSpan)).IsIn("Name", "Place");
+    }
+
+    [Test]
+    public async Task ReportsMementoPropertiesThatAreSavedButNotLoaded()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using dddlib;
+
+            public partial class Subject : AggregateRoot
+            {
+                private string name = string.Empty;
+
+                protected override object? GetState() => new Memento(this.name);
+
+                protected override void SetState(object memento) => this.name = ((Memento)memento).Name;
+            }
+
+            public class Memento
+            {
+                public Memento() { }
+                public Memento(string name) { this.Name = name; }
+                public string Name { get; } = string.Empty;
+            }
+            """);
+
+        await Assert.That(diagnostics).Count().IsEqualTo(1);
+        await Assert.That(diagnostics[0].Id).IsEqualTo("DDDLIB012");
+        await Assert.That(diagnostics[0].GetMessage(CultureInfo.InvariantCulture)).Contains("'Name' of the memento 'Memento'");
+    }
+
+    [Test]
+    public async Task DoesNotReportEventsAndMementosThatAreLoadedInFull()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using dddlib;
+
+            public partial class Subject : AggregateRoot
+            {
+                private string name = string.Empty;
+
+                public void Rename(string name) => this.Apply(new Renamed { Name = name });
+
+                protected override object? GetState() => new Memento(this.name);
+
+                protected override void SetState(object memento) => this.name = ((Memento)memento).Name;
+
+                private void Handle(Renamed @event) => this.name = @event.Name!;
+            }
+
+            public class Renamed
+            {
+                public string? Name { get; set; }
+            }
+
+            public class Memento
+            {
+                public Memento(string name) { this.Name = name; }
+                public string Name { get; }
+            }
+
+            // neither an event nor a memento
+            public class Unrelated
+            {
+                public string Name { get; } = string.Empty;
+            }
+            """);
+
+        await Assert.That(diagnostics).IsEmpty();
+    }
+
+    [Test]
+    public async Task DoesNotReportAnEventDeclaredInAnotherAssembly()
+    {
+        var reference = TestCompilation.Emit(
+            """
+            public class Renamed
+            {
+                public string Name { get; } = string.Empty;
+            }
+            """,
+            "EventAssembly");
+
+        var compilation = TestCompilation.Create(
+            """
+            using dddlib;
+
+            public partial class Subject : AggregateRoot
+            {
+                public void Rename() => this.Apply(new Renamed());
+
+                private void Handle(Renamed @event) { }
+            }
+            """,
+            references: reference);
+
+        var diagnostics = await TestCompilation.AnalyzeAsync(compilation, new EventApplicationAnalyzer());
+
+        await Assert.That(diagnostics).IsEmpty();
+    }
+
     private static Task<ImmutableArray<Diagnostic>> AnalyzeAsync(string source) =>
         TestCompilation.AnalyzeAsync(source, new EventApplicationAnalyzer());
 }

@@ -39,6 +39,7 @@ Roslyn generators do not see each other's output. You can write one yourself and
 | DDDLIB009 | Warning | A `Handle` method takes an abstract class or an interface; dispatch is by exact type, so it would never be called |
 | DDDLIB010 | Warning | A `Handle` method applies an event; handlers run again on load, where the event would be recorded again |
 | DDDLIB011 | Warning | A `Handle` method throws; handlers run again on load, which must not fail |
+| DDDLIB012 | Warning | An event or memento has a property with no public setter and no constructor parameter of the same name, so it is saved but never loaded |
 
 DDDLIB004 is a warning rather than an error because a comparer configured in the bootstrapper makes such a value
 object valid; suppress it on the type when that is the case.

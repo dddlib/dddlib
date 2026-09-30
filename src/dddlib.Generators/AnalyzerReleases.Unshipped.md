@@ -16,3 +16,4 @@ DDDLIB008 | dddlib | Warning | Applied event has no handler
 DDDLIB009 | dddlib | Warning | Event handler takes an abstract class or an interface
 DDDLIB010 | dddlib | Warning | Event handler applies an event
 DDDLIB011 | dddlib | Warning | Event handler throws
+DDDLIB012 | dddlib | Warning | Property is saved but never loaded
