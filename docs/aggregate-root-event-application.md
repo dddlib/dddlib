@@ -75,6 +75,11 @@ private `Handle` method, where the change in state is applied to the aggregate.
   declared handlers, so a base class handler and a subclass handler for the same event both run.
 - Events must be classes. Applying a value type throws a `RuntimeException`.
 
-The analyzers report a handler with a value-type parameter (DDDLIB002) and a public handler (DDDLIB003), since the
-dispatcher would silently ignore both. For `partial` aggregate roots the dispatch code is
-[generated at compile time](source-generator.md); otherwise the handlers are discovered by reflection once per type.
+The analyzers report what the dispatcher would silently ignore: a handler with a value-type parameter (DDDLIB002), a
+public handler (DDDLIB003), a handler that takes an abstract class or an interface (DDDLIB009), and an applied event
+that no handler takes (DDDLIB008). They also report a handler that applies an event (DDDLIB010) or throws
+(DDDLIB011): handlers run again when the aggregate root is loaded from its events, so a handler only changes state,
+and whatever can fail is checked before the event is applied.
+
+For `partial` aggregate roots the dispatch code is [generated at compile time](source-generator.md); otherwise the
+handlers are discovered by reflection once per type.

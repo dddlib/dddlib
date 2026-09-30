@@ -1,7 +1,7 @@
 # Source Generator and Analyzers
 
-The **dddlib** package ships a Roslyn source generator and analyzers. They run inside the compiler; nothing is needed
-at runtime and there is no second package to install.
+The **dddlib** package ships a Roslyn source generator, analyzers and code fixes. They run inside the compiler and
+the editor; nothing is needed at runtime and there is no second package to install.
 
 ## Generated code
 
@@ -51,7 +51,27 @@ Roslyn generators do not see each other's output. You can write one yourself and
 | DDDLIB021 | Error | The bootstrapper's `ToUseNaturalKey` selects a different property from the one marked `[NaturalKey]` on the same type |
 | DDDLIB022 | Error | A `ToUseNaturalKey` selector is not a property of its parameter |
 
-DDDLIB004 is not reported for a value object that the bootstrapper configures a comparer for.
+The rules that depend on the bootstrapper (DDDLIB004, DDDLIB014, DDDLIB015, DDDLIB017, DDDLIB019 and DDDLIB020)
+read the body of its `Bootstrap` method, and are not reported when configuration may happen somewhere the analyzers
+cannot follow; see [what the analyzers read from the bootstrapper](bootstrapper.md#what-the-analyzers-read-from-the-bootstrapper).
+
+Two limits apply to the event rules. DDDLIB008 is not reported when a base class of the aggregate root comes from a
+referenced assembly, because the compiler does not import its private handlers. DDDLIB012 is reported for types
+declared in the same assembly as the aggregate root that uses them.
+
+Code that breaks a rule on purpose, as a test of the runtime check might, can disable it in place with
+`#pragma warning disable`.
+
+## Code fixes
+
+| Id | Fix |
+|---|---|
+| DDDLIB001 | Remove `[NaturalKey]` from one of the properties; one fix is offered per property |
+| DDDLIB003 | Make the handler private |
+| DDDLIB007 | Make the type and its containing types `partial` |
+| DDDLIB008 | Add an empty private `Handle` method for the event, after the last handler |
+| DDDLIB013 | Add the missing `GetState` or `SetState` override as a stub |
+| DDDLIB014 | Add a `protected internal` parameterless constructor (`private` on a sealed type), after the last constructor |
 
 ## Requirements
 

@@ -53,4 +53,5 @@ it should be a plain object with public settable properties. A memento type may 
 name when loading.
 
 `GetState` returns null by default and `SetState` throws a `RuntimeException` by default, so an aggregate root that
-does not override them can only be persisted through an event store repository without snapshots.
+does not override them can only be persisted through an event store repository without snapshots. Overriding only
+one of the two is reported by the analyzer (DDDLIB013), which offers to add the other as a stub.

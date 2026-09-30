@@ -17,3 +17,6 @@ internal sealed class Bootstrapper : dddlib.Configuration.IBootstrapper
     }
 }
 ```
+
+An aggregate root is saved and loaded by its natural key, so the analyzer reports one that has none, neither by
+attribute in its class hierarchy nor in the bootstrapper (DDDLIB015).

@@ -61,10 +61,13 @@ dddlibv2/
     dddlib.Persistence.EventDispatcher/            dispatcher host, Memory implementation
     dddlib.Persistence.EventDispatcher.SqlServer/  SqlServer batch store and host, SqlServerEventDispatcherSchema
     Shared/SqlServer/                SQL Server infrastructure and Scripts/, linked into both SqlServer packages
-    dddlib.Generators/               source generator + analyzers (phase 4)
+    dddlib.Generators/               source generator + analyzers (phases 4 and 7)
+    dddlib.CodeFixes/                code fixes for the analyzers (phase 7), packed into the dddlib package
   tests/
     dddlib.Tests/                    core feature scenarios, bug regressions, unit tests
     dddlib.Persistence.Tests/        persistence scenarios, integration tests
+    dddlib.Generators.Tests/         generator, analyzer and bootstrapper model tests, driving Roslyn directly
+    dddlib.CodeFixes.Tests/          each code fix applied in an AdhocWorkspace
     dddlib.Tests.Support/            shared domain model (Vehicle, Registration, Wheel), test bootstrapper helpers, SQL container fixture
 ```
 
@@ -303,7 +306,7 @@ Done 2026-09-29. What was built, and where it departs from v1:
 
 ### Phase 7: analyzer coverage (dddlib/dddlib#2)
 
-Planned 2026-09-29, started 2026-09-30 on the `analyzers` branch (7.0 done). Turns the remaining runtime-only model mistakes into diagnostics, adds the code fixes
+Planned 2026-09-29, done 2026-09-30 on the `analyzers` branch; see *As built* at the end of this phase. Turns the remaining runtime-only model mistakes into diagnostics, adds the code fixes
 the issue lists, and refines DDDLIB004. Everything stays inside the `dddlib` package: the analyzers in
 `dddlib.Generators`, the code fixes in a new `dddlib.CodeFixes` assembly packed into the same `analyzers/dotnet/cs`
 folder. Roslyn stays at 4.14 (.NET 9.0.300 SDK, Visual Studio 17.14).
@@ -414,6 +417,32 @@ feature pages, `docs/bootstrapper.md` on what the analyzer can and cannot read f
 Exit: DDDLIB008 to DDDLIB022 and the six code fixes shipped in the `dddlib` package; every runtime "To fix this
 issue" message that is statically decidable has a diagnostic; issue #2 closed with the table in
 `docs/source-generator.md` as the record.
+
+As built, where it departs from the plan above:
+
+- No bootstrapper means a known, empty model rather than `Unknown`, and any other method taking an `IConfiguration`
+  makes the model `Unknown` (both described in 7.0). The feature test projects configure through nested
+  `IBootstrap<T>` classes, so the bootstrapper-aware rules never fire there; the rules are covered by
+  `tests/dddlib.Generators.Tests` alone.
+- DDDLIB008 is not reported when a base class of the aggregate root is in a referenced assembly: the compiler does
+  not import private members from metadata, so the planned "metadata types included" cannot see the handlers. With an
+  argument that is not a `new` expression, a handler for a derived type also counts.
+- DDDLIB013 looks at the whole hierarchy of a non-abstract aggregate root, so an abstract base and its subclass may
+  supply one override each.
+- DDDLIB015 accepts `ToUseNaturalKey` for a base type as planned, although the runtime applies bootstrapper
+  configuration to the exact type only; the rule errs on the side of silence.
+- DDDLIB017 and DDDLIB019 skip properties typed `object`, whose equality is not known until runtime. DDDLIB019 is not
+  reported when the bootstrapper configures a comparer, like DDDLIB004.
+- DDDLIB020 accepts a mapping configured for a type derived from the one at the call site (forward) or for an event
+  derived from the one mapped back (reverse), because the runtime looks mappings up by runtime type.
+- The code fixes place and indent what they add themselves instead of running the formatter. The DDDLIB007 fix stays
+  within the document: a type that is not partial has one declaration, which contains everything nested in it. The
+  DDDLIB014 fix writes `private` rather than `protected internal` on a sealed type.
+- Test models that broke a rule by accident were fixed (four applied events without handlers). Three break one on
+  purpose and carry a scoped pragma: the double-dispatch probe in `Vehicle` (DDDLIB011), the benchmark subjects
+  (DDDLIB014) and Bug0064 (DDDLIB017).
+- Not verified here: the code fixes loading in Visual Studio from the packed `analyzers/dotnet/cs` folder. The
+  package contents were checked (`dddlib.Generators.dll` and `dddlib.CodeFixes.dll`), the editor was not.
 
 Considered and left out: a handler whose event is never applied (events arrive from subclasses and mappings, so it
 is noisy), publicly settable value object properties (a shape the serialization docs sanction), a public bootstrapper
