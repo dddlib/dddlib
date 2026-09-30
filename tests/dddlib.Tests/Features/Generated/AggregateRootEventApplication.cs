@@ -173,4 +173,56 @@ public abstract partial class AggregateRootEventApplication : Feature
             }
         }
     }
+
+    // A positional record has no parameterless constructor (https://github.com/dddlib/dddlib/issues/48).
+    public sealed partial class PositionalRecordEventsAreStoredOnAggregate : AggregateRootEventApplication
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a natural key
+            var naturalKey = "key";
+
+            // When an aggregate root that applies a positional record is instantiated with that natural key
+            var aggregateRoot = new Subject(naturalKey);
+
+            // Then the event is dispatched to its handler
+            await Assert.That(aggregateRoot.NaturalKey).IsEqualTo(naturalKey);
+
+            // And the event is raised with that natural key
+            var events = aggregateRoot.GetUncommittedEvents();
+            await Assert.That(events).HasSingleItem();
+            await Assert.That(events[0]).IsEqualTo(new NewSubject(naturalKey));
+        }
+
+        public partial class Subject : AggregateRoot
+        {
+            public Subject(string key)
+            {
+                this.Apply(new NewSubject(key));
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? NaturalKey { get; private set; }
+
+            private void Handle(NewSubject @event)
+            {
+                this.NaturalKey = @event.NaturalKey;
+            }
+        }
+
+        private sealed partial record NewSubject(string NaturalKey);
+
+        private sealed partial class Bootstrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
 }

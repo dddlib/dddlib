@@ -137,4 +137,58 @@ public abstract class MemoryEventDispatcher : Feature
             }
         }
     }
+
+    // A positional record has no parameterless constructor; it is read back through its primary constructor
+    // (https://github.com/dddlib/dddlib/issues/48).
+    public sealed class CanDispatchPositionalRecordEvent : MemoryEventDispatcher
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a memory event dispatcher over the repository's event store
+            var dispatched = new TaskCompletionSource<object>();
+            await using var eventDispatcher = new Memory.MemoryEventDispatcher(
+                this.EventStore,
+                (sequenceNumber, @event) => dispatched.TrySetResult(@event),
+                new EventDispatcherOptions { PollingInterval = TimeSpan.FromMilliseconds(50) });
+            eventDispatcher.Start();
+
+            // And an instance of an aggregate root that applies a positional record
+            var instance = new Subject("key");
+
+            // When that instance is saved to the repository
+            await this.Repository.SaveAsync(instance);
+
+            // Then the event is dispatched within a short period of time
+            var newSubject = await dispatched.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            await Assert.That(newSubject).IsEqualTo(new NewSubject("key"));
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject(id));
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+        }
+
+        public record NewSubject(string Id);
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
 }

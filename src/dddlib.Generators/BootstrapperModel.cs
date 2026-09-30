@@ -151,7 +151,7 @@ internal sealed class BootstrapperModel
     private sealed class Builder
     {
         private readonly ImmutableArray<NaturalKeySelection>.Builder naturalKeys = ImmutableArray.CreateBuilder<NaturalKeySelection>();
-        private readonly Dictionary<ITypeSymbol, bool> eventMappings = new(SymbolEqualityComparer.Default);
+        private readonly Dictionary<ITypeSymbol, EventMappingKinds> eventMappings = new(SymbolEqualityComparer.Default);
         private bool hasReconstitutionFactory;
         private bool hasEqualityComparer;
         private bool hasValueObjectSerializer;
@@ -186,9 +186,18 @@ internal sealed class BootstrapperModel
                     this.hasValueObjectSerializer = true;
                     return true;
 
-                case "ToMapToEvent" when method.TypeArguments.Length == 1:
-                    var hasReverseMapping = method.Parameters.Length == 2;
-                    this.eventMappings[method.TypeArguments[0]] = hasReverseMapping || (this.eventMappings.TryGetValue(method.TypeArguments[0], out var existing) && existing);
+                case "ToMapToEvent" when method.TypeArguments.Length == 1 && method.Parameters.Length > 0:
+                    // A mapping that takes only the entity or value object creates the event; any other is given it.
+                    var kinds = method.Parameters[0].Type is INamedTypeSymbol { DelegateInvokeMethod.Parameters.Length: 1 }
+                        ? EventMappingKinds.NewEvent
+                        : EventMappingKinds.ExistingEvent;
+
+                    if (method.Parameters.Length == 2)
+                    {
+                        kinds |= EventMappingKinds.Reverse;
+                    }
+
+                    this.eventMappings[method.TypeArguments[0]] = this.eventMappings.TryGetValue(method.TypeArguments[0], out var existing) ? existing | kinds : kinds;
                     return true;
 
                 default:
@@ -206,16 +215,16 @@ internal sealed class BootstrapperModel
 /// </summary>
 internal sealed class BootstrapperTypeConfiguration
 {
-    public static readonly BootstrapperTypeConfiguration Empty = new(false, ImmutableArray<NaturalKeySelection>.Empty, false, false, new Dictionary<ITypeSymbol, bool>(SymbolEqualityComparer.Default));
+    public static readonly BootstrapperTypeConfiguration Empty = new(false, ImmutableArray<NaturalKeySelection>.Empty, false, false, new Dictionary<ITypeSymbol, EventMappingKinds>(SymbolEqualityComparer.Default));
 
-    private readonly Dictionary<ITypeSymbol, bool> eventMappings;
+    private readonly Dictionary<ITypeSymbol, EventMappingKinds> eventMappings;
 
     public BootstrapperTypeConfiguration(
         bool hasReconstitutionFactory,
         ImmutableArray<NaturalKeySelection> naturalKeys,
         bool hasEqualityComparer,
         bool hasValueObjectSerializer,
-        Dictionary<ITypeSymbol, bool> eventMappings)
+        Dictionary<ITypeSymbol, EventMappingKinds> eventMappings)
     {
         this.HasReconstitutionFactory = hasReconstitutionFactory;
         this.NaturalKeys = naturalKeys;
@@ -245,9 +254,9 @@ internal sealed class BootstrapperTypeConfiguration
     public bool HasValueObjectSerializer { get; }
 
     /// <summary>
-    /// Gets the event type of every <c>ToMapToEvent&lt;TEvent&gt;</c> call, and whether any of them has a reverse mapping.
+    /// Gets the event type of every <c>ToMapToEvent&lt;TEvent&gt;</c> call, and the kinds of mapping those calls configure.
     /// </summary>
-    public IEnumerable<KeyValuePair<ITypeSymbol, bool>> EventMappings => this.eventMappings;
+    public IEnumerable<KeyValuePair<ITypeSymbol, EventMappingKinds>> EventMappings => this.eventMappings;
 
     /// <summary>
     /// Whether <c>ToMapToEvent&lt;TEvent&gt;</c> is called for the event type, with or without a reverse mapping.
@@ -255,9 +264,46 @@ internal sealed class BootstrapperTypeConfiguration
     public bool MapsToEvent(ITypeSymbol @event) => this.eventMappings.ContainsKey(@event);
 
     /// <summary>
+    /// Whether <c>ToMapToEvent&lt;TEvent&gt;</c> is called for the event type with a mapping that creates the event.
+    /// </summary>
+    public bool MapsToNewEvent(ITypeSymbol @event) => this.Maps(@event, EventMappingKinds.NewEvent);
+
+    /// <summary>
+    /// Whether <c>ToMapToEvent&lt;TEvent&gt;</c> is called for the event type with a mapping that is given the event.
+    /// </summary>
+    public bool MapsToExistingEvent(ITypeSymbol @event) => this.Maps(@event, EventMappingKinds.ExistingEvent);
+
+    /// <summary>
     /// Whether <c>ToMapToEvent&lt;TEvent&gt;</c> is called for the event type with a reverse mapping.
     /// </summary>
-    public bool MapsFromEvent(ITypeSymbol @event) => this.eventMappings.TryGetValue(@event, out var hasReverseMapping) && hasReverseMapping;
+    public bool MapsFromEvent(ITypeSymbol @event) => this.Maps(@event, EventMappingKinds.Reverse);
+
+    private bool Maps(ITypeSymbol @event, EventMappingKinds kind) => this.eventMappings.TryGetValue(@event, out var kinds) && (kinds & kind) != 0;
+}
+
+/// <summary>
+/// The mappings the <c>ToMapToEvent&lt;TEvent&gt;</c> calls for one event type configure between them.
+/// </summary>
+[Flags]
+internal enum EventMappingKinds
+{
+    None = 0,
+
+    /// <summary>
+    /// A mapping that creates the event, used by <c>ToEvent&lt;T&gt;()</c>.
+    /// </summary>
+    NewEvent = 1,
+
+    /// <summary>
+    /// A mapping that is given the event, and changes it or returns a copy of it. Used by <c>ToEvent(@event)</c>, and
+    /// by <c>ToEvent&lt;T&gt;()</c> for an event with a public parameterless constructor.
+    /// </summary>
+    ExistingEvent = 2,
+
+    /// <summary>
+    /// A mapping from the event back to the entity or value object.
+    /// </summary>
+    Reverse = 4,
 }
 
 /// <summary>

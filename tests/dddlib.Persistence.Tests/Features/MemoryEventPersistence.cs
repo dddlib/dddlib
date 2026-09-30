@@ -595,4 +595,78 @@ public abstract class MemoryEventPersistence : Feature
             }
         }
     }
+
+    // A positional record has no parameterless constructor; it is read back through its primary constructor
+    // (https://github.com/dddlib/dddlib/issues/48).
+    public sealed class SaveAndLoadWithPositionalRecordEvents : MemoryEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given an instance of an aggregate root that applies positional records
+            var saved = new Subject("test6");
+
+            // And something happened to that instance
+            saved.Rename("renamed");
+
+            // And that instance is saved to the repository
+            await this.Repository.SaveAsync(saved);
+
+            // When that instance is loaded from the repository
+            var loaded = await this.Repository.LoadAsync<Subject>(saved.Id!);
+
+            // And the events for that instance are loaded from the event store
+            var streamId = (await this.IdentityMap.TryGetAsync(typeof(Subject), typeof(string), saved.Id!))!.Value;
+            var stream = await this.EventStore.GetStreamAsync(streamId, 0);
+
+            // Then the loaded instance should be the saved instance
+            await Assert.That(loaded).IsEqualTo(saved);
+
+            // And their revisions should be equal
+            await Assert.That(loaded.GetRevision()).IsEqualTo(saved.GetRevision());
+
+            // And the state applied by the events should match
+            await Assert.That(loaded.Name).IsEqualTo(saved.Name);
+
+            // And the loaded events should equal the applied events
+            await Assert.That(stream.Events).Count().IsEqualTo(2);
+            await Assert.That(stream.Events[0]).IsEqualTo(new NewSubject("test6"));
+            await Assert.That(stream.Events[1]).IsEqualTo(new SubjectRenamed("test6", "renamed"));
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject(id));
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            public string? Name { get; private set; }
+
+            public void Rename(string name) => this.Apply(new SubjectRenamed(this.Id!, name));
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+
+            private void Handle(SubjectRenamed @event) => this.Name = @event.Name;
+        }
+
+        public record NewSubject(string Id);
+
+        public record SubjectRenamed(string Id, string Name);
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
 }

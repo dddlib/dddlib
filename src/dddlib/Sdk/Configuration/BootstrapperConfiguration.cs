@@ -98,6 +98,14 @@ internal sealed class BootstrapperConfiguration : IConfiguration
         public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping) => this;
 
         public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping, Func<TEvent, T> reverseMapping) => this;
+
+        public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent> mapping) => this;
+
+        public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent> mapping, Func<TEvent, T> reverseMapping) => this;
+
+        public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent, TEvent> mapping) => this;
+
+        public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent, TEvent> mapping, Func<TEvent, T> reverseMapping) => this;
     }
 
     private sealed class EmptyValueObjectConfigurationWrapper<T> : IValueObjectConfigurationWrapper<T>
@@ -112,5 +120,13 @@ internal sealed class BootstrapperConfiguration : IConfiguration
         public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping) => this;
 
         public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Action<T, TEvent> mapping, Func<TEvent, T> reverseMapping) => this;
+
+        public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent> mapping) => this;
+
+        public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent> mapping, Func<TEvent, T> reverseMapping) => this;
+
+        public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent, TEvent> mapping) => this;
+
+        public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent, TEvent> mapping, Func<TEvent, T> reverseMapping) => this;
     }
 }

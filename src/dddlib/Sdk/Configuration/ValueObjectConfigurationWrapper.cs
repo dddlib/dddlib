@@ -48,4 +48,40 @@ internal sealed class ValueObjectConfigurationWrapper<T> : IValueObjectConfigura
         this.valueObjectType.Mappings.AddOrUpdate(reverseMapping);
         return this;
     }
+
+    public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent> mapping)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+
+        this.valueObjectType.Mappings.AddOrUpdate(mapping);
+        return this;
+    }
+
+    public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent> mapping, Func<TEvent, T> reverseMapping)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+        ArgumentNullException.ThrowIfNull(reverseMapping);
+
+        this.valueObjectType.Mappings.AddOrUpdate(mapping);
+        this.valueObjectType.Mappings.AddOrUpdate(reverseMapping);
+        return this;
+    }
+
+    public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent, TEvent> mapping)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+
+        this.valueObjectType.Mappings.AddOrUpdate(mapping);
+        return this;
+    }
+
+    public IValueObjectConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent, TEvent> mapping, Func<TEvent, T> reverseMapping)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+        ArgumentNullException.ThrowIfNull(reverseMapping);
+
+        this.valueObjectType.Mappings.AddOrUpdate(mapping);
+        this.valueObjectType.Mappings.AddOrUpdate(reverseMapping);
+        return this;
+    }
 }

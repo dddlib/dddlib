@@ -17,7 +17,8 @@ public sealed class EventApplicationAnalyzer : DiagnosticAnalyzer
         DiagnosticDescriptors.AppliedEventWithoutHandler,
         DiagnosticDescriptors.EventHandlerAppliesEvent,
         DiagnosticDescriptors.EventHandlerThrows,
-        DiagnosticDescriptors.PropertySavedButNotLoaded);
+        DiagnosticDescriptors.PropertySavedButNotLoaded,
+        DiagnosticDescriptors.CannotBeLoaded);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -110,12 +111,32 @@ public sealed class EventApplicationAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        foreach (var property in serializedType.IsDefaultSerializable().UnloadedProperties)
+        // An abstract class is never the runtime type of what is saved, so how it is constructed says nothing.
+        if (serializedType.IsAbstract)
+        {
+            return;
+        }
+
+        var serializability = serializedType.IsDefaultSerializable();
+
+        foreach (var property in serializability.UnloadedProperties)
         {
             if (property.Locations.FirstOrDefault(static location => location.IsInSource) is { } location)
             {
                 report(Diagnostic.Create(DiagnosticDescriptors.PropertySavedButNotLoaded, location, property.Name, kind, serializedType.ToDisplayString()));
             }
+        }
+
+        // Without unloaded properties, what is left is the constructor: none the serializer can use, or one it cannot call.
+        if (!serializability.IsSerializable &&
+            serializability.UnloadedProperties.IsEmpty &&
+            serializedType.Locations.FirstOrDefault(static location => location.IsInSource) is { } typeLocation)
+        {
+            var problem = serializability.UnboundParameter is { } parameter
+                ? $"the constructor parameter '{parameter.Name}' has no public property of the same name"
+                : "it has no public parameterless constructor, no single public constructor and no constructor marked [JsonConstructor]";
+
+            report(Diagnostic.Create(DiagnosticDescriptors.CannotBeLoaded, typeLocation, kind, serializedType.ToDisplayString(), problem));
         }
     }
 

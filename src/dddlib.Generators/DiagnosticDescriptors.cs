@@ -87,6 +87,16 @@ internal static class DiagnosticDescriptors
         description: "Map converts between entities or value objects and events with the mappings that the bootstrapper configures through ToMapToEvent. Mapping an event back needs the overload that takes a reverse mapping.",
         helpLinkUri: WikiBootstrapper);
 
+    public static readonly DiagnosticDescriptor MappingDoesNotFit = new(
+        "DDDLIB024",
+        "Mapping does not fit how it is used",
+        "The mapping from '{0}' to '{1}' {2}, so this throws at runtime; call ToMapToEvent<{3}> with a mapping that {4} in the bootstrapper",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "A mapping configured through ToMapToEvent either creates the event or is given it. ToEvent<T>() uses the first, or the second with an event it creates with its public parameterless constructor. ToEvent(@event) uses the second.",
+        helpLinkUri: WikiBootstrapper);
+
     public static readonly DiagnosticDescriptor ConflictingNaturalKeySelector = new(
         "DDDLIB021",
         "Bootstrapper selects a different natural key",
@@ -164,6 +174,16 @@ internal static class DiagnosticDescriptors
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: "Events and mementos are serialized with System.Text.Json, which sets a property through its public setter or a constructor parameter of the same name.",
+        helpLinkUri: WikiSerialization);
+
+    public static readonly DiagnosticDescriptor CannotBeLoaded = new(
+        "DDDLIB023",
+        "Event or memento cannot be loaded",
+        "The {0} '{1}' can be saved but not loaded, because {2}",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Events and mementos are serialized with System.Text.Json, which creates one with its public parameterless constructor, its only public constructor or the constructor marked [JsonConstructor], and needs a property for every parameter of that constructor. Saving does not need the constructor, so the failure only shows on load.",
         helpLinkUri: WikiSerialization);
 
     public static readonly DiagnosticDescriptor IncompleteMemento = new(

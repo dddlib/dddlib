@@ -333,4 +333,233 @@ public abstract partial class AggregateRootValueObjectMapping : Feature
             }
         }
     }
+
+    // A positional record has no parameterless constructor and no property setters, so its mapping creates it
+    // (https://github.com/dddlib/dddlib/issues/48).
+    public sealed partial class ValueObjectMappingWithPositionalRecordEventCreation : AggregateRootValueObjectMapping
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a natural key that is a value object
+            var naturalKey = new NaturalKey("naturalKey");
+
+            // When an instance of an aggregate root is created with that natural key
+            var instance = new Subject(naturalKey);
+
+            // Then the natural key of that instance should be the original natural key
+            await Assert.That(instance.NaturalKey).IsEqualTo(naturalKey);
+
+            // And the instance should contain a single uncommitted 'NewSubject' event with a natural key value matching the original natural key value
+            var events = instance.GetUncommittedEvents();
+            await Assert.That(events).HasSingleItem();
+            await Assert.That(events[0]).IsEqualTo(new NewSubject(naturalKey.Value));
+        }
+
+        public partial class Subject : AggregateRoot
+        {
+            public Subject(NaturalKey key)
+            {
+                var @event = this.Map.ValueObject(key).ToEvent<NewSubject>();
+                this.Apply(@event);
+            }
+
+            internal Subject()
+            {
+            }
+
+            public NaturalKey? NaturalKey { get; private set; }
+
+            private void Handle(NewSubject @event)
+            {
+                this.NaturalKey = this.Map.Event(@event).ToValueObject<NaturalKey>();
+            }
+        }
+
+        public partial class NaturalKey : ValueObject<NaturalKey>
+        {
+            public NaturalKey(string value)
+            {
+                this.Value = value;
+            }
+
+            public string Value { get; }
+        }
+
+        public partial record NewSubject(string NaturalKeyValue);
+
+        private sealed partial class BootStrapper : IBootstrap<Subject>, IBootstrap<NaturalKey>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+                configure.ValueObject<NaturalKey>()
+                    .ToMapToEvent<NewSubject>(key => new NewSubject(key.Value), @event => new NaturalKey(@event.NaturalKeyValue));
+            }
+        }
+    }
+
+    // A positional record cannot be changed, so a mapping to one that exists returns a copy of it
+    // (https://github.com/dddlib/dddlib/issues/48).
+    public sealed partial class ValueObjectMappingWithPositionalRecordEventMutation : AggregateRootValueObjectMapping
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given an instance of an aggregate root with an identifier
+            var instance = new Subject { Id = "subjectId" };
+
+            // And some data that is a value object
+            var data = new Data("dataValue");
+
+            // When the instance processes that data
+            instance.Process(data);
+
+            // Then the processed data for the instance should be the original data
+            await Assert.That(instance.ProcessedData).IsEqualTo(data);
+
+            // And the instance should contain a single uncommitted 'DataProcessed' event with a data value matching the original data value
+            var events = instance.GetUncommittedEvents();
+            await Assert.That(events).HasSingleItem();
+            await Assert.That(events[0]).IsEqualTo(new DataProcessed("subjectId", data.Value));
+        }
+
+        public partial class Subject : AggregateRoot
+        {
+            public string? Id { get; set; }
+
+            public Data? ProcessedData { get; private set; }
+
+            public void Process(Data data)
+            {
+                var @event = this.Map.ValueObject(data).ToEvent(new DataProcessed(this.Id!));
+                this.Apply(@event);
+            }
+
+            private void Handle(DataProcessed @event)
+            {
+                this.ProcessedData = this.Map.Event(@event).ToValueObject<Data>();
+            }
+        }
+
+        public partial class Data : ValueObject<Data>
+        {
+            public Data(string value)
+            {
+                this.Value = value;
+            }
+
+            public string Value { get; }
+        }
+
+        public partial record DataProcessed(string SubjectId, string? DataValue = null);
+
+        private sealed partial class BootStrapper : IBootstrap<Subject>, IBootstrap<Data>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+                configure.ValueObject<Data>()
+                    .ToMapToEvent<DataProcessed>((data, @event) => @event with { DataValue = data.Value }, @event => new Data(@event.DataValue!));
+            }
+        }
+    }
+
+    public sealed partial class ValueObjectMappingDoesNotCreateEvent : AggregateRootValueObjectMapping
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a subject identifier
+            var subjectId = new SubjectId("subjectId");
+
+            // When a subject is created with that identifier
+            var action = () => { _ = new Subject(subjectId); };
+
+            // Then that action should throw a runtime exception (the mapping needs an event, which has no parameterless constructor)
+            await Assert.That(action).Throws<RuntimeException>().WithMessageContaining("does not have a public parameterless constructor");
+        }
+
+        public partial class Subject : AggregateRoot
+        {
+            public Subject(SubjectId id)
+            {
+                this.Apply(this.Map.ValueObject(id).ToEvent<NewSubject>());
+            }
+
+            public string? Id { get; set; }
+
+            private void Handle(NewSubject @event) => this.Id = @event.SubjectId;
+        }
+
+        public partial class SubjectId : ValueObject<SubjectId>
+        {
+            public SubjectId(string value)
+            {
+                this.Value = value;
+            }
+
+            public string Value { get; }
+        }
+
+        public partial record NewSubject(string SubjectId);
+
+        private sealed partial class BootStrapper : IBootstrap<SubjectId>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.ValueObject<SubjectId>()
+                    .ToMapToEvent<NewSubject>((subjectId, @event) => @event with { SubjectId = subjectId.Value });
+            }
+        }
+    }
+
+    public sealed partial class ValueObjectMappingOnlyCreatesEvent : AggregateRootValueObjectMapping
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a subject identifier
+            var subjectId = new SubjectId("subjectId");
+
+            // When a subject is created with that identifier
+            var action = () => { _ = new Subject(subjectId); };
+
+            // Then that action should throw a runtime exception (the mapping creates an event and cannot map to the one it is given)
+            await Assert.That(action).Throws<RuntimeException>().WithMessageContaining("not to one that already exists");
+        }
+
+        public partial class Subject : AggregateRoot
+        {
+            public Subject(SubjectId id)
+            {
+                this.Apply(this.Map.ValueObject(id).ToEvent(new NewSubject(string.Empty)));
+            }
+
+            public string? Id { get; set; }
+
+            private void Handle(NewSubject @event) => this.Id = @event.SubjectId;
+        }
+
+        public partial class SubjectId : ValueObject<SubjectId>
+        {
+            public SubjectId(string value)
+            {
+                this.Value = value;
+            }
+
+            public string Value { get; }
+        }
+
+        public partial record NewSubject(string SubjectId);
+
+        private sealed partial class BootStrapper : IBootstrap<SubjectId>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.ValueObject<SubjectId>()
+                    .ToMapToEvent<NewSubject>(subjectId => new NewSubject(subjectId.Value));
+            }
+        }
+    }
 }

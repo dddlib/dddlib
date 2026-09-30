@@ -50,4 +50,40 @@ internal sealed class EntityConfigurationWrapper<T> : IEntityConfigurationWrappe
         this.entityType.Mappings.AddOrUpdate(reverseMapping);
         return this;
     }
+
+    public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent> mapping)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+
+        this.entityType.Mappings.AddOrUpdate(mapping);
+        return this;
+    }
+
+    public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent> mapping, Func<TEvent, T> reverseMapping)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+        ArgumentNullException.ThrowIfNull(reverseMapping);
+
+        this.entityType.Mappings.AddOrUpdate(mapping);
+        this.entityType.Mappings.AddOrUpdate(reverseMapping);
+        return this;
+    }
+
+    public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent, TEvent> mapping)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+
+        this.entityType.Mappings.AddOrUpdate(mapping);
+        return this;
+    }
+
+    public IEntityConfigurationWrapper<T> ToMapToEvent<TEvent>(Func<T, TEvent, TEvent> mapping, Func<TEvent, T> reverseMapping)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+        ArgumentNullException.ThrowIfNull(reverseMapping);
+
+        this.entityType.Mappings.AddOrUpdate(mapping);
+        this.entityType.Mappings.AddOrUpdate(reverseMapping);
+        return this;
+    }
 }

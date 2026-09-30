@@ -50,14 +50,17 @@ Roslyn generators do not see each other's output. You can write one yourself and
 | DDDLIB020 | Warning | `Map` is used to convert to or from an event for which the bootstrapper configures no mapping (or no reverse mapping) |
 | DDDLIB021 | Error | The bootstrapper's `ToUseNaturalKey` selects a different property from the one marked `[NaturalKey]` on the same type |
 | DDDLIB022 | Error | A `ToUseNaturalKey` selector is not a property of its parameter |
+| DDDLIB023 | Warning | An event or memento has no constructor the serializer can use, or a constructor parameter with no property of the same name, so it is saved but fails to load |
+| DDDLIB024 | Warning | `Map` is used in a way the configured mapping does not support: `ToEvent<T>()` for an event without a public parameterless constructor whose mapping does not create it, or `ToEvent(@event)` with a mapping that only creates the event |
 
-The rules that depend on the bootstrapper (DDDLIB004, DDDLIB014, DDDLIB015, DDDLIB017, DDDLIB019 and DDDLIB020)
+The rules that depend on the bootstrapper (DDDLIB004, DDDLIB014, DDDLIB015, DDDLIB017, DDDLIB019, DDDLIB020 and
+DDDLIB024)
 read the body of its `Bootstrap` method, and are not reported when configuration may happen somewhere the analyzers
 cannot follow; see [what the analyzers read from the bootstrapper](bootstrapper.md#what-the-analyzers-read-from-the-bootstrapper).
 
 Two limits apply to the event rules. DDDLIB008 is not reported when a base class of the aggregate root comes from a
-referenced assembly, because the compiler does not import its private handlers. DDDLIB012 is reported for types
-declared in the same assembly as the aggregate root that uses them.
+referenced assembly, because the compiler does not import its private handlers. DDDLIB012 and DDDLIB023 are reported
+for types declared in the same assembly as the aggregate root that uses them.
 
 Code that breaks a rule on purpose, as a test of the runtime check might, can disable it in place with
 `#pragma warning disable`.

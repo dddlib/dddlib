@@ -115,6 +115,12 @@ configured. Phase 4 turns that into an analyzer diagnostic.
 - Natural key serialization and value object serialization move to `System.Text.Json`. Keep a
   `JsonSerializerOptions` singleton that writes `DateTime` as ISO 8601 round-trip.
 - `DefaultBootstrapperProvider` keeps assembly scanning for `IBootstrapper` in the mechanical phase.
+- Mapping to an event (changed 2026-09-30 for dddlib/dddlib#48, so that events can be positional records): besides
+  v1's `Action<T, TEvent>`, which assigns to an event that exists, `ToMapToEvent` takes a `Func<T, TEvent>` that
+  creates the event and a `Func<T, TEvent, TEvent>` that returns a copy of the one it is given. `ToEvent<T>()` lost
+  its `new()` constraint: it uses the creating mapping, or else creates the event with its public parameterless
+  constructor for one of the other two, and throws a `RuntimeException` when there is neither. `ToEvent(@event)` uses
+  the copying or the assigning mapping, whichever was configured last. Both mappers share `EventMapping`.
 - Runtime error messages keep their "To fix this issue" shape and wiki help links. They become analyzer
   diagnostics later, but the runtime checks stay for non-generated types.
 
@@ -444,6 +450,20 @@ As built, where it departs from the plan above:
 - Not verified here: the code fixes loading in Visual Studio from the packed `analyzers/dotnet/cs` folder. The
   package contents were checked (`dddlib.Generators.dll` and `dddlib.CodeFixes.dll`), the editor was not.
 
+Added 2026-09-30 for dddlib/dddlib#48: DDDLIB023 (warning, `EventApplicationAnalyzer`), an event or memento that is
+saved but fails to load. `IsDefaultSerializable` already told these cases apart and DDDLIB012 dropped them: no
+constructor the serializer can use (several public ones with none parameterless or marked `[JsonConstructor]`, or
+none public), and a constructor parameter that no property matches. While `Apply<T>` required `new()` the first could
+not happen to an applied event; mementos never had that guard. Reported at the type, not for abstract types, and like
+DDDLIB012 only for types declared in the compilation.
+
+Also for dddlib/dddlib#48: DDDLIB024 (warning, `BootstrapperAnalyzer`), a mapping that does not fit how `Map` uses
+it. `BootstrapperModel` records per event whether the `ToMapToEvent` calls create the event (a forward mapping with
+one parameter), are given it (two parameters) and have a reverse mapping (`EventMappingKinds`). Reported for
+`ToEvent<T>()` when no mapping creates the event and it has no public parameterless constructor, which the `new()`
+constraint used to catch, and for `ToEvent(@event)` when the only mapping creates the event. DDDLIB020 stays the rule
+for no mapping at all.
+
 Considered and left out: a handler whose event is never applied (events arrive from subclasses and mappings, so it
 is noisy), publicly settable value object properties (a shape the serialization docs sanction), a public bootstrapper
 (only a recommendation), and reporting DDDLIB015 for entities.
@@ -543,17 +563,22 @@ Rules:
 
 Core (`tests/dddlib.Tests/Feature`):
 
-- AggregateRootEntityMapping: EntityMappingWithEventCreation, EntityMappingWithEventMutation
+- AggregateRootEntityMapping: EntityMappingWithEventCreation, EntityMappingWithEventMutation,
+  EntityMappingWithPositionalRecordEventCreation, EntityMappingWithPositionalRecordEventMutation (dddlib/dddlib#48)
 - AggregateRootEquality: CaseInsensitiveEqualityComparerDefinedInBootstrapper, CaseSensitiveUndefinedEqualityComparer,
   CompositeNaturalKeyEqualityComparer, ConflictingNaturalKeySelectors, InheritedNaturalKeySelector,
   InheritedNaturalKeySelectorOveriddenInBootstrapper, InheritedNaturalKeySelectorOveriddenInSubclass,
   NaturalKeySelectorDefinedISubclass, NaturalKeySelectorDefinedInBaseClass, NaturalKeySelectorDefinedInBootstrapper,
   NaturalKeySelectorDefinedInBothBaseClassAndSubclass, NaturalKeySelectorDefinedInMetadata, NonConflictingNaturalKeySelectors,
   UndefinedNaturalKeySelector, UndefinedNaturalKeySelectorWithInheritance
-- AggregateRootEventApplication: EventsAreStoredOnAggregate, EventsAreStoredOnInheritedAggregate, InheritedEventsAreStoredOnInheritedAggregate
+- AggregateRootEventApplication: EventsAreStoredOnAggregate, EventsAreStoredOnInheritedAggregate, InheritedEventsAreStoredOnInheritedAggregate,
+  PositionalRecordEventsAreStoredOnAggregate (dddlib/dddlib#48: `Apply<T>` is constrained to `class` only; v1's `new()`
+  served `JavaScriptSerializer`, and System.Text.Json reads a positional record through its primary constructor)
 - AggregateRootLifecycleManagement: DefaultLifecycle, EventBasedLifecycle
 - AggregateRootValueObjectMapping: EntityMappingPartiallyUndefined, EntityMappingUndefined, ValueObjectMappingPartiallyUndefined,
-  ValueObjectMappingUndefined, ValueObjectMappingWithEventCreation, ValueObjectMappingWithEventMutation
+  ValueObjectMappingUndefined, ValueObjectMappingWithEventCreation, ValueObjectMappingWithEventMutation,
+  ValueObjectMappingWithPositionalRecordEventCreation, ValueObjectMappingWithPositionalRecordEventMutation,
+  ValueObjectMappingDoesNotCreateEvent, ValueObjectMappingOnlyCreatesEvent (dddlib/dddlib#48)
 - BusinessException
 - EntityEquality: same sixteen names as AggregateRootEquality plus NestedNaturalKeySelector,
   NestedNaturalKeySelectorWithBothInstancesHavingNullReference, NestedNaturalKeySelectorWithSingleInstanceHavingNullReference
@@ -563,12 +588,14 @@ Core (`tests/dddlib.Tests/Feature`):
   CaseInsensitiveStringEqualityComparerDefinedInBootstrapper, CollectionMemberComparesBySequence, PrivateFieldsDoNotParticipateInEquality
 - ValueObjectSerialization: CustomValueObjectSerializer, CustomValueObjectSerializerViaDelegates
 - Bug: 0001, 0017, 0092, 0128, 0129
-- Unit: AggregateRootTests, ApplicationTests, DefaultTypeAnalyzerServiceTests, natural key serializer tests
+- Unit: AggregateRootTests, ApplicationTests, DefaultTypeAnalyzerServiceTests, natural key serializer tests,
+  MapperCollectionTests
 
 Persistence (`tests/dddlib.Persistence.Tests`):
 
 - MemoryEventPersistence and SqlServerEventPersistence, each: UndefinedNaturalKey, UndefinedUnititializedFactory, NullNaturalKey,
-  SaveAndLoad, SaveAndSaveAndLoad, SaveAndLoadAndSaveAndLoad, SnapshotAndLoad, SnapshotAndSaveAndLoad, SaveAndEndLifecycleAndSaveAndCreate
+  SaveAndLoad, SaveAndSaveAndLoad, SaveAndLoadAndSaveAndLoad, SnapshotAndLoad, SnapshotAndSaveAndLoad, SaveAndEndLifecycleAndSaveAndCreate,
+  SaveAndLoadWithPositionalRecordEvents
 - MemoryMementoPersistence: DefaultMemoryPersistence, EventsAreStoredForDispatch; SqlServerMementoPersistence: DefaultSqlServerPersistence,
   DefaultMementoRepositoryPersistence, EventsAreStoredForDispatch, CustomStorageStoresEvents, CustomIdentityMap
   (dddlib/dddlib#45: `SqlServerRepository<T>` has a second constructor taking an `IIdentityMap`)
@@ -586,7 +613,8 @@ Persistence (`tests/dddlib.Persistence.Tests`):
 
 Event dispatcher (`tests/dddlib.Persistence.EventDispatcher.Tests`):
 
-- MemoryEventDispatcher: CanDispatch, CanDispatchFromMementoRepository; SqlServerEventDispatcher: CanDispatch, CanDispatchFromMementoRepository
+- MemoryEventDispatcher and SqlServerEventDispatcher, each: CanDispatch, CanDispatchFromMementoRepository,
+  CanDispatchPositionalRecordEvent
 - Integration: SqlServerEventStoreTests (TryGetBatchFromEmptyEventStore, TryGetBatchFromEventStoreWithSingleEvent,
   TryGetBatchTwiceFromEventStoreWithSingleEvent, TryGetBatchTwiceFromEventStoreWithSingleEventAndDifferentDispatchers,
   TryGetMultipleBatchesFromEventStoreWithManyEvents, MarkingDispatchedCompletesTheBatchAndAdvances,

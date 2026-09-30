@@ -21,6 +21,9 @@ is no compatibility with data written by v1.
 - Declare domain types `partial` to get [generated code](source-generator.md) instead of reflection. This is optional.
 - Event handlers are dispatched by exact event type, as before. A `protected` handler in a base class now runs once,
   not twice.
+- `Apply` takes any class. An event no longer needs a public parameterless constructor, so a positional record can be
+  an event. For such events `ToMapToEvent` also takes a [mapping](bootstrapper.md#mapping) that creates the event or
+  returns a copy of it, and `ToEvent<T>()` no longer requires the constructor at compile time.
 - `dddlib.Runtime.Application` no longer keeps a global stack of applications; the current application flows with the
   asynchronous context, so tests can create one per test in parallel.
 
