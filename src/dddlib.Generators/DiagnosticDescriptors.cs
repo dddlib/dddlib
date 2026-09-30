@@ -79,4 +79,14 @@ internal static class DiagnosticDescriptors
         DiagnosticSeverity.Info,
         isEnabledByDefault: true,
         description: "dddlib generates event dispatch, natural key access, reconstitution and value object equality for partial types.");
+
+    public static readonly DiagnosticDescriptor AppliedEventWithoutHandler = new(
+        "DDDLIB008",
+        "Applied event has no handler",
+        "The event of type '{0}' applied by '{1}' has no handler, so applying it changes no state; add a private 'Handle' method that takes it",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "An event is dispatched to the non-public 'Handle' method whose parameter type is exactly the type of the event. An event without one is recorded but changes nothing.",
+        helpLinkUri: WikiEventApplication);
 }

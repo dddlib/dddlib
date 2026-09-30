@@ -35,6 +35,7 @@ Roslyn generators do not see each other's output. You can write one yourself and
 | DDDLIB005 | Error | An assembly declares more than one bootstrapper |
 | DDDLIB006 | Error | A bootstrapper has no public parameterless constructor |
 | DDDLIB007 | Info | A domain type (or one of its containing types) is not `partial` and could be |
+| DDDLIB008 | Warning | An aggregate root applies an event that no `Handle` method in its class hierarchy takes, so applying it changes no state |
 
 DDDLIB004 is a warning rather than an error because a comparer configured in the bootstrapper makes such a value
 object valid; suppress it on the type when that is the case.

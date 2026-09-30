@@ -12,3 +12,4 @@ DDDLIB004 | dddlib | Warning | Value object has no public properties
 DDDLIB005 | dddlib | Error | Assembly has more than one bootstrapper
 DDDLIB006 | dddlib | Error | Bootstrapper has no default constructor
 DDDLIB007 | dddlib | Info | Domain type could be partial
+DDDLIB008 | dddlib | Warning | Applied event has no handler

@@ -189,18 +189,37 @@ internal static class SymbolExtensions
     /// accept them; the caller decides what to do with public ones and value-type parameters.
     /// </summary>
     public static IEnumerable<IMethodSymbol> GetHandlerCandidates(this INamedTypeSymbol type) =>
-        type.GetMembers().OfType<IMethodSymbol>()
-            .Where(method => method.MethodKind == MethodKind.Ordinary && !method.IsStatic && !method.IsGenericMethod)
-            .Where(method => string.Equals(method.Name, "Handle", StringComparison.OrdinalIgnoreCase))
-            .Where(method => method.Parameters.Length == 1 && method.Parameters[0].RefKind == RefKind.None);
+        type.GetMembers().OfType<IMethodSymbol>().Where(static method => method.IsHandlerCandidate());
 
     /// <summary>
     /// The handlers the runtime dispatches to: non-public, single class-typed parameter.
     /// </summary>
     public static IEnumerable<IMethodSymbol> GetDispatchableHandlers(this INamedTypeSymbol type) =>
-        type.GetHandlerCandidates()
-            .Where(method => method.DeclaredAccessibility != Accessibility.Public)
-            .Where(method => method.Parameters[0].Type.IsEventClass());
+        type.GetMembers().OfType<IMethodSymbol>().Where(static method => method.IsDispatchableHandler());
+
+    public static bool IsHandlerCandidate(this IMethodSymbol method) =>
+        method.MethodKind == MethodKind.Ordinary && !method.IsStatic && !method.IsGenericMethod &&
+        string.Equals(method.Name, "Handle", StringComparison.OrdinalIgnoreCase) &&
+        method.Parameters.Length == 1 && method.Parameters[0].RefKind == RefKind.None;
+
+    public static bool IsDispatchableHandler(this IMethodSymbol method) =>
+        method.IsHandlerCandidate() && method.DeclaredAccessibility != Accessibility.Public && method.Parameters[0].Type.IsEventClass();
+
+    /// <summary>
+    /// Whether the type is the specified type or derives from it.
+    /// </summary>
+    public static bool IsOrDerivesFrom(this ITypeSymbol type, ITypeSymbol baseType)
+    {
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            if (SymbolEqualityComparer.Default.Equals(current, baseType))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     public static bool IsEventClass(this ITypeSymbol type) =>
         type.IsReferenceType && type.TypeKind is TypeKind.Class or TypeKind.Delegate or TypeKind.Array;
