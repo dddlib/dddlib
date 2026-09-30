@@ -550,7 +550,9 @@ Core (`tests/dddlib.Tests/Feature`):
   NaturalKeySelectorDefinedISubclass, NaturalKeySelectorDefinedInBaseClass, NaturalKeySelectorDefinedInBootstrapper,
   NaturalKeySelectorDefinedInBothBaseClassAndSubclass, NaturalKeySelectorDefinedInMetadata, NonConflictingNaturalKeySelectors,
   UndefinedNaturalKeySelector, UndefinedNaturalKeySelectorWithInheritance
-- AggregateRootEventApplication: EventsAreStoredOnAggregate, EventsAreStoredOnInheritedAggregate, InheritedEventsAreStoredOnInheritedAggregate
+- AggregateRootEventApplication: EventsAreStoredOnAggregate, EventsAreStoredOnInheritedAggregate, InheritedEventsAreStoredOnInheritedAggregate,
+  PositionalRecordEventsAreStoredOnAggregate (dddlib/dddlib#48: `Apply<T>` is constrained to `class` only; v1's `new()`
+  served `JavaScriptSerializer`, and System.Text.Json reads a positional record through its primary constructor)
 - AggregateRootLifecycleManagement: DefaultLifecycle, EventBasedLifecycle
 - AggregateRootValueObjectMapping: EntityMappingPartiallyUndefined, EntityMappingUndefined, ValueObjectMappingPartiallyUndefined,
   ValueObjectMappingUndefined, ValueObjectMappingWithEventCreation, ValueObjectMappingWithEventMutation
@@ -568,7 +570,8 @@ Core (`tests/dddlib.Tests/Feature`):
 Persistence (`tests/dddlib.Persistence.Tests`):
 
 - MemoryEventPersistence and SqlServerEventPersistence, each: UndefinedNaturalKey, UndefinedUnititializedFactory, NullNaturalKey,
-  SaveAndLoad, SaveAndSaveAndLoad, SaveAndLoadAndSaveAndLoad, SnapshotAndLoad, SnapshotAndSaveAndLoad, SaveAndEndLifecycleAndSaveAndCreate
+  SaveAndLoad, SaveAndSaveAndLoad, SaveAndLoadAndSaveAndLoad, SnapshotAndLoad, SnapshotAndSaveAndLoad, SaveAndEndLifecycleAndSaveAndCreate,
+  SaveAndLoadWithPositionalRecordEvents
 - MemoryMementoPersistence: DefaultMemoryPersistence, EventsAreStoredForDispatch; SqlServerMementoPersistence: DefaultSqlServerPersistence,
   DefaultMementoRepositoryPersistence, EventsAreStoredForDispatch, CustomStorageStoresEvents, CustomIdentityMap
   (dddlib/dddlib#45: `SqlServerRepository<T>` has a second constructor taking an `IIdentityMap`)
@@ -586,7 +589,8 @@ Persistence (`tests/dddlib.Persistence.Tests`):
 
 Event dispatcher (`tests/dddlib.Persistence.EventDispatcher.Tests`):
 
-- MemoryEventDispatcher: CanDispatch, CanDispatchFromMementoRepository; SqlServerEventDispatcher: CanDispatch, CanDispatchFromMementoRepository
+- MemoryEventDispatcher and SqlServerEventDispatcher, each: CanDispatch, CanDispatchFromMementoRepository,
+  CanDispatchPositionalRecordEvent
 - Integration: SqlServerEventStoreTests (TryGetBatchFromEmptyEventStore, TryGetBatchFromEventStoreWithSingleEvent,
   TryGetBatchTwiceFromEventStoreWithSingleEvent, TryGetBatchTwiceFromEventStoreWithSingleEventAndDifferentDispatchers,
   TryGetMultipleBatchesFromEventStoreWithManyEvents, MarkingDispatchedCompletesTheBatchAndAdvances,

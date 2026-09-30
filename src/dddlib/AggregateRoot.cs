@@ -102,7 +102,7 @@ To fix this issue:
     /// recorded as uncommitted if the aggregate root persists events.
     /// </summary>
     protected void Apply<T>(T @event)
-        where T : class, new()
+        where T : class
     {
         ArgumentNullException.ThrowIfNull(@event);
 

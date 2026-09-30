@@ -69,6 +69,10 @@ private void Handle(CarRegistered @event)
 Using a mapping that has not been registered throws a `RuntimeException` that names the missing mapping. The
 analyzer reports such a use at compile time (DDDLIB020).
 
+A forward mapping assigns to the properties of an event that already exists, so a mapped event needs settable
+properties, and `ToEvent<T>()` creates it with its public parameterless constructor. A positional record, whose
+properties can only be set when it is created, is an event to apply directly rather than to map to.
+
 ## What the analyzers read from the bootstrapper
 
 Several diagnostics depend on what the bootstrapper configures: a missing reconstitution factory (DDDLIB014), a

@@ -66,6 +66,18 @@ In the re-written model the business logic is separated from the change in state
 validated, `Apply` is called with an event that describes the change. Internally the event is dispatched to the
 private `Handle` method, where the change in state is applied to the aggregate.
 
+An event is any class. A positional record works as well as a class with settable properties, and says that an event
+does not change once it has happened:
+
+```csharp
+public record CarRegistered(string Registration);
+
+this.Apply(new CarRegistered(registration));
+```
+
+An event that is persisted must also be [serializable](persistence/serialization.md), and an event that a value
+object or an entity is [mapped to](bootstrapper.md#mapping) needs settable properties.
+
 ## Handler Rules
 
 - A handler is a non-public instance method named `Handle` (case-insensitive) with exactly one parameter.

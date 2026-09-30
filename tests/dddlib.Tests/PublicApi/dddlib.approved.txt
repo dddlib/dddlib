@@ -6,7 +6,7 @@ namespace dddlib
         protected AggregateRoot(dddlib.Sdk.Configuration.Model.AggregateRootType aggregateRootType) { }
         protected dddlib.Runtime.IMapperProvider Map { get; }
         protected void Apply<T>(T @event)
-            where T :  class, new () { }
+            where T :  class { }
         protected virtual object? GetState() { }
         protected virtual void SetState(object memento) { }
     }

@@ -8,7 +8,8 @@ test works in production.
 ## What must be serializable
 
 - Events and mementos: plain classes with public settable properties, or a single public constructor whose parameters
-  match the properties by name. They may be private nested types.
+  match the properties by name, which is what a positional record such as `record CarRegistered(string Registration)`
+  has. They may be private nested types.
 - Natural keys: `string`, `Guid`, numbers and other primitives serialize directly. A [value object](../value-objects.md)
   natural key serializes through its configured [value object serializer](../value-object-serialization.md), which is
   JSON of its public properties by default.
