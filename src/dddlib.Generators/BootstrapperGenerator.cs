@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace dddlib.Generators;
 
-internal sealed record BootstrapperModel(string FullyQualifiedName, bool IsAccessible, bool HasPublicParameterlessConstructor);
+internal sealed record BootstrapperRegistration(string FullyQualifiedName, bool IsAccessible, bool HasPublicParameterlessConstructor);
 
 /// <summary>
 /// Registers the assembly's single <c>IBootstrapper</c> with the runtime at module initialization, so that the
@@ -28,7 +28,7 @@ public sealed class BootstrapperGenerator : IIncrementalGenerator
         context.RegisterSourceOutput(bootstrappers.Combine(referencesDddlib), static (productionContext, pair) => Emit(productionContext, pair.Left!, pair.Right));
     }
 
-    private static BootstrapperModel? Transform(GeneratorSyntaxContext context, CancellationToken cancellationToken)
+    private static BootstrapperRegistration? Transform(GeneratorSyntaxContext context, CancellationToken cancellationToken)
     {
         if (context.SemanticModel.GetDeclaredSymbol(context.Node, cancellationToken) is not INamedTypeSymbol symbol)
         {
@@ -48,10 +48,10 @@ public sealed class BootstrapperGenerator : IIncrementalGenerator
 
         var isAccessible = !symbol.IsGenericType && context.SemanticModel.Compilation.IsSymbolAccessibleWithin(symbol, context.SemanticModel.Compilation.Assembly);
 
-        return new BootstrapperModel(symbol.ToDisplayString(SymbolExtensions.FullyQualified), isAccessible, symbol.HasPublicParameterlessConstructor());
+        return new BootstrapperRegistration(symbol.ToDisplayString(SymbolExtensions.FullyQualified), isAccessible, symbol.HasPublicParameterlessConstructor());
     }
 
-    private static void Emit(SourceProductionContext context, ImmutableArray<BootstrapperModel?> bootstrappers, bool referencesDddlib)
+    private static void Emit(SourceProductionContext context, ImmutableArray<BootstrapperRegistration?> bootstrappers, bool referencesDddlib)
     {
         if (!referencesDddlib)
         {

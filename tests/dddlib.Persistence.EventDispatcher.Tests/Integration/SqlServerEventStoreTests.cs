@@ -17,7 +17,10 @@ public class SqlServerEventStoreTests
     [Test]
     public async Task TryGetBatchFromEmptyEventStore()
     {
-        var batchStore = new SqlServerEventBatchStore(this.ConnectionString);
+        // A schema of its own: the other tests commit to the shared one, and the order the tests run in is not fixed.
+        var schema = string.Concat("s", Guid.NewGuid().ToString("N"));
+        await this.Database.Database.CreateSchemaAsync(schema);
+        var batchStore = new SqlServerEventBatchStore(this.ConnectionString, schema);
 
         var batch = await batchStore.GetNextBatchAsync(Guid.NewGuid(), 50, TimeSpan.FromSeconds(30));
 

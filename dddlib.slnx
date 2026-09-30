@@ -12,6 +12,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/dddlib/dddlib.csproj" />
+    <Project Path="src/dddlib.CodeFixes/dddlib.CodeFixes.csproj" />
     <Project Path="src/dddlib.Generators/dddlib.Generators.csproj" />
     <Project Path="src/dddlib.Persistence/dddlib.Persistence.csproj" />
     <Project Path="src/dddlib.Persistence.EventDispatcher/dddlib.Persistence.EventDispatcher.csproj" />
@@ -23,6 +24,7 @@
     <Project Path="benchmarks/dddlib.Benchmarks/dddlib.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/dddlib.CodeFixes.Tests/dddlib.CodeFixes.Tests.csproj" />
     <Project Path="tests/dddlib.Generators.Tests/dddlib.Generators.Tests.csproj" />
     <Project Path="tests/dddlib.Persistence.EventDispatcher.Tests/dddlib.Persistence.EventDispatcher.Tests.csproj" />
     <Project Path="tests/dddlib.Persistence.Tests/dddlib.Persistence.Tests.csproj" />

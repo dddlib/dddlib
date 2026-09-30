@@ -18,6 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="dddlib.CodeFixes" />
+    <InternalsVisibleTo Include="dddlib.Generators.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
     <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
   </ItemGroup>

@@ -30,6 +30,7 @@ public class ApplyBenchmarks
     {
     }
 
+#pragma warning disable DDDLIB014 // deliberately not reconstitutable: applied events are dispatched but not recorded
     public class ReflectionSubject : AggregateRoot
     {
         public ReflectionSubject(string key) => this.Key = key;
@@ -57,4 +58,5 @@ public class ApplyBenchmarks
 
         private void Handle(SomethingHappened @event) => this.Count++;
     }
+#pragma warning restore DDDLIB014
 }

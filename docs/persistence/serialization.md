@@ -13,9 +13,13 @@ test works in production.
   natural key serializes through its configured [value object serializer](../value-object-serialization.md), which is
   JSON of its public properties by default.
 
+The analyzer reports a property of an event or memento that is saved but never loaded, because it has neither a
+public setter nor a constructor parameter of the same name (DDDLIB012).
+
 A natural key must round-trip: deserializing the serialized key must produce a value equal to the original. The
 identity map checks this the first time it sees each aggregate root type and throws a `PersistenceException` if it
-does not hold.
+does not hold. The analyzer reports the natural key types it can tell will not round-trip (DDDLIB017): a class
+compared by reference, and a value object that the default serializer cannot read back.
 
 ## Type names
 

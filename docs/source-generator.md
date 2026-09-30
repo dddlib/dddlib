@@ -1,7 +1,7 @@
 # Source Generator and Analyzers
 
-The **dddlib** package ships a Roslyn source generator and analyzers. They run inside the compiler; nothing is needed
-at runtime and there is no second package to install.
+The **dddlib** package ships a Roslyn source generator, analyzers and code fixes. They run inside the compiler and
+the editor; nothing is needed at runtime and there is no second package to install.
 
 ## Generated code
 
@@ -35,9 +35,43 @@ Roslyn generators do not see each other's output. You can write one yourself and
 | DDDLIB005 | Error | An assembly declares more than one bootstrapper |
 | DDDLIB006 | Error | A bootstrapper has no public parameterless constructor |
 | DDDLIB007 | Info | A domain type (or one of its containing types) is not `partial` and could be |
+| DDDLIB008 | Warning | An aggregate root applies an event that no `Handle` method in its class hierarchy takes, so applying it changes no state |
+| DDDLIB009 | Warning | A `Handle` method takes an abstract class or an interface; dispatch is by exact type, so it would never be called |
+| DDDLIB010 | Warning | A `Handle` method applies an event; handlers run again on load, where the event would be recorded again |
+| DDDLIB011 | Warning | A `Handle` method throws; handlers run again on load, which must not fail |
+| DDDLIB012 | Warning | An event or memento has a property with no public setter and no constructor parameter of the same name, so it is saved but never loaded |
+| DDDLIB013 | Warning | An aggregate root overrides only one of `GetState` and `SetState` |
+| DDDLIB014 | Warning | An aggregate root has no parameterless constructor and the bootstrapper does not call `ToReconstituteUsing` for it |
+| DDDLIB015 | Warning | An aggregate root has no `[NaturalKey]` in its class hierarchy and the bootstrapper does not call `ToUseNaturalKey` for it |
+| DDDLIB016 | Error | `[NaturalKey]` is on a property that is ignored: not public, static, an indexer, without a getter, or not on an entity |
+| DDDLIB017 | Warning | The natural key of an aggregate root is a class compared by reference, or a value object that the default serializer cannot read back and that has no serializer configured |
+| DDDLIB018 | Error | A value object derives from `ValueObject<T>` of a type other than itself |
+| DDDLIB019 | Warning | A public property of a value object is a class compared by reference, so equal content does not make equal value objects |
+| DDDLIB020 | Warning | `Map` is used to convert to or from an event for which the bootstrapper configures no mapping (or no reverse mapping) |
+| DDDLIB021 | Error | The bootstrapper's `ToUseNaturalKey` selects a different property from the one marked `[NaturalKey]` on the same type |
+| DDDLIB022 | Error | A `ToUseNaturalKey` selector is not a property of its parameter |
 
-DDDLIB004 is a warning rather than an error because a comparer configured in the bootstrapper makes such a value
-object valid; suppress it on the type when that is the case.
+The rules that depend on the bootstrapper (DDDLIB004, DDDLIB014, DDDLIB015, DDDLIB017, DDDLIB019 and DDDLIB020)
+read the body of its `Bootstrap` method, and are not reported when configuration may happen somewhere the analyzers
+cannot follow; see [what the analyzers read from the bootstrapper](bootstrapper.md#what-the-analyzers-read-from-the-bootstrapper).
+
+Two limits apply to the event rules. DDDLIB008 is not reported when a base class of the aggregate root comes from a
+referenced assembly, because the compiler does not import its private handlers. DDDLIB012 is reported for types
+declared in the same assembly as the aggregate root that uses them.
+
+Code that breaks a rule on purpose, as a test of the runtime check might, can disable it in place with
+`#pragma warning disable`.
+
+## Code fixes
+
+| Id | Fix |
+|---|---|
+| DDDLIB001 | Remove `[NaturalKey]` from one of the properties; one fix is offered per property |
+| DDDLIB003 | Make the handler private |
+| DDDLIB007 | Make the type and its containing types `partial` |
+| DDDLIB008 | Add an empty private `Handle` method for the event, after the last handler |
+| DDDLIB013 | Add the missing `GetState` or `SetState` override as a stub |
+| DDDLIB014 | Add a `protected internal` parameterless constructor (`private` on a sealed type), after the last constructor |
 
 ## Requirements
 

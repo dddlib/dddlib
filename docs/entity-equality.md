@@ -49,7 +49,11 @@ internal sealed class Bootstrapper : dddlib.Configuration.IBootstrapper
   inherited). A subclass may declare its own natural key, which replaces the inherited one.
 - An entity may declare at most one natural key. Declaring two is reported by the analyzer (DDDLIB001) and, at
   runtime, throws a `RuntimeException`. Declaring the same key in both the attribute and the bootstrapper is fine;
-  declaring different ones is a `RuntimeException`.
+  declaring different ones is a `RuntimeException`, reported by the analyzer as DDDLIB021.
+- `[NaturalKey]` only has an effect on a public instance property with a getter, declared on an entity. Anywhere else
+  it is ignored, which the analyzer reports (DDDLIB016).
+- A natural key selector in the bootstrapper must be a property of its parameter, as in `entity => entity.Id`. Any
+  other expression fails when the bootstrapper runs, and is reported by the analyzer (DDDLIB022).
 - Two entities are equal when they are of the same runtime type and their natural key values are equal. Equality of
   the key values uses the key type's own equality, so a [value object](value-objects.md) key compares structurally
   and a `string` key compares ordinally.

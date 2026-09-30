@@ -117,6 +117,8 @@ public class Bug0109 : SqlServerIntegration
 
         private void Handle(SubjectCreated @event) => this.NaturalKey = @event.NaturalKey;
 
+        private void Handle(SubjectChanged @event) => this.NaturalKey = @event.NaturalKey;
+
         private void Handle(SubjectDestroyed @event) => this.EndLifecycle();
     }
 

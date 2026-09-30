@@ -105,7 +105,7 @@ The dispatcher's `Batches` and `DispatchedEvents` tables and its `GetNextBatch` 
 part of the one versioned dddlib schema, together with the event store they read. Install or upgrade it with
 `SqlServerEventDispatcherSchema.EnsureAsync(connectionString, schema)`, which does the same as
 `SqlServerSchema.EnsureAsync` in dddlib.Persistence.SqlServer; see [SQL Server](sql-server.md) for the scripts, running
-them yourself, and what happens when the schema is behind the package.
+them yourself, the schema version check and rolling upgrades.
 
 Polling takes an application lock on the dispatcher id, so two hosts with the same dispatcher id never get the same
 batch. A host that cannot get the lock treats the poll as empty.

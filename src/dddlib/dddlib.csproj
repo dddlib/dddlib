@@ -7,9 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The generator and analyzers ship inside this package so consumers get them without a second package. -->
+    <!-- The generator, analyzers and code fixes ship inside this package so consumers get them without a second package. -->
     <ProjectReference Include="../dddlib.Generators/dddlib.Generators.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <ProjectReference Include="../dddlib.CodeFixes/dddlib.CodeFixes.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
     <None Include="../dddlib.Generators/bin/$(Configuration)/netstandard2.0/dddlib.Generators.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="../dddlib.CodeFixes/bin/$(Configuration)/netstandard2.0/dddlib.CodeFixes.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

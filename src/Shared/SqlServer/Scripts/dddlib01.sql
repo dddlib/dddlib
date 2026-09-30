@@ -5,11 +5,16 @@
 -- name throughout with it, and run the scripts in version order. Each script records its own version in the Versions
 -- table; released scripts never change, and every later change is a new script. This one is idempotent so that it
 -- can adopt a database whose objects were created before versioning.
+--
+-- Packages keep working against a schema newer than the version they require. A script that removes or changes
+-- something older packages use records, in MinimumRequiredVersion, the oldest required version that still works;
+-- packages that require less then fail with a clear message. It is NULL on every other row.
 
 IF OBJECT_ID('[dbo].[Versions]') IS NULL
 CREATE TABLE [dbo].[Versions]
 (
     [Version] [int] NOT NULL,
+    [MinimumRequiredVersion] [int] NULL,
     [Description] [varchar](max) NULL,
     [Script] [nvarchar](max) NULL,
     [AppliedAt] [datetime2] NOT NULL CONSTRAINT [DF_Versions_AppliedAt] DEFAULT SYSUTCDATETIME(),

@@ -171,6 +171,8 @@ public abstract partial class AggregateRootValueObjectMapping : Feature
             }
 
             public string? Id { get; set; }
+
+            private void Handle(NewSubject @event) => this.Id = @event.SubjectId;
         }
 
         public partial class SubjectId : ValueObject<SubjectId>
@@ -267,6 +269,8 @@ public abstract partial class AggregateRootValueObjectMapping : Feature
             }
 
             public string? SomeThing { get; set; }
+
+            private void Handle(NewSubject @event) => this.SomeThing = @event.SomeThing;
         }
 
         public partial class SomeThing : Entity

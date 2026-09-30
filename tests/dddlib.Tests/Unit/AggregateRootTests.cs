@@ -183,11 +183,15 @@ public class AggregateRootTests
         [NaturalKey]
         public string NaturalKey => string.Empty;
 
+        public bool DidSomething { get; private set; }
+
         public void Destroy() => this.Apply(new LifecycleEnded());
 
         public void DoSomething() => this.Apply(new SomethingHappened());
 
         private void Handle(LifecycleEnded @event) => this.EndLifecycle();
+
+        private void Handle(SomethingHappened @event) => this.DidSomething = true;
     }
 
     public class MoreChangeableAggregate : ChangeableAggregate

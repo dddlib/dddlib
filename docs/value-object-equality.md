@@ -38,6 +38,10 @@ var areEqual = registration == otherRegistration;
 - Two value objects of different runtime types are never equal.
 - A value object with no public properties throws a `RuntimeException` on construction under the default comparer,
   since no two instances could ever be equal. The analyzer reports this as DDDLIB004.
+- A property whose type is a class compared by reference makes two value objects with the same content unequal. The
+  analyzer reports this as DDDLIB019.
+
+Neither is reported for a value object that the bootstrapper configures a custom comparer for.
 
 For a `partial` value object the comparer is [generated at compile time](source-generator.md); otherwise it is built
 by reflection once per type.

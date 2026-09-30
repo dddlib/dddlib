@@ -41,7 +41,8 @@ internal sealed class Bootstrapper : dddlib.Configuration.IBootstrapper
 
 An aggregate root without a reconstitution factory cannot be persisted: the repositories throw a
 `PersistenceException` whose message explains what to add. It also does not record applied events as uncommitted,
-since there would be no way to load them back.
+since there would be no way to load them back. The analyzer reports an aggregate root that has neither a
+parameterless constructor nor a `ToReconstituteUsing` call (DDDLIB014) and offers to add the constructor.
 
 Aggregate root reconstitution is never used without persistence. However, it should always be defined in order to
 support [domain model reuse](concepts.md#domain-model-reuse).

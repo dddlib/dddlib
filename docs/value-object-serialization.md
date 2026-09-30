@@ -82,3 +82,6 @@ In both cases the serialized instance of that registration now looks like this:
 ```json
 "W807ASB"
 ```
+
+The analyzer reports an aggregate root whose natural key is a value object that the default serializer cannot read
+back and that has no custom serializer (DDDLIB017).

@@ -41,7 +41,7 @@ public sealed class SqlServerMementoRepository<T> : Repository<T>
             command.CommandText = string.Concat(this.schema, ".[LoadMemento]");
             command.Parameters.Add("@Id", SqlDbType.UniqueIdentifier).Value = id;
 
-            await SqlServerSchemaCheck.EnsureCurrentAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
+            await SqlServerSchemaCheck.EnsureCompatibleAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
             await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
             await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleRow, cancellationToken).ConfigureAwait(false);
             if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
@@ -90,7 +90,7 @@ public sealed class SqlServerMementoRepository<T> : Repository<T>
             command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = Guid.NewGuid();
         }
 
-        await SqlServerSchemaCheck.EnsureCurrentAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
+        await SqlServerSchemaCheck.EnsureCompatibleAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
         try

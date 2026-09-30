@@ -66,4 +66,32 @@ private void Handle(CarRegistered @event)
 }
 ```
 
-Using a mapping that has not been registered throws a `RuntimeException` that names the missing mapping.
+Using a mapping that has not been registered throws a `RuntimeException` that names the missing mapping. The
+analyzer reports such a use at compile time (DDDLIB020).
+
+## What the analyzers read from the bootstrapper
+
+Several diagnostics depend on what the bootstrapper configures: a missing reconstitution factory (DDDLIB014), a
+missing natural key (DDDLIB015), a natural key that does not round-trip (DDDLIB017), a missing mapping (DDDLIB020),
+and the value object rules that a custom comparer switches off (DDDLIB004, DDDLIB019). The analyzers read the body of
+the `Bootstrap` method to find out, and understand exactly one shape: statements that start at the `configure`
+parameter and chain the configuration methods, as in every example on this page.
+
+```csharp
+configure.AggregateRoot<Car>()
+    .ToReconstituteUsing(() => new Car())
+    .ToUseNaturalKey(car => car.Registration);
+```
+
+Such statements may sit inside `if` blocks and loops. An assembly without a bootstrapper is read as configuring
+nothing. The analyzers give up, and report none of the diagnostics above, when configuration may happen somewhere
+they cannot follow:
+
+- the assembly has more than one bootstrapper (DDDLIB005 is reported instead);
+- `configure` is passed to another method, assigned, or captured in anything but a call of `AggregateRoot<T>()`,
+  `Entity<T>()` or `ValueObject<T>()`;
+- the result of one of those calls is stored or passed on rather than chained;
+- any other method in the assembly takes an `IConfiguration`, which is how classes called by a custom
+  `IBootstrapperProvider` look.
+
+The runtime checks remain in every case; the diagnostics only bring them forward.

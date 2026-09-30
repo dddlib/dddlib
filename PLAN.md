@@ -61,10 +61,13 @@ dddlibv2/
     dddlib.Persistence.EventDispatcher/            dispatcher host, Memory implementation
     dddlib.Persistence.EventDispatcher.SqlServer/  SqlServer batch store and host, SqlServerEventDispatcherSchema
     Shared/SqlServer/                SQL Server infrastructure and Scripts/, linked into both SqlServer packages
-    dddlib.Generators/               source generator + analyzers (phase 4)
+    dddlib.Generators/               source generator + analyzers (phases 4 and 7)
+    dddlib.CodeFixes/                code fixes for the analyzers (phase 7), packed into the dddlib package
   tests/
     dddlib.Tests/                    core feature scenarios, bug regressions, unit tests
     dddlib.Persistence.Tests/        persistence scenarios, integration tests
+    dddlib.Generators.Tests/         generator, analyzer and bootstrapper model tests, driving Roslyn directly
+    dddlib.CodeFixes.Tests/          each code fix applied in an AdhocWorkspace
     dddlib.Tests.Support/            shared domain model (Vehicle, Registration, Wheel), test bootstrapper helpers, SQL container fixture
 ```
 
@@ -133,7 +136,8 @@ configured. Phase 4 turns that into an analyzer diagnostic.
 - Nothing in the library changes the schema implicitly. `SqlServerSchema.EnsureAsync` (or
   `SqlServerEventDispatcherSchema.EnsureAsync`) creates or upgrades it when the consumer calls it; the test fixture
   calls it on each per-class database. Each SQL Server class checks the schema version before its first command and
-  fails with a `PersistenceException` when the schema is behind. Constructors must not do I/O.
+  fails with a `PersistenceException` when the schema is behind, or has recorded that it no longer supports the
+  package. Constructors must not do I/O.
 - `TransactionScopeOption.Suppress` wrapping is kept so callers' ambient transactions do not leak in.
 
 ### Source generators and analyzers (phase 4)
@@ -302,7 +306,7 @@ Done 2026-09-29. What was built, and where it departs from v1:
 
 ### Phase 7: analyzer coverage (dddlib/dddlib#2)
 
-Planned 2026-09-29, not started. Turns the remaining runtime-only model mistakes into diagnostics, adds the code fixes
+Planned 2026-09-29, done 2026-09-30 on the `analyzers` branch; see *As built* at the end of this phase. Turns the remaining runtime-only model mistakes into diagnostics, adds the code fixes
 the issue lists, and refines DDDLIB004. Everything stays inside the `dddlib` package: the analyzers in
 `dddlib.Generators`, the code fixes in a new `dddlib.CodeFixes` assembly packed into the same `analyzers/dotnet/cs`
 folder. Roslyn stays at 4.14 (.NET 9.0.300 SDK, Visual Studio 17.14).
@@ -315,7 +319,9 @@ Constraints that shape the work:
   `dddlib.csproj` packs both DLLs.
 - `TreatWarningsAsErrors` is on repo-wide and every test project references the generator as an analyzer, so a new
   rule that fires on the test models fails the build. Each rule lands only when the whole solution builds; a hit in
-  a test model is either a test model fix or a false positive to fix in the rule, never a suppression.
+  a test model is either a test model fix or a false positive to fix in the rule, never a suppression. The exception,
+  as for DDDLIB001 and DDDLIB004 before: code that breaks a rule on purpose carries a scoped `#pragma` with the reason
+  (the double-dispatch probe in the shared `Vehicle`, the benchmark subjects that must not record events).
 - Every rule keeps the existing style: `DiagnosticDescriptors` entry with a `helpLinkUri` into `docs/`, a row in
   `AnalyzerReleases.Unshipped.md`, a row in the table in `docs/source-generator.md`, a sentence on the feature page
   it relates to, and a red and a green test in `tests/dddlib.Generators.Tests`.
@@ -328,10 +334,19 @@ Constraints that shape the work:
    `configure.Entity<T>()` or `configure.ValueObject<T>()` yields, per `T`, the set of `ToReconstituteUsing`,
    `ToUseNaturalKey` (with the selected property symbol when the lambda body is a member access, otherwise a marker),
    `ToUseEqualityComparer`, `ToUseValueObjectSerializer` and `ToMapToEvent<TEvent>` (with a flag for the reverse
-   mapping overload) calls. The model is `Unknown` when there is no bootstrapper, more than one, or the `configure`
-   parameter is used anywhere other than as the receiver of one of those three methods (helpers, loops, assignments).
+   mapping overload) calls. The model is `Unknown` when there is more than one bootstrapper, the `configure`
+   parameter is used anywhere other than as the receiver of one of those three methods (helpers, loops, assignments),
+   a wrapper leaves its chain (stored in a variable, passed on), or any other method in the compilation takes an
+   `IConfiguration`. The last was added while implementing: a custom `IBootstrapperProvider` can hand the
+   configuration to classes that are not the bootstrapper, as the nested `IBootstrap<T>` classes of the feature
+   scenarios do, and the single `IBootstrapper` of dddlib.Tests would otherwise make every such scenario look
+   unconfigured. With that trigger in place, an assembly with no bootstrapper is known to configure nothing (changed
+   in 7.2 from the original plan, which made it `Unknown`): the default provider only looks in the type's own
+   assembly, and otherwise DDDLIB014 and DDDLIB015 would stay silent for exactly the model that has no bootstrapper
+   yet.
    Bootstrapper-aware rules do not report against an `Unknown` model. Exposed through a `Lazy<BootstrapperModel>`
-   created in the compilation-start action and shared by all analyzers, since symbol actions run concurrently.
+   (`BootstrapperModel.GetLazy`, one per compilation) shared by all analyzers, since symbol actions run concurrently.
+   The generator's pipeline record that had the name is now `BootstrapperRegistration`.
    Tests: `BootstrapperModelTests` covering each call kind, the reverse-mapping flag, the member-access marker, and
    each `Unknown` trigger.
 2. `KnownSymbols` gains the symbols the new rules need: `IConfiguration` and the three wrapper interfaces,
@@ -340,7 +355,9 @@ Constraints that shape the work:
    types overriding `Equals(object)` or implementing `IEquatable<T>`) and `IsDefaultSerializable(INamedTypeSymbol)`
    (a public parameterless constructor with every public property settable or init-able, or exactly one public
    constructor whose parameters match the public properties by name, case-insensitively) with a result naming the
-   offending property, reused by DDDLIB012 and DDDLIB017.
+   offending property, reused by DDDLIB012 and DDDLIB017. As built: `[JsonConstructor]`, `[JsonIgnore]` and
+   `[JsonInclude]` are honoured, a computed property (no setter, no backing field) is not an offender, and a
+   constructor parameter that matches no property is reported separately (`UnboundParameter`).
 
 #### 7.1 Event application rules (new `EventApplicationAnalyzer`, operation actions)
 
@@ -401,6 +418,32 @@ Exit: DDDLIB008 to DDDLIB022 and the six code fixes shipped in the `dddlib` pack
 issue" message that is statically decidable has a diagnostic; issue #2 closed with the table in
 `docs/source-generator.md` as the record.
 
+As built, where it departs from the plan above:
+
+- No bootstrapper means a known, empty model rather than `Unknown`, and any other method taking an `IConfiguration`
+  makes the model `Unknown` (both described in 7.0). The feature test projects configure through nested
+  `IBootstrap<T>` classes, so the bootstrapper-aware rules never fire there; the rules are covered by
+  `tests/dddlib.Generators.Tests` alone.
+- DDDLIB008 is not reported when a base class of the aggregate root is in a referenced assembly: the compiler does
+  not import private members from metadata, so the planned "metadata types included" cannot see the handlers. With an
+  argument that is not a `new` expression, a handler for a derived type also counts.
+- DDDLIB013 looks at the whole hierarchy of a non-abstract aggregate root, so an abstract base and its subclass may
+  supply one override each.
+- DDDLIB015 accepts `ToUseNaturalKey` for a base type as planned, although the runtime applies bootstrapper
+  configuration to the exact type only; the rule errs on the side of silence.
+- DDDLIB017 and DDDLIB019 skip properties typed `object`, whose equality is not known until runtime. DDDLIB019 is not
+  reported when the bootstrapper configures a comparer, like DDDLIB004.
+- DDDLIB020 accepts a mapping configured for a type derived from the one at the call site (forward) or for an event
+  derived from the one mapped back (reverse), because the runtime looks mappings up by runtime type.
+- The code fixes place and indent what they add themselves instead of running the formatter. The DDDLIB007 fix stays
+  within the document: a type that is not partial has one declaration, which contains everything nested in it. The
+  DDDLIB014 fix writes `private` rather than `protected internal` on a sealed type.
+- Test models that broke a rule by accident were fixed (four applied events without handlers). Three break one on
+  purpose and carry a scoped pragma: the double-dispatch probe in `Vehicle` (DDDLIB011), the benchmark subjects
+  (DDDLIB014) and Bug0064 (DDDLIB017).
+- Not verified here: the code fixes loading in Visual Studio from the packed `analyzers/dotnet/cs` folder. The
+  package contents were checked (`dddlib.Generators.dll` and `dddlib.CodeFixes.dll`), the editor was not.
+
 Considered and left out: a handler whose event is never applied (events arrive from subclasses and mappings, so it
 is noisy), publicly settable value object properties (a shape the serialization docs sanction), a public bootstrapper
 (only a recommendation), and reporting DDDLIB015 for entities.
@@ -419,15 +462,28 @@ Done 2026-09-29, in three commits, each green:
    is ahead; step 4 dropped that for rolling upgrades.)
    Changed: explicit and async, the `Versions` table in the named schema, one transaction for the whole upgrade under
    an exclusive `sp_getapplock` on the schema, no AppDomain scanning, no server-version directives, `PersistenceException`
-   instead of a forged `SqlException`, and (from step 4) a database ahead is reported rather than refused. `GetScript(schema)` returns the whole series for migration tools. Batches are
-   split on `GO` lines; `GO <count>` is rejected.
+   instead of a forged `SqlException`, and (from step 4) a database ahead is reported rather than refused.
+   `GetScript(schema)` returns the whole series for migration tools. Batches are split on `GO` lines; `GO <count>` is
+   rejected.
 3. Fail loudly when behind: `SqlServerSchemaCheck` reads the version once per connection string and schema before
-   the first command of every SQL Server class and caches only a current schema.
-4. Rolling upgrades (2026-09-30): a database ahead of the code is accepted instead of failing, so a process on older
+   the first command of every SQL Server class and caches only a compatible schema.
+4. Rolling upgrades (2026-09-30): a schema ahead of the package is accepted instead of failing, so a process on older
    code keeps working after a newer one upgrades the schema. `EnsureAsync` returns a version record
    (`SqlServerSchemaVersion`, `SqlServerEventDispatcherSchemaVersion`, one per SQL Server package, not in
-   dddlib.Persistence, whose API has no SQL Server concepts) with `IsDatabaseAhead`; the caller decides whether to
-   warn. There is no event: everything is evaluated from the returned version.
+   dddlib.Persistence, whose API has no SQL Server concepts) with `IsAhead`; the caller decides whether to warn.
+   There is no event: everything is evaluated from the returned version.
+5. Review follow-ups (2026-09-30):
+   - Vocabulary: the record is `(Schema, Version, RequiredVersion, MinimumRequiredVersion)` with `IsAhead` and
+     `IsCompatible`, matching "the schema is at version X, the package requires version Y" in the exception text.
+     Versions are per schema, not per database.
+   - A bound on "ahead": the `Versions` table has a nullable `MinimumRequiredVersion`. A contracting script sets it on
+     its own row to the oldest required version that still works; the schema check and `EnsureAsync` throw a
+     `PersistenceException` for a package that requires less. It had to be in `dddlib01.sql` and in the first release,
+     because a package that does not read the column can never be told it is too old. Meld had no equivalent.
+   - `GetVersionAsync` on both schema classes returns the same record from a read alone and never throws for an
+     incompatible schema, for processes that leave the DDL to a migration tool and so never call `EnsureAsync`.
+   - `EnsureAsync` reads the versions first and takes the upgrade lock only when there is something to apply or a
+     script text to fill in, so instance startups do not queue behind an upgrade.
 
 Superseded from the issue: "only what is used". The whole schema is one series, so installing the dispatcher
 installs the event store.
@@ -517,11 +573,13 @@ Persistence (`tests/dddlib.Persistence.Tests`):
   DefaultMementoRepositoryPersistence, EventsAreStoredForDispatch, CustomStorageStoresEvents
 - Integration: MemoryEventStoreTests, SqlServerEventStoreTests, SqlServerIdentityMapTests, SqlServerNaturalKeyRepositoryTests,
   SqlServerSnapshotStoreTests, SqlServerSchemaTests (CreatesTheSchemaWithEveryObject, EnsuringTwiceChangesNothing,
-  UpgradeAppliesOnlyTheMissingVersion, FailedUpgradeRollsBackEntirely, FailedInstallLeavesNoSchema,
-  ConcurrentCallersApplyEachVersionOnce, ReportsWhenTheDatabaseIsAheadOfTheCode,
-  OlderCodeKeepsWorkingAfterNewerCodeUpgrades, AdoptsAScriptRunByHand,
-  GetScriptInstallsTheSchema, FailsLoudlyWhenTheSchemaIsBehind, FailsLoudlyWhenTheVersionIsMissing,
-  RejectsAnInvalidSchemaName)
+  EnsuringACurrentSchemaDoesNotWaitForTheUpgradeLock, UpgradeAppliesOnlyTheMissingVersion,
+  FailedUpgradeRollsBackEntirely, FailedInstallLeavesNoSchema, ConcurrentCallersApplyEachVersionOnce,
+  ReportsTheVersionOfACurrentSchema, ReportsWhenTheSchemaIsAheadOfThePackage,
+  OlderCodeKeepsWorkingAfterNewerCodeUpgrades, OlderCodeFailsLoudlyAfterAContractingUpgrade,
+  GetVersionReadsWithoutChangingAnything, GetVersionReportsASchemaThatIsAheadOrNoLongerSupportsThePackage,
+  AdoptsAScriptRunByHand, GetScriptInstallsTheSchema, FailsLoudlyWhenTheSchemaIsBehind,
+  FailsLoudlyWhenTheVersionIsMissing, RejectsAnInvalidSchemaName)
 - Bug: 0043, 0064, 0081, 0109, 0127
 - Unit: JsonSerializerTests, SqlServerScriptTests
 
@@ -532,7 +590,9 @@ Event dispatcher (`tests/dddlib.Persistence.EventDispatcher.Tests`):
   TryGetBatchTwiceFromEventStoreWithSingleEvent, TryGetBatchTwiceFromEventStoreWithSingleEventAndDifferentDispatchers,
   TryGetMultipleBatchesFromEventStoreWithManyEvents, MarkingDispatchedCompletesTheBatchAndAdvances,
   AnAbandonedBatchIsHandedOutAgainAfterTheTimeout), MemoryEventBatchStoreTests, SqlServerEventDispatcherSchemaTests
-  (InstallingTheDispatcherInstallsTheEventStore, FailsLoudlyWhenTheSchemaIsBehind, BothPackagesProduceTheSameScript)
+  (InstallingTheDispatcherInstallsTheEventStore, ReportsWhenTheSchemaIsAheadOfThePackage,
+  GetVersionReadsWithoutChangingAnything, FailsLoudlyWhenThePackageIsTooOldForTheSchema,
+  FailsLoudlyWhenTheSchemaIsBehind, BothPackagesProduceTheSameScript)
 
 Shared model (`tests/dddlib.Tests.Support`): Vehicle, Registration, Wheel, NewVehicle, IRegistrationService, Bootstrapper.
 
@@ -568,7 +628,15 @@ has a public home for `docs/`.
   that ends by recording its own version, like `dddlib01.sql`.
 - Code must keep working against a database ahead of it (rolling upgrades: a process on version N runs against a
   database a newer process upgraded to N+1). Code ahead of the database throws; a database ahead of the code is
-  reported by `EnsureAsync` through `IsDatabaseAhead` on the returned version. So every script is
-  expand-then-contract: only additive changes (new tables, nullable or defaulted columns, indexes, new procedures);
-  never change the parameters or result columns of a procedure older code calls, or rename or drop what it uses, in
-  the same version that stops using it. See docs/persistence/sql-server.md, *Rolling upgrades*.
+  reported by `EnsureAsync` and `GetVersionAsync` through `IsAhead` on the returned version. So every script is
+  expand-then-contract:
+  - Expand: only additive changes (new tables, nullable or defaulted columns, indexes, new procedures). Never change
+    the parameters or result columns of a procedure older code calls, rename or drop what it uses, add a column its
+    inserts cannot satisfy, or tighten a constraint it can violate, in the same version that stops using it. To change
+    a procedure's contract, add a new procedure and have the new code call it. A changed procedure body with the same
+    contract reaches running processes on older code as soon as it is applied, so it must keep the behaviour they
+    expect.
+  - Contract: removing what code N used happens in a later script, which must record the oldest required version that
+    still works: `INSERT INTO [dbo].[Versions] ([Version], [MinimumRequiredVersion]) VALUES (NN, M);`. Older packages
+    then fail loudly instead of with a SQL error. Say so in `RELEASE_NOTES.md`; docs/persistence/sql-server.md,
+    *Rolling upgrades*, promises that.

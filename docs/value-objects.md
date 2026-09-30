@@ -10,6 +10,9 @@ In **dddlib** the following features are supported:
 - [Value object serialization](value-object-serialization.md) enables the author to control the serialization of a
   value object for persistence.
 
+A value object derives from `ValueObject<T>` of itself: `class Money : ValueObject<Money>`. Any other type argument
+is reported by the analyzer (DDDLIB018).
+
 ## Why a base class and not a C# record
 
 C# records were considered for v2 and rejected. Record equality includes every instance field, private ones included,
