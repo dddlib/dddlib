@@ -1,7 +1,8 @@
 # dddlib
 
 A domain driven design library for .NET designed to take the pain out of coding domain models, with a persistence
-companion for in-memory and SQL Server storage of aggregate roots as mementos or event streams.
+companion for in-memory and SQL Server storage of aggregate roots as mementos or event streams, an event dispatcher
+and projections for read models.
 
 - [Documentation](docs/README.md), starting with the [quickstart](docs/quickstart.md)
 - [Migrating from v1](docs/migrating-from-v1.md)
@@ -35,4 +36,6 @@ dotnet add package dddlib.Persistence.SqlServer --prerelease
 dotnet add package dddlib.TestFramework --prerelease
 dotnet add package dddlib.Persistence.EventDispatcher --prerelease
 dotnet add package dddlib.Persistence.EventDispatcher.SqlServer --prerelease
+dotnet add package dddlib.Persistence.Projections --prerelease
+dotnet add package dddlib.Persistence.Projections.SqlServer --prerelease
 ```

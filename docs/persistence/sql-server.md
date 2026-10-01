@@ -1,7 +1,7 @@
 # SQL Server
 
 The SQL Server implementations are in the **dddlib.Persistence.SqlServer** package; the event dispatcher's are in
-**dddlib.Persistence.EventDispatcher.SqlServer**.
+**dddlib.Persistence.EventDispatcher.SqlServer** and the projections' in **dddlib.Persistence.Projections.SqlServer**.
 
 ```shell
 dotnet add package dddlib.Persistence.SqlServer
@@ -27,8 +27,8 @@ dedicated schema such as `dddlib` keeps dddlib's tables and procedures apart
 from yours; the constructors default to `dbo`.
 
 The schema is one series of numbered scripts, `dddlib01.sql`, `dddlib02.sql` and so on, the same in every SQL Server
-package: installing through `SqlServerEventDispatcherSchema.EnsureAsync` installs the event store too. Version 1
-creates:
+package: installing through `SqlServerEventDispatcherSchema.EnsureAsync` or `SqlServerProjectionsSchema.EnsureAsync`
+installs the event store too. Version 1 creates:
 
 | Objects | Used by |
 |---|---|
@@ -40,6 +40,13 @@ creates:
 | `Batches`, `DispatchedEvents` and procedures | [event dispatcher](event-dispatcher.md) |
 | `Versions` table | version tracking |
 
+Version 2 adds:
+
+| Objects | Used by |
+|---|---|
+| `ReadEvents`, `GetLastSequenceNumber` and the `TypeNameList` table type | the event feed, which [projections](projections.md) read |
+| `Projections`, `ProjectionViews`, the `ProjectionViewList` table type and the projection procedures | projections |
+
 Released scripts never change; every later change to the schema is a new script, so upgrading the packages and
 calling `EnsureAsync` upgrades the schema. The `Versions` table holds one row per applied version with the package
 that applied it and the text it ran.
@@ -48,7 +55,7 @@ that applied it and the text it ran.
 
 To run the DDL through a migration tool such as DbUp, or hand it to a DBA, `SqlServerSchema.GetScript(schema)` returns
 the whole series rewritten for the schema, preceded by a batch that creates the schema, with batches separated by
-`GO`. The scripts also ship under `content/Scripts` in both packages; they target `dbo`, so replace the bracketed
+`GO`. The scripts also ship under `content/Scripts` in every SQL Server package; they target `dbo`, so replace the bracketed
 schema name `[dbo]` with yours and run them in version order. Every script records its own version, and version 1 is
 idempotent, so `EnsureAsync` later adopts a database installed either way.
 
@@ -90,7 +97,9 @@ else if (version.IsAhead)
 }
 ```
 
-`SqlServerEventDispatcherSchema` has the same two methods and returns a `SqlServerEventDispatcherSchemaVersion`.
+`SqlServerEventDispatcherSchema` and `SqlServerProjectionsSchema` have the same methods and return a
+`SqlServerEventDispatcherSchemaVersion` and a `SqlServerProjectionsSchemaVersion`. A read model in its own database
+needs the schema there too, so call `EnsureAsync` for each database.
 
 ### Rolling upgrades
 

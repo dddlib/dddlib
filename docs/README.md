@@ -9,7 +9,8 @@ can be packaged and distributed without any persistence-specific dependency, and
 **dddlib.Persistence** is the persistence companion, with **dddlib.Persistence.SqlServer** for SQL Server: in-memory
 and SQL Server persistence for both
 [memento-based](persistence/memento-persistence.md) and [event sourcing](persistence/event-sourcing-persistence.md)
-models.
+models, with an [event dispatcher](persistence/event-dispatcher.md) and [projections](persistence/projections.md)
+over the committed events.
 
 ## TL;DR
 
@@ -106,3 +107,4 @@ dddlib.Persistence
 - [SQL Server](persistence/sql-server.md)
 - [Serialization](persistence/serialization.md)
 - [Event Dispatcher](persistence/event-dispatcher.md) (dddlib.Persistence.EventDispatcher)
+- [Projections](persistence/projections.md) (dddlib.Persistence.Projections)

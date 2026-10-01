@@ -1,7 +1,7 @@
 # dddlib v2 port plan
 
 This repository is a ground-up port of [dddlib v1](https://github.com/dddlib/dddlibv1) to modern .NET.
-The legacy source lives at `C:\Users\cameronfletcher\Development\code\git\dddlib\dddlib` (branch `dev`,
+The legacy source lives at `C:\Users\cameronfletcher\Development\code\git\dddlib\dddlibv1` (branch `dev`,
 last commit March 2017, .NET Framework 4.5). It is the reference, not the starting point: nothing is
 copied wholesale, but its feature tests define the behaviour this port must reproduce.
 
@@ -18,7 +18,8 @@ In scope:
 - The in-memory persistence implementations, but only as far as they are needed to run the persistence
   scenarios without a database. They are cheap and make the repository tests fast.
 
-Out of scope until everything above is green: `dddlib.Projections` (now planned as phase 9, as `dddlib.Persistence.Projections`) and `perftest`. The old `dddlib.TestFramework`
+Out of scope until everything above is green: `perftest`. `dddlib.Projections` was ported in phase 9 as
+`dddlib.Persistence.Projections`. The old `dddlib.TestFramework`
 package returns in phase 5 (its extension methods are needed by users testing their own models), and
 `dddlib.Persistence.EventDispatcher` was ported in phase 6. Its SQL Server implementation polls the event store
 rather than use `SqlDependency`, which Azure SQL does not support.
@@ -512,7 +513,8 @@ installs the event store.
 
 ### Phase 9: projections
 
-Planned 2026-10-01, revised the same day after review (the review's points are folded in below and marked *revised*).
+Planned 2026-10-01, revised the same day after review (the review's points are folded in below and marked *revised*),
+and done the same day in the four commits of the steps at the end; see *As built* there.
 v1's `dddlib.Projections` (issue #88 in dddlibv1, never finished, no tests) gave a key/value store for read models and
 a read of the store-wide event sequence from a sequence number. v2 has neither: its `IEventStore` reads one stream, and
 the store-wide sequence is reachable only through the dispatcher's batch store. This phase brings both back and adds
@@ -671,6 +673,19 @@ already do; `BothPackagesProduceTheSameScript` becomes all three.
 4. P9: packaging (both packages in the pack and the API snapshots), `docs/persistence/projections.md`, the event
    dispatcher page's example repointed (the dispatcher is for integrations and notifications, projections for read
    models), the "Not yet ported" entry in `docs/migrating-from-v1.md`, `RELEASE_NOTES.md`.
+
+As built, where it departs from the design above:
+
+- An empty `eventTypes` collection reads every type, like null, so both feeds agree; the runner never passes one,
+  since it rejects a projection without handlers.
+- `SqlServerRepository<TIdentity, TEntity>.BulkUpdateAsync` keeps the last change per identity, as applying them one
+  by one would, because the table-valued parameter's key is unique.
+- The `ConcurrentRunnersApplyEachEventOnce` scenarios run three runners with different page sizes over one projection
+  and check the views, since the handler record of a shared projection includes the pages that lost a race.
+- The rebuild scenarios purge once with the runner stopped, for the deterministic intermediate state, and once while a
+  runner is idle, to show the idle re-read; asserting the intermediate state under a running runner was a race.
+- The SQL Server event store tests became `[NotInParallel]`: the feed tests read the store-wide position, which every
+  commit in the class moves.
 
 ## 6. Test conventions with TUnit
 
