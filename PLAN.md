@@ -18,7 +18,7 @@ In scope:
 - The in-memory persistence implementations, but only as far as they are needed to run the persistence
   scenarios without a database. They are cheap and make the repository tests fast.
 
-Out of scope until everything above is green: `dddlib.Projections` and `perftest`. The old `dddlib.TestFramework`
+Out of scope until everything above is green: `dddlib.Projections` (now planned as phase 9, as `dddlib.Persistence.Projections`) and `perftest`. The old `dddlib.TestFramework`
 package returns in phase 5 (its extension methods are needed by users testing their own models), and
 `dddlib.Persistence.EventDispatcher` was ported in phase 6. Its SQL Server implementation polls the event store
 rather than use `SqlDependency`, which Azure SQL does not support.
@@ -60,7 +60,9 @@ dddlibv2/
     dddlib.Persistence.SqlServer/    SqlServer implementations, SqlServerSchema
     dddlib.Persistence.EventDispatcher/            dispatcher host, Memory implementation
     dddlib.Persistence.EventDispatcher.SqlServer/  SqlServer batch store and host, SqlServerEventDispatcherSchema
-    Shared/SqlServer/                SQL Server infrastructure and Scripts/, linked into both SqlServer packages
+    dddlib.Persistence.Projections/            read-model repository and catch-up runner, Memory implementation (phase 9)
+    dddlib.Persistence.Projections.SqlServer/  SqlServer repository and projections, SqlServerProjectionsSchema (phase 9)
+    Shared/SqlServer/                SQL Server infrastructure and Scripts/, linked into every SqlServer package
     dddlib.Generators/               source generator + analyzers (phases 4 and 7)
     dddlib.CodeFixes/                code fixes for the analyzers (phase 7), packed into the dddlib package
   tests/
@@ -508,6 +510,112 @@ Done 2026-09-29, in three commits, each green:
 Superseded from the issue: "only what is used". The whole schema is one series, so installing the dispatcher
 installs the event store.
 
+### Phase 9: projections
+
+Planned 2026-10-01. v1's `dddlib.Projections` (issue #88 in dddlibv1, never finished, no tests) gave a key/value
+store for read models and a read of the store-wide event sequence from a sequence number. v2 has neither: its
+`IEventStore` reads one stream, and the store-wide sequence is reachable only through the dispatcher's batch store.
+This phase brings both back and adds what v1 left to the caller: checkpointed catch-up with exactly-once effect.
+
+Decisions (Cameron, 2026-10-01):
+
+- Two packages under the persistence family, both referencing `dddlib.Persistence`: `dddlib.Persistence.Projections`
+  (abstractions, runner, memory) and `dddlib.Persistence.Projections.SqlServer`.
+- Names follow v1, under the new namespaces: `dddlib.Persistence.Projections.IRepository<TIdentity, TEntity>`,
+  `dddlib.Persistence.Projections.Memory.MemoryRepository<TIdentity, TEntity>`,
+  `dddlib.Persistence.Projections.SqlServer.SqlServerRepository<TIdentity, TEntity>`. The namespace separates them from
+  `dddlib.Persistence.IRepository<T>` and the memento repositories.
+- Projections have their own catch-up runner rather than building on the event dispatcher.
+- Both projection kinds: key/value views in dddlib's table, and projections into the user's own tables.
+- One schema. The projection objects go into the existing script series and are installed by the same `EnsureAsync`
+  approach as the other SQL Server packages; the shared code keeps its `dddlib.Persistence.SqlServer` namespace. A
+  read model in its own database therefore also gets the event store objects. Splitting the series is a possible
+  later change, not part of this phase.
+- Errors are `PersistenceException`.
+
+#### Design
+
+Exactly-once effect. The event dispatcher marks an event dispatched in a separate step after `DispatchAsync`
+returns, so a crash between the two replays it: harmless for overwrites, wrong for counters and appends. A projection
+instead keeps its checkpoint (the last sequence number it applied) next to its views and writes both in one
+transaction. Because the checkpoint lives with the read model, the read model may still be in a different database
+from the event store it reads.
+
+Reading the store-wide sequence (`dddlib.Persistence`, `dddlib.Persistence.SqlServer`): v1's `GetEventsFrom`, as a
+new `Sdk.IEventFeed.ReadEventsAsync(long afterSequenceNumber, int maxCount, token)` returning the existing
+`Sdk.SequencedEvent`. Exclusive, as v1 was. A separate interface rather than a new member of `Sdk.IEventStore`, so
+custom event stores are not broken. `MemoryEventStore` already has this method and only declares the interface.
+`SqlServerEventStore` implements it with a new `ReadEvents` procedure, deserializing through its type cache and
+`JsonSerialization.Options`, under `TransactionScopeOption.Suppress` and without v1's `NOLOCK`, which could read
+uncommitted events. The store-wide `dddlib.Events.Commit` lock in `CommitStream` already makes sequence numbers follow
+commit order, so reading after a checkpoint never passes a commit still in flight; gaps left by rolled-back commits
+are skipped. This also closes the v1 gap for callers that are not projections.
+
+`dddlib.Persistence.Projections`:
+
+- `IRepository<TIdentity, TEntity>`: v1's members made async. `GetAsync` (null when missing), `AddOrUpdateAsync`,
+  `RemoveAsync`, `PurgeAsync`, `BulkUpdateAsync(addOrUpdate, remove)`.
+- `Memory.MemoryRepository<TIdentity, TEntity>`: as v1. `ConcurrentDictionary`, optional `IEqualityComparer<TIdentity>`,
+  `GetAll`, virtual members.
+- `Projection<TIdentity, TEntity>`: the user overrides `ApplyAsync(object @event, IRepository<TIdentity, TEntity> views, token)`.
+  The runner hands it a batch-scoped repository that reads through to the store and buffers writes, then commits the
+  buffered writes and the new checkpoint together.
+- `ProjectionRunner` (Sdk): polls an `IEventFeed` after the projection's checkpoint, applies a batch, commits, and backs
+  off when idle, with the same option shape as `EventDispatcherOptions` (name, batch size, polling interval, maximum
+  interval). `RunAsync(token)` for a hosted service; `Start`/`StopAsync`/`DisposeAsync` otherwise. A throwing projection
+  rolls back the batch (views and checkpoint), raises `ProjectionFailed` and retries the batch after a delay. It drives
+  an Sdk interface (read checkpoint; apply a batch atomically given the expected checkpoint; purge) that both projection
+  kinds implement. `MemoryProjectionRunner` composes it with a `MemoryEventStore` and an in-memory checkpoint.
+- Commit is optimistic on the checkpoint: it succeeds only if the stored checkpoint still equals the one the batch was
+  read after. Two runners for the same projection never both apply a batch; the loser rolls back and re-reads.
+- Rebuild: `PurgeAsync` on the projection clears its views and resets its checkpoint in one transaction; the runner
+  then catches up from zero. Blue/green rebuilds use a versioned projection name (`cars-v2`) and switch readers over.
+
+`dddlib.Persistence.Projections.SqlServer` (references `dddlib.Persistence.Projections` and `Microsoft.Data.SqlClient`;
+links `src/Shared/SqlServer` like the other two SQL Server packages and does not reference them):
+
+- `SqlServerRepository<TIdentity, TEntity>(connectionString, projectionName, schema = "dbo")`: views as JSON in
+  `ProjectionViews`, for readers and for the runner. Keys are the identity serialized with `JsonSerialization.Options`,
+  in `NVARCHAR(450) COLLATE Latin1_General_100_BIN2`, so equality is ordinal like the default comparer, not the
+  database collation; a key over 450 characters throws `ArgumentException`. Bulk writes go through one table-valued
+  parameter.
+- `SqlServerProjection`: projections into the user's own tables. The user overrides
+  `ApplyAsync(object @event, SqlTransaction transaction, token)` and `PurgeAsync(SqlTransaction, token)`; dddlib owns the
+  connection, the transaction and the checkpoint, as `SqlServerRepository<T>.AppendEventsAsync` does for custom memento
+  storage. The user's tables are theirs to create and migrate.
+- `SqlServerProjectionRunner` takes the read model's connection string and an `IEventFeed`, normally a
+  `dddlib.Persistence.SqlServer.SqlServerEventStore` over the event store's connection string. They may be the same
+  database.
+- `SqlServerProjectionsSchema.EnsureAsync`, `GetVersionAsync` and `GetScript`, returning a
+  `SqlServerProjectionsSchemaVersion`: the same contract as `SqlServerSchema` and `SqlServerEventDispatcherSchema`,
+  over the same shared installer and scripts. The `SqlServerSchemaCheck` error text names all three.
+
+#### Schema: `dddlib02.sql`
+
+Expand only, per section 9:
+
+- `ReadEvents(@SequenceNumber, @MaxCount)`: sequence number, type id and payload in sequence order.
+- `ProjectionCheckpoints` (`Name VARCHAR(511)` primary key, `SequenceNumber BIGINT`).
+- `ProjectionViews` (`ProjectionName`, `Key`, `Payload NVARCHAR(MAX)`, primary key `(ProjectionName, Key)`) and the
+  `ProjectionViewList` table type.
+- Procedures to get a view, get a checkpoint, advance a checkpoint (`@Name, @Expected, @New`, raising 50409 on a
+  mismatch), save a batch of views (upserts and removes in one call), and purge a projection (views and checkpoint).
+  The user's-own-tables kind uses only the checkpoint procedures.
+
+Every SQL Server package then requires schema version 2. Existing deployments get it by calling `EnsureAsync` as they
+already do; `BothPackagesProduceTheSameScript` becomes all three.
+
+#### Steps, each a green commit
+
+1. P9: `dddlib02.sql`, `Sdk.IEventFeed`, `MemoryEventStore` and `SqlServerEventStore` implementing it. Upgrade from 1
+   to 2 and the existing schema tests.
+2. P9: `dddlib.Persistence.Projections`: repository, memory implementation, runner and memory scenarios. New test
+   project `tests/dddlib.Persistence.Projections.Tests`.
+3. P9: `dddlib.Persistence.Projections.SqlServer`: schema class, `SqlServerRepository`, `SqlServerProjection`, the
+   runner and the SQL Server scenarios.
+4. P9: packaging (both packages in the pack and the API snapshots), `docs/persistence/projections.md`, the "Not yet
+   ported" entry in `docs/migrating-from-v1.md`, `RELEASE_NOTES.md`.
+
 ## 6. Test conventions with TUnit
 
 Keep the structure that made the old suite readable: one feature per file, one nested class per
@@ -622,6 +730,23 @@ Event dispatcher (`tests/dddlib.Persistence.EventDispatcher.Tests`):
   (InstallingTheDispatcherInstallsTheEventStore, ReportsWhenTheSchemaIsAheadOfThePackage,
   GetVersionReadsWithoutChangingAnything, FailsLoudlyWhenThePackageIsTooOldForTheSchema,
   FailsLoudlyWhenTheSchemaIsBehind, BothPackagesProduceTheSameScript)
+
+Projections (phase 9; v1 had no tests, so these are new):
+
+- `tests/dddlib.Persistence.Tests`, Integration: MemoryEventStoreTests and SqlServerEventStoreTests gain
+  ReadsEventsInSequenceOrder, ReadsOnlyAfterTheSequenceNumber, SkipsGapsLeftByRolledBackCommits,
+  NeverPassesACommitInFlight (SQL Server only), MissingEventTypeFailsLoudly (SQL Server only); SqlServerSchemaTests
+  gains UpgradesFromVersion1
+- `tests/dddlib.Persistence.Projections.Tests`:
+  - MemoryRepository and SqlServerRepository, each: AddOrUpdateThenGet, GetMissingReturnsNull, RemoveDeletesTheView,
+    PurgeDeletesEveryView, BulkUpdateAddsUpdatesAndRemoves; MemoryRepository also CustomIdentityComparer and GetAll;
+    SqlServerRepository also KeysAreCaseSensitive and OverlongKeyIsRejected
+  - MemoryProjection and SqlServerProjection (key/value), each: CatchesUpFromTheStart, ResumesFromTheCheckpoint,
+    FailedBatchChangesNothing, FailedBatchIsRetriedInOrder, RebuildStartsFromZero, ConcurrentRunnersApplyEachEventOnce
+  - SqlServerCustomTableProjection: WritesToTheUsersTables, FailedBatchRollsBackTheUsersTables, RebuildPurgesTheUsersTables
+  - ReadModelInASeparateDatabase: the runner reads one database and writes another
+  - SqlServerProjectionsSchemaTests: InstallingProjectionsInstallsTheEventStore, ReportsWhenTheSchemaIsAheadOfThePackage,
+    GetVersionReadsWithoutChangingAnything, FailsLoudlyWhenTheSchemaIsBehind, AllPackagesProduceTheSameScript
 
 Shared model (`tests/dddlib.Tests.Support`): Vehicle, Registration, Wheel, NewVehicle, IRegistrationService, Bootstrapper.
 
