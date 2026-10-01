@@ -1,8 +1,9 @@
 # Event dispatcher
 
 The **dddlib.Persistence.EventDispatcher** package delivers the events committed to an event store to your code, in
-sequence order, with at-least-once delivery. It is how projections, integrations and notifications react to what the
-domain has done without being called from inside the aggregate root.
+sequence order, with at-least-once delivery. It is how integrations and notifications react to what the domain has
+done without being called from inside the aggregate root. For read models, use a [projection](projections.md)
+instead: it commits its checkpoint with the read model, so each event takes effect exactly once.
 
 ```shell
 dotnet add package dddlib.Persistence.EventDispatcher
@@ -36,13 +37,13 @@ Implement `IEventDispatcher` or wrap a delegate in `CustomEventDispatcher`:
 ```csharp
 using dddlib.Persistence.EventDispatcher;
 
-public sealed class CarProjection : IEventDispatcher
+public sealed class CarNotifications : IEventDispatcher
 {
     public Task DispatchAsync(long sequenceNumber, object @event, CancellationToken cancellationToken)
     {
         if (@event is CarRegistered registered)
         {
-            // update the read model
+            // notify another system; it may be told twice, so make it idempotent
         }
 
         return Task.CompletedTask;
@@ -67,14 +68,14 @@ var options = new EventDispatcherOptions
     BatchTimeout = TimeSpan.FromSeconds(30),
 };
 
-await using var dispatcher = new SqlServerEventDispatcher(connectionString, new CarProjection(), options);
+await using var dispatcher = new SqlServerEventDispatcher(connectionString, new CarNotifications(), options);
 await dispatcher.RunAsync(stoppingToken); // until the token is cancelled
 ```
 
 `RunAsync` is the shape a `BackgroundService` wants:
 
 ```csharp
-public sealed class CarProjectionService(SqlServerEventDispatcher dispatcher) : BackgroundService
+public sealed class CarNotificationService(SqlServerEventDispatcher dispatcher) : BackgroundService
 {
     protected override Task ExecuteAsync(CancellationToken stoppingToken) => dispatcher.RunAsync(stoppingToken);
 }

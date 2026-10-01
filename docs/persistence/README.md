@@ -21,6 +21,10 @@ The SQL Server implementations are in **dddlib.Persistence.SqlServer** and need 
 before first use with `SqlServerSchema.EnsureAsync`. Nothing in the library changes the schema implicitly, and
 constructors do no I/O.
 
+Downstream of the event store, the [event dispatcher](event-dispatcher.md) delivers committed events to your code at
+least once, and [projections](projections.md) keep read models up to date from them, each event taking effect exactly
+once.
+
 ## Requirements on the model
 
 To be persisted, an aggregate root must have a natural key and a [reconstitution factory](../aggregate-root-reconstitution.md).

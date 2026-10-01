@@ -29,7 +29,7 @@ internal static class SqlServerSchemaCheck
                     CultureInfo.InvariantCulture,
                     @"The SQL Server schema {0} is at version {1}, but {2} requires version {3}.
 To fix this issue, either:
-- call SqlServerSchema.EnsureAsync (dddlib.Persistence.SqlServer) or SqlServerEventDispatcherSchema.EnsureAsync (dddlib.Persistence.EventDispatcher.SqlServer) with the connection string and schema, from a migration step or at startup, or
+- call SqlServerSchema.EnsureAsync (dddlib.Persistence.SqlServer), SqlServerEventDispatcherSchema.EnsureAsync (dddlib.Persistence.EventDispatcher.SqlServer) or SqlServerProjectionsSchema.EnsureAsync (dddlib.Persistence.Projections.SqlServer) with the connection string and schema, from a migration step or at startup, or
 - run the scripts from the package's content/Scripts folder, in version order, against the schema.
 Further information: https://github.com/dddlib/dddlib/blob/main/docs/persistence/sql-server.md",
                     quotedSchema,

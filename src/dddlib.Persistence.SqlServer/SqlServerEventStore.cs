@@ -4,14 +4,18 @@ using System.Transactions;
 using dddlib.Persistence.Sdk;
 using dddlib.Sdk;
 using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient.Server;
 
 namespace dddlib.Persistence.SqlServer;
 
 /// <summary>
-/// An event store backed by SQL Server. Events are written in one round trip through a table-valued parameter.
+/// An event store backed by SQL Server. Events are written in one round trip through a table-valued parameter. It is
+/// also the <see cref="IEventFeed"/> for projections over it, which may run against another database.
 /// </summary>
-public sealed class SqlServerEventStore : IEventStore
+public sealed class SqlServerEventStore : IEventStore, IEventFeed
 {
+    private static readonly SqlMetaData[] TypeNameColumns = [new("Name", SqlDbType.VarChar, 511)];
+
     private readonly SqlServerTypeCache typeCache;
     private readonly string connectionString;
     private readonly string schema;
@@ -117,5 +121,91 @@ public sealed class SqlServerEventStore : IEventStore
         }
 
         return (string)postCommitStateParameter.Value;
+    }
+
+    public async Task<EventPage> ReadEventsAsync(long afterSequenceNumber, int maxCount, IReadOnlyCollection<Type>? eventTypes = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(afterSequenceNumber);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxCount);
+
+        long? endSequenceNumber = null;
+        var rows = new List<(long SequenceNumber, Guid StreamId, int StreamRevision, Guid CorrelationId, string TypeName, string Payload)>();
+
+        using (new TransactionScope(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled))
+        await using (var connection = new SqlConnection(this.connectionString))
+        await using (var command = connection.CreateCommand())
+        {
+            command.CommandType = CommandType.StoredProcedure;
+            command.CommandText = string.Concat(this.schema, ".[ReadEvents]");
+            command.Parameters.Add("@AfterSequenceNumber", SqlDbType.BigInt).Value = afterSequenceNumber;
+            command.Parameters.Add("@MaxCount", SqlDbType.Int).Value = maxCount;
+            this.AddTypeNamesParameter(command, eventTypes);
+
+            await SqlServerSchemaCheck.EnsureCompatibleAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
+            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            if (await reader.ReadAsync(cancellationToken).ConfigureAwait(false) && !await reader.IsDBNullAsync(0, cancellationToken).ConfigureAwait(false))
+            {
+                endSequenceNumber = reader.GetInt64(0);
+            }
+
+            await reader.NextResultAsync(cancellationToken).ConfigureAwait(false);
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                rows.Add((reader.GetInt64(0), reader.GetGuid(1), reader.GetInt32(2), reader.GetGuid(3), reader.GetString(4), reader.GetString(5)));
+            }
+        }
+
+        var events = new FeedEvent[rows.Count];
+        for (var index = 0; index < rows.Count; index++)
+        {
+            var row = rows[index];
+            var payloadType = TypeNameResolver.ResolveOrThrow(row.TypeName);
+            var @event = JsonSerializer.Deserialize(row.Payload, payloadType, JsonSerialization.Options)!;
+            events[index] = new FeedEvent(row.SequenceNumber, row.StreamId, row.StreamRevision, row.CorrelationId, @event);
+        }
+
+        return new EventPage(endSequenceNumber ?? afterSequenceNumber, events);
+    }
+
+    public async Task<long> GetLastSequenceNumberAsync(CancellationToken cancellationToken = default)
+    {
+        using var scope = new TransactionScope(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled);
+        await using var connection = new SqlConnection(this.connectionString);
+        await using var command = connection.CreateCommand();
+
+        command.CommandType = CommandType.StoredProcedure;
+        command.CommandText = string.Concat(this.schema, ".[GetLastSequenceNumber]");
+
+        await SqlServerSchemaCheck.EnsureCompatibleAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        return (long)(await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false))!;
+    }
+
+    // An omitted table-valued parameter is an empty table, which the procedure reads as "every type"; SqlClient rejects
+    // an empty enumeration, so the parameter is only added when there is something to filter by.
+    private void AddTypeNamesParameter(SqlCommand command, IReadOnlyCollection<Type>? eventTypes)
+    {
+        if (eventTypes is null || eventTypes.Count == 0)
+        {
+            return;
+        }
+
+        var records = eventTypes
+            .Select(static type => type.GetSerializedName())
+            .Distinct(StringComparer.Ordinal)
+            .Select(name =>
+            {
+                var record = new SqlDataRecord(TypeNameColumns);
+                record.SetString(0, name);
+                return record;
+            })
+            .ToList();
+
+        var parameter = command.Parameters.Add("@TypeNames", SqlDbType.Structured);
+        parameter.TypeName = string.Concat(this.schema, ".[TypeNameList]");
+        parameter.Value = records;
     }
 }

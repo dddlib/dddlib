@@ -26,3 +26,11 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
 - Event dispatcher: `dddlib.Persistence.EventDispatcher` delivers committed events in sequence order with
   at-least-once delivery, polling the in-memory or (with `dddlib.Persistence.EventDispatcher.SqlServer`) SQL Server
   event store (no `SqlDependency`, so Azure SQL works).
+- Projections: `dddlib.Persistence.Projections` keeps read models up to date from the committed events, in memory or
+  (with `dddlib.Persistence.Projections.SqlServer`) on SQL Server, as key/value views in dddlib's schema or in your own
+  tables. A `Projection<TIdentity, TEntity>` registers `When<TEvent>` handlers; a `ProjectionRunner` reads the pages of
+  events after the projection's checkpoint, for the event types it handles only, and commits each page with the
+  checkpoint that follows it, so each event takes effect exactly once. It retries a failed page in order, reports
+  lag, and rebuilds from the first event after a purge. Both event stores expose the store-wide feed as `IEventFeed`,
+  with the stream identity on each event. The projection objects and the feed are schema version 2 (`dddlib02.sql`,
+  expand only): every SQL Server package now requires version 2, which `EnsureAsync` applies.

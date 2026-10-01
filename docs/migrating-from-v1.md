@@ -58,9 +58,18 @@ is no compatibility with data written by v1.
 the SQL Server host is in **dddlib.Persistence.EventDispatcher.SqlServer** and its tables are part of the one dddlib
 schema. See [Event dispatcher](persistence/event-dispatcher.md).
 
-## Not yet ported
+## Projections
 
-- `dddlib.Projections`.
+`dddlib.Projections`, which v1 never finished, is back as **dddlib.Persistence.Projections** and
+**dddlib.Persistence.Projections.SqlServer**. `IRepository<TIdentity, TEntity>` and `MemoryRepository<TIdentity, TEntity>`
+keep their names under the new namespaces, made asynchronous and with `GetAllAsync`; `SqlServerRepository<TIdentity, TEntity>`
+stores views as JSON in dddlib's schema. What v1 left to the caller is provided: `Projection<TIdentity, TEntity>` with
+`When<TEvent>` handlers, a `ProjectionRunner` that reads the store-wide event feed (v1's `GetEventsFrom`, now
+`IEventFeed` on both event stores) and commits each page with its checkpoint, so an event takes effect on the read
+model exactly once, and `SqlServerProjection` for projections into your own tables. The projection objects are
+version 2 of the dddlib schema. See [Projections](persistence/projections.md).
+
+Everything in v1 has now been ported.
 
 `dddlib.TestFramework` is back with the same three extension methods plus `ModelValidator`; see
 [Testing a Domain Model](testing.md).

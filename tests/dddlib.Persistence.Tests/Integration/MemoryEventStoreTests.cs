@@ -126,10 +126,89 @@ public class MemoryEventStoreTests
         await Assert.That(stream.Events).Count().IsEqualTo(1);
     }
 
+    [Test]
+    public async Task ReadsEventsInSequenceOrder()
+    {
+        var eventStore = new MemoryEventStore();
+        var stream1Id = Guid.NewGuid();
+        var stream2Id = Guid.NewGuid();
+        var correlation1 = Guid.NewGuid();
+        var correlation2 = Guid.NewGuid();
+        var events = new[] { new Event { Id = 1, Value = "One" }, new Event { Id = 2, Value = "Two" } };
+        await eventStore.CommitStreamAsync(stream1Id, events, correlation1, null);
+        await eventStore.CommitStreamAsync(stream2Id, [new Event { Id = 3, Value = "Three" }], correlation2, null);
+
+        var page = await eventStore.ReadEventsAsync(0, 10);
+
+        await Assert.That(page.EndSequenceNumber).IsEqualTo(3);
+        await Assert.That(page.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo([1L, 2L, 3L]);
+        await Assert.That(page.Events.Select(static e => ((Event)e.Event).Id)).IsEquivalentTo([1, 2, 3]);
+        await Assert.That(page.Events.Select(static e => e.StreamId)).IsEquivalentTo([stream1Id, stream1Id, stream2Id]);
+        await Assert.That(page.Events.Select(static e => e.StreamRevision)).IsEquivalentTo([1, 2, 1]);
+        await Assert.That(page.Events.Select(static e => e.CorrelationId)).IsEquivalentTo([correlation1, correlation1, correlation2]);
+        await Assert.That(page.Events[0].Event).IsNotSameReferenceAs(events[0]);
+    }
+
+    [Test]
+    public async Task ReadsOnlyAfterTheSequenceNumber()
+    {
+        var eventStore = new MemoryEventStore();
+        var streamId = Guid.NewGuid();
+        await eventStore.CommitStreamAsync(streamId, [new Event { Id = 1 }, new Event { Id = 2 }, new Event { Id = 3 }], Guid.NewGuid(), null);
+
+        var second = await eventStore.ReadEventsAsync(1, 1);
+        var rest = await eventStore.ReadEventsAsync(2, 10);
+        var none = await eventStore.ReadEventsAsync(3, 10);
+
+        await Assert.That(second.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo([2L]);
+        await Assert.That(second.EndSequenceNumber).IsEqualTo(2);
+        await Assert.That(rest.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo([3L]);
+        await Assert.That(rest.EndSequenceNumber).IsEqualTo(3);
+        await Assert.That(none.Events).IsEmpty();
+        await Assert.That(none.EndSequenceNumber).IsEqualTo(3);
+    }
+
+    // The page spans every event so the reader's checkpoint moves past the ones it did not ask for.
+    [Test]
+    public async Task ReadsOnlyTheRequestedEventTypes()
+    {
+        var eventStore = new MemoryEventStore();
+        var streamId = Guid.NewGuid();
+        await eventStore.CommitStreamAsync(streamId, [new Event { Id = 1 }, new OtherEvent(), new Event { Id = 3 }], Guid.NewGuid(), null);
+
+        var others = await eventStore.ReadEventsAsync(0, 10, [typeof(OtherEvent)]);
+        var firstPage = await eventStore.ReadEventsAsync(0, 2, [typeof(Event)]);
+        var all = await eventStore.ReadEventsAsync(0, 10, []);
+
+        await Assert.That(others.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo([2L]);
+        await Assert.That(others.EndSequenceNumber).IsEqualTo(3);
+        await Assert.That(firstPage.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo([1L]);
+        await Assert.That(firstPage.EndSequenceNumber).IsEqualTo(2);
+        await Assert.That(all.Events).Count().IsEqualTo(3);
+    }
+
+    [Test]
+    public async Task ReportsTheLastSequenceNumber()
+    {
+        var eventStore = new MemoryEventStore();
+
+        var empty = await eventStore.GetLastSequenceNumberAsync();
+        await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }, new Event { Id = 2 }], Guid.NewGuid(), null);
+        var two = await eventStore.GetLastSequenceNumberAsync();
+
+        await Assert.That(empty).IsEqualTo(0);
+        await Assert.That(two).IsEqualTo(2);
+    }
+
     private sealed class Event
     {
         public int Id { get; set; }
 
+        public string? Value { get; set; }
+    }
+
+    private sealed class OtherEvent
+    {
         public string? Value { get; set; }
     }
 }

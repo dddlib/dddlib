@@ -6,9 +6,10 @@ namespace dddlib.Persistence.Memory;
 
 /// <summary>
 /// An in-process event store. Events are stored as JSON and deserialized on read so that a loaded aggregate root
-/// never shares event instances with the one that was saved, and so that serialization problems surface early.
+/// never shares event instances with the one that was saved, and so that serialization problems surface early. It is
+/// also the <see cref="IEventFeed"/> for projections over it.
 /// </summary>
-public sealed class MemoryEventStore : IEventStore
+public sealed class MemoryEventStore : IEventStore, IEventFeed
 {
     private readonly Lock sync = new();
     private readonly Dictionary<Guid, List<StoredEvent>> streams = [];
@@ -28,7 +29,7 @@ public sealed class MemoryEventStore : IEventStore
 
             var events = stream
                 .Skip(streamRevision)
-                .Select(static storedEvent => JsonSerializer.Deserialize(storedEvent.Payload, storedEvent.Type, JsonSerialization.Options)!)
+                .Select(static storedEvent => storedEvent.Deserialize())
                 .ToArray();
 
             return Task.FromResult(new StreamResult(events, stream[^1].State));
@@ -60,9 +61,37 @@ public sealed class MemoryEventStore : IEventStore
             }
 
             var state = Guid.NewGuid().ToString("N")[..8];
-            this.Append(streamId, events, state);
+            this.Append(streamId, events, correlationId, state);
 
             return Task.FromResult(state);
+        }
+    }
+
+    public Task<EventPage> ReadEventsAsync(long afterSequenceNumber, int maxCount, IReadOnlyCollection<Type>? eventTypes = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(afterSequenceNumber);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxCount);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        lock (this.sync)
+        {
+            var page = this.ReadPage(afterSequenceNumber, maxCount);
+            var events = page
+                .Where(stored => eventTypes is null || eventTypes.Count == 0 || eventTypes.Contains(stored.Type))
+                .Select(static stored => new FeedEvent(stored.SequenceNumber, stored.StreamId, stored.StreamRevision, stored.CorrelationId, stored.Deserialize()))
+                .ToArray();
+
+            return Task.FromResult(new EventPage(page.Count == 0 ? afterSequenceNumber : page[^1].SequenceNumber, events));
+        }
+    }
+
+    public Task<long> GetLastSequenceNumberAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        lock (this.sync)
+        {
+            return Task.FromResult(this.sequenceNumber);
         }
     }
 
@@ -70,23 +99,14 @@ public sealed class MemoryEventStore : IEventStore
     /// Reads committed events in sequence order, starting after the specified sequence number. This is the feed
     /// the event dispatcher batches from.
     /// </summary>
-    public Task<IReadOnlyList<SequencedEvent>> ReadEventsAsync(long afterSequenceNumber, int maxCount, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        return Task.FromResult(this.ReadEvents(afterSequenceNumber, maxCount));
-    }
-
     internal IReadOnlyList<SequencedEvent> ReadEvents(long afterSequenceNumber, int maxCount)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxCount);
 
         lock (this.sync)
         {
-            return this.log
-                .Where(stored => stored.SequenceNumber > afterSequenceNumber)
-                .Take(maxCount)
-                .Select(static stored => new SequencedEvent(stored.SequenceNumber, JsonSerializer.Deserialize(stored.Payload, stored.Type, JsonSerialization.Options)!))
+            return this.ReadPage(afterSequenceNumber, maxCount)
+                .Select(static stored => new SequencedEvent(stored.SequenceNumber, stored.Deserialize()))
                 .ToArray();
         }
     }
@@ -107,18 +127,35 @@ public sealed class MemoryEventStore : IEventStore
 
         lock (this.sync)
         {
-            this.Append(streamId, events, state);
+            this.Append(streamId, events, Guid.NewGuid(), state);
         }
     }
 
-    private void Append(Guid streamId, IReadOnlyList<object> events, string state)
+    // Sequence numbers are contiguous from 1 here (a failed commit consumes none), so the events after N start at
+    // index N of the log.
+    private List<StoredEvent> ReadPage(long afterSequenceNumber, int maxCount) =>
+        this.log
+            .Skip((int)Math.Min(afterSequenceNumber, this.log.Count))
+            .Take(maxCount)
+            .ToList();
+
+    private void Append(Guid streamId, IReadOnlyList<object> events, Guid correlationId, string state)
     {
+        var revision = this.streams.TryGetValue(streamId, out var stream) ? stream.Count : 0;
+
         // Serialize everything first so that a failure leaves the store untouched.
         var stored = events
-            .Select(@event => new StoredEvent(0, @event.GetType(), JsonSerializer.Serialize(@event, @event.GetType(), JsonSerialization.Options), state))
+            .Select((@event, index) => new StoredEvent(
+                0,
+                streamId,
+                revision + index + 1,
+                correlationId,
+                @event.GetType(),
+                JsonSerializer.Serialize(@event, @event.GetType(), JsonSerialization.Options),
+                state))
             .ToArray();
 
-        if (!this.streams.TryGetValue(streamId, out var stream))
+        if (stream is null)
         {
             stream = [];
             this.streams.Add(streamId, stream);
@@ -132,5 +169,8 @@ public sealed class MemoryEventStore : IEventStore
         }
     }
 
-    private sealed record StoredEvent(long SequenceNumber, Type Type, string Payload, string State);
+    private sealed record StoredEvent(long SequenceNumber, Guid StreamId, int StreamRevision, Guid CorrelationId, Type Type, string Payload, string State)
+    {
+        public object Deserialize() => JsonSerializer.Deserialize(this.Payload, this.Type, JsonSerialization.Options)!;
+    }
 }
