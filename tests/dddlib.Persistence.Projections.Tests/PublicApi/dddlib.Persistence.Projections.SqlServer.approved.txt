@@ -1,0 +1,54 @@
+namespace dddlib.Persistence.Projections.SqlServer
+{
+    public abstract class SqlServerProjection : dddlib.Persistence.Projections.Sdk.ProjectionBase<Microsoft.Data.SqlClient.SqlTransaction>, dddlib.Persistence.Projections.Sdk.IProjectionStore
+    {
+        protected SqlServerProjection(string connectionString, string name, string schema = "dbo") { }
+        protected string ConnectionString { get; }
+        public System.Threading.Tasks.Task ApplyAsync(dddlib.Persistence.Sdk.EventPage page, long expectedCheckpoint, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<long> GetCheckpointAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PurgeAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        protected abstract System.Threading.Tasks.Task PurgeAsync(Microsoft.Data.SqlClient.SqlTransaction transaction, System.Threading.CancellationToken cancellationToken);
+    }
+    public sealed class SqlServerProjectionStore<TIdentity, TEntity> : dddlib.Persistence.Projections.Sdk.IProjectionStore
+        where TIdentity :  notnull
+        where TEntity :  class
+    {
+        public SqlServerProjectionStore(string connectionString, dddlib.Persistence.Projections.Projection<TIdentity, TEntity> projection, string schema = "dbo") { }
+        public System.Collections.Generic.IReadOnlyCollection<System.Type>? EventTypes { get; }
+        public string Name { get; }
+        public dddlib.Persistence.Projections.SqlServer.SqlServerRepository<TIdentity, TEntity> Views { get; }
+        public System.Threading.Tasks.Task ApplyAsync(dddlib.Persistence.Sdk.EventPage page, long expectedCheckpoint, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<long> GetCheckpointAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PurgeAsync(System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public static class SqlServerProjectionsSchema
+    {
+        public static System.Threading.Tasks.Task<dddlib.Persistence.Projections.SqlServer.SqlServerProjectionsSchemaVersion> EnsureAsync(string connectionString, string schema = "dbo", System.Threading.CancellationToken cancellationToken = default) { }
+        public static string GetScript(string schema = "dbo") { }
+        public static System.Threading.Tasks.Task<dddlib.Persistence.Projections.SqlServer.SqlServerProjectionsSchemaVersion> GetVersionAsync(string connectionString, string schema = "dbo", System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class SqlServerProjectionsSchemaVersion : System.IEquatable<dddlib.Persistence.Projections.SqlServer.SqlServerProjectionsSchemaVersion>
+    {
+        public SqlServerProjectionsSchemaVersion(string Schema, int Version, int RequiredVersion, int MinimumRequiredVersion) { }
+        public bool IsAhead { get; }
+        public bool IsCompatible { get; }
+        public int MinimumRequiredVersion { get; init; }
+        public int RequiredVersion { get; init; }
+        public string Schema { get; init; }
+        public int Version { get; init; }
+    }
+    public sealed class SqlServerRepository<TIdentity, TEntity> : dddlib.Persistence.Projections.IRepository<TIdentity, TEntity>
+        where TIdentity :  notnull
+        where TEntity :  class
+    {
+        public SqlServerRepository(string connectionString, string projectionName, string schema = "dbo") { }
+        public string ProjectionName { get; }
+        public System.Threading.Tasks.Task AddOrUpdateAsync(TIdentity identity, TEntity entity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task BulkUpdateAsync(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TIdentity, TEntity>> addOrUpdate, System.Collections.Generic.IEnumerable<TIdentity> remove, System.Threading.CancellationToken cancellationToken = default) { }
+        [System.Runtime.CompilerServices.AsyncIteratorStateMachine(typeof(dddlib.Persistence.Projections.SqlServer.SqlServerRepository<TIdentity, TEntity>.<GetAllAsync>d__7))]
+        public System.Collections.Generic.IAsyncEnumerable<System.Collections.Generic.KeyValuePair<TIdentity, TEntity>> GetAllAsync([System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<TEntity?> GetAsync(TIdentity identity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PurgeAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemoveAsync(TIdentity identity, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+}

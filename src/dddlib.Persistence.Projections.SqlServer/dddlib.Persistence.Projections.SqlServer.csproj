@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetLibVersion)</TargetFramework>
+    <RootNamespace>dddlib.Persistence.Projections.SqlServer</RootNamespace>
+    <Description>SQL Server projections for dddlib: key/value read model views in dddlib's schema, or projections into your own tables, each with its checkpoint committed alongside, over the events persisted by dddlib.Persistence.SqlServer.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="dddlib.Persistence.Projections.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../dddlib.Persistence.Projections/dddlib.Persistence.Projections.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SQL Server infrastructure shared with the other SQL Server packages as linked files. -->
+    <Compile Include="../Shared/SqlServer/*.cs" Link="Shared/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The numbered schema scripts, the same in every SQL Server package: embedded for SqlServerSchemaInstaller and
+         shipped as content for running by hand. -->
+    <EmbeddedResource Include="../Shared/SqlServer/Scripts/*.sql" Link="Scripts/%(Filename)%(Extension)" LogicalName="dddlib.SqlServer.Scripts.%(Filename)%(Extension)" />
+    <Content Include="../Shared/SqlServer/Scripts/*.sql" Link="Scripts/%(Filename)%(Extension)" Pack="true" PackagePath="content/Scripts;contentFiles/any/any/Scripts" CopyToOutputDirectory="Never" />
+  </ItemGroup>
+
+</Project>

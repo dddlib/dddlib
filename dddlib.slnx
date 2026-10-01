@@ -18,6 +18,7 @@
     <Project Path="src/dddlib.Persistence.EventDispatcher/dddlib.Persistence.EventDispatcher.csproj" />
     <Project Path="src/dddlib.Persistence.EventDispatcher.SqlServer/dddlib.Persistence.EventDispatcher.SqlServer.csproj" />
     <Project Path="src/dddlib.Persistence.Projections/dddlib.Persistence.Projections.csproj" />
+    <Project Path="src/dddlib.Persistence.Projections.SqlServer/dddlib.Persistence.Projections.SqlServer.csproj" />
     <Project Path="src/dddlib.Persistence.SqlServer/dddlib.Persistence.SqlServer.csproj" />
     <Project Path="src/dddlib.TestFramework/dddlib.TestFramework.csproj" />
   </Folder>

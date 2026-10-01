@@ -1,3 +1,5 @@
+using dddlib.Persistence.Projections.SqlServer;
+
 namespace dddlib.Persistence.Projections.Tests.PublicApi;
 
 // The approved public APIs of dddlib.Persistence.Projections and dddlib.Persistence.Projections.SqlServer. A change
@@ -9,6 +11,14 @@ public class PublicApiTests
     public async Task PublicApiIsApproved()
     {
         var (approved, received) = global::dddlib.Tests.Support.PublicApi.Compare(typeof(ProjectionRunner).Assembly, ApprovedPath("dddlib.Persistence.Projections"));
+
+        await Assert.That(received).IsEqualTo(approved);
+    }
+
+    [Test]
+    public async Task SqlServerPublicApiIsApproved()
+    {
+        var (approved, received) = global::dddlib.Tests.Support.PublicApi.Compare(typeof(SqlServerProjectionsSchema).Assembly, ApprovedPath("dddlib.Persistence.Projections.SqlServer"));
 
         await Assert.That(received).IsEqualTo(approved);
     }
