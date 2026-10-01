@@ -1,0 +1,134 @@
+namespace dddlib.Persistence.Projections
+{
+    public interface IRepository<TIdentity, TEntity>
+        where TIdentity :  notnull
+        where TEntity :  class
+    {
+        System.Threading.Tasks.Task AddOrUpdateAsync(TIdentity identity, TEntity entity, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task BulkUpdateAsync(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TIdentity, TEntity>> addOrUpdate, System.Collections.Generic.IEnumerable<TIdentity> remove, System.Threading.CancellationToken cancellationToken = default);
+        System.Collections.Generic.IAsyncEnumerable<System.Collections.Generic.KeyValuePair<TIdentity, TEntity>> GetAllAsync(System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task<TEntity?> GetAsync(TIdentity identity, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task PurgeAsync(System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task RemoveAsync(TIdentity identity, System.Threading.CancellationToken cancellationToken = default);
+    }
+    public class ProjectionException : dddlib.Persistence.PersistenceException
+    {
+        public ProjectionException() { }
+        public ProjectionException(string? message) { }
+        public ProjectionException(string? message, System.Exception? innerException) { }
+        public ProjectionException(string projectionName, long sequenceNumber, object @event, System.Exception innerException) { }
+        public object? Event { get; }
+        public string? ProjectionName { get; }
+        public long SequenceNumber { get; }
+    }
+    public sealed class ProjectionFailedEventArgs : System.EventArgs
+    {
+        public ProjectionFailedEventArgs(string projectionName, System.Exception exception) { }
+        public System.Exception Exception { get; }
+        public string ProjectionName { get; }
+    }
+    public class ProjectionRunner : System.IAsyncDisposable
+    {
+        public ProjectionRunner(dddlib.Persistence.Sdk.IEventFeed feed, dddlib.Persistence.Projections.Sdk.IProjectionStore store, dddlib.Persistence.Projections.ProjectionRunnerOptions? options = null, System.TimeProvider? timeProvider = null) { }
+        public long Checkpoint { get; }
+        public string Name { get; }
+        public event System.EventHandler<dddlib.Persistence.Projections.ProjectionFailedEventArgs>? ProjectionFailed;
+        public System.Threading.Tasks.ValueTask DisposeAsync() { }
+        public System.Threading.Tasks.Task<dddlib.Persistence.Projections.ProjectionStatus> GetStatusAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RunAsync(System.Threading.CancellationToken cancellationToken) { }
+        public void Start() { }
+        public System.Threading.Tasks.Task StopAsync() { }
+    }
+    public sealed class ProjectionRunnerOptions
+    {
+        public ProjectionRunnerOptions() { }
+        public int BatchSize { get; init; }
+        public System.TimeSpan MaxPollingInterval { get; init; }
+        public System.TimeSpan PollingInterval { get; init; }
+        public System.TimeSpan RetryDelay { get; init; }
+    }
+    public sealed class ProjectionStatus : System.IEquatable<dddlib.Persistence.Projections.ProjectionStatus>
+    {
+        public ProjectionStatus(string Name, long Checkpoint, long LastSequenceNumber) { }
+        public long Checkpoint { get; init; }
+        public long Lag { get; }
+        public long LastSequenceNumber { get; init; }
+        public string Name { get; init; }
+    }
+    public abstract class Projection<TIdentity, TEntity> : dddlib.Persistence.Projections.Sdk.ProjectionBase<dddlib.Persistence.Projections.IRepository<TIdentity, TEntity>>
+        where TIdentity :  notnull
+        where TEntity :  class
+    {
+        protected Projection(string name) { }
+    }
+}
+namespace dddlib.Persistence.Projections.Memory
+{
+    public sealed class MemoryProjectionStore<TIdentity, TEntity> : dddlib.Persistence.Projections.Sdk.IProjectionStore
+        where TIdentity :  notnull
+        where TEntity :  class
+    {
+        public MemoryProjectionStore(dddlib.Persistence.Projections.Projection<TIdentity, TEntity> projection, dddlib.Persistence.Projections.Memory.MemoryRepository<TIdentity, TEntity>? views = null) { }
+        public System.Collections.Generic.IReadOnlyCollection<System.Type>? EventTypes { get; }
+        public string Name { get; }
+        public dddlib.Persistence.Projections.Memory.MemoryRepository<TIdentity, TEntity> Views { get; }
+        public System.Threading.Tasks.Task ApplyAsync(dddlib.Persistence.Sdk.EventPage page, long expectedCheckpoint, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<long> GetCheckpointAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PurgeAsync(System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public class MemoryRepository<TIdentity, TEntity> : dddlib.Persistence.Projections.IRepository<TIdentity, TEntity>
+        where TIdentity :  notnull
+        where TEntity :  class
+    {
+        public MemoryRepository() { }
+        public MemoryRepository(System.Collections.Generic.IEqualityComparer<TIdentity> comparer) { }
+        public System.Collections.Generic.IEqualityComparer<TIdentity> Comparer { get; }
+        public virtual System.Threading.Tasks.Task AddOrUpdateAsync(TIdentity identity, TEntity entity, System.Threading.CancellationToken cancellationToken = default) { }
+        public virtual System.Threading.Tasks.Task BulkUpdateAsync(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TIdentity, TEntity>> addOrUpdate, System.Collections.Generic.IEnumerable<TIdentity> remove, System.Threading.CancellationToken cancellationToken = default) { }
+        [System.Runtime.CompilerServices.AsyncIteratorStateMachine(typeof(dddlib.Persistence.Projections.Memory.MemoryRepository<TIdentity, TEntity>.<GetAllAsync>d__7))]
+        public virtual System.Collections.Generic.IAsyncEnumerable<System.Collections.Generic.KeyValuePair<TIdentity, TEntity>> GetAllAsync([System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken = default) { }
+        public virtual System.Threading.Tasks.Task<TEntity?> GetAsync(TIdentity identity, System.Threading.CancellationToken cancellationToken = default) { }
+        public virtual System.Threading.Tasks.Task PurgeAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public virtual System.Threading.Tasks.Task RemoveAsync(TIdentity identity, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+}
+namespace dddlib.Persistence.Projections.Sdk
+{
+    public sealed class BufferedRepository<TIdentity, TEntity> : dddlib.Persistence.Projections.IRepository<TIdentity, TEntity>
+        where TIdentity :  notnull
+        where TEntity :  class
+    {
+        public BufferedRepository(dddlib.Persistence.Projections.IRepository<TIdentity, TEntity> store, System.Collections.Generic.IEqualityComparer<TIdentity>? comparer = null) { }
+        public System.Collections.Generic.IReadOnlyDictionary<TIdentity, TEntity?> Changes { get; }
+        public bool IsPurged { get; }
+        public System.Threading.Tasks.Task AddOrUpdateAsync(TIdentity identity, TEntity entity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task BulkUpdateAsync(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TIdentity, TEntity>> addOrUpdate, System.Collections.Generic.IEnumerable<TIdentity> remove, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task CommitAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        [System.Runtime.CompilerServices.AsyncIteratorStateMachine(typeof(dddlib.Persistence.Projections.Sdk.BufferedRepository<TIdentity, TEntity>.<GetAllAsync>d__10))]
+        public System.Collections.Generic.IAsyncEnumerable<System.Collections.Generic.KeyValuePair<TIdentity, TEntity>> GetAllAsync([System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<TEntity?> GetAsync(TIdentity identity, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task PurgeAsync(System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task RemoveAsync(TIdentity identity, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public interface IProjectionStore
+    {
+        System.Collections.Generic.IReadOnlyCollection<System.Type>? EventTypes { get; }
+        string Name { get; }
+        System.Threading.Tasks.Task ApplyAsync(dddlib.Persistence.Sdk.EventPage page, long expectedCheckpoint, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task<long> GetCheckpointAsync(System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task PurgeAsync(System.Threading.CancellationToken cancellationToken = default);
+    }
+    public abstract class ProjectionBase<TContext>
+    {
+        protected ProjectionBase(string name) { }
+        public System.Collections.Generic.IReadOnlyCollection<System.Type>? EventTypes { get; }
+        public string Name { get; }
+        public System.Threading.Tasks.Task ApplyAsync(dddlib.Persistence.Sdk.FeedEvent @event, TContext context, System.Threading.CancellationToken cancellationToken = default) { }
+        protected void When<TEvent>(System.Action<TEvent, TContext> handler)
+            where TEvent :  class { }
+        protected void When<TEvent>(System.Func<TEvent, TContext, System.Threading.CancellationToken, System.Threading.Tasks.Task> handler)
+            where TEvent :  class { }
+        protected void When<TEvent>(System.Func<dddlib.Persistence.Sdk.FeedEvent, TEvent, TContext, System.Threading.CancellationToken, System.Threading.Tasks.Task> handler)
+            where TEvent :  class { }
+    }
+}

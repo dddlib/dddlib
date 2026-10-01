@@ -609,8 +609,10 @@ not broken. `MemoryEventStore` and `SqlServerEventStore` implement it.
   (*revised*: the first operational question about a projection). There is one runner class for every store; the
   memory event store is itself the feed, so no memory-specific runner is needed.
 - Rebuild: `IProjectionStore.PurgeAsync` clears the views and resets the checkpoint in one transaction; the runner
-  then catches up from zero. A runner mid-batch when that happens fails its checkpoint check and re-reads. Blue/green
-  rebuilds use a versioned projection name (`cars-v2`) and switch readers over.
+  then catches up from zero. A runner mid-batch when that happens fails its checkpoint check and re-reads; an idle
+  runner re-reads the stored checkpoint after every empty poll (found by `RebuildStartsFromZero`: without that, a purge
+  went unnoticed until an event arrived). Blue/green rebuilds use a versioned projection name (`cars-v2`) and switch
+  readers over.
 
 `dddlib.Persistence.Projections.SqlServer` (references `dddlib.Persistence.Projections` and `Microsoft.Data.SqlClient`;
 links `src/Shared/SqlServer` like the other two SQL Server packages and does not reference them):

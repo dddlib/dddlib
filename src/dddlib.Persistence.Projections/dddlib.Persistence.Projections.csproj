@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetLibVersion)</TargetFramework>
+    <RootNamespace>dddlib.Persistence.Projections</RootNamespace>
+    <Description>Projections for dddlib: read models kept up to date from the events persisted by dddlib.Persistence, with checkpointed catch-up that applies each event exactly once, and an in-memory implementation. SQL Server is in dddlib.Persistence.Projections.SqlServer.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="dddlib.Persistence.Projections.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../dddlib.Persistence/dddlib.Persistence.csproj" />
+  </ItemGroup>
+
+</Project>
