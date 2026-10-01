@@ -7,7 +7,7 @@ namespace dddlib.Persistence.Tests.Integration;
 // Each test installs into a schema of its own, so it starts from nothing inside the per-class database.
 public class SqlServerSchemaTests : SqlServerIntegration
 {
-    private static readonly string[] Tables = ["Types", "NaturalKeys", "Streams", "Events", "Snapshots", "Mementos", "Batches", "DispatchedEvents", "Versions"];
+    private static readonly string[] Tables = ["Types", "NaturalKeys", "Streams", "Events", "Snapshots", "Mementos", "Batches", "DispatchedEvents", "Projections", "ProjectionViews", "Versions"];
 
     [Test]
     public async Task CreatesTheSchemaWithEveryObject()
@@ -21,11 +21,14 @@ public class SqlServerSchemaTests : SqlServerIntegration
             await Assert.That(await this.Database.ExecuteScalarAsync($"SELECT OBJECT_ID(N'[{schema}].[{table}]', N'U');")).IsNotNull();
         }
 
-        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(1);
-        await Assert.That((string?)await this.Database.ExecuteScalarAsync($"SELECT [Description] FROM [{schema}].[Versions] WHERE [Version] = 1;"))
-            .StartsWith("dddlib.Persistence.SqlServer ");
-        await Assert.That((string?)await this.Database.ExecuteScalarAsync($"SELECT [Script] FROM [{schema}].[Versions] WHERE [Version] = 1;"))
-            .IsEqualTo(SqlServerSchemaInstaller.Scripts[0].For(schema));
+        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(RequiredVersion);
+        foreach (var script in SqlServerSchemaInstaller.Scripts)
+        {
+            await Assert.That((string?)await this.Database.ExecuteScalarAsync($"SELECT [Description] FROM [{schema}].[Versions] WHERE [Version] = {script.Version};"))
+                .StartsWith("dddlib.Persistence.SqlServer ");
+            await Assert.That((string?)await this.Database.ExecuteScalarAsync($"SELECT [Script] FROM [{schema}].[Versions] WHERE [Version] = {script.Version};"))
+                .IsEqualTo(script.For(schema));
+        }
     }
 
     [Test]
@@ -37,7 +40,7 @@ public class SqlServerSchemaTests : SqlServerIntegration
         var appliedAt = await this.Database.ExecuteScalarAsync($"SELECT [AppliedAt] FROM [{schema}].[Versions] WHERE [Version] = 1;");
         await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
 
-        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(1);
+        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(RequiredVersion);
         await Assert.That(await this.Database.ExecuteScalarAsync($"SELECT [AppliedAt] FROM [{schema}].[Versions] WHERE [Version] = 1;")).IsEqualTo(appliedAt);
     }
 
@@ -113,7 +116,7 @@ public class SqlServerSchemaTests : SqlServerIntegration
 
         await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => SqlServerSchema.EnsureAsync(this.ConnectionString, schema)));
 
-        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(1);
+        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(RequiredVersion);
     }
 
     [Test]
@@ -234,8 +237,25 @@ public class SqlServerSchemaTests : SqlServerIntegration
 
         await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
 
-        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(1);
+        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(RequiredVersion);
         await Assert.That(await this.Database.ExecuteScalarAsync($"SELECT [Script] FROM [{schema}].[Versions] WHERE [Version] = 1;")).IsNotNull();
+    }
+
+    [Test]
+    public async Task UpgradesFromVersion1()
+    {
+        var schema = NewSchema();
+        await SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, [SqlServerSchemaInstaller.Scripts[0]], CancellationToken.None);
+        var before = await SqlServerSchema.GetVersionAsync(this.ConnectionString, schema);
+
+        var upgraded = await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
+        var page = await new SqlServerEventStore(this.ConnectionString, schema).ReadEventsAsync(0, 10);
+
+        await Assert.That(before).IsEqualTo(new SqlServerSchemaVersion(schema, 1, RequiredVersion, 1));
+        await Assert.That(before.IsCompatible).IsFalse();
+        await Assert.That(upgraded).IsEqualTo(new SqlServerSchemaVersion(schema, RequiredVersion, RequiredVersion, 1));
+        await Assert.That(await this.Database.ExecuteScalarAsync($"SELECT OBJECT_ID(N'[{schema}].[ReadEvents]', N'P');")).IsNotNull();
+        await Assert.That(page.Events).IsEmpty();
     }
 
     [Test]
@@ -251,7 +271,7 @@ public class SqlServerSchemaTests : SqlServerIntegration
             await Assert.That(await this.Database.ExecuteScalarAsync($"SELECT OBJECT_ID(N'[{schema}].[{table}]', N'U');")).IsNotNull();
         }
 
-        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(1);
+        await Assert.That(await this.CountVersionsAsync(schema)).IsEqualTo(RequiredVersion);
     }
 
     [Test]

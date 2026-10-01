@@ -1,10 +1,12 @@
 namespace dddlib.Persistence.SqlServer
 {
-    public sealed class SqlServerEventStore : dddlib.Persistence.Sdk.IEventStore
+    public sealed class SqlServerEventStore : dddlib.Persistence.Sdk.IEventFeed, dddlib.Persistence.Sdk.IEventStore
     {
         public SqlServerEventStore(string connectionString, string schema = "dbo") { }
         public System.Threading.Tasks.Task<string> CommitStreamAsync(System.Guid streamId, System.Collections.Generic.IReadOnlyList<object> events, System.Guid correlationId, string? preCommitState, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<long> GetLastSequenceNumberAsync(System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.StreamResult> GetStreamAsync(System.Guid streamId, int streamRevision, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.EventPage> ReadEventsAsync(long afterSequenceNumber, int maxCount, System.Collections.Generic.IReadOnlyCollection<System.Type>? eventTypes = null, System.Threading.CancellationToken cancellationToken = default) { }
     }
     public sealed class SqlServerEventStoreRepository : dddlib.Persistence.Sdk.EventStoreRepository
     {

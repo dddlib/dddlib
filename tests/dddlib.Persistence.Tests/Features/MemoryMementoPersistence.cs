@@ -91,7 +91,7 @@ public abstract class MemoryMementoPersistence : Feature
             await repository.SaveAsync(instance);
 
             // Then its event is in the event store and the instance has no uncommitted events
-            var events = await eventStore.ReadEventsAsync(0, 10);
+            var events = (await eventStore.ReadEventsAsync(0, 10)).Events;
             await Assert.That(events).Count().IsEqualTo(1);
             await Assert.That(((NewSubject)events[0].Event).NaturalKey).IsEqualTo("key");
             await Assert.That(instance.GetUncommittedEvents()).IsEmpty();
@@ -112,7 +112,7 @@ public abstract class MemoryMementoPersistence : Feature
             await repository.SaveAsync(loaded);
 
             // Then nothing more is appended
-            await Assert.That(await eventStore.ReadEventsAsync(0, 10)).Count().IsEqualTo(2);
+            await Assert.That((await eventStore.ReadEventsAsync(0, 10)).Events).Count().IsEqualTo(2);
         }
 
         public class Subject : AggregateRoot
