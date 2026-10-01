@@ -512,10 +512,11 @@ installs the event store.
 
 ### Phase 9: projections
 
-Planned 2026-10-01. v1's `dddlib.Projections` (issue #88 in dddlibv1, never finished, no tests) gave a key/value
-store for read models and a read of the store-wide event sequence from a sequence number. v2 has neither: its
-`IEventStore` reads one stream, and the store-wide sequence is reachable only through the dispatcher's batch store.
-This phase brings both back and adds what v1 left to the caller: checkpointed catch-up with exactly-once effect.
+Planned 2026-10-01, revised the same day after review (the review's points are folded in below and marked *revised*).
+v1's `dddlib.Projections` (issue #88 in dddlibv1, never finished, no tests) gave a key/value store for read models and
+a read of the store-wide event sequence from a sequence number. v2 has neither: its `IEventStore` reads one stream, and
+the store-wide sequence is reachable only through the dispatcher's batch store. This phase brings both back and adds
+what v1 left to the caller: checkpointed catch-up with exactly-once effect on the read model.
 
 Decisions (Cameron, 2026-10-01):
 
@@ -523,98 +524,151 @@ Decisions (Cameron, 2026-10-01):
   (abstractions, runner, memory) and `dddlib.Persistence.Projections.SqlServer`.
 - Names follow v1, under the new namespaces: `dddlib.Persistence.Projections.IRepository<TIdentity, TEntity>`,
   `dddlib.Persistence.Projections.Memory.MemoryRepository<TIdentity, TEntity>`,
-  `dddlib.Persistence.Projections.SqlServer.SqlServerRepository<TIdentity, TEntity>`. The namespace separates them from
-  `dddlib.Persistence.IRepository<T>` and the memento repositories.
+  `dddlib.Persistence.Projections.SqlServer.SqlServerRepository<TIdentity, TEntity>`. The namespace and arity separate
+  them from `dddlib.Persistence.IRepository<T>` and the memento repositories.
 - Projections have their own catch-up runner rather than building on the event dispatcher.
 - Both projection kinds: key/value views in dddlib's table, and projections into the user's own tables.
 - One schema. The projection objects go into the existing script series and are installed by the same `EnsureAsync`
   approach as the other SQL Server packages; the shared code keeps its `dddlib.Persistence.SqlServer` namespace. A
   read model in its own database therefore also gets the event store objects. Splitting the series is a possible
   later change, not part of this phase.
-- Errors are `PersistenceException`.
+- Errors are `PersistenceException` (`ConcurrencyException` and the new `ProjectionException` derive from it).
 
 #### Design
 
 Exactly-once effect. The event dispatcher marks an event dispatched in a separate step after `DispatchAsync`
 returns, so a crash between the two replays it: harmless for overwrites, wrong for counters and appends. A projection
 instead keeps its checkpoint (the last sequence number it applied) next to its views and writes both in one
-transaction. Because the checkpoint lives with the read model, the read model may still be in a different database
-from the event store it reads.
+transaction. Because the checkpoint lives with the read model, the read model may be in a different database from the
+event store it reads. The guarantee covers the read model only: anything a handler does outside the transaction is
+still at least once.
 
 Reading the store-wide sequence (`dddlib.Persistence`, `dddlib.Persistence.SqlServer`): v1's `GetEventsFrom`, as a
-new `Sdk.IEventFeed.ReadEventsAsync(long afterSequenceNumber, int maxCount, token)` returning the existing
-`Sdk.SequencedEvent`. Exclusive, as v1 was. A separate interface rather than a new member of `Sdk.IEventStore`, so
-custom event stores are not broken. `MemoryEventStore` already has this method and only declares the interface.
-`SqlServerEventStore` implements it with a new `ReadEvents` procedure, deserializing through its type cache and
-`JsonSerialization.Options`, under `TransactionScopeOption.Suppress` and without v1's `NOLOCK`, which could read
-uncommitted events. The store-wide `dddlib.Events.Commit` lock in `CommitStream` already makes sequence numbers follow
-commit order, so reading after a checkpoint never passes a commit still in flight; gaps left by rolled-back commits
-are skipped. This also closes the v1 gap for callers that are not projections.
+new `Sdk.IEventFeed`. A separate interface rather than a new member of `Sdk.IEventStore`, so custom event stores are
+not broken. `MemoryEventStore` and `SqlServerEventStore` implement it.
+
+- `ReadEventsAsync(long afterSequenceNumber, int maxCount, IReadOnlyCollection<Type>? eventTypes, token)` returns an
+  `EventPage(long EndSequenceNumber, IReadOnlyList<FeedEvent> Events)`. The page is the next `maxCount` committed
+  events after `afterSequenceNumber`, in sequence order; `EndSequenceNumber` is the last of them, or
+  `afterSequenceNumber` when there are none. With `eventTypes`, only events of exactly those types are returned, but
+  the page still spans the same `maxCount` events, so a projection's checkpoint advances past the events it does not
+  handle without resolving or deserializing them (*revised*: a type the process cannot resolve is then never a
+  poison pill for a projection that does not handle it). A null `eventTypes` reads everything, and an event whose type
+  cannot be resolved fails loudly with a `PersistenceException`, as the dispatcher does.
+- `FeedEvent(SequenceNumber, StreamId, StreamRevision, CorrelationId, Event)` derives from `Sdk.SequencedEvent`
+  (*revised*: unsealed), so the dispatcher's `EventBatch` and `MemoryEventBatchStore` are unchanged while projections
+  get the aggregate root's stream identity without the event having to carry the natural key. `GetNextBatch` is not
+  changed (its result columns are a contract older code reads); a later version may add a wider procedure.
+- `GetLastSequenceNumberAsync(token)`, for lag (*revised*).
+- SQL Server: `ReadEvents(@AfterSequenceNumber, @MaxCount, @TypeNames)` with a `TypeNameList` table type, returning
+  the type name rather than the id so the feed resolves through `TypeNameResolver` like the batch store, and
+  `GetLastSequenceNumber`. Under `TransactionScopeOption.Suppress` and without v1's `NOLOCK`, which could read
+  uncommitted events. The store-wide `dddlib.Events.Commit` lock in `CommitStream` makes sequence numbers follow
+  commit order, so the in-flight commit, if any, holds the highest numbers: under READ COMMITTED a page that reaches
+  it waits for it and then includes it, and under read committed snapshot (the Azure SQL default) it gets the
+  committed prefix at once. Either way a reader never passes a commit that later appears below its checkpoint. Gaps
+  left by rolled-back commits are skipped.
 
 `dddlib.Persistence.Projections`:
 
-- `IRepository<TIdentity, TEntity>`: v1's members made async. `GetAsync` (null when missing), `AddOrUpdateAsync`,
-  `RemoveAsync`, `PurgeAsync`, `BulkUpdateAsync(addOrUpdate, remove)`.
+- `IRepository<TIdentity, TEntity>`: v1's members made async, plus `GetAllAsync` (*revised*: readers of a view store
+  need a list, and v1's memory repository had it). `GetAsync` (null when missing), `GetAllAsync`
+  (`IAsyncEnumerable`), `AddOrUpdateAsync`, `RemoveAsync`, `PurgeAsync`, `BulkUpdateAsync(addOrUpdate, remove)`.
 - `Memory.MemoryRepository<TIdentity, TEntity>`: as v1. `ConcurrentDictionary`, optional `IEqualityComparer<TIdentity>`,
-  `GetAll`, virtual members.
-- `Projection<TIdentity, TEntity>`: the user overrides `ApplyAsync(object @event, IRepository<TIdentity, TEntity> views, token)`.
-  The runner hands it a batch-scoped repository that reads through to the store and buffers writes, then commits the
-  buffered writes and the new checkpoint together.
-- `ProjectionRunner` (Sdk): polls an `IEventFeed` after the projection's checkpoint, applies a batch, commits, and backs
-  off when idle, with the same option shape as `EventDispatcherOptions` (name, batch size, polling interval, maximum
-  interval). `RunAsync(token)` for a hosted service; `Start`/`StopAsync`/`DisposeAsync` otherwise. A throwing projection
-  rolls back the batch (views and checkpoint), raises `ProjectionFailed` and retries the batch after a delay. It drives
-  an Sdk interface (read checkpoint; apply a batch atomically given the expected checkpoint; purge) that both projection
-  kinds implement. `MemoryProjectionRunner` composes it with a `MemoryEventStore` and an in-memory checkpoint.
-- Commit is optimistic on the checkpoint: it succeeds only if the stored checkpoint still equals the one the batch was
-  read after. Two runners for the same projection never both apply a batch; the loser rolls back and re-reads.
-- Rebuild: `PurgeAsync` on the projection clears its views and resets its checkpoint in one transaction; the runner
-  then catches up from zero. Blue/green rebuilds use a versioned projection name (`cars-v2`) and switch readers over.
+  virtual members.
+- `Sdk.ProjectionBase<TContext>` (*revised*, replacing an `ApplyAsync(object)` override): a projection is a name
+  and handlers registered in the constructor with `When<TEvent>(...)`, each receiving the event and a context (the
+  views for the key/value kind, the `SqlTransaction` for the user's-own-tables kind), with overloads for a
+  synchronous handler and for one that also wants the `FeedEvent` envelope. Dispatch is by exact event type, as
+  `Handle` dispatch is in aggregate roots. `EventTypes` is the registered set, which the runner hands to the feed.
+  `When<object>` registers a catch-all that receives every event no exact handler takes; with one, the feed is not
+  filtered. A projection with no handlers is rejected by the runner. A handler that throws surfaces as a
+  `ProjectionException` naming the projection, the sequence number and the event, with the cause as inner exception.
+- `Projection<TIdentity, TEntity>`: `ProjectionBase<IRepository<TIdentity, TEntity>>`, the key/value kind. The user
+  subclasses it, nothing else.
+- `Sdk.IProjectionStore`: what the runner drives. `Name`, `EventTypes`, `GetCheckpointAsync`,
+  `ApplyAsync(EventPage page, long expectedCheckpoint, token)` (atomically applies the page and moves the checkpoint
+  from `expectedCheckpoint` to `page.EndSequenceNumber`, or throws `ConcurrencyException` when the stored checkpoint
+  is not the expected one) and `PurgeAsync` (clears the read model and resets the checkpoint to zero, atomically).
+- `Sdk.BufferedRepository<TIdentity, TEntity>`: the batch-scoped repository both key/value stores hand to handlers.
+  Reads come from the buffer first and then the store, a buffered remove hides the stored view, the last operation per
+  key wins, `PurgeAsync` inside a batch hides the whole store, and `GetAllAsync` merges the two (*revised*: the
+  read-your-writes rules are defined and tested). `Changes` and `IsPurged` expose what to commit.
+- `Memory.MemoryProjectionStore<TIdentity, TEntity>`: an `IProjectionStore` over a `Projection<TIdentity, TEntity>`
+  and a `MemoryRepository<TIdentity, TEntity>`, with the checkpoint in memory. Handlers run against a buffer; the
+  buffer and the checkpoint are committed together under a lock, so a failed batch changes nothing.
+- `ProjectionRunner(IEventFeed feed, IProjectionStore store, ProjectionRunnerOptions? options, TimeProvider?
+  timeProvider)`: reads the checkpoint, polls the feed after it with the store's event types, applies each page, and
+  backs off when idle with the same shape as the dispatcher (`BatchSize`, *revised* default 500 since a page is one
+  transaction and catch-up is the expensive case; `PollingInterval`, `MaxPollingInterval`, `RetryDelay`).
+  `RunAsync(token)` for a hosted service; `Start`/`StopAsync`/`DisposeAsync` otherwise. A `ConcurrencyException` from
+  the store is a lost race with another runner: the checkpoint is re-read and nothing is raised. Any other failure in
+  an iteration raises `ProjectionFailed` with the exception, waits `RetryDelay`, re-reads the checkpoint and goes on,
+  so the page is retried in order. The runner takes a `TimeProvider` (*revised*) so the retry and backoff scenarios do
+  not sleep. `GetStatusAsync` returns `ProjectionStatus(Name, Checkpoint, LastSequenceNumber)` with `Lag`
+  (*revised*: the first operational question about a projection). There is one runner class for every store; the
+  memory event store is itself the feed, so no memory-specific runner is needed.
+- Rebuild: `IProjectionStore.PurgeAsync` clears the views and resets the checkpoint in one transaction; the runner
+  then catches up from zero. A runner mid-batch when that happens fails its checkpoint check and re-reads. Blue/green
+  rebuilds use a versioned projection name (`cars-v2`) and switch readers over.
 
 `dddlib.Persistence.Projections.SqlServer` (references `dddlib.Persistence.Projections` and `Microsoft.Data.SqlClient`;
 links `src/Shared/SqlServer` like the other two SQL Server packages and does not reference them):
 
 - `SqlServerRepository<TIdentity, TEntity>(connectionString, projectionName, schema = "dbo")`: views as JSON in
-  `ProjectionViews`, for readers and for the runner. Keys are the identity serialized with `JsonSerialization.Options`,
-  in `NVARCHAR(450) COLLATE Latin1_General_100_BIN2`, so equality is ordinal like the default comparer, not the
-  database collation; a key over 450 characters throws `ArgumentException`. Bulk writes go through one table-valued
-  parameter.
-- `SqlServerProjection`: projections into the user's own tables. The user overrides
-  `ApplyAsync(object @event, SqlTransaction transaction, token)` and `PurgeAsync(SqlTransaction, token)`; dddlib owns the
-  connection, the transaction and the checkpoint, as `SqlServerRepository<T>.AppendEventsAsync` does for custom memento
-  storage. The user's tables are theirs to create and migrate.
-- `SqlServerProjectionRunner` takes the read model's connection string and an `IEventFeed`, normally a
-  `dddlib.Persistence.SqlServer.SqlServerEventStore` over the event store's connection string. They may be the same
-  database.
+  `ProjectionViews`, for readers and for the store. Keys are the identity serialized with `JsonSerialization.Options`
+  (so a string key is stored with its quotes and every key round-trips through one rule), in
+  `NVARCHAR(400) COLLATE Latin1_General_100_BIN2`, so equality is ordinal like the default comparer, not the database
+  collation; a key over 400 characters throws `ArgumentException`. Writes go through one table-valued parameter in
+  which a null payload is a removal.
+- `SqlServerProjectionStore<TIdentity, TEntity>(connectionString, projection, schema = "dbo")`: the `IProjectionStore`
+  for the key/value kind. Handlers run against a buffer over the repository; the commit is one `SqlTransaction` that
+  advances the checkpoint first (*revised*: the row lock then stops a second runner before it does any work, and it
+  fails cheaply with 50409), purges if a handler purged, and saves the changes.
+- `SqlServerProjection(connectionString, name, schema = "dbo")`: `ProjectionBase<SqlTransaction>` and an
+  `IProjectionStore`, for projections into the user's own tables. Handlers receive the transaction; the user overrides
+  `PurgeAsync(SqlTransaction, token)` to clear their tables for a rebuild. dddlib owns the connection, the transaction
+  and the checkpoint, as `SqlServerRepository<T>.AppendEventsAsync` does for custom memento storage. The user's tables
+  are theirs to create and migrate.
+- The feed is normally a `dddlib.Persistence.SqlServer.SqlServerEventStore` over the event store's connection string.
+  The read model's database may be the same or another; each needs the schema at version 2, so a separate read model
+  database takes its own `EnsureAsync` call.
 - `SqlServerProjectionsSchema.EnsureAsync`, `GetVersionAsync` and `GetScript`, returning a
   `SqlServerProjectionsSchemaVersion`: the same contract as `SqlServerSchema` and `SqlServerEventDispatcherSchema`,
   over the same shared installer and scripts. The `SqlServerSchemaCheck` error text names all three.
 
 #### Schema: `dddlib02.sql`
 
-Expand only, per section 9:
+Expand only, per section 9, and idempotent like version 1 so `GetScript` can be run twice:
 
-- `ReadEvents(@SequenceNumber, @MaxCount)`: sequence number, type id and payload in sequence order.
-- `ProjectionCheckpoints` (`Name VARCHAR(511)` primary key, `SequenceNumber BIGINT`).
-- `ProjectionViews` (`ProjectionName`, `Key`, `Payload NVARCHAR(MAX)`, primary key `(ProjectionName, Key)`) and the
-  `ProjectionViewList` table type.
-- Procedures to get a view, get a checkpoint, advance a checkpoint (`@Name, @Expected, @New`, raising 50409 on a
-  mismatch), save a batch of views (upserts and removes in one call), and purge a projection (views and checkpoint).
-  The user's-own-tables kind uses only the checkpoint procedures.
+- `TypeNameList` table type; `ReadEvents(@AfterSequenceNumber, @MaxCount, @TypeNames)` returning the page's end
+  sequence number and then its events (sequence number, stream id, stream revision, correlation id, type name,
+  payload); `GetLastSequenceNumber`.
+- `Projections` (`Id INT IDENTITY` primary key, `Name VARCHAR(511)` binary-collated and unique, `Checkpoint BIGINT`):
+  one row per projection name, holding its checkpoint (*revised*: the planned `(ProjectionName, Key)` primary key of
+  1411 bytes exceeded the 900-byte clustered key limit; views now key on the integer id).
+- `ProjectionViews` (`ProjectionId`, `Key NVARCHAR(400) COLLATE Latin1_General_100_BIN2`, `Payload NVARCHAR(MAX)`,
+  primary key `(ProjectionId, Key)`, 804 bytes) and the `ProjectionViewList` table type (key, nullable payload).
+- Procedures: `GetProjectionCheckpoint`, `AdvanceProjectionCheckpoint` (`@Name, @ExpectedCheckpoint, @Checkpoint`,
+  creating the row when missing and raising 50409 on a mismatch), `ResetProjectionCheckpoint`, `GetProjectionView`,
+  `GetProjectionViews`, `SaveProjectionViews` (upserts and removes in one call) and `DeleteProjectionViews`. The two
+  kinds share the checkpoint procedures; the user's-own-tables kind uses only those.
 
 Every SQL Server package then requires schema version 2. Existing deployments get it by calling `EnsureAsync` as they
 already do; `BothPackagesProduceTheSameScript` becomes all three.
 
 #### Steps, each a green commit
 
-1. P9: `dddlib02.sql`, `Sdk.IEventFeed`, `MemoryEventStore` and `SqlServerEventStore` implementing it. Upgrade from 1
-   to 2 and the existing schema tests.
-2. P9: `dddlib.Persistence.Projections`: repository, memory implementation, runner and memory scenarios. New test
-   project `tests/dddlib.Persistence.Projections.Tests`.
-3. P9: `dddlib.Persistence.Projections.SqlServer`: schema class, `SqlServerRepository`, `SqlServerProjection`, the
-   runner and the SQL Server scenarios.
-4. P9: packaging (both packages in the pack and the API snapshots), `docs/persistence/projections.md`, the "Not yet
-   ported" entry in `docs/migrating-from-v1.md`, `RELEASE_NOTES.md`.
+1. P9: `dddlib02.sql`, `Sdk.IEventFeed`, `FeedEvent`, `EventPage`, `MemoryEventStore` and `SqlServerEventStore`
+   implementing it, the feed scenarios, the schema tests updated for two versions plus `UpgradesFromVersion1`, and the
+   `dddlib.Persistence` and `dddlib.Persistence.SqlServer` API snapshots (*revised*: they change here, not in step 4).
+2. P9: `dddlib.Persistence.Projections`: repository, buffered repository, projection base, memory store, runner and
+   the memory scenarios. New test project `tests/dddlib.Persistence.Projections.Tests`.
+3. P9: `dddlib.Persistence.Projections.SqlServer`: schema class, `SqlServerRepository`, `SqlServerProjectionStore`,
+   `SqlServerProjection` and the SQL Server scenarios.
+4. P9: packaging (both packages in the pack and the API snapshots), `docs/persistence/projections.md`, the event
+   dispatcher page's example repointed (the dispatcher is for integrations and notifications, projections for read
+   models), the "Not yet ported" entry in `docs/migrating-from-v1.md`, `RELEASE_NOTES.md`.
 
 ## 6. Test conventions with TUnit
 
@@ -734,19 +788,26 @@ Event dispatcher (`tests/dddlib.Persistence.EventDispatcher.Tests`):
 Projections (phase 9; v1 had no tests, so these are new):
 
 - `tests/dddlib.Persistence.Tests`, Integration: MemoryEventStoreTests and SqlServerEventStoreTests gain
-  ReadsEventsInSequenceOrder, ReadsOnlyAfterTheSequenceNumber, SkipsGapsLeftByRolledBackCommits,
-  NeverPassesACommitInFlight (SQL Server only), MissingEventTypeFailsLoudly (SQL Server only); SqlServerSchemaTests
-  gains UpgradesFromVersion1
+  ReadsEventsInSequenceOrder, ReadsOnlyAfterTheSequenceNumber, ReadsOnlyTheRequestedEventTypes,
+  ReportsTheLastSequenceNumber, and SqlServerEventStoreTests also SkipsGapsLeftByRolledBackCommits,
+  WaitsForACommitInFlight and MissingEventTypeFailsLoudly (the memory store cannot roll back a commit or lose a type);
+  SqlServerSchemaTests gains UpgradesFromVersion1
 - `tests/dddlib.Persistence.Projections.Tests`:
-  - MemoryRepository and SqlServerRepository, each: AddOrUpdateThenGet, GetMissingReturnsNull, RemoveDeletesTheView,
-    PurgeDeletesEveryView, BulkUpdateAddsUpdatesAndRemoves; MemoryRepository also CustomIdentityComparer and GetAll;
-    SqlServerRepository also KeysAreCaseSensitive and OverlongKeyIsRejected
+  - MemoryRepositoryTests and SqlServerRepositoryTests, each: AddOrUpdateThenGet, GetMissingReturnsNull,
+    RemoveDeletesTheView, PurgeDeletesEveryView, BulkUpdateAddsUpdatesAndRemoves, GetAllReturnsEveryView; memory also
+    CustomIdentityComparer; SQL Server also KeysAreCaseSensitive, OverlongKeyIsRejected, ProjectionsAreIsolatedByName
+  - BufferedRepositoryTests: ReadsItsOwnWrites, ARemoveHidesTheStoredView, LastWritePerKeyWins, PurgeHidesTheStore,
+    GetAllMergesBufferAndStore, CommitAppliesTheChanges
+  - ProjectionRunnerTests (fakes and a fake clock): BacksOffWhenIdle, RetriesAFailedPageAfterTheDelay,
+    ALostRaceIsNotAFailure, RejectsAProjectionWithoutHandlers, ReportsItsStatus
   - MemoryProjection and SqlServerProjection (key/value), each: CatchesUpFromTheStart, ResumesFromTheCheckpoint,
-    FailedBatchChangesNothing, FailedBatchIsRetriedInOrder, RebuildStartsFromZero, ConcurrentRunnersApplyEachEventOnce
+    SkipsEventsItDoesNotHandle, FailedBatchChangesNothing, FailedBatchIsRetriedInOrder, RebuildStartsFromZero,
+    ConcurrentRunnersApplyEachEventOnce; MemoryProjection also CatchAllHandlerReceivesEveryEvent
   - SqlServerCustomTableProjection: WritesToTheUsersTables, FailedBatchRollsBackTheUsersTables, RebuildPurgesTheUsersTables
   - ReadModelInASeparateDatabase: the runner reads one database and writes another
   - SqlServerProjectionsSchemaTests: InstallingProjectionsInstallsTheEventStore, ReportsWhenTheSchemaIsAheadOfThePackage,
     GetVersionReadsWithoutChangingAnything, FailsLoudlyWhenTheSchemaIsBehind, AllPackagesProduceTheSameScript
+  - PublicApiTests for both packages
 
 Shared model (`tests/dddlib.Tests.Support`): Vehicle, Registration, Wheel, NewVehicle, IRegistrationService, Bootstrapper.
 
