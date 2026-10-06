@@ -38,7 +38,7 @@ public class CodeFixTests
                 }
 
                 // used for reconstitution only
-                protected internal Subject()
+                protected Subject()
                 {
                 }
 

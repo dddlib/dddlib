@@ -199,11 +199,11 @@ internal static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor NoReconstitutionFactory = new(
         "DDDLIB014",
         "Aggregate root cannot be reconstituted",
-        "The aggregate root '{0}' has no parameterless constructor and no reconstitution factory, so it cannot be persisted and the events it applies are not recorded; add a parameterless constructor, which need not be public, or call ToReconstituteUsing in the bootstrapper",
+        "The aggregate root '{0}' has no parameterless constructor and no reconstitution factory, so it cannot be persisted and the events it applies are not recorded; add a protected parameterless constructor or call ToReconstituteUsing in the bootstrapper",
         Category,
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "Reconstituting an aggregate root requires an uninitialized instance to apply the saved state to. The runtime creates it with the parameterless constructor, whatever its accessibility, or with the factory configured in the bootstrapper.",
+        description: "Reconstituting an aggregate root requires an uninitialized instance to apply the saved state to. The runtime creates it with the parameterless constructor, whatever its accessibility, or with the factory configured in the bootstrapper. Make the constructor protected so that a derived aggregate root can chain to it.",
         helpLinkUri: WikiReconstitution);
 
     public static readonly DiagnosticDescriptor NoNaturalKey = new(

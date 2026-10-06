@@ -74,7 +74,7 @@ Code that breaks a rule on purpose, as a test of the runtime check might, can di
 | DDDLIB007 | Make the type and its containing types `partial` |
 | DDDLIB008 | Add an empty private `Handle` method for the event, after the last handler |
 | DDDLIB013 | Add the missing `GetState` or `SetState` override as a stub |
-| DDDLIB014 | Add a `protected internal` parameterless constructor (`private` on a sealed type), after the last constructor |
+| DDDLIB014 | Add a `protected` parameterless constructor (`private` on a sealed type), after the last constructor |
 
 ## Requirements
 

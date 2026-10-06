@@ -22,7 +22,7 @@ internal static class AggregateRootFactory
                     @"The aggregate root of type '{0}' does not have a factory method for reconstitution registered with the runtime.
 To fix this issue, either:
 - use a bootstrapper to configure reconstitution for that aggregate root, or
-- add a protected internal default constructor to the aggregate root.",
+- add a protected default constructor to the aggregate root.",
                     typeof(T)))
             {
                 HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-reconstitution.md",
