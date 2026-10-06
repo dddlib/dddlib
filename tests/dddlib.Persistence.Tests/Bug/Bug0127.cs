@@ -41,7 +41,7 @@ public class Bug0127 : SqlServerIntegration
         private void Handle(SubjectCreated @event) => this.NaturalKey = @event.NaturalKey;
     }
 
-    private sealed class OtherSubject : Subject
+    private class OtherSubject : Subject
     {
         public OtherSubject(string naturalKey)
             : base(naturalKey)

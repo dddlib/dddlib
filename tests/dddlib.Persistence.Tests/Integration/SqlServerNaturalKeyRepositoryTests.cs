@@ -37,7 +37,7 @@ public class SqlServerNaturalKeyRepositoryTests : SqlServerIntegration
         await Assert.That(afterRemoval[0].IsRemoved).IsTrue();
     }
 
-    private sealed class Subject : AggregateRoot
+    private class Subject : AggregateRoot
     {
     }
 }

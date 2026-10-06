@@ -114,7 +114,7 @@ public class SqlServerIdentityMapTests : SqlServerIntegration
         public string Number { get; }
     }
 
-    private sealed class Car : AggregateRoot
+    private class Car : AggregateRoot
     {
         public Registration? Registration { get; private set; }
     }

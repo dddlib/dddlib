@@ -519,6 +519,54 @@ public class DomainTypeAnalyzerTests
         await Assert.That(diagnostics).IsEmpty();
     }
 
+    [Test]
+    [Arguments("Entity", "")]
+    [Arguments("AggregateRoot", "[NaturalKey] public string? Id { get; set; }")]
+    public async Task ReportsASealedEntityOrAggregateRoot(string baseType, string members)
+    {
+        var diagnostics = await AnalyzeAsync($$"""
+            using dddlib;
+
+            public sealed partial class Subject : {{baseType}}
+            {
+                {{members}}
+            }
+            """);
+
+        await Assert.That(diagnostics).Count().IsEqualTo(1);
+        await Assert.That(diagnostics[0].Id).IsEqualTo("DDDLIB025");
+        await Assert.That(diagnostics[0].Severity).IsEqualTo(DiagnosticSeverity.Warning);
+        await Assert.That(diagnostics[0].GetMessage(CultureInfo.InvariantCulture)).Contains("'Subject'");
+    }
+
+    [Test]
+    public async Task DoesNotReportAnUnsealedEntityOrASealedValueObject()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using dddlib;
+
+            public partial class Thing : Entity
+            {
+            }
+
+            public partial class Subject : AggregateRoot
+            {
+                [NaturalKey] public string? Id { get; set; }
+            }
+
+            public sealed partial class Money : ValueObject<Money>
+            {
+                public decimal Amount { get; set; }
+            }
+
+            public sealed class Unrelated
+            {
+            }
+            """);
+
+        await Assert.That(diagnostics).IsEmpty();
+    }
+
     private static Task<ImmutableArray<Diagnostic>> AnalyzeAsync(string source) =>
         TestCompilation.AnalyzeAsync(source, new DomainTypeAnalyzer());
 }

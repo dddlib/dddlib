@@ -23,7 +23,8 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
         DiagnosticDescriptors.NaturalKeyDoesNotRoundTrip,
         DiagnosticDescriptors.ValueObjectOfAnotherType,
         DiagnosticDescriptors.ValueObjectPropertyComparedByReference,
-        DiagnosticDescriptors.TypeShouldBePartial);
+        DiagnosticDescriptors.TypeShouldBePartial,
+        DiagnosticDescriptors.SealedEntity);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -88,6 +89,15 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
         if (kind == DomainTypeKind.AggregateRoot)
         {
             AnalyzeNaturalKeyTypes(context, type, known, bootstrapper);
+        }
+
+        if (kind is DomainTypeKind.AggregateRoot or DomainTypeKind.Entity && type.IsSealed)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                DiagnosticDescriptors.SealedEntity,
+                location,
+                kind == DomainTypeKind.AggregateRoot ? "aggregate root" : "entity",
+                type.ToDisplayString()));
         }
 
         if (kind == DomainTypeKind.AggregateRoot && !type.IsAbstract)

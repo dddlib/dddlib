@@ -93,6 +93,68 @@ public class CodeFixTests
     }
 
     [Test]
+    public async Task UnsealsAnAggregateRoot()
+    {
+        var result = await CodeFixVerifier.ApplyAsync(
+            """
+            using dddlib;
+
+            public sealed partial class Subject : AggregateRoot
+            {
+                [NaturalKey]
+                public string? Id { get; set; }
+            }
+            """,
+            new DomainTypeAnalyzer(),
+            new UnsealTypeCodeFix(),
+            "DDDLIB025");
+
+        await Assert.That(result).IsEqualTo(CodeFixVerifier.Normalize(
+            """
+            using dddlib;
+
+            public partial class Subject : AggregateRoot
+            {
+                [NaturalKey]
+                public string? Id { get; set; }
+            }
+            """));
+    }
+
+    [Test]
+    public async Task UnsealsAnEntityWhoseFirstModifierIsSealed()
+    {
+        var result = await CodeFixVerifier.ApplyAsync(
+            """
+            using dddlib;
+
+            namespace Sample
+            {
+                // the subject
+                sealed partial class Thing : Entity
+                {
+                }
+            }
+            """,
+            new DomainTypeAnalyzer(),
+            new UnsealTypeCodeFix(),
+            "DDDLIB025");
+
+        await Assert.That(result).IsEqualTo(CodeFixVerifier.Normalize(
+            """
+            using dddlib;
+
+            namespace Sample
+            {
+                // the subject
+                partial class Thing : Entity
+                {
+                }
+            }
+            """));
+    }
+
+    [Test]
     public async Task MakesATypeAndItsContainingTypesPartial()
     {
         var result = await CodeFixVerifier.ApplyAsync(

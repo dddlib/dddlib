@@ -28,7 +28,7 @@ public abstract class AggregateRootLifecycleManagement : Feature
             await Assert.That(action).Throws<dddlib.BusinessException>();
         }
 
-        private sealed class Subject : AggregateRoot
+        private class Subject : AggregateRoot
         {
             private int version;
 
@@ -70,7 +70,7 @@ public abstract class AggregateRootLifecycleManagement : Feature
             await Assert.That(action).Throws<dddlib.BusinessException>();
         }
 
-        private sealed class Subject : AggregateRoot
+        private class Subject : AggregateRoot
         {
             private int version;
 

@@ -134,7 +134,7 @@ public class ApplicationTests
         }
     }
 
-    private sealed class Aggregate : AggregateRoot
+    private class Aggregate : AggregateRoot
     {
     }
 

@@ -29,3 +29,4 @@ DDDLIB021 | dddlib | Error | Bootstrapper selects a different natural key
 DDDLIB022 | dddlib | Error | Natural key selector is not a property of the entity
 DDDLIB023 | dddlib | Warning | Event or memento cannot be loaded
 DDDLIB024 | dddlib | Warning | Mapping does not fit how it is used
+DDDLIB025 | dddlib | Warning | Entity is sealed

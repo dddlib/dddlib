@@ -28,7 +28,7 @@ public abstract partial class EntityLifecycleManagement : Feature
             await Assert.That(action).Throws<dddlib.BusinessException>();
         }
 
-        private sealed partial class Subject : Entity
+        private partial class Subject : Entity
         {
             private int version;
 

@@ -15,6 +15,7 @@ internal static class DiagnosticDescriptors
     private const string WikiValueObjectSerialization = "https://github.com/dddlib/dddlib/blob/main/docs/value-object-serialization.md";
     private const string WikiValueObjects = "https://github.com/dddlib/dddlib/blob/main/docs/value-objects.md";
     private const string WikiSerialization = "https://github.com/dddlib/dddlib/blob/main/docs/persistence/serialization.md";
+    private const string WikiDomainModelReuse = "https://github.com/dddlib/dddlib/blob/main/docs/concepts.md#domain-model-reuse";
 
     public static readonly DiagnosticDescriptor MultipleNaturalKeys = new(
         "DDDLIB001",
@@ -255,4 +256,14 @@ internal static class DiagnosticDescriptors
         isEnabledByDefault: true,
         description: "The default equality comparer of a value object compares each public property with the equality of the property's type, and collections element by element.",
         helpLinkUri: WikiValueObjectEquality);
+
+    public static readonly DiagnosticDescriptor SealedEntity = new(
+        "DDDLIB025",
+        "Entity is sealed",
+        "The {0} '{1}' is sealed; entities and aggregate roots are designed for inheritance, so remove 'sealed'",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "A domain model built with dddlib can be reused and extended in another assembly by deriving from its entities and aggregate roots.",
+        helpLinkUri: WikiDomainModelReuse);
 }
