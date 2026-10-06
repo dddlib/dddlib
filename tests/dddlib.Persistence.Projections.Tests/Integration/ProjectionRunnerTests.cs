@@ -18,23 +18,24 @@ public class ProjectionRunnerTests
     [Test]
     public async Task BacksOffWhenIdle()
     {
-        var clock = new FakeTimeProvider();
+        var clock = new Clock();
         var feed = new FakeFeed();
         await using var runner = new ProjectionRunner(feed, new FakeStore(), Options, clock);
 
+        // Each poll finds no events and waits on the clock; the clock is advanced only once the runner is waiting.
         runner.Start();
-        await WaitUntilAsync(() => feed.Reads == 1);
+        await WaitUntilAsync(() => clock.Timers == 1);
         clock.Advance(TimeSpan.FromSeconds(1));
-        await WaitUntilAsync(() => feed.Reads == 2);
+        await WaitUntilAsync(() => clock.Timers == 2);
         clock.Advance(TimeSpan.FromSeconds(1));
         await Task.Delay(100);
         var afterOneSecond = feed.Reads;
         clock.Advance(TimeSpan.FromSeconds(1));
-        await WaitUntilAsync(() => feed.Reads == 3);
+        await WaitUntilAsync(() => clock.Timers == 3);
 
         // 1s, 2s, 4s, 4s: capped at the maximum.
         clock.Advance(TimeSpan.FromSeconds(4));
-        await WaitUntilAsync(() => feed.Reads == 4);
+        await WaitUntilAsync(() => clock.Timers == 4);
         clock.Advance(TimeSpan.FromSeconds(4));
         await WaitUntilAsync(() => feed.Reads == 5);
 
@@ -44,7 +45,7 @@ public class ProjectionRunnerTests
     [Test]
     public async Task RetriesAFailedPageAfterTheDelay()
     {
-        var clock = new FakeTimeProvider();
+        var clock = new Clock();
         var feed = new FakeFeed();
         feed.Append(new Event(1));
         var store = new FakeStore { FailuresLeft = 1 };
@@ -53,13 +54,14 @@ public class ProjectionRunnerTests
         runner.ProjectionFailed += (_, e) => failures.Add(e.Exception);
 
         runner.Start();
-        await WaitUntilAsync(() => failures.Count == 1);
+        await WaitUntilAsync(() => clock.Timers == 1);
         await Task.Delay(100);
         var appliedBeforeTheDelay = store.Applied.Count;
         clock.Advance(TimeSpan.FromSeconds(30));
         await WaitUntilAsync(() => store.Applied.Count == 1);
 
         await Assert.That(appliedBeforeTheDelay).IsEqualTo(0);
+        await Assert.That(failures).HasSingleItem();
         await Assert.That(failures[0]).IsTypeOf<InvalidOperationException>();
         await Assert.That(store.Checkpoint).IsEqualTo(1);
         await Assert.That(runner.Checkpoint).IsEqualTo(1);
@@ -124,6 +126,23 @@ public class ProjectionRunnerTests
         }
     }
 
+    /// <summary>
+    /// A fake clock that counts the timers created on it: the runner creates one for each delay, so a test can tell
+    /// that the runner is waiting before it advances the clock.
+    /// </summary>
+    private sealed class Clock : FakeTimeProvider
+    {
+        private int timers;
+
+        public int Timers => Volatile.Read(ref this.timers);
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            Interlocked.Increment(ref this.timers);
+            return base.CreateTimer(callback, state, dueTime, period);
+        }
+    }
+
     private sealed record Event(int Id);
 
     private sealed class FakeFeed : IEventFeed
@@ -135,11 +154,15 @@ public class ProjectionRunnerTests
         public void Append(object @event) =>
             this.events.Add(new FeedEvent(this.events.Count + 1, Guid.Empty, this.events.Count + 1, Guid.Empty, @event));
 
-        public Task<EventPage> ReadEventsAsync(long afterSequenceNumber, int maxCount, IReadOnlyCollection<Type>? eventTypes = null, CancellationToken cancellationToken = default)
+        public async Task<EventPage> ReadEventsAsync(long afterSequenceNumber, int maxCount, IReadOnlyCollection<Type>? eventTypes = null, CancellationToken cancellationToken = default)
         {
             this.Reads++;
+
+            // a read takes time, as it does against a store, so the test cannot rely on the runner being ahead of it
+            await Task.Delay(50, cancellationToken).ConfigureAwait(false);
+
             var page = this.events.Where(e => e.SequenceNumber > afterSequenceNumber).Take(maxCount).ToList();
-            return Task.FromResult(new EventPage(page.Count == 0 ? afterSequenceNumber : page[^1].SequenceNumber, page));
+            return new EventPage(page.Count == 0 ? afterSequenceNumber : page[^1].SequenceNumber, page);
         }
 
         public Task<long> GetLastSequenceNumberAsync(CancellationToken cancellationToken = default) => Task.FromResult((long)this.events.Count);
