@@ -28,8 +28,11 @@
   emits event dispatch, natural key access, reconstitution and value object equality at compile time; types that are
   not `partial` work the same way through reflection.
 
-- Give an aggregate root a `protected internal` parameterless constructor so it can be
-  [reconstituted](aggregate-root-reconstitution.md).
+- Do not seal an aggregate root or an entity. They are designed for inheritance, so that a domain model can be reused
+  and extended in another assembly. Value objects, by contrast, are usually best sealed.
+
+- Give an aggregate root a `protected` parameterless constructor so it can be
+  [reconstituted](aggregate-root-reconstitution.md) and so derived aggregate roots can chain to it from their own.
 
 - Keep event classes plain: public settable properties, no behaviour, and no dependency on the aggregate root. They
   are serialized as JSON by the persistence layer.

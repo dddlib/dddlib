@@ -3,13 +3,13 @@
 In **dddlib** reconstituting an aggregate root requires an uninitialized instance of the aggregate root to which the
 saved state (a memento, an event stream, or both) is applied.
 
-Add a `protected internal` parameterless constructor to the aggregate root:
+Add a parameterless constructor to the aggregate root:
 
 ```csharp
 public partial class Vehicle : dddlib.AggregateRoot
 {
     // used for reconstitution only
-    protected internal Vehicle()
+    protected Vehicle()
     {
     }
 
@@ -24,7 +24,11 @@ public partial class Vehicle : dddlib.AggregateRoot
 ```
 
 That is enough: the runtime (or the [source generator](source-generator.md), for a `partial` type) uses the
-parameterless constructor as the reconstitution factory, whatever its accessibility.
+parameterless constructor as the reconstitution factory, whatever its accessibility. Make it `protected` so that
+a derived aggregate root can chain to it from its own parameterless constructor. Avoid `private` and
+`private protected`, which hide it from derived types (in other assemblies, for `private protected`), and do not
+seal the aggregate root. A type that declares no
+constructors already has an implicit public parameterless one.
 
 Alternatively, or to override the constructor, configure reconstitution in the [bootstrapper](bootstrapper.md):
 
