@@ -1,5 +1,8 @@
+using System.Collections.Concurrent;
+using dddlib.Persistence.Sdk;
 using dddlib.Persistence.SqlServer;
 using dddlib.Tests.Support;
+using Microsoft.Data.SqlClient;
 
 namespace dddlib.Persistence.Tests.Integration;
 
@@ -88,6 +91,17 @@ public class SqlServerIdentityMapTests : SqlServerIntegration
     }
 
     [Test]
+    public Task ConcurrentAddsAndRemovalsOfDifferentKeysAllSucceed() =>
+        AddAndRemoveConcurrentlyAsync(() => new SqlServerIdentityMap(this.ConnectionString), typeof(Car), writers: 50);
+
+    [Test]
+    public Task ConcurrentAddsAndRemovalsOfKeysComparedInDotNetAllSucceed() =>
+        AddAndRemoveConcurrentlyAsync(
+            () => new DefaultIdentityMap(new SqlServerNaturalKeyRepository(this.ConnectionString), new ComparedInDotNetSerializer()),
+            typeof(Truck),
+            writers: 10);
+
+    [Test]
     public async Task UseAlternateSchema()
     {
         await this.Database.CreateSchemaAsync("alternate");
@@ -102,6 +116,32 @@ public class SqlServerIdentityMapTests : SqlServerIntegration
         await Assert.That(subsequentIdentity).IsEqualTo(expectedIdentity);
     }
 
+    // Every natural key of a type shares the type's checkpoints, so writers of different keys contend for them. Each
+    // test has an aggregate root type of its own: the tests share a database and run in parallel.
+    private static async Task AddAndRemoveConcurrentlyAsync(Func<IIdentityMap> createIdentityMap, Type aggregateRootType, int writers)
+    {
+        var failures = new ConcurrentBag<Exception>();
+
+        await Task.WhenAll(Enumerable.Range(0, writers).Select(async _ =>
+        {
+            var identityMap = createIdentityMap();
+            for (var i = 0; i < 10; i++)
+            {
+                try
+                {
+                    var identity = await identityMap.GetOrAddAsync(aggregateRootType, typeof(Registration), new Registration(Guid.NewGuid().ToString("N")));
+                    await identityMap.RemoveAsync(identity);
+                }
+                catch (Exception ex) when (ex is SqlException or PersistenceException)
+                {
+                    failures.Add(ex);
+                }
+            }
+        }));
+
+        await Assert.That(failures.Select(static failure => failure.Message).Distinct()).IsEmpty();
+    }
+
     private sealed class Registration : ValueObject<Registration>
     {
         public Registration(string number)
@@ -114,7 +154,22 @@ public class SqlServerIdentityMapTests : SqlServerIntegration
         public string Number { get; }
     }
 
+    // A serializer that leaves the comparison of keys to the identity map, as one for a key with custom equality does.
+    private sealed class ComparedInDotNetSerializer : INaturalKeySerializer
+    {
+        private readonly DefaultNaturalKeySerializer serializer = new();
+
+        public string Serialize(Type naturalKeyType, object naturalKey) => this.serializer.Serialize(naturalKeyType, naturalKey);
+
+        public object Deserialize(Type naturalKeyType, string serializedNaturalKey) => this.serializer.Deserialize(naturalKeyType, serializedNaturalKey);
+    }
+
     private class Car : AggregateRoot
+    {
+        public Registration? Registration { get; private set; }
+    }
+
+    private class Truck : AggregateRoot
     {
         public Registration? Registration { get; private set; }
     }

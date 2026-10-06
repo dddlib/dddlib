@@ -33,6 +33,17 @@ public class DefaultIdentityMap : IIdentityMap
 
         var map = this.GetMap(aggregateRootType, naturalKeyType, naturalKey);
 
+        // A key that serializes canonically is compared by the repository, in one call that another writer cannot
+        // invalidate. Any other key is compared here, with its own equality, against every key the repository holds.
+        if (this.repository is IUniqueNaturalKeyRepository uniqueRepository && this.serializer.IsCanonical(naturalKeyType))
+        {
+            var unique = await uniqueRepository
+                .GetOrAddNaturalKeyAsync(aggregateRootType, this.serializer.Serialize(naturalKeyType, naturalKey), cancellationToken)
+                .ConfigureAwait(false);
+
+            return unique.Identity;
+        }
+
         for (var attempt = 0; attempt < MaxAddAttempts; attempt++)
         {
             await this.SynchronizeAsync(aggregateRootType, naturalKeyType, map, cancellationToken).ConfigureAwait(false);
@@ -50,6 +61,10 @@ public class DefaultIdentityMap : IIdentityMap
                 map.Mappings.TryAdd(naturalKey, record.Identity);
                 return record.Identity;
             }
+
+            // Another writer took the checkpoint. A short random pause keeps the writers that lost from all retrying
+            // against the next one at once.
+            await Task.Delay(Random.Shared.Next(Math.Min(1 << Math.Min(attempt, 5), 32)), cancellationToken).ConfigureAwait(false);
         }
 
         throw new PersistenceException(

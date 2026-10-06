@@ -52,10 +52,11 @@ namespace dddlib.Persistence.Memory
     {
         public MemoryIdentityMap() { }
     }
-    public sealed class MemoryNaturalKeyRepository : dddlib.Persistence.Sdk.INaturalKeyRepository
+    public sealed class MemoryNaturalKeyRepository : dddlib.Persistence.Sdk.INaturalKeyRepository, dddlib.Persistence.Sdk.IUniqueNaturalKeyRepository
     {
         public MemoryNaturalKeyRepository() { }
         public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<dddlib.Persistence.Sdk.NaturalKeyRecord>> GetNaturalKeysAsync(System.Type aggregateRootType, long checkpoint, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.NaturalKeyRecord> GetOrAddNaturalKeyAsync(System.Type aggregateRootType, string serializedNaturalKey, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task RemoveAsync(System.Guid naturalKeyIdentity, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.NaturalKeyRecord?> TryAddNaturalKeyAsync(System.Type aggregateRootType, string serializedNaturalKey, long checkpoint, System.Threading.CancellationToken cancellationToken = default) { }
     }
@@ -96,6 +97,7 @@ namespace dddlib.Persistence.Sdk
     {
         public DefaultNaturalKeySerializer() { }
         public object Deserialize(System.Type naturalKeyType, string serializedNaturalKey) { }
+        public bool IsCanonical(System.Type naturalKeyType) { }
         public string Serialize(System.Type naturalKeyType, object naturalKey) { }
     }
     public sealed class EventPage : System.IEquatable<dddlib.Persistence.Sdk.EventPage>
@@ -146,6 +148,7 @@ namespace dddlib.Persistence.Sdk
     public interface INaturalKeySerializer
     {
         object Deserialize(System.Type naturalKeyType, string serializedNaturalKey);
+        bool IsCanonical(System.Type naturalKeyType);
         string Serialize(System.Type naturalKeyType, object naturalKey);
     }
     public interface ISnapshotStore
@@ -158,6 +161,10 @@ namespace dddlib.Persistence.Sdk
         System.Threading.Tasks.Task<System.Type> GetTypeAsync(int typeId, System.Threading.CancellationToken cancellationToken = default);
         System.Threading.Tasks.Task<int> GetTypeIdAsync(System.Type type, System.Threading.CancellationToken cancellationToken = default);
         System.Threading.Tasks.Task<string> GetTypeNameAsync(int typeId, System.Threading.CancellationToken cancellationToken = default);
+    }
+    public interface IUniqueNaturalKeyRepository : dddlib.Persistence.Sdk.INaturalKeyRepository
+    {
+        System.Threading.Tasks.Task<dddlib.Persistence.Sdk.NaturalKeyRecord> GetOrAddNaturalKeyAsync(System.Type aggregateRootType, string serializedNaturalKey, System.Threading.CancellationToken cancellationToken = default);
     }
     public sealed class MementoResult : System.IEquatable<dddlib.Persistence.Sdk.MementoResult>
     {

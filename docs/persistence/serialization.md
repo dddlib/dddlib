@@ -26,6 +26,28 @@ identity map checks this the first time it sees each aggregate root type and thr
 does not hold. The analyzer reports the natural key types it can tell will not round-trip (DDDLIB017): a class
 compared by reference, and a value object that the default serializer cannot read back.
 
+## How natural keys are compared
+
+The identity map must not give two equal natural keys two identities. How it checks depends on whether equal keys of
+the type always serialize to the same text, and unequal keys to different text:
+
+- **Compared by the repository.** For a `string`, an integer, a `Guid`, a `bool`, a `char`, an enumeration, a nullable
+  one of those, or a sealed [value object](../value-objects.md) with the default equality comparer and serializer whose
+  properties are all of these types (without `[JsonIgnore]` or `[JsonConverter]`), comparing the serialized keys is the
+  same as comparing the keys. The repository finds or adds the key in a single call, so writers of different keys of
+  the same aggregate root type never make each other retry. On SQL Server a unique index keeps two writers of the
+  same key from both adding it.
+- **Compared by the identity map.** For any other key it compares with the key's own equality: a value object with a
+  custom equality comparer, such as a case-insensitive one, or a custom serializer, an unsealed value object, and
+  types whose equal values can serialize differently, such as `decimal` (`1.0m` and `1.00m`), `double`, `DateTime`
+  and `DateTimeOffset`. It synchronizes with every key added for the aggregate root type and adds the key only if no
+  other key was added meanwhile, retrying otherwise. Many concurrent writers of new keys for one type therefore wait
+  on each other, and one may eventually fail with a `PersistenceException`.
+
+`DefaultNaturalKeySerializer.IsCanonical` makes this decision. A custom `INaturalKeySerializer` uses the identity
+map's comparison unless it implements `IsCanonical`, and a custom natural key repository is used for the repository's
+comparison only if it implements `IUniqueNaturalKeyRepository`.
+
 ## Type names
 
 Events, mementos and snapshots are stored with a stable name of their type, `Namespace.Type, AssemblyName`, without
