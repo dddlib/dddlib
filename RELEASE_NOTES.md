@@ -12,8 +12,10 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   all, including the ones that depend on the bootstrapper (no reconstitution factory, no natural key, a mapping
   that is not configured), with code fixes for six of them (issue 2). DDDLIB023 reports an event or memento that
   is saved but fails to load, which the parameterless constructor `Apply` used to require ruled out for events, and
-  DDDLIB024 a mapping that cannot create the event it is asked for or only creates one (issue 48). See
-  `docs/source-generator.md`.
+  DDDLIB024 a mapping that cannot create the event it is asked for or only creates one (issue 48). Entities and
+  aggregate roots are designed for inheritance: DDDLIB025 reports one that is sealed, DDDLIB027 a reconstitution
+  constructor a derived aggregate root cannot chain to, both with code fixes, and DDDLIB026 suppresses CA1852's
+  advice to seal them. See `docs/source-generator.md`.
 - Persistence: async event store and memento repositories for in-memory and, in `dddlib.Persistence.SqlServer`,
   SQL Server, with System.Text.Json serialization. dddlib provides and upgrades its own versioned SQL Server schema
   through `SqlServerSchema.EnsureAsync`, and fails the first call with a clear message when the schema is behind the

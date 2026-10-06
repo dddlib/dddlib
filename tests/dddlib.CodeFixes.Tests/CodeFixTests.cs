@@ -155,6 +155,47 @@ public class CodeFixTests
     }
 
     [Test]
+    [Arguments("private")]
+    [Arguments("private protected")]
+    public async Task MakesTheReconstitutionConstructorProtected(string accessibility)
+    {
+        var result = await CodeFixVerifier.ApplyAsync(
+            $$"""
+            using dddlib;
+
+            public partial class Subject : AggregateRoot
+            {
+                // used for reconstitution only
+                {{accessibility}} Subject()
+                {
+                }
+
+                [NaturalKey]
+                public string? Id { get; set; }
+            }
+            """,
+            new DomainTypeAnalyzer(),
+            new MakeConstructorProtectedCodeFix(),
+            "DDDLIB027");
+
+        await Assert.That(result).IsEqualTo(CodeFixVerifier.Normalize(
+            """
+            using dddlib;
+
+            public partial class Subject : AggregateRoot
+            {
+                // used for reconstitution only
+                protected Subject()
+                {
+                }
+
+                [NaturalKey]
+                public string? Id { get; set; }
+            }
+            """));
+    }
+
+    [Test]
     public async Task MakesATypeAndItsContainingTypesPartial()
     {
         var result = await CodeFixVerifier.ApplyAsync(

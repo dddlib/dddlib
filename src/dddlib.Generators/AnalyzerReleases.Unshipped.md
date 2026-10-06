@@ -30,3 +30,4 @@ DDDLIB022 | dddlib | Error | Natural key selector is not a property of the entit
 DDDLIB023 | dddlib | Warning | Event or memento cannot be loaded
 DDDLIB024 | dddlib | Warning | Mapping does not fit how it is used
 DDDLIB025 | dddlib | Warning | Entity is sealed
+DDDLIB027 | dddlib | Warning | Reconstitution constructor is not accessible to derived types

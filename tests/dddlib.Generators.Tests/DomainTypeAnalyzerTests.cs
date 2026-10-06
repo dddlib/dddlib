@@ -107,7 +107,7 @@ public class DomainTypeAnalyzerTests
             {
                 public WithConstructor(string id) { this.Id = id; }
 
-                private WithConstructor() { this.Id = string.Empty; }
+                protected WithConstructor() { this.Id = string.Empty; }
 
                 [NaturalKey] public string Id { get; }
             }
@@ -561,6 +561,70 @@ public class DomainTypeAnalyzerTests
 
             public sealed class Unrelated
             {
+            }
+            """);
+
+        await Assert.That(diagnostics).IsEmpty();
+    }
+
+    [Test]
+    [Arguments("public partial class", "private", "private")]
+    [Arguments("public abstract partial class", "private protected", "private protected")]
+    public async Task ReportsAReconstitutionConstructorThatADerivedAggregateRootCannotCall(string declaration, string accessibility, string expected)
+    {
+        var diagnostics = await AnalyzeAsync($$"""
+            using dddlib;
+
+            {{declaration}} Subject : AggregateRoot
+            {
+                {{accessibility}} Subject() { }
+
+                [NaturalKey] public string? Id { get; set; }
+            }
+            """);
+
+        await Assert.That(diagnostics).Count().IsEqualTo(1);
+        await Assert.That(diagnostics[0].Id).IsEqualTo("DDDLIB027");
+        await Assert.That(diagnostics[0].Severity).IsEqualTo(DiagnosticSeverity.Warning);
+        await Assert.That(diagnostics[0].GetMessage(CultureInfo.InvariantCulture)).Contains($"'Subject' is {expected}");
+    }
+
+    [Test]
+    public async Task DoesNotReportAReconstitutionConstructorThatADerivedAggregateRootCanCall()
+    {
+        var diagnostics = await AnalyzeAsync("""
+            using dddlib;
+
+            public partial class Protected : AggregateRoot
+            {
+                protected Protected() { }
+
+                [NaturalKey] public string? Id { get; set; }
+            }
+
+            public partial class ProtectedInternal : AggregateRoot
+            {
+                protected internal ProtectedInternal() { }
+
+                [NaturalKey] public string? Id { get; set; }
+            }
+
+            public partial class Public : AggregateRoot
+            {
+                public Public() { }
+
+                [NaturalKey] public string? Id { get; set; }
+            }
+
+            public partial class Implicit : AggregateRoot
+            {
+                [NaturalKey] public string? Id { get; set; }
+            }
+
+            // an entity is not reconstituted on its own
+            public partial class Thing : Entity
+            {
+                private Thing() { }
             }
             """);
 

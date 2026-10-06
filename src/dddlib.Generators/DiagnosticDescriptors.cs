@@ -266,4 +266,14 @@ internal static class DiagnosticDescriptors
         isEnabledByDefault: true,
         description: "A domain model built with dddlib can be reused and extended in another assembly by deriving from its entities and aggregate roots.",
         helpLinkUri: WikiDomainModelReuse);
+
+    public static readonly DiagnosticDescriptor InaccessibleReconstitutionConstructor = new(
+        "DDDLIB027",
+        "Reconstitution constructor is not accessible to derived types",
+        "The parameterless constructor of the aggregate root '{0}' is {1}, so a derived aggregate root cannot chain to it from its own; make it protected",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "A derived aggregate root is reconstituted with its own parameterless constructor, which must chain to a constructor of its base. If the base's parameterless constructor is out of reach, it has to chain to one that creates the aggregate root, which applies events every time the aggregate root is loaded.",
+        helpLinkUri: WikiReconstitution);
 }
