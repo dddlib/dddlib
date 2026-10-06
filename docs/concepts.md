@@ -9,7 +9,8 @@ packaged and shipped in isolation. These models automatically support domain mod
 On occasion it may be desirable to extend some part of an existing domain model. **dddlib** gives the original model
 author the ability to customize every aspect of the model that is required to facilitate reuse. Ultimately the model
 author is creating a class library containing classes that may be inherited, but there are concerns beyond those of
-ordinary inheritance, specifically relating to persistence. The topics below detail how to customize the model for
+ordinary inheritance, specifically relating to persistence. For that reason entities and aggregate roots should not
+be `sealed`; the analyzers report one that is (DDDLIB025). The topics below detail how to customize the model for
 reuse:
 
 - [Aggregate Root Reconstitution](aggregate-root-reconstitution.md)

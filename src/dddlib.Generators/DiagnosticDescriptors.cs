@@ -15,6 +15,7 @@ internal static class DiagnosticDescriptors
     private const string WikiValueObjectSerialization = "https://github.com/dddlib/dddlib/blob/main/docs/value-object-serialization.md";
     private const string WikiValueObjects = "https://github.com/dddlib/dddlib/blob/main/docs/value-objects.md";
     private const string WikiSerialization = "https://github.com/dddlib/dddlib/blob/main/docs/persistence/serialization.md";
+    private const string WikiDomainModelReuse = "https://github.com/dddlib/dddlib/blob/main/docs/concepts.md#domain-model-reuse";
 
     public static readonly DiagnosticDescriptor MultipleNaturalKeys = new(
         "DDDLIB001",
@@ -199,11 +200,11 @@ internal static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor NoReconstitutionFactory = new(
         "DDDLIB014",
         "Aggregate root cannot be reconstituted",
-        "The aggregate root '{0}' has no parameterless constructor and no reconstitution factory, so it cannot be persisted and the events it applies are not recorded; add a parameterless constructor, which need not be public, or call ToReconstituteUsing in the bootstrapper",
+        "The aggregate root '{0}' has no parameterless constructor and no reconstitution factory, so it cannot be persisted and the events it applies are not recorded; add a protected parameterless constructor or call ToReconstituteUsing in the bootstrapper",
         Category,
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "Reconstituting an aggregate root requires an uninitialized instance to apply the saved state to. The runtime creates it with the parameterless constructor, whatever its accessibility, or with the factory configured in the bootstrapper.",
+        description: "Reconstituting an aggregate root requires an uninitialized instance to apply the saved state to. The runtime creates it with the parameterless constructor, whatever its accessibility, or with the factory configured in the bootstrapper. Make the constructor protected so that a derived aggregate root can chain to it.",
         helpLinkUri: WikiReconstitution);
 
     public static readonly DiagnosticDescriptor NoNaturalKey = new(
@@ -255,4 +256,24 @@ internal static class DiagnosticDescriptors
         isEnabledByDefault: true,
         description: "The default equality comparer of a value object compares each public property with the equality of the property's type, and collections element by element.",
         helpLinkUri: WikiValueObjectEquality);
+
+    public static readonly DiagnosticDescriptor SealedEntity = new(
+        "DDDLIB025",
+        "Entity is sealed",
+        "The {0} '{1}' is sealed; entities and aggregate roots are designed for inheritance, so remove 'sealed'",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "A domain model built with dddlib can be reused and extended in another assembly by deriving from its entities and aggregate roots.",
+        helpLinkUri: WikiDomainModelReuse);
+
+    public static readonly DiagnosticDescriptor InaccessibleReconstitutionConstructor = new(
+        "DDDLIB027",
+        "Reconstitution constructor is not accessible to derived types",
+        "The parameterless constructor of the aggregate root '{0}' is {1}, so a derived aggregate root cannot chain to it from its own; make it protected",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "A derived aggregate root is reconstituted with its own parameterless constructor, which must chain to a constructor of its base. If the base's parameterless constructor is out of reach, it has to chain to one that creates the aggregate root, which applies events every time the aggregate root is loaded.",
+        helpLinkUri: WikiReconstitution);
 }

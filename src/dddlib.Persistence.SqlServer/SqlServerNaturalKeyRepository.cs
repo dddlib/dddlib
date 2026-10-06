@@ -6,7 +6,7 @@ using Microsoft.Data.SqlClient;
 
 namespace dddlib.Persistence.SqlServer;
 
-public sealed class SqlServerNaturalKeyRepository : INaturalKeyRepository
+public sealed class SqlServerNaturalKeyRepository : IUniqueNaturalKeyRepository
 {
     private readonly string connectionString;
     private readonly string schema;
@@ -73,16 +73,42 @@ public sealed class SqlServerNaturalKeyRepository : INaturalKeyRepository
 
             return new NaturalKeyRecord(reader.GetGuid(0), serializedNaturalKey, reader.GetInt64(1), IsRemoved: false);
         }
-        catch (SqlException ex) when (ex.Has(SqlServerErrors.PrimaryKeyViolation) || ex.Has(SqlServerErrors.UniqueIndexViolation))
+        catch (SqlException ex) when (ex.Has(SqlServerErrors.PrimaryKeyViolation) || ex.Has(SqlServerErrors.UniqueIndexViolation) || ex.Has(SqlServerErrors.Deadlock))
         {
-            // Another caller added a key at the same checkpoint first; the caller synchronizes and retries.
+            // Another caller added the key, or a key at the same checkpoint, first; the caller synchronizes and retries.
             return null;
         }
     }
 
+    public async Task<NaturalKeyRecord> GetOrAddNaturalKeyAsync(Type aggregateRootType, string serializedNaturalKey, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(aggregateRootType);
+        ArgumentNullException.ThrowIfNull(serializedNaturalKey);
+
+        using var scope = new TransactionScope(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled);
+        await using var connection = new SqlConnection(this.connectionString);
+        await using var command = connection.CreateCommand();
+
+        command.CommandType = CommandType.StoredProcedure;
+        command.CommandText = string.Concat(this.schema, ".[GetOrAddNaturalKey]");
+        command.Parameters.Add("@AggregateRootTypeName", SqlDbType.VarChar, 511).Value = aggregateRootType.GetSerializedName();
+        command.Parameters.Add("@SerializedValue", SqlDbType.NVarChar, -1).Value = serializedNaturalKey;
+
+        await SqlServerSchemaCheck.EnsureCompatibleAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            throw new PersistenceException("The natural key was neither found nor added.");
+        }
+
+        return new NaturalKeyRecord(reader.GetGuid(0), serializedNaturalKey, reader.GetInt64(1), IsRemoved: false);
+    }
+
     public async Task RemoveAsync(Guid naturalKeyIdentity, CancellationToken cancellationToken = default)
     {
-        const int attempts = 3;
+        const int attempts = 10;
 
         for (var attempt = 1; ; attempt++)
         {
@@ -102,9 +128,10 @@ public sealed class SqlServerNaturalKeyRepository : INaturalKeyRepository
                 await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                 return;
             }
-            catch (SqlException ex) when (attempt < attempts && ex.Has(SqlServerErrors.PrimaryKeyViolation))
+            catch (SqlException ex) when (attempt < attempts && (ex.Has(SqlServerErrors.PrimaryKeyViolation) || ex.Has(SqlServerErrors.Deadlock)))
             {
-                // A concurrent add or removal took the checkpoint; try again.
+                // A concurrent add or removal took the checkpoint, or deadlocked with this one, on a schema older than
+                // version 3, whose procedure retries itself; try again.
             }
         }
     }

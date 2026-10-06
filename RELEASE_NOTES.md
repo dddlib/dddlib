@@ -12,8 +12,10 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   all, including the ones that depend on the bootstrapper (no reconstitution factory, no natural key, a mapping
   that is not configured), with code fixes for six of them (issue 2). DDDLIB023 reports an event or memento that
   is saved but fails to load, which the parameterless constructor `Apply` used to require ruled out for events, and
-  DDDLIB024 a mapping that cannot create the event it is asked for or only creates one (issue 48). See
-  `docs/source-generator.md`.
+  DDDLIB024 a mapping that cannot create the event it is asked for or only creates one (issue 48). Entities and
+  aggregate roots are designed for inheritance: DDDLIB025 reports one that is sealed, DDDLIB027 a reconstitution
+  constructor a derived aggregate root cannot chain to, both with code fixes, and DDDLIB026 suppresses CA1852's
+  advice to seal them. See `docs/source-generator.md`.
 - Persistence: async event store and memento repositories for in-memory and, in `dddlib.Persistence.SqlServer`,
   SQL Server, with System.Text.Json serialization. dddlib provides and upgrades its own versioned SQL Server schema
   through `SqlServerSchema.EnsureAsync`, and fails the first call with a clear message when the schema is behind the
@@ -34,3 +36,11 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   lag, and rebuilds from the first event after a purge. Both event stores expose the store-wide feed as `IEventFeed`,
   with the stream identity on each event. The projection objects and the feed are schema version 2 (`dddlib02.sql`,
   expand only): every SQL Server package now requires version 2, which `EnsureAsync` applies.
+- Identity map: concurrent writers of different natural keys of the same aggregate root type no longer fail. They
+  could exhaust their retries, see a primary key violation on removal, or deadlock. A natural key whose equal values
+  always serialize alike (strings, integers, GUIDs and sealed value objects of them with default equality) is now
+  found or added by the repository in one call (`IUniqueNaturalKeyRepository`, `INaturalKeySerializer.IsCanonical`),
+  kept unique on SQL Server by an index on a hash of the serialized key. Any other key, such as one with a
+  case-insensitive comparer, is still compared by the identity map with its own equality, now with a short random
+  backoff between attempts. Removals retry conflicts in SQL. Schema version 3 (`dddlib03.sql`, expand only): every
+  SQL Server package now requires version 3.

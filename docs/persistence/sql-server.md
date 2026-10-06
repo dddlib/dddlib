@@ -47,6 +47,15 @@ Version 2 adds:
 | `ReadEvents`, `GetLastSequenceNumber` and the `TypeNameList` table type | the event feed, which [projections](projections.md) read |
 | `Projections`, `ProjectionViews`, the `ProjectionViewList` table type and the projection procedures | projections |
 
+Version 3 adds:
+
+| Objects | Used by |
+|---|---|
+| The `ValueHash` column of `NaturalKeys` (a hash of the serialized key), the unique index `UX_NaturalKey_Value` on it for keys that are not removed, the index `IX_NaturalKey_Id`, and `GetOrAddNaturalKey` | the identity map, for natural keys [compared by the repository](serialization.md#how-natural-keys-are-compared) |
+
+It also changes the body of `RemoveNaturalKey`, which keeps its parameters and effect but retries a concurrent
+conflict itself instead of failing back to the caller.
+
 Released scripts never change; every later change to the schema is a new script, so upgrading the packages and
 calling `EnsureAsync` upgrades the schema. The `Versions` table holds one row per applied version with the package
 that applied it and the text it ran.

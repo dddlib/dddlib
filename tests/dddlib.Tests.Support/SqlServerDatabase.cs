@@ -21,11 +21,30 @@ public sealed class SqlServerDatabase : IAsyncInitializer, IAsyncDisposable
 
     public async Task InitializeAsync()
     {
-        await ExecuteAsync(this.Container.ConnectionString, $"CREATE DATABASE [{this.DatabaseName}];").ConfigureAwait(false);
+        try
+        {
+            await ExecuteAsync(this.Container.ConnectionString, $"CREATE DATABASE [{this.DatabaseName}];").ConfigureAwait(false);
 
-        this.connectionString = new SqlConnectionStringBuilder(this.Container.ConnectionString) { InitialCatalog = this.DatabaseName }.ConnectionString;
+            this.connectionString = new SqlConnectionStringBuilder(this.Container.ConnectionString) { InitialCatalog = this.DatabaseName }.ConnectionString;
 
-        await SqlServerSchema.EnsureAsync(this.connectionString).ConfigureAwait(false);
+            await SqlServerSchema.EnsureAsync(this.connectionString).ConfigureAwait(false);
+        }
+        catch (SqlException ex)
+        {
+            // The message of a failed CREATE DATABASE names only the first error ("Check related errors"): the cause is
+            // in the others, and often in the server log.
+            var errors = string.Join(Environment.NewLine, ex.Errors.Cast<SqlError>().Select(static error => $"  {error.Number}: {error.Message}"));
+            var log = await this.Container.GetLogTailAsync().ConfigureAwait(false);
+
+            throw new InvalidOperationException(
+                $"""
+                Creating the test database '{this.DatabaseName}' failed. SQL Server reported:
+                {errors}
+                The end of the server log:
+                {log}
+                """,
+                ex);
+        }
     }
 
     /// <summary>

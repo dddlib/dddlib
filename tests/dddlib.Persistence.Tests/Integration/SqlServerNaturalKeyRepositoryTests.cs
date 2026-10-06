@@ -37,7 +37,35 @@ public class SqlServerNaturalKeyRepositoryTests : SqlServerIntegration
         await Assert.That(afterRemoval[0].IsRemoved).IsTrue();
     }
 
-    private sealed class Subject : AggregateRoot
+    [Test]
+    public Task GetOrAddFollowsTheUniqueKeyContract() =>
+        UniqueNaturalKeyRepositoryContract.VerifyAsync(new SqlServerNaturalKeyRepository(this.ConnectionString), typeof(UniqueSubject), typeof(OtherUniqueSubject));
+
+    [Test]
+    public async Task GetOrAddDoesNotTakeAKeyAddedThroughTheCheckpointProtocol()
+    {
+        var repository = new SqlServerNaturalKeyRepository(this.ConnectionString);
+
+        var added = await repository.TryAddNaturalKeyAsync(typeof(ProtocolSubject), "\"key\"", 0);
+        var found = await repository.GetOrAddNaturalKeyAsync(typeof(ProtocolSubject), "\"key\"");
+
+        await Assert.That(found).IsEqualTo(added);
+    }
+
+    private class Subject : AggregateRoot
+    {
+    }
+
+    // each test has types of its own: the tests share a database and run in parallel
+    private class UniqueSubject : AggregateRoot
+    {
+    }
+
+    private class OtherUniqueSubject : AggregateRoot
+    {
+    }
+
+    private class ProtocolSubject : AggregateRoot
     {
     }
 }

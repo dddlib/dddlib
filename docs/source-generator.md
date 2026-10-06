@@ -52,6 +52,8 @@ Roslyn generators do not see each other's output. You can write one yourself and
 | DDDLIB022 | Error | A `ToUseNaturalKey` selector is not a property of its parameter |
 | DDDLIB023 | Warning | An event or memento has no constructor the serializer can use, or a constructor parameter with no property of the same name, so it is saved but fails to load |
 | DDDLIB024 | Warning | `Map` is used in a way the configured mapping does not support: `ToEvent<T>()` for an event without a public parameterless constructor whose mapping does not create it, or `ToEvent(@event)` with a mapping that only creates the event |
+| DDDLIB025 | Warning | An entity or aggregate root is `sealed`; they are designed for inheritance, so that a domain model can be reused and extended |
+| DDDLIB027 | Warning | An aggregate root that is not sealed has a `private` or `private protected` parameterless constructor, which a derived aggregate root cannot chain to |
 
 The rules that depend on the bootstrapper (DDDLIB004, DDDLIB014, DDDLIB015, DDDLIB017, DDDLIB019, DDDLIB020 and
 DDDLIB024)
@@ -74,7 +76,20 @@ Code that breaks a rule on purpose, as a test of the runtime check might, can di
 | DDDLIB007 | Make the type and its containing types `partial` |
 | DDDLIB008 | Add an empty private `Handle` method for the event, after the last handler |
 | DDDLIB013 | Add the missing `GetState` or `SetState` override as a stub |
-| DDDLIB014 | Add a `protected internal` parameterless constructor (`private` on a sealed type), after the last constructor |
+| DDDLIB014 | Add a `protected` parameterless constructor (`private` on a sealed type), after the last constructor |
+| DDDLIB025 | Remove `sealed` |
+| DDDLIB027 | Make the parameterless constructor `protected` |
+
+## Suppressions
+
+Entities and aggregate roots are designed for inheritance, so dddlib suppresses the advice of the .NET analyzers to
+seal them.
+
+| Id | Suppresses | Suppressed when |
+|---|---|---|
+| DDDLIB026 | CA1852 | The type that could be sealed is an entity or an aggregate root |
+
+A suppressed diagnostic is still recorded, with its justification, in a SARIF log.
 
 ## Requirements
 

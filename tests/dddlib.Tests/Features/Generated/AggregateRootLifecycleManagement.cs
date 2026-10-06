@@ -28,7 +28,7 @@ public abstract partial class AggregateRootLifecycleManagement : Feature
             await Assert.That(action).Throws<dddlib.BusinessException>();
         }
 
-        private sealed partial class Subject : AggregateRoot
+        private partial class Subject : AggregateRoot
         {
             private int version;
 
@@ -70,7 +70,7 @@ public abstract partial class AggregateRootLifecycleManagement : Feature
             await Assert.That(action).Throws<dddlib.BusinessException>();
         }
 
-        private sealed partial class Subject : AggregateRoot
+        private partial class Subject : AggregateRoot
         {
             private int version;
 

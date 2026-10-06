@@ -71,7 +71,7 @@ public class Bug0109 : SqlServerIntegration
         await Assert.That(action).Throws<ConcurrencyException>();
     }
 
-    private sealed class ConventionalSubject : AggregateRoot
+    private class ConventionalSubject : AggregateRoot
     {
         public ConventionalSubject(string naturalKey)
         {
@@ -97,7 +97,7 @@ public class Bug0109 : SqlServerIntegration
         }
     }
 
-    private sealed class EventBasedSubject : AggregateRoot
+    private class EventBasedSubject : AggregateRoot
     {
         public EventBasedSubject(string naturalKey)
         {

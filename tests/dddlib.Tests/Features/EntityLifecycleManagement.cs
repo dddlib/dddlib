@@ -28,7 +28,7 @@ public abstract class EntityLifecycleManagement : Feature
             await Assert.That(action).Throws<dddlib.BusinessException>();
         }
 
-        private sealed class Subject : Entity
+        private class Subject : Entity
         {
             private int version;
 

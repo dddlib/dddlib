@@ -33,7 +33,7 @@ public class Bug0081
         await Assert.That(action).Throws<AggregateRootNotFoundException>();
     }
 
-    private sealed class Subject : AggregateRoot
+    private class Subject : AggregateRoot
     {
         [NaturalKey]
         public string? NaturalKey { get; set; }

@@ -38,8 +38,9 @@ public sealed class AddReconstitutionConstructorCodeFix : CodeFixProvider
 
     private static TypeDeclarationSyntax AddConstructor(TypeDeclarationSyntax type)
     {
-        // a protected member of a sealed type is a compiler warning
-        var accessibility = type.Modifiers.Any(SyntaxKind.SealedKeyword) ? "private" : "protected internal";
+        // protected so that a derived aggregate root can chain to it; a protected member of a sealed type is a
+        // compiler warning, and DDDLIB025 reports the sealed type itself
+        var accessibility = type.Modifiers.Any(SyntaxKind.SealedKeyword) ? "private" : "protected";
 
         var lastConstructor = type.Members.LastOrDefault(static member => member is ConstructorDeclarationSyntax constructor && !constructor.Modifiers.Any(SyntaxKind.StaticKeyword));
         var index = lastConstructor is null ? 0 : type.Members.IndexOf(lastConstructor) + 1;

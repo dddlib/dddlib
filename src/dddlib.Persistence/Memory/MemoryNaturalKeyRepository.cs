@@ -5,7 +5,7 @@ namespace dddlib.Persistence.Memory;
 /// <summary>
 /// An in-process natural key repository: an append-only log with a single increasing checkpoint.
 /// </summary>
-public sealed class MemoryNaturalKeyRepository : INaturalKeyRepository
+public sealed class MemoryNaturalKeyRepository : IUniqueNaturalKeyRepository
 {
     private readonly Lock sync = new();
     private readonly List<Entry> store = [];
@@ -54,6 +54,31 @@ public sealed class MemoryNaturalKeyRepository : INaturalKeyRepository
             this.store.Add(new Entry(aggregateRootType, record));
 
             return Task.FromResult<NaturalKeyRecord?>(record);
+        }
+    }
+
+    public Task<NaturalKeyRecord> GetOrAddNaturalKeyAsync(Type aggregateRootType, string serializedNaturalKey, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(aggregateRootType);
+        ArgumentNullException.ThrowIfNull(serializedNaturalKey);
+
+        lock (this.sync)
+        {
+            var present = this.store
+                .Where(entry => entry.AggregateRootType == aggregateRootType)
+                .GroupBy(static entry => entry.Record.Identity)
+                .Select(static group => group.Last().Record)
+                .FirstOrDefault(record => !record.IsRemoved && record.SerializedValue == serializedNaturalKey);
+
+            if (present is not null)
+            {
+                return Task.FromResult(present);
+            }
+
+            var record = new NaturalKeyRecord(Guid.NewGuid(), serializedNaturalKey, ++this.checkpoint, IsRemoved: false);
+            this.store.Add(new Entry(aggregateRootType, record));
+
+            return Task.FromResult(record);
         }
     }
 

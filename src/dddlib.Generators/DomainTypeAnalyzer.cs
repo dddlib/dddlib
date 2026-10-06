@@ -23,7 +23,9 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
         DiagnosticDescriptors.NaturalKeyDoesNotRoundTrip,
         DiagnosticDescriptors.ValueObjectOfAnotherType,
         DiagnosticDescriptors.ValueObjectPropertyComparedByReference,
-        DiagnosticDescriptors.TypeShouldBePartial);
+        DiagnosticDescriptors.TypeShouldBePartial,
+        DiagnosticDescriptors.SealedEntity,
+        DiagnosticDescriptors.InaccessibleReconstitutionConstructor);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -88,6 +90,28 @@ public sealed class DomainTypeAnalyzer : DiagnosticAnalyzer
         if (kind == DomainTypeKind.AggregateRoot)
         {
             AnalyzeNaturalKeyTypes(context, type, known, bootstrapper);
+        }
+
+        if (kind is DomainTypeKind.AggregateRoot or DomainTypeKind.Entity && type.IsSealed)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                DiagnosticDescriptors.SealedEntity,
+                location,
+                kind == DomainTypeKind.AggregateRoot ? "aggregate root" : "entity",
+                type.ToDisplayString()));
+        }
+
+        // a sealed aggregate root is reported by DDDLIB025 instead
+        if (kind == DomainTypeKind.AggregateRoot &&
+            !type.IsSealed &&
+            type.InstanceConstructors.FirstOrDefault(static constructor => constructor.Parameters.Length == 0) is
+                { DeclaredAccessibility: Accessibility.Private or Accessibility.ProtectedAndInternal } constructor)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                DiagnosticDescriptors.InaccessibleReconstitutionConstructor,
+                constructor.Locations.FirstOrDefault() ?? location,
+                type.ToDisplayString(),
+                constructor.DeclaredAccessibility == Accessibility.Private ? "private" : "private protected"));
         }
 
         if (kind == DomainTypeKind.AggregateRoot && !type.IsAbstract)

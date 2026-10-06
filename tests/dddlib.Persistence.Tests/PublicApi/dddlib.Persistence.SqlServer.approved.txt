@@ -23,10 +23,11 @@ namespace dddlib.Persistence.SqlServer
         protected override System.Threading.Tasks.Task<dddlib.Persistence.Sdk.MementoResult?> LoadAsync(System.Guid id, System.Threading.CancellationToken cancellationToken) { }
         protected override System.Threading.Tasks.Task<string> SaveAsync(System.Guid id, object memento, System.Collections.Generic.IReadOnlyList<object> events, string? preCommitState, System.Threading.CancellationToken cancellationToken) { }
     }
-    public sealed class SqlServerNaturalKeyRepository : dddlib.Persistence.Sdk.INaturalKeyRepository
+    public sealed class SqlServerNaturalKeyRepository : dddlib.Persistence.Sdk.INaturalKeyRepository, dddlib.Persistence.Sdk.IUniqueNaturalKeyRepository
     {
         public SqlServerNaturalKeyRepository(string connectionString, string schema = "dbo") { }
         public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<dddlib.Persistence.Sdk.NaturalKeyRecord>> GetNaturalKeysAsync(System.Type aggregateRootType, long checkpoint, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.NaturalKeyRecord> GetOrAddNaturalKeyAsync(System.Type aggregateRootType, string serializedNaturalKey, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task RemoveAsync(System.Guid naturalKeyIdentity, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.NaturalKeyRecord?> TryAddNaturalKeyAsync(System.Type aggregateRootType, string serializedNaturalKey, long checkpoint, System.Threading.CancellationToken cancellationToken = default) { }
     }

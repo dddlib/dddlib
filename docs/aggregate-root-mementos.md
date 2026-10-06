@@ -14,7 +14,7 @@ overridden, and a private class named `Memento` represents the state.
 public partial class Car : dddlib.AggregateRoot
 {
     // used for reconstitution only
-    protected internal Car()
+    protected Car()
     {
     }
 

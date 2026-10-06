@@ -25,7 +25,7 @@ dotnet add package dddlib
 public partial class Car : dddlib.AggregateRoot
 {
     // used for reconstitution only
-    protected internal Car()
+    protected Car()
     {
     }
 
