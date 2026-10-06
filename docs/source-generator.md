@@ -76,6 +76,17 @@ Code that breaks a rule on purpose, as a test of the runtime check might, can di
 | DDDLIB013 | Add the missing `GetState` or `SetState` override as a stub |
 | DDDLIB014 | Add a `protected` parameterless constructor (`private` on a sealed type), after the last constructor |
 
+## Suppressions
+
+Entities and aggregate roots are designed for inheritance, so dddlib suppresses the advice of the .NET analyzers to
+seal them.
+
+| Id | Suppresses | Suppressed when |
+|---|---|---|
+| DDDLIB026 | CA1852 | The type that could be sealed is an entity or an aggregate root |
+
+A suppressed diagnostic is still recorded, with its justification, in a SARIF log.
+
 ## Requirements
 
 The generator targets the Roslyn version shipped with the .NET 9.0.300 SDK and Visual Studio 17.14, and loads in any
