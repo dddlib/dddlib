@@ -138,8 +138,10 @@ public class ProjectionRunnerTests
 
         public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
         {
+            // counted once the timer is registered, so that advancing the clock is certain to reach it
+            var timer = base.CreateTimer(callback, state, dueTime, period);
             Interlocked.Increment(ref this.timers);
-            return base.CreateTimer(callback, state, dueTime, period);
+            return timer;
         }
     }
 
