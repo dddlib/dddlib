@@ -41,7 +41,23 @@ public abstract class SqlServerRepository<T> : Repository<T>
     /// saved with. Call it after writing the memento and before committing, so that a dispatcher never sees events
     /// for a memento that was not saved. Does nothing when there are no events.
     /// </summary>
-    protected async Task AppendEventsAsync(SqlTransaction transaction, Guid id, IReadOnlyList<object> events, string state, CancellationToken cancellationToken)
+    protected Task AppendEventsAsync(SqlTransaction transaction, Guid id, IReadOnlyList<object> events, string state, CancellationToken cancellationToken) =>
+        this.AppendAsync(transaction, id, SqlServerEvents.CreateMetadata(), events, state, cancellationToken);
+
+    /// <summary>
+    /// Appends the events as <see cref="AppendEventsAsync(SqlTransaction, Guid, IReadOnlyList{object}, string, CancellationToken)"/>
+    /// does, with <paramref name="metadata"/> that the events do not carry, such as a tenant, stored beside dddlib's
+    /// own <c>hostname</c> and <c>timestamp</c> entries and given to the event dispatcher with each event. A key equal
+    /// to either of dddlib's is an <see cref="ArgumentException"/>, and nothing is written.
+    /// </summary>
+    protected Task AppendEventsAsync(SqlTransaction transaction, Guid id, IReadOnlyDictionary<string, string> metadata, IReadOnlyList<object> events, string state, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(metadata);
+
+        return this.AppendAsync(transaction, id, SqlServerEvents.CreateMetadata(metadata), events, state, cancellationToken);
+    }
+
+    private async Task AppendAsync(SqlTransaction transaction, Guid id, string metadata, IReadOnlyList<object> events, string state, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(transaction);
         ArgumentNullException.ThrowIfNull(events);
@@ -63,7 +79,7 @@ public abstract class SqlServerRepository<T> : Repository<T>
         command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = id;
         SqlServerEvents.AddEventsParameter(command, this.schema, records);
         command.Parameters.Add("@State", SqlDbType.VarChar, 36).Value = state;
-        command.Parameters.Add("@Metadata", SqlDbType.NVarChar, -1).Value = SqlServerEvents.CreateMetadata();
+        command.Parameters.Add("@Metadata", SqlDbType.NVarChar, -1).Value = metadata;
         command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = Guid.NewGuid();
 
         try

@@ -98,6 +98,16 @@ public sealed class CarRepository(string connectionString)
 `AppendEventsAsync` calls the `AppendEvents` procedure, which takes the same locks as the event
 store's commit so that sequence numbers reflect commit order.
 
+To give the [event dispatcher](event-dispatcher.md#receiving-events) context that the events do not carry, such as the
+tenant of the request that saved them, pass metadata before the events:
+
+```csharp
+await this.AppendEventsAsync(transaction, id, new Dictionary<string, string> { ["tenant"] = tenant }, events, state, cancellationToken);
+```
+
+It is stored with each event beside dddlib's own `hostname` and `timestamp` entries, and the dispatcher receives all of
+them. A key of `hostname` or `timestamp` is an `ArgumentException`, thrown before anything is written.
+
 ### Custom identity map
 
 By default the repository maps natural keys to stream identities with `SqlServerIdentityMap`, which writes to the

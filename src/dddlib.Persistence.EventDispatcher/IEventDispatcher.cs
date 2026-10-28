@@ -6,5 +6,10 @@ namespace dddlib.Persistence.EventDispatcher;
 /// </summary>
 public interface IEventDispatcher
 {
-    Task DispatchAsync(long sequenceNumber, object @event, CancellationToken cancellationToken);
+    /// <summary>
+    /// Dispatches the event. <paramref name="metadata"/> is what the event was stored with: on SQL Server, the
+    /// <c>hostname</c> and <c>timestamp</c> of the save and any entries the repository appended with the events; in
+    /// memory, nothing.
+    /// </summary>
+    Task DispatchAsync(long sequenceNumber, IReadOnlyDictionary<string, string> metadata, object @event, CancellationToken cancellationToken);
 }

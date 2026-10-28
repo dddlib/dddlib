@@ -44,6 +44,12 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   case-insensitive comparer, is still compared by the identity map with its own equality, now with a short random
   backoff between attempts. Removals retry conflicts in SQL. Schema version 3 (`dddlib03.sql`, expand only): every
   SQL Server package now requires version 3.
+- Event metadata: a `SqlServerRepository<T>` can append metadata that the events do not carry, such as a tenant,
+  through an `AppendEventsAsync` overload. It is stored beside dddlib's `hostname` and `timestamp`, and the event
+  dispatcher receives all of it: `IEventDispatcher.DispatchAsync` now takes the metadata before the event (breaking),
+  batches hold `DispatchedEvent`s, and `CustomEventDispatcher` takes a delegate with the metadata too. Schema version 4
+  (`dddlib04.sql`) adds the metadata to `GetNextBatch`'s result, after the columns older dispatchers read: every SQL
+  Server package now requires version 4 (issue 52).
 - Dependencies: the SQL Server packages depend on `System.Security.Cryptography.Pkcs` 9.0.21, above the 9.0.18 that
   `Microsoft.Data.SqlClient` 7.1 brings, for the .NET denial of service vulnerabilities CVE-2026-84008 and
   CVE-2026-70162.

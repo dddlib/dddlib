@@ -1,4 +1,6 @@
+using System.Buffers;
 using System.Data;
+using System.Text;
 using System.Text.Json;
 using dddlib.Sdk;
 using Microsoft.Data.SqlClient;
@@ -12,6 +14,9 @@ namespace dddlib.Persistence.SqlServer;
 /// </summary>
 internal static class SqlServerEvents
 {
+    private const string HostnameKey = "hostname";
+    private const string TimestampKey = "timestamp";
+
     private static readonly string Hostname = Environment.MachineName;
     private static readonly SqlMetaData[] EventColumns =
     [
@@ -46,8 +51,43 @@ internal static class SqlServerEvents
         parameter.Value = records;
     }
 
-    public static string CreateMetadata() =>
-        JsonSerializer.Serialize(new Metadata(Hostname, DateTime.UtcNow), JsonSerialization.Options);
+    /// <summary>
+    /// Creates the metadata stored with the events: one JSON object with the hostname and timestamp, and the caller's
+    /// entries beside them. A caller's entry cannot replace the hostname or timestamp.
+    /// </summary>
+    public static string CreateMetadata(IReadOnlyDictionary<string, string>? metadata = null)
+    {
+        if (metadata is not null)
+        {
+            foreach (var (key, value) in metadata)
+            {
+                if (key is HostnameKey or TimestampKey)
+                {
+                    throw new ArgumentException($"The metadata key '{key}' is reserved for dddlib.", nameof(metadata));
+                }
 
-    private sealed record Metadata(string Hostname, DateTime Timestamp);
+                if (value is null)
+                {
+                    throw new ArgumentException($"The metadata entry '{key}' has no value.", nameof(metadata));
+                }
+            }
+        }
+
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Encoder = JsonSerialization.Options.Encoder }))
+        {
+            writer.WriteStartObject();
+            writer.WriteString(HostnameKey, Hostname);
+            writer.WritePropertyName(TimestampKey);
+            JsonSerializer.Serialize(writer, DateTime.UtcNow, JsonSerialization.Options);
+            foreach (var (key, value) in metadata ?? new Dictionary<string, string>())
+            {
+                writer.WriteString(key, value);
+            }
+
+            writer.WriteEndObject();
+        }
+
+        return Encoding.UTF8.GetString(buffer.WrittenSpan);
+    }
 }
