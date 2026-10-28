@@ -44,3 +44,6 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   case-insensitive comparer, is still compared by the identity map with its own equality, now with a short random
   backoff between attempts. Removals retry conflicts in SQL. Schema version 3 (`dddlib03.sql`, expand only): every
   SQL Server package now requires version 3.
+- Dependencies: the SQL Server packages depend on `System.Security.Cryptography.Pkcs` 9.0.21, above the 9.0.18 that
+  `Microsoft.Data.SqlClient` 7.1 brings, for the .NET denial of service vulnerabilities CVE-2026-84008 and
+  CVE-2026-70162.
