@@ -6,17 +6,17 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TUnitVersion>1.71.0</TUnitVersion>
+    <TUnitVersion>1.76.28</TUnitVersion>
   </PropertyGroup>
 
   <ItemGroup Label="App Dependencies">
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.0" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.1" />
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="9.0.21" />
   </ItemGroup>
 
   <ItemGroup Label="Build Dependencies">
     <PackageVersion Include="MinVer" Version="8.0.0" />
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.401" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.403" />
   </ItemGroup>
 
   <ItemGroup Label="Generator Dependencies">
@@ -27,9 +27,9 @@
   </ItemGroup>
 
   <ItemGroup Label="Test Dependencies">
-    <PackageVersion Include="Testcontainers.MsSql" Version="4.15.0" />
+    <PackageVersion Include="Testcontainers.MsSql" Version="4.16.0" />
     <PackageVersion Include="PublicApiGenerator" Version="11.5.4" />
-    <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
+    <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.11.0" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageVersion Include="TUnit" Version="$(TUnitVersion)" />
     <PackageVersion Include="TUnit.Core" Version="$(TUnitVersion)" />
