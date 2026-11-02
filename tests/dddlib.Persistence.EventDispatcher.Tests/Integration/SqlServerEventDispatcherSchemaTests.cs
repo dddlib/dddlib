@@ -112,7 +112,7 @@ public class SqlServerEventDispatcherSchemaTests : SqlServerIntegration
         var upgraded = await SqlServerEventDispatcherSchema.EnsureAsync(this.ConnectionString, schema);
         var batch = await new SqlServerEventBatchStore(this.ConnectionString, schema).GetNextBatchAsync(Guid.NewGuid(), 10, TimeSpan.FromSeconds(30));
 
-        await Assert.That(upgraded).IsEqualTo(new SqlServerEventDispatcherSchemaVersion(schema, 4, 4, 1));
+        await Assert.That(upgraded).IsEqualTo(new SqlServerEventDispatcherSchemaVersion(schema, SqlServerSchemaInstaller.RequiredVersion, SqlServerSchemaInstaller.RequiredVersion, 1));
         await Assert.That(batch!.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo([1L, 2L]);
         await Assert.That(batch.Events[0].Metadata).IsEquivalentTo(new Dictionary<string, string> { ["hostname"] = "web-01", ["timestamp"] = "2026-10-01T00:00:00Z" });
         await Assert.That(batch.Events[1].Metadata).IsEmpty();
