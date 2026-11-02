@@ -53,8 +53,10 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
 - SQL Server: concurrent first saves no longer deadlock when they store types the database has not seen yet, such as
   new event types on a freshly created database. Registering a type in the `Types` table took range locks over the
   whole table, so two saves of different new types could deadlock, and the loser failed with a `SqlException`. Event
-  stores, repositories, snapshots and the identity map all registered types this way. Schema version 5
-  (`dddlib05.sql`) changes procedure bodies only: every SQL Server package now requires version 5 (issue 55).
+  stores, repositories, snapshots and the identity map all registered types this way. Concurrent adds and removals of
+  natural keys of one aggregate root type also take turns now: they collided on the type's checkpoints and retried
+  with no order, so under load the unluckiest waited long enough to time out. Schema version 5 (`dddlib05.sql`)
+  changes procedure bodies only: every SQL Server package now requires version 5 (issue 55).
 - Dependencies: the SQL Server packages depend on `System.Security.Cryptography.Pkcs` 9.0.21, above the 9.0.18 that
   `Microsoft.Data.SqlClient` 7.1 brings, for the .NET denial of service vulnerabilities CVE-2026-84008 and
   CVE-2026-70162.
