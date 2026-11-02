@@ -4,7 +4,8 @@ namespace dddlib.Persistence.EventDispatcher
     {
         public CustomEventDispatcher(System.Action<long, object> dispatch) { }
         public CustomEventDispatcher(System.Func<long, object, System.Threading.CancellationToken, System.Threading.Tasks.Task> dispatch) { }
-        public System.Threading.Tasks.Task DispatchAsync(long sequenceNumber, object @event, System.Threading.CancellationToken cancellationToken) { }
+        public CustomEventDispatcher(System.Func<long, System.Collections.Generic.IReadOnlyDictionary<string, string>, object, System.Threading.CancellationToken, System.Threading.Tasks.Task> dispatch) { }
+        public System.Threading.Tasks.Task DispatchAsync(long sequenceNumber, System.Collections.Generic.IReadOnlyDictionary<string, string> metadata, object @event, System.Threading.CancellationToken cancellationToken) { }
     }
     public sealed class EventDispatcherOptions
     {
@@ -17,7 +18,7 @@ namespace dddlib.Persistence.EventDispatcher
     }
     public interface IEventDispatcher
     {
-        System.Threading.Tasks.Task DispatchAsync(long sequenceNumber, object @event, System.Threading.CancellationToken cancellationToken);
+        System.Threading.Tasks.Task DispatchAsync(long sequenceNumber, System.Collections.Generic.IReadOnlyDictionary<string, string> metadata, object @event, System.Threading.CancellationToken cancellationToken);
     }
 }
 namespace dddlib.Persistence.EventDispatcher.Memory
@@ -44,10 +45,17 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
         public System.Exception Exception { get; }
         public long SequenceNumber { get; }
     }
+    public sealed class DispatchedEvent : System.IEquatable<dddlib.Persistence.EventDispatcher.Sdk.DispatchedEvent>
+    {
+        public DispatchedEvent(long SequenceNumber, System.Collections.Generic.IReadOnlyDictionary<string, string> Metadata, object Event) { }
+        public object Event { get; init; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, string> Metadata { get; init; }
+        public long SequenceNumber { get; init; }
+    }
     public sealed class EventBatch : System.IEquatable<dddlib.Persistence.EventDispatcher.Sdk.EventBatch>
     {
-        public EventBatch(long Id, System.Collections.Generic.IReadOnlyList<dddlib.Persistence.Sdk.SequencedEvent> Events) { }
-        public System.Collections.Generic.IReadOnlyList<dddlib.Persistence.Sdk.SequencedEvent> Events { get; init; }
+        public EventBatch(long Id, System.Collections.Generic.IReadOnlyList<dddlib.Persistence.EventDispatcher.Sdk.DispatchedEvent> Events) { }
+        public System.Collections.Generic.IReadOnlyList<dddlib.Persistence.EventDispatcher.Sdk.DispatchedEvent> Events { get; init; }
         public long Id { get; init; }
     }
     public class EventDispatcher : System.IAsyncDisposable

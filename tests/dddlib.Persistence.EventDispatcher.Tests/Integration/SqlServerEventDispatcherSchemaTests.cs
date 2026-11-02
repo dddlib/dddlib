@@ -1,4 +1,6 @@
 using dddlib.Persistence.EventDispatcher.SqlServer;
+using dddlib.Persistence.SqlServer;
+using dddlib.Sdk;
 using dddlib.Tests.Support;
 
 namespace dddlib.Persistence.EventDispatcher.Tests.Integration;
@@ -84,6 +86,36 @@ public class SqlServerEventDispatcherSchemaTests : SqlServerIntegration
         await SqlServerEventDispatcherSchema.EnsureAsync(this.ConnectionString, schema);
 
         await Assert.That(await batchStore.GetNextBatchAsync(Guid.NewGuid(), 10, TimeSpan.FromSeconds(30))).IsNull();
+    }
+
+    private sealed class Event
+    {
+    }
+
+    // Version 4 reads the events' metadata for the dispatcher. Events stored before it have dddlib's entries only, or
+    // none (https://github.com/dddlib/dddlib/issues/52).
+    [Test]
+    public async Task UpgradesFromVersion3AndDispatchesTheEventsStoredBefore()
+    {
+        var schema = string.Concat("s", Guid.NewGuid().ToString("N"));
+        await SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, SqlServerSchemaInstaller.Scripts.Take(3).ToArray(), CancellationToken.None);
+        await this.Database.ExecuteScriptAsync($$"""
+            INSERT INTO [{{schema}}].[Types] ([Name]) VALUES ('{{typeof(Event).GetSerializedName()}}');
+            INSERT INTO [{{schema}}].[Streams] ([Id], [Revision], [State]) VALUES (NEWID(), 2, 'state');
+            INSERT INTO [{{schema}}].[Events] ([StreamLinkId], [StreamRevision], [TypeId], [Metadata], [Payload], [CorrelationId], [SequenceNumber])
+            SELECT [Stream].[LinkId], [Event].[StreamRevision], [Type].[Id], [Event].[Metadata], N'{}', NEWID(), [Event].[StreamRevision]
+            FROM [{{schema}}].[Streams] [Stream]
+                CROSS JOIN [{{schema}}].[Types] [Type]
+                CROSS JOIN (VALUES (1, N'{"hostname":"web-01","timestamp":"2026-10-01T00:00:00Z"}'), (2, NULL)) AS [Event] ([StreamRevision], [Metadata]);
+            """);
+
+        var upgraded = await SqlServerEventDispatcherSchema.EnsureAsync(this.ConnectionString, schema);
+        var batch = await new SqlServerEventBatchStore(this.ConnectionString, schema).GetNextBatchAsync(Guid.NewGuid(), 10, TimeSpan.FromSeconds(30));
+
+        await Assert.That(upgraded).IsEqualTo(new SqlServerEventDispatcherSchemaVersion(schema, 4, 4, 1));
+        await Assert.That(batch!.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo([1L, 2L]);
+        await Assert.That(batch.Events[0].Metadata).IsEquivalentTo(new Dictionary<string, string> { ["hostname"] = "web-01", ["timestamp"] = "2026-10-01T00:00:00Z" });
+        await Assert.That(batch.Events[1].Metadata).IsEmpty();
     }
 
     [Test]

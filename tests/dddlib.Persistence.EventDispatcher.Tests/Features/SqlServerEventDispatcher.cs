@@ -2,6 +2,7 @@ using dddlib.Configuration;
 using dddlib.Persistence.Sdk;
 using dddlib.Persistence.SqlServer;
 using dddlib.Tests.Support;
+using Microsoft.Data.SqlClient;
 
 namespace dddlib.Persistence.EventDispatcher.Tests.Features;
 
@@ -197,5 +198,208 @@ public abstract class SqlServerEventDispatcher : Feature
                 configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
             }
         }
+    }
+
+    // A repository with custom storage can append metadata the event does not carry, such as a tenant, and the
+    // dispatcher receives it with dddlib's own entries (https://github.com/dddlib/dddlib/issues/52).
+    public sealed class CanDispatchCallerMetadata : SqlServerEventDispatcher
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a SQL Server event dispatcher
+            var dispatched = new TaskCompletionSource<IReadOnlyDictionary<string, string>>();
+            await using var eventDispatcher = new SqlServer.SqlServerEventDispatcher(
+                this.ConnectionString,
+                new CustomEventDispatcher((sequenceNumber, metadata, @event, cancellationToken) =>
+                {
+                    dispatched.TrySetResult(metadata);
+                    return Task.CompletedTask;
+                }),
+                new EventDispatcherOptions { DispatcherId = Guid.NewGuid(), PollingInterval = TimeSpan.FromMilliseconds(100) });
+            eventDispatcher.Start();
+
+            // And a repository over the same database that appends the events with a tenant
+            var repository = new MetadataRepository<Subject>(this.ConnectionString, new Dictionary<string, string> { ["tenant"] = "acme" });
+
+            // When an instance of an aggregate root is saved to the repository
+            await repository.SaveAsync(new Subject("key"));
+
+            // Then the tenant is dispatched beside the hostname and timestamp
+            var metadata = await dispatched.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            await Assert.That(metadata.Keys).IsEquivalentTo(["hostname", "timestamp", "tenant"]);
+            await Assert.That(metadata["tenant"]).IsEqualTo("acme");
+            await Assert.That(metadata["hostname"]).IsEqualTo(Environment.MachineName);
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            protected override object? GetState() => this.Id;
+
+            protected override void SetState(object memento) => this.Id = memento.ToString();
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class CanDispatchWithoutCallerMetadata : SqlServerEventDispatcher
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a SQL Server event dispatcher
+            var dispatched = new TaskCompletionSource<IReadOnlyDictionary<string, string>>();
+            await using var eventDispatcher = new SqlServer.SqlServerEventDispatcher(
+                this.ConnectionString,
+                new CustomEventDispatcher((sequenceNumber, metadata, @event, cancellationToken) =>
+                {
+                    dispatched.TrySetResult(metadata);
+                    return Task.CompletedTask;
+                }),
+                new EventDispatcherOptions { DispatcherId = Guid.NewGuid(), PollingInterval = TimeSpan.FromMilliseconds(100) });
+            eventDispatcher.Start();
+
+            // And a memento repository over the same database
+            var repository = new SqlServerMementoRepository<Subject>(this.ConnectionString);
+
+            // When an instance of an aggregate root is saved to the repository
+            await repository.SaveAsync(new Subject("key"));
+
+            // Then only the hostname and timestamp are dispatched
+            var metadata = await dispatched.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            await Assert.That(metadata.Keys).IsEquivalentTo(["hostname", "timestamp"]);
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            protected override object? GetState() => this.Id;
+
+            protected override void SetState(object memento) => this.Id = memento.ToString();
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class CallerMetadataCannotReplaceDddlibsOwn : SqlServerEventDispatcher
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a repository that appends the events with a hostname of its own
+            var repository = new MetadataRepository<Subject>(this.ConnectionString, new Dictionary<string, string> { ["hostname"] = "web-01" });
+
+            // When an instance of an aggregate root is saved to the repository
+            var save = () => repository.SaveAsync(new Subject("key"));
+
+            // Then the save fails
+            await Assert.That(save).Throws<ArgumentException>().WithMessageContaining("The metadata key 'hostname' is reserved for dddlib.");
+
+            // And no event is written
+            await Assert.That(await new SqlServerEventStore(this.ConnectionString).GetLastSequenceNumberAsync()).IsEqualTo(0);
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            protected override object? GetState() => this.Id;
+
+            protected override void SetState(object memento) => this.Id = memento.ToString();
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    // Stores nothing but the events, which it appends with the metadata it was given.
+    private sealed class MetadataRepository<T>(string connectionString, IReadOnlyDictionary<string, string> metadata) : SqlServerRepository<T>(connectionString)
+        where T : AggregateRoot
+    {
+        protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
+        {
+            var state = Guid.NewGuid().ToString("N");
+
+            await using var connection = new SqlConnection(this.ConnectionString);
+            await connection.OpenAsync(cancellationToken);
+            await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
+            await this.AppendEventsAsync(transaction, id, metadata, events, state, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return state;
+        }
+
+        protected override Task<MementoResult?> LoadAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult<MementoResult?>(null);
     }
 }

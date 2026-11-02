@@ -82,6 +82,19 @@ public class MemoryEventBatchStoreTests
         await Assert.That(afterTimeout!.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo(first!.Events.Select(static e => e.SequenceNumber));
     }
 
+    // The in-memory event store keeps no metadata.
+    [Test]
+    public async Task EventsCarryEmptyMetadata()
+    {
+        var eventStore = new MemoryEventStore();
+        var batchStore = new MemoryEventBatchStore(eventStore);
+        await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }], Guid.NewGuid(), null);
+
+        var batch = await batchStore.GetNextBatchAsync(Guid.Empty, 50, TimeSpan.FromSeconds(30));
+
+        await Assert.That(batch!.Events[0].Metadata).IsEmpty();
+    }
+
     [Test]
     public async Task DispatcherRetriesAFailedBatchInOrder()
     {

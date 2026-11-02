@@ -39,7 +39,7 @@ using dddlib.Persistence.EventDispatcher;
 
 public sealed class CarNotifications : IEventDispatcher
 {
-    public Task DispatchAsync(long sequenceNumber, object @event, CancellationToken cancellationToken)
+    public Task DispatchAsync(long sequenceNumber, IReadOnlyDictionary<string, string> metadata, object @event, CancellationToken cancellationToken)
     {
         if (@event is CarRegistered registered)
         {
@@ -50,6 +50,11 @@ public sealed class CarNotifications : IEventDispatcher
     }
 }
 ```
+
+`metadata` is what the event was stored with. On SQL Server that is the `hostname` and `timestamp` of the save, and
+any entries a [custom repository](memento-persistence.md#custom-storage) appended with the events, such as a tenant
+that the events themselves do not carry. The in-memory store keeps none, and an entry stored as anything other than a
+string is left out. `CustomEventDispatcher` takes a delegate with or without the metadata.
 
 ## Hosting
 

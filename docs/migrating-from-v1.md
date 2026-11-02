@@ -53,8 +53,8 @@ is no compatibility with data written by v1.
 ## Event dispatcher
 
 `dddlib.Persistence.EventDispatcher` is back with the same batch model but polls the event store instead of using
-`SqlDependency`, which Azure SQL does not support. `IEventDispatcher.Dispatch` is now `DispatchAsync` with a
-`CancellationToken`; the host takes `EventDispatcherOptions` and runs with `RunAsync(token)` or `Start`/`StopAsync`;
+`SqlDependency`, which Azure SQL does not support. `IEventDispatcher.Dispatch` is now `DispatchAsync` with the
+event's metadata and a `CancellationToken`; the host takes `EventDispatcherOptions` and runs with `RunAsync(token)` or `Start`/`StopAsync`;
 the SQL Server host is in **dddlib.Persistence.EventDispatcher.SqlServer** and its tables are part of the one dddlib
 schema. See [Event dispatcher](persistence/event-dispatcher.md).
 

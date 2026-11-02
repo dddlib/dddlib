@@ -269,10 +269,13 @@ Exit: benchmarks (optional BenchmarkDotNet project) show the generated paths all
 - `dddlib.TestFramework` package (`src/dddlib.TestFramework`): the `GetUncommittedEvents`, `GetMemento` and
   `GetRevision` extension methods and `ModelValidator`, moved out of the test support project and given
   `InternalsVisibleTo` access to the core. The test support project consumes it.
-- Publishing: Cameron has lost nuget.org access (support ticket raised, 2026-09-29). Until it is restored, packages
-  are pushed as MinVer prereleases to a private GitHub Packages feed from GitHub Actions, which needs the repository
-  on GitHub (no remote exists yet) and a token with `write:packages`. nuget.org publishing is added when access
-  returns; the package ids stay `dddlib`, `dddlib.Persistence`, `dddlib.TestFramework`.
+- Publishing: changed 2026-10-06 when nuget.org access was restored (it was lost 2026-09-29, when packages went to a
+  GitHub Packages feed instead). `v*` tags publish to nuget.org from the `publish-nuget` job in `ci.yml` through
+  trusted publishing (`NuGet/login`, GitHub OIDC, no stored API key; the nuget.org policy names `ci.yml` and the
+  `nuget` environment, and the `NUGET_USER` secret holds the nuget.org profile name). Pushes to `main` still publish
+  prereleases to GitHub Packages only. The packages are pure managed `net10.0` assemblies, so there are no
+  RID-specific builds. The ids `dddlib`, `dddlib.Persistence` and `dddlib.Persistence.EventDispatcher` continue the
+  v1 packages; the other five are new.
 
 ### Phase 6: event dispatcher
 

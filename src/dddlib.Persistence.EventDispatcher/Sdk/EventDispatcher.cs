@@ -117,7 +117,7 @@ public class EventDispatcher : IAsyncDisposable
         {
             try
             {
-                await this.dispatcher.DispatchAsync(@event.SequenceNumber, @event.Event, cancellationToken).ConfigureAwait(false);
+                await this.dispatcher.DispatchAsync(@event.SequenceNumber, @event.Metadata, @event.Event, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
