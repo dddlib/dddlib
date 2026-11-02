@@ -50,6 +50,11 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   batches hold `DispatchedEvent`s, and `CustomEventDispatcher` takes a delegate with the metadata too. Schema version 4
   (`dddlib04.sql`) adds the metadata to `GetNextBatch`'s result, after the columns older dispatchers read: every SQL
   Server package now requires version 4 (issue 52).
+- SQL Server: concurrent first saves no longer deadlock when they store types the database has not seen yet, such as
+  new event types on a freshly created database. Registering a type in the `Types` table took range locks over the
+  whole table, so two saves of different new types could deadlock, and the loser failed with a `SqlException`. Event
+  stores, repositories, snapshots and the identity map all registered types this way. Schema version 5
+  (`dddlib05.sql`) changes procedure bodies only: every SQL Server package now requires version 5 (issue 55).
 - Dependencies: the SQL Server packages depend on `System.Security.Cryptography.Pkcs` 9.0.21, above the 9.0.18 that
   `Microsoft.Data.SqlClient` 7.1 brings, for the .NET denial of service vulnerabilities CVE-2026-84008 and
   CVE-2026-70162.
