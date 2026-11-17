@@ -3,6 +3,7 @@ using dddlib.Persistence.SqlServer;
 using dddlib.Persistence.Sdk;
 using dddlib.TestFramework;
 using dddlib.Tests.Support;
+using TUnit.Assertions.Enums;
 
 namespace dddlib.Persistence.Tests.Features;
 
@@ -668,6 +669,654 @@ public abstract class SqlServerEventPersistence : SqlServerFeature
             {
                 configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
             }
+        }
+    }
+
+    public sealed class SaveManyAndLoad : SqlServerEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given two new instances of an aggregate root
+            var first = new Subject("first");
+            var second = new Subject("second");
+
+            // When both instances are saved to the repository together
+            await this.Repository.SaveAsync([first, second]);
+
+            // Then each instance loads as it was saved
+            var loadedFirst = await this.Repository.LoadAsync<Subject>("first");
+            var loadedSecond = await this.Repository.LoadAsync<Subject>("second");
+            await Assert.That(loadedFirst).IsEqualTo(first);
+            await Assert.That(loadedSecond).IsEqualTo(second);
+
+            // And their revisions should be equal
+            await Assert.That(loadedFirst.GetRevision()).IsEqualTo(first.GetRevision());
+            await Assert.That(loadedSecond.GetRevision()).IsEqualTo(second.GetRevision());
+
+            // And the saved instances have no uncommitted events
+            await Assert.That(first.GetUncommittedEvents()).IsEmpty();
+            await Assert.That(second.GetUncommittedEvents()).IsEmpty();
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class SaveManyOfDifferentTypes : SqlServerEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given new instances of two types of aggregate root
+            var subject = new Subject("subject");
+            var other = new Other(7);
+
+            // When both instances are saved to the repository together
+            await this.Repository.SaveAsync([subject, other]);
+
+            // Then each instance loads as it was saved
+            var loadedSubject = await this.Repository.LoadAsync<Subject>("subject");
+            var loadedOther = await this.Repository.LoadAsync<Other>(7);
+            await Assert.That(loadedSubject).IsEqualTo(subject);
+            await Assert.That(loadedOther).IsEqualTo(other);
+            await Assert.That(loadedSubject.GetRevision()).IsEqualTo(subject.GetRevision());
+            await Assert.That(loadedOther.GetRevision()).IsEqualTo(other.GetRevision());
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        public class Other : AggregateRoot
+        {
+            public Other(int number)
+            {
+                this.Apply(new NewOther { Number = number });
+            }
+
+            internal Other()
+            {
+            }
+
+            [NaturalKey]
+            public int Number { get; private set; }
+
+            private void Handle(NewOther @event) => this.Number = @event.Number;
+        }
+
+        public class NewOther
+        {
+            public int Number { get; set; }
+        }
+
+        private sealed class SubjectBootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+
+        private sealed class OtherBootStrapper : IBootstrap<Other>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Other>().ToReconstituteUsing(() => new Other());
+            }
+        }
+    }
+
+    public sealed class SaveManyMixesNewAndExistingRoots : SqlServerEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given an instance of an aggregate root that has been saved
+            var existing = new Subject("existing");
+            await this.Repository.SaveAsync(existing);
+
+            // And something happened to that instance
+            existing.DoSomething();
+
+            // And a new instance
+            var created = new Subject("created");
+
+            // When both instances are saved to the repository together
+            await this.Repository.SaveAsync([existing, created]);
+
+            // Then the existing instance loads with the change
+            var loadedExisting = await this.Repository.LoadAsync<Subject>("existing");
+            await Assert.That(loadedExisting.Changes).IsEqualTo(1);
+            await Assert.That(loadedExisting.GetRevision()).IsEqualTo(2);
+
+            // And the new instance loads as it was saved
+            var loadedCreated = await this.Repository.LoadAsync<Subject>("created");
+            await Assert.That(loadedCreated.GetRevision()).IsEqualTo(1);
+
+            // And the existing instance can be saved again
+            existing.DoSomething();
+            await this.Repository.SaveAsync(existing);
+            await Assert.That((await this.Repository.LoadAsync<Subject>("existing")).Changes).IsEqualTo(2);
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            public int Changes { get; private set; }
+
+            public void DoSomething() => this.Apply(new SubjectDidSomething { Id = this.Id });
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+
+            private void Handle(SubjectDidSomething @event) => this.Changes++;
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        public class SubjectDidSomething
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class SaveManyIsAllOrNothing : SqlServerEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given an instance of an aggregate root that has been saved
+            var stale = new Subject("stale");
+            await this.Repository.SaveAsync(stale);
+
+            // And another copy of it was loaded, changed and saved
+            var winner = await this.Repository.LoadAsync<Subject>("stale");
+            winner.DoSomething();
+            await this.Repository.SaveAsync(winner);
+
+            // And the first instance was changed too
+            stale.DoSomething();
+
+            // And a new instance
+            var created = new Subject("created");
+
+            // When both instances are saved to the repository together
+            Func<Task> save = () => this.Repository.SaveAsync([created, stale]);
+
+            // Then a concurrency exception names the stale instance
+            await Assert.That(save)
+                .Throws<ConcurrencyException>()
+                .WithMessageContaining($"'{typeof(Subject)}' with natural key 'stale'");
+
+            // And the new instance was not saved
+            await Assert.That(() => (Task)this.Repository.LoadAsync<Subject>("created")).Throws<AggregateRootNotFoundException>();
+
+            // And the stored instance has only the winning change
+            var loaded = await this.Repository.LoadAsync<Subject>("stale");
+            await Assert.That(loaded.Changes).IsEqualTo(1);
+            await Assert.That(loaded.GetRevision()).IsEqualTo(2);
+
+            // And neither instance's events were committed
+            await Assert.That(created.GetUncommittedEvents()).Count().IsEqualTo(1);
+            await Assert.That(stale.GetUncommittedEvents()).Count().IsEqualTo(1);
+
+            // And the new instance can still be saved on its own
+            await this.Repository.SaveAsync(created);
+            await Assert.That(await this.Repository.LoadAsync<Subject>("created")).IsEqualTo(created);
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            public int Changes { get; private set; }
+
+            public void DoSomething() => this.Apply(new SubjectDidSomething { Id = this.Id });
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+
+            private void Handle(SubjectDidSomething @event) => this.Changes++;
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        public class SubjectDidSomething
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class SaveManySharesTheCorrelationId : SqlServerEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given two new instances of an aggregate root and a correlation id
+            var first = new Subject("first");
+            var second = new Subject("second");
+            var correlationId = Guid.NewGuid();
+
+            // When both instances are saved to the repository together with that correlation id
+            await this.Repository.SaveAsync([first, second], correlationId);
+
+            // Then every event carries that correlation id
+            var page = await ((IEventFeed)this.EventStore).ReadEventsAsync(0, 10);
+            await Assert.That(page.Events).Count().IsEqualTo(2);
+            await Assert.That(page.Events.Select(static e => e.CorrelationId)).IsEquivalentTo([correlationId, correlationId]);
+
+            // And the events follow the order of the instances, with contiguous sequence numbers
+            await Assert.That(page.Events.Select(static e => ((NewSubject)e.Event).Id!)).IsEquivalentTo(["first", "second"], CollectionOrdering.Matching);
+            await Assert.That(page.Events[1].SequenceNumber).IsEqualTo(page.Events[0].SequenceNumber + 1);
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class SaveManyLeavesOutUnchangedRoots : SqlServerEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given an instance of an aggregate root that has been saved and loaded without changes
+            await this.Repository.SaveAsync(new Subject("unchanged"));
+            var unchanged = await this.Repository.LoadAsync<Subject>("unchanged");
+
+            // And a new instance
+            var created = new Subject("created");
+
+            // When both instances are saved to the repository together
+            await this.Repository.SaveAsync([unchanged, created]);
+
+            // Then only the new instance's event was stored
+            var page = await ((IEventFeed)this.EventStore).ReadEventsAsync(0, 10);
+            await Assert.That(page.Events.Select(static e => ((NewSubject)e.Event).Id!)).IsEquivalentTo(["unchanged", "created"], CollectionOrdering.Matching);
+
+            // And the unchanged instance can still be changed and saved
+            var reloaded = await this.Repository.LoadAsync<Subject>("unchanged");
+            await Assert.That(reloaded.GetRevision()).IsEqualTo(1);
+            await this.Repository.SaveAsync([unchanged]);
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class SaveManyOfNoneDoesNothing : SqlServerEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // When no instances are saved to the repository together
+            await this.Repository.SaveAsync([]);
+
+            // Then nothing was stored
+            var page = await ((IEventFeed)this.EventStore).ReadEventsAsync(0, 10);
+            await Assert.That(page.Events).IsEmpty();
+
+            // And a null collection is rejected
+            await Assert.That(() => this.Repository.SaveAsync((IReadOnlyCollection<AggregateRoot>)null!)).Throws<ArgumentNullException>();
+        }
+    }
+
+    public sealed class SaveManyValidatesEveryRootFirst : SqlServerEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a new instance of an aggregate root
+            var valid = new Subject("valid");
+
+            // And a new instance that has no events
+            var empty = Subject.WithoutEvents("empty");
+
+            // When both instances are saved to the repository together
+            Func<Task> save = () => this.Repository.SaveAsync([valid, empty]);
+
+            // Then the save fails because there are no events to save
+            await Assert.That(save).Throws<PersistenceException>().WithMessageContaining("there are no events to save");
+
+            // And not even the identity of the valid instance was registered
+            await Assert.That(await this.IdentityMap.TryGetAsync(typeof(Subject), typeof(string), "valid")).IsNull();
+
+            // And a null instance is rejected
+            await Assert.That(() => this.Repository.SaveAsync([valid, null!])).Throws<ArgumentException>();
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            public static Subject WithoutEvents(string id) => new() { Id = id };
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class SaveManyRejectsTheSameRootTwice : SqlServerEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a new instance of an aggregate root
+            var subject = new Subject("twice");
+
+            // When that instance is saved to the repository twice in one call
+            Func<Task> save = () => this.Repository.SaveAsync([subject, subject]);
+
+            // Then the save is rejected
+            await Assert.That(save).Throws<ArgumentException>();
+
+            // And nothing was saved
+            await Assert.That(() => (Task)this.Repository.LoadAsync<Subject>("twice")).Throws<AggregateRootNotFoundException>();
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class SaveManyRejectsTwoRootsWithOneNaturalKey : SqlServerEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given two new instances of an aggregate root with the same natural key
+            var first = new Subject("same");
+            var second = new Subject("same");
+
+            // When both instances are saved to the repository together
+            Func<Task> save = () => this.Repository.SaveAsync([first, second]);
+
+            // Then a concurrency exception names the natural key
+            await Assert.That(save)
+                .Throws<ConcurrencyException>()
+                .WithMessageContaining($"'{typeof(Subject)}' with natural key 'same'");
+
+            // And nothing was saved
+            await Assert.That(() => (Task)this.Repository.LoadAsync<Subject>("same")).Throws<AggregateRootNotFoundException>();
+            await Assert.That(first.GetUncommittedEvents()).Count().IsEqualTo(1);
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class SaveManyWithAnEventStoreThatCannotCommitStreams : SqlServerEventPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given an event store repository over an event store that commits one stream at a time
+            var repository = new EventStoreRepository(this.IdentityMap, new SingleStreamEventStore(this.EventStore), this.SnapshotStore);
+
+            // When two new instances are saved to that repository together
+            Func<Task> save = () => repository.SaveAsync([new Subject("first"), new Subject("second")]);
+
+            // Then the save is not supported, with advice
+            await Assert.That(save).Throws<NotSupportedException>().WithMessageContaining("To fix this issue");
+
+            // And a single instance can still be saved
+            var single = new Subject("single");
+            await repository.SaveAsync(single);
+            await Assert.That(await repository.LoadAsync<Subject>("single")).IsEqualTo(single);
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string id)
+            {
+                this.Apply(new NewSubject { Id = id });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? Id { get; private set; }
+
+            private void Handle(NewSubject @event) => this.Id = @event.Id;
+        }
+
+        public class NewSubject
+        {
+            public string? Id { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+
+        private sealed class SingleStreamEventStore(IEventStore inner) : IEventStore
+        {
+            public Task<StreamResult> GetStreamAsync(Guid streamId, int streamRevision, CancellationToken cancellationToken = default) =>
+                inner.GetStreamAsync(streamId, streamRevision, cancellationToken);
+
+            public Task<string> CommitStreamAsync(Guid streamId, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken = default) =>
+                inner.CommitStreamAsync(streamId, events, correlationId, preCommitState, cancellationToken);
         }
     }
 }

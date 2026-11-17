@@ -15,7 +15,10 @@ Both models share:
 - the same exceptions: `PersistenceException` for a model or configuration problem (with the underlying
   `RuntimeException` as its inner exception), `ConcurrencyException` when a save conflicts with the stored state, and
   `AggregateRootNotFoundException` when nothing exists for a natural key or its lifecycle has ended;
-- asynchronous APIs throughout. Every operation takes an optional `CancellationToken`.
+- asynchronous APIs throughout. Every operation takes an optional `CancellationToken`;
+- saving several aggregate roots, of any types, in one transaction: the event store repository takes a
+  [collection](event-sourcing-persistence.md#saving-several-aggregate-roots), and memento repositories add to a
+  [batch](memento-persistence.md#saving-several-aggregate-roots).
 
 The SQL Server implementations are in **dddlib.Persistence.SqlServer** and need their [schema](sql-server.md) installed
 before first use with `SqlServerSchema.EnsureAsync`. Nothing in the library changes the schema implicitly, and

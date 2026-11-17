@@ -8,12 +8,15 @@ namespace dddlib.Persistence.Memory;
 /// <summary>
 /// An in-process memento repository. Mementos are stored as JSON and deserialized on load so that a loaded
 /// aggregate root never shares state with the one that was saved. The events of each save are appended to a
-/// <see cref="MemoryEventStore"/> so that they can be dispatched.
+/// <see cref="MemoryEventStore"/> so that they can be dispatched. It takes part in a <see cref="MemoryBatch"/>.
 /// </summary>
-public class MemoryRepository<T> : Repository<T>
+public class MemoryRepository<T> : Repository<T>, IMemoryBatchParticipant
     where T : AggregateRoot
 {
+    private static long instances;
+
     private readonly Lock sync = new();
+    private readonly long batchOrder = Interlocked.Increment(ref instances);
     private readonly Dictionary<Guid, StoredMemento> store = [];
     private readonly MemoryEventStore eventStore;
 
@@ -39,32 +42,56 @@ public class MemoryRepository<T> : Repository<T>
         this.eventStore = eventStore;
     }
 
+    Lock IMemoryBatchParticipant.Sync => this.sync;
+
+    long IMemoryBatchParticipant.BatchOrder => this.batchOrder;
+
+    MemoryEventStore IMemoryBatchParticipant.EventStore => this.eventStore;
+
+    object IMemoryBatchParticipant.Stage(object memento) => Stage(memento);
+
+    string? IMemoryBatchParticipant.FindConflict(Guid id, string? preCommitState) => this.FindConflict(id, preCommitState);
+
+    void IMemoryBatchParticipant.Store(Guid id, object staged, string state) => this.store[id] = ((StoredMemento)staged) with { State = state };
+
+    internal override void AddToBatch(IBatch batch, BatchSave save)
+    {
+        if (batch is not MemoryBatch memoryBatch)
+        {
+            throw new ArgumentException(
+                string.Format(CultureInfo.InvariantCulture, "A memory repository saves aggregate roots only in a '{0}'.", typeof(MemoryBatch)),
+                nameof(batch));
+        }
+
+        memoryBatch.Add(save, this);
+    }
+
     protected override Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(memento);
         ArgumentNullException.ThrowIfNull(events);
 
+        // Everything that can fail is done before anything is stored.
+        var staged = Stage(memento);
+        var stagedEvents = MemoryEventStore.Stage(events);
+
         lock (this.sync)
         {
-            if (this.store.TryGetValue(id, out var existing))
+            var conflict = this.FindConflict(id, preCommitState);
+            if (conflict is not null)
             {
-                if (existing.State != preCommitState)
-                {
-                    throw new ConcurrencyException("Invalid state.");
-                }
-            }
-            else if (preCommitState is not null)
-            {
-                throw new ConcurrencyException("Aggregate root does not exist.");
+                throw new ConcurrencyException(conflict == DoesNotExist ? "Aggregate root does not exist." : "Invalid state.");
             }
 
-            var state = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
-            var stored = new StoredMemento(memento.GetType(), JsonSerializer.Serialize(memento, memento.GetType(), JsonSerialization.Options), state);
+            // The stream takes the memento's state token. The event store's lock is taken inside this repository's, as
+            // a MemoryBatch takes them.
+            var state = MemoryBatch.NewState();
+            lock (this.eventStore.Sync)
+            {
+                this.eventStore.AppendStaged(id, stagedEvents, Guid.NewGuid(), state);
+            }
 
-            // The events go first: once they are in, the memento write below cannot fail, so a dispatcher never sees
-            // events for a memento that was not saved. The stream takes the memento's state token.
-            this.eventStore.AppendEvents(id, events, state);
-            this.store[id] = stored;
+            this.store[id] = staged with { State = state };
 
             return Task.FromResult(state);
         }
@@ -82,6 +109,27 @@ public class MemoryRepository<T> : Repository<T>
             var memento = JsonSerializer.Deserialize(stored.Payload, stored.Type, JsonSerialization.Options)!;
             return Task.FromResult<MementoResult?>(new MementoResult(memento, stored.State));
         }
+    }
+
+    private const string DoesNotExist = "does not exist";
+
+    private static StoredMemento Stage(object memento) =>
+        new(memento.GetType(), JsonSerializer.Serialize(memento, memento.GetType(), JsonSerialization.Options), string.Empty);
+
+    // The caller holds the lock.
+    private string? FindConflict(Guid id, string? preCommitState)
+    {
+        if (!this.store.TryGetValue(id, out var existing))
+        {
+            return preCommitState is null ? null : DoesNotExist;
+        }
+
+        if (existing.State == preCommitState)
+        {
+            return null;
+        }
+
+        return preCommitState is null ? "already exists" : "has changed since it was loaded";
     }
 
     private sealed record StoredMemento(Type Type, string Payload, string State);

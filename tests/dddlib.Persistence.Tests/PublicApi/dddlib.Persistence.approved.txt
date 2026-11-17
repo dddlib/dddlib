@@ -12,10 +12,16 @@ namespace dddlib.Persistence
         public ConcurrencyException(string? message) { }
         public ConcurrencyException(string? message, System.Exception? innerException) { }
     }
+    public interface IBatch
+    {
+        System.Threading.Tasks.Task SaveAsync(System.Threading.CancellationToken cancellationToken = default);
+    }
     public interface IEventStoreRepository
     {
         System.Threading.Tasks.Task<T> LoadAsync<T>(object naturalKey, System.Threading.CancellationToken cancellationToken = default)
             where T : dddlib.AggregateRoot;
+        System.Threading.Tasks.Task SaveAsync(System.Collections.Generic.IReadOnlyCollection<dddlib.AggregateRoot> aggregateRoots, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task SaveAsync(System.Collections.Generic.IReadOnlyCollection<dddlib.AggregateRoot> aggregateRoots, System.Guid correlationId, System.Threading.CancellationToken cancellationToken = default);
         System.Threading.Tasks.Task SaveAsync<T>(T aggregateRoot, System.Threading.CancellationToken cancellationToken = default)
             where T : dddlib.AggregateRoot;
         System.Threading.Tasks.Task SaveAsync<T>(T aggregateRoot, System.Guid correlationId, System.Threading.CancellationToken cancellationToken = default)
@@ -36,10 +42,16 @@ namespace dddlib.Persistence
 }
 namespace dddlib.Persistence.Memory
 {
-    public sealed class MemoryEventStore : dddlib.Persistence.Sdk.IEventFeed, dddlib.Persistence.Sdk.IEventStore
+    public sealed class MemoryBatch : dddlib.Persistence.IBatch
+    {
+        public MemoryBatch() { }
+        public System.Threading.Tasks.Task SaveAsync(System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class MemoryEventStore : dddlib.Persistence.Sdk.IEventFeed, dddlib.Persistence.Sdk.IEventStore, dddlib.Persistence.Sdk.IMultiStreamEventStore
     {
         public MemoryEventStore() { }
         public System.Threading.Tasks.Task<string> CommitStreamAsync(System.Guid streamId, System.Collections.Generic.IReadOnlyList<object> events, System.Guid correlationId, string? preCommitState, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string>> CommitStreamsAsync(System.Collections.Generic.IReadOnlyList<dddlib.Persistence.Sdk.StreamCommit> commits, System.Guid correlationId, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<long> GetLastSequenceNumberAsync(System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.StreamResult> GetStreamAsync(System.Guid streamId, int streamRevision, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.EventPage> ReadEventsAsync(long afterSequenceNumber, int maxCount, System.Collections.Generic.IReadOnlyCollection<System.Type>? eventTypes = null, System.Threading.CancellationToken cancellationToken = default) { }
@@ -111,6 +123,8 @@ namespace dddlib.Persistence.Sdk
         public EventStoreRepository(dddlib.Persistence.Sdk.IIdentityMap identityMap, dddlib.Persistence.Sdk.IEventStore eventStore, dddlib.Persistence.Sdk.ISnapshotStore snapshotStore) { }
         public System.Threading.Tasks.Task<T> LoadAsync<T>(object naturalKey, System.Threading.CancellationToken cancellationToken = default)
             where T : dddlib.AggregateRoot { }
+        public System.Threading.Tasks.Task SaveAsync(System.Collections.Generic.IReadOnlyCollection<dddlib.AggregateRoot> aggregateRoots, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task SaveAsync(System.Collections.Generic.IReadOnlyCollection<dddlib.AggregateRoot> aggregateRoots, System.Guid correlationId, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task SaveAsync<T>(T aggregateRoot, System.Threading.CancellationToken cancellationToken = default)
             where T : dddlib.AggregateRoot { }
         public System.Threading.Tasks.Task SaveAsync<T>(T aggregateRoot, System.Guid correlationId, System.Threading.CancellationToken cancellationToken = default)
@@ -138,6 +152,10 @@ namespace dddlib.Persistence.Sdk
         System.Threading.Tasks.Task<System.Guid> GetOrAddAsync(System.Type aggregateRootType, System.Type naturalKeyType, object naturalKey, System.Threading.CancellationToken cancellationToken = default);
         System.Threading.Tasks.Task RemoveAsync(System.Guid identity, System.Threading.CancellationToken cancellationToken = default);
         System.Threading.Tasks.Task<System.Guid?> TryGetAsync(System.Type aggregateRootType, System.Type naturalKeyType, object naturalKey, System.Threading.CancellationToken cancellationToken = default);
+    }
+    public interface IMultiStreamEventStore : dddlib.Persistence.Sdk.IEventStore
+    {
+        System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string>> CommitStreamsAsync(System.Collections.Generic.IReadOnlyList<dddlib.Persistence.Sdk.StreamCommit> commits, System.Guid correlationId, System.Threading.CancellationToken cancellationToken = default);
     }
     public interface INaturalKeyRepository
     {
@@ -184,6 +202,7 @@ namespace dddlib.Persistence.Sdk
         where T : dddlib.AggregateRoot
     {
         protected Repository(dddlib.Persistence.Sdk.IIdentityMap identityMap) { }
+        public void Add(dddlib.Persistence.IBatch batch, T aggregateRoot) { }
         protected abstract System.Threading.Tasks.Task<dddlib.Persistence.Sdk.MementoResult?> LoadAsync(System.Guid id, System.Threading.CancellationToken cancellationToken);
         public System.Threading.Tasks.Task<T> LoadAsync(object naturalKey, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task SaveAsync(T aggregateRoot, System.Threading.CancellationToken cancellationToken = default) { }
@@ -200,6 +219,19 @@ namespace dddlib.Persistence.Sdk
         public Snapshot(int StreamRevision, object? Memento) { }
         public object? Memento { get; init; }
         public int StreamRevision { get; init; }
+    }
+    public sealed class StreamCommit : System.IEquatable<dddlib.Persistence.Sdk.StreamCommit>
+    {
+        public StreamCommit(System.Guid StreamId, System.Collections.Generic.IReadOnlyList<object> Events, string? PreCommitState) { }
+        public System.Collections.Generic.IReadOnlyList<object> Events { get; init; }
+        public string? PreCommitState { get; init; }
+        public System.Guid StreamId { get; init; }
+    }
+    public class StreamConcurrencyException : dddlib.Persistence.ConcurrencyException
+    {
+        public StreamConcurrencyException(System.Guid streamId, string? message) { }
+        public StreamConcurrencyException(System.Guid streamId, string? message, System.Exception? innerException) { }
+        public System.Guid StreamId { get; }
     }
     public sealed class StreamResult : System.IEquatable<dddlib.Persistence.Sdk.StreamResult>
     {

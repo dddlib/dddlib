@@ -25,6 +25,32 @@ internal static class SqlServerEvents
         new("Payload", SqlDbType.NVarChar, -1),
     ];
 
+    private static readonly SqlMetaData[] StreamEventColumns =
+    [
+        new("StreamId", SqlDbType.UniqueIdentifier),
+        new("Index", SqlDbType.Int),
+        new("TypeId", SqlDbType.Int),
+        new("Payload", SqlDbType.NVarChar, -1),
+    ];
+
+    /// <summary>
+    /// Adds the events of one stream to the records of a <c>StreamEventList</c> table-valued parameter, indexed from 1
+    /// within the stream.
+    /// </summary>
+    public static async Task AddStreamRecordsAsync(List<SqlDataRecord> records, Guid streamId, IReadOnlyList<object> events, SqlServerTypeCache typeCache, CancellationToken cancellationToken)
+    {
+        for (var index = 0; index < events.Count; index++)
+        {
+            var @event = events[index];
+            var record = new SqlDataRecord(StreamEventColumns);
+            record.SetGuid(0, streamId);
+            record.SetInt32(1, index + 1);
+            record.SetInt32(2, await typeCache.GetTypeIdAsync(@event.GetType(), cancellationToken).ConfigureAwait(false));
+            record.SetString(3, JsonSerializer.Serialize(@event, @event.GetType(), JsonSerialization.Options));
+            records.Add(record);
+        }
+    }
+
     public static async Task<List<SqlDataRecord>> ToRecordsAsync(IReadOnlyList<object> events, SqlServerTypeCache typeCache, CancellationToken cancellationToken)
     {
         var records = new List<SqlDataRecord>(events.Count);

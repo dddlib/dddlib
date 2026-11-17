@@ -57,6 +57,19 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   natural keys of one aggregate root type also take turns now: they collided on the type's checkpoints and retried
   with no order, so under load the unluckiest waited long enough to time out. Schema version 5 (`dddlib05.sql`)
   changes procedure bodies only: every SQL Server package now requires version 5 (issue 55).
+- Saving several aggregate roots in one transaction: every aggregate root is saved, or none is and none changes.
+  `IEventStoreRepository` gains `SaveAsync` overloads that take a collection of aggregate roots of any types, with one
+  correlation id for every event; the single-root overloads are unchanged. Event stores opt in through
+  `Sdk.IMultiStreamEventStore`, which both shipped stores implement. Memento repositories add aggregate roots of any
+  types to an `IBatch` with `Repository<T>.Add` (`IRepository<T>` is unchanged) and the batch saves them:
+  `MemoryBatch` for `MemoryRepository<T>`, `SqlServerBatch` for `SqlServerMementoRepository<T>` and custom storage. A
+  conflict is a `ConcurrencyException` naming the aggregate root's type and natural key. `SqlServerRepository<T>`
+  gains a transactional `SaveAsync(SqlTransaction, ...)` that writes only the memento, with `EventMetadata` for
+  metadata such as a tenant: dddlib owns the transaction, takes the aggregate root's lock first, appends the events and
+  commits, and only a repository written this way can join a batch. Repositories that override the original
+  `SaveAsync` keep working unchanged. Schema version 6 (`dddlib06.sql`, expand only) adds `CommitStreams`,
+  `LockStreams`, `SaveMementos`, `AppendStreams` and their table types: every SQL Server package now requires
+  version 6.
 - Dependencies: the SQL Server packages depend on `System.Security.Cryptography.Pkcs` 9.0.21, above the 9.0.18 that
   `Microsoft.Data.SqlClient` 7.1 brings, for the .NET denial of service vulnerabilities CVE-2026-84008 and
   CVE-2026-70162.

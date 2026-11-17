@@ -1,4 +1,6 @@
 using dddlib.Persistence.Memory;
+using dddlib.Persistence.Sdk;
+using TUnit.Assertions.Enums;
 
 namespace dddlib.Persistence.Tests.Integration;
 
@@ -198,6 +200,81 @@ public class MemoryEventStoreTests
 
         await Assert.That(empty).IsEqualTo(0);
         await Assert.That(two).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task CommitStreamsAssignsContiguousSequenceNumbers()
+    {
+        var eventStore = new MemoryEventStore();
+        var stream1Id = Guid.NewGuid();
+        var stream2Id = Guid.NewGuid();
+        var correlationId = Guid.NewGuid();
+        await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 0 }], Guid.NewGuid(), null);
+        var first = await eventStore.GetLastSequenceNumberAsync();
+
+        var states = await eventStore.CommitStreamsAsync(
+            [
+                new StreamCommit(stream1Id, [new Event { Id = 1 }, new Event { Id = 2 }], null),
+                new StreamCommit(stream2Id, [new Event { Id = 3 }], null),
+            ],
+            correlationId);
+        var page = await eventStore.ReadEventsAsync(first, 10);
+        var stream1 = await eventStore.GetStreamAsync(stream1Id, 0);
+        var stream2 = await eventStore.GetStreamAsync(stream2Id, 0);
+
+        await Assert.That(states).Count().IsEqualTo(2);
+        await Assert.That(stream1.State).IsEqualTo(states[0]);
+        await Assert.That(stream2.State).IsEqualTo(states[1]);
+        await Assert.That(page.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo([first + 1, first + 2, first + 3], CollectionOrdering.Matching);
+        await Assert.That(page.Events.Select(static e => ((Event)e.Event).Id)).IsEquivalentTo([1, 2, 3], CollectionOrdering.Matching);
+        await Assert.That(page.Events.Select(static e => e.StreamRevision)).IsEquivalentTo([1, 2, 1], CollectionOrdering.Matching);
+        await Assert.That(page.Events.Select(static e => e.CorrelationId).Distinct()).IsEquivalentTo([correlationId]);
+    }
+
+    [Test]
+    public async Task CommitStreamsNamesTheStaleStream()
+    {
+        var eventStore = new MemoryEventStore();
+        var currentId = Guid.NewGuid();
+        var staleId = Guid.NewGuid();
+        var current = await eventStore.CommitStreamAsync(currentId, [new Event { Id = 1 }], Guid.NewGuid(), null);
+        var stale = await eventStore.CommitStreamAsync(staleId, [new Event { Id = 2 }], Guid.NewGuid(), null);
+        await eventStore.CommitStreamAsync(staleId, [new Event { Id = 3 }], Guid.NewGuid(), stale);
+        var last = await eventStore.GetLastSequenceNumberAsync();
+
+        Func<Task> commit = () => eventStore.CommitStreamsAsync(
+            [
+                new StreamCommit(currentId, [new Event { Id = 4 }], current),
+                new StreamCommit(staleId, [new Event { Id = 5 }], stale),
+            ],
+            Guid.NewGuid());
+        Func<Task> create = () => eventStore.CommitStreamsAsync([new StreamCommit(currentId, [new Event { Id = 6 }], null)], Guid.NewGuid());
+
+        var exception = await Assert.That(commit).Throws<StreamConcurrencyException>();
+        var exists = await Assert.That(create).Throws<StreamConcurrencyException>();
+
+        await Assert.That(exception!.StreamId).IsEqualTo(staleId);
+        await Assert.That(exists!.StreamId).IsEqualTo(currentId);
+        await Assert.That(await eventStore.GetLastSequenceNumberAsync()).IsEqualTo(last);
+        await Assert.That((await eventStore.GetStreamAsync(currentId, 0)).State).IsEqualTo(current);
+    }
+
+    [Test]
+    public async Task CommitStreamsRejectsTheSameStreamTwice()
+    {
+        var eventStore = new MemoryEventStore();
+        var streamId = Guid.NewGuid();
+        var last = await eventStore.GetLastSequenceNumberAsync();
+
+        Func<Task> commit = () => eventStore.CommitStreamsAsync(
+            [
+                new StreamCommit(streamId, [new Event { Id = 1 }], null),
+                new StreamCommit(streamId, [new Event { Id = 2 }], null),
+            ],
+            Guid.NewGuid());
+
+        await Assert.That(commit).Throws<ArgumentException>();
+        await Assert.That(await eventStore.GetLastSequenceNumberAsync()).IsEqualTo(last);
     }
 
     private sealed class Event

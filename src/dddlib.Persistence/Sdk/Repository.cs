@@ -1,6 +1,7 @@
 using System.Globalization;
 using dddlib.Runtime;
 using dddlib.Sdk;
+using dddlib.Sdk.Configuration.Model;
 
 namespace dddlib.Persistence.Sdk;
 
@@ -49,6 +50,34 @@ public abstract class Repository<T> : IRepository<T>
     }
 
     /// <summary>
+    /// Adds the aggregate root to the batch, to be saved through this repository when the batch is saved. The memento
+    /// and events are taken then, not now. A repository takes part only in a batch of its own storage: a batch of
+    /// another kind is an <see cref="ArgumentException"/>, and a repository that cannot take part in batches throws a
+    /// <see cref="NotSupportedException"/>.
+    /// </summary>
+    public void Add(IBatch batch, T aggregateRoot)
+    {
+        ArgumentNullException.ThrowIfNull(batch);
+        ArgumentNullException.ThrowIfNull(aggregateRoot);
+
+        this.AddToBatch(batch, new BatchedSave(this, aggregateRoot));
+    }
+
+    /// <summary>
+    /// Adds a save to a batch of this repository's storage. Only the batches dddlib ships can drive a save, so this is
+    /// overridden by the repositories that ship with them.
+    /// </summary>
+    internal virtual void AddToBatch(IBatch batch, BatchSave save) =>
+        throw new NotSupportedException(
+            string.Format(
+                CultureInfo.InvariantCulture,
+                @"The repository of type '{0}' cannot save aggregate roots in a batch.
+To fix this issue, either:
+- save the aggregate root with the repository's 'SaveAsync' method, or
+- use a repository that can take part in a batch, such as 'dddlib.Persistence.Memory.MemoryRepository<T>'.",
+                this.GetType()));
+
+    /// <summary>
     /// Stores the memento under the identity and returns the new state token. <paramref name="preCommitState"/>
     /// is null for a new aggregate root; a mismatch with the stored state is a <see cref="ConcurrencyException"/>.
     /// <paramref name="events"/> are the uncommitted events of the aggregate root, possibly none. Storing them in the
@@ -62,27 +91,13 @@ public abstract class Repository<T> : IRepository<T>
     /// </summary>
     protected abstract Task<MementoResult?> LoadAsync(Guid id, CancellationToken cancellationToken);
 
-    private async Task SaveInternalAsync(T aggregateRoot, CancellationToken cancellationToken)
+    private static (AggregateRootType RuntimeType, object NaturalKey, object Memento, object[] Events) Prepare(AggregateRoot aggregateRoot)
     {
         var type = aggregateRoot.GetType();
         var runtimeType = Application.Current.GetAggregateRootType(type);
         runtimeType.ValidateForPersistence();
 
-        var preCommitState = aggregateRoot.State;
         var naturalKey = runtimeType.GetNaturalKey(aggregateRoot);
-        var naturalKeyType = runtimeType.NaturalKey!.PropertyType;
-
-        Guid id;
-        if (preCommitState is null)
-        {
-            id = await this.identityMap.GetOrAddAsync(runtimeType.RuntimeType, naturalKeyType, naturalKey, cancellationToken).ConfigureAwait(false);
-        }
-        else
-        {
-            id = await this.identityMap.TryGetAsync(runtimeType.RuntimeType, naturalKeyType, naturalKey, cancellationToken).ConfigureAwait(false)
-                ?? throw new ConcurrencyException("Aggregate root does not exist.");
-        }
-
         var memento = aggregateRoot.GetMemento()
             ?? throw new RuntimeException(
                 string.Format(
@@ -95,14 +110,39 @@ To fix this issue:
                 HelpLink = "https://github.com/dddlib/dddlib/blob/main/docs/aggregate-root-mementos.md",
             };
 
-        var events = aggregateRoot.GetUncommittedEvents().ToArray();
-        var postCommitState = await this.SaveAsync(id, memento, events, preCommitState, cancellationToken).ConfigureAwait(false);
-        aggregateRoot.CommitEvents(postCommitState);
+        return (runtimeType, naturalKey, memento, aggregateRoot.GetUncommittedEvents().ToArray());
+    }
 
+    // Returns null when an aggregate root that has been saved before no longer has an identity.
+    private async Task<Guid?> ResolveIdentityAsync(AggregateRootType runtimeType, object naturalKey, string? preCommitState, CancellationToken cancellationToken)
+    {
+        var naturalKeyType = runtimeType.NaturalKey!.PropertyType;
+
+        return preCommitState is null
+            ? await this.identityMap.GetOrAddAsync(runtimeType.RuntimeType, naturalKeyType, naturalKey, cancellationToken).ConfigureAwait(false)
+            : await this.identityMap.TryGetAsync(runtimeType.RuntimeType, naturalKeyType, naturalKey, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task CompleteAsync(AggregateRoot aggregateRoot, Guid id, CancellationToken cancellationToken)
+    {
         if (aggregateRoot.IsDestroyed)
         {
             await this.identityMap.RemoveAsync(id, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    private async Task SaveInternalAsync(T aggregateRoot, CancellationToken cancellationToken)
+    {
+        var (runtimeType, naturalKey, memento, events) = Prepare(aggregateRoot);
+        var preCommitState = aggregateRoot.State;
+
+        var id = await this.ResolveIdentityAsync(runtimeType, naturalKey, preCommitState, cancellationToken).ConfigureAwait(false)
+            ?? throw new ConcurrencyException("Aggregate root does not exist.");
+
+        var postCommitState = await this.SaveAsync(id, memento, events, preCommitState, cancellationToken).ConfigureAwait(false);
+        aggregateRoot.CommitEvents(postCommitState);
+
+        await this.CompleteAsync(aggregateRoot, id, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<T> LoadInternalAsync(object naturalKey, CancellationToken cancellationToken)
@@ -131,5 +171,22 @@ To fix this issue:
         }
 
         return aggregateRoot;
+    }
+
+    private sealed class BatchedSave(Repository<T> repository, T aggregateRoot) : BatchSave(aggregateRoot)
+    {
+        public override void Prepare()
+        {
+            (this.RuntimeType, this.NaturalKey, this.Memento, var events) = Repository<T>.Prepare(aggregateRoot);
+            this.Events = events;
+            this.PreCommitState = aggregateRoot.State;
+        }
+
+        public override async Task ResolveIdentityAsync(CancellationToken cancellationToken) =>
+            this.Id = await repository.ResolveIdentityAsync(this.RuntimeType, this.NaturalKey, this.PreCommitState, cancellationToken).ConfigureAwait(false)
+                ?? throw this.Conflict("does not exist");
+
+        public override Task CompleteAsync(CancellationToken cancellationToken) =>
+            repository.CompleteAsync(aggregateRoot, this.Id, cancellationToken);
     }
 }

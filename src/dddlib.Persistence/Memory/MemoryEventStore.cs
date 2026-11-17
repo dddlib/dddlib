@@ -9,8 +9,10 @@ namespace dddlib.Persistence.Memory;
 /// never shares event instances with the one that was saved, and so that serialization problems surface early. It is
 /// also the <see cref="IEventFeed"/> for projections over it.
 /// </summary>
-public sealed class MemoryEventStore : IEventStore, IEventFeed
+public sealed class MemoryEventStore : IMultiStreamEventStore, IEventFeed
 {
+    private static long instances;
+
     private readonly Lock sync = new();
     private readonly Dictionary<Guid, List<StoredEvent>> streams = [];
     private readonly List<StoredEvent> log = [];
@@ -46,24 +48,46 @@ public sealed class MemoryEventStore : IEventStore, IEventFeed
 
         lock (this.sync)
         {
-            if (!this.streams.TryGetValue(streamId, out var stream))
+            var conflict = this.FindConflict(streamId, preCommitState);
+            if (conflict is not null)
             {
-                if (preCommitState is not null)
-                {
-                    throw new ConcurrencyException("Aggregate root does not exist.");
-                }
-            }
-            else if (stream[^1].State != preCommitState)
-            {
-                throw preCommitState is null
-                    ? new ConcurrencyException("Aggregate root already exists.")
-                    : new ConcurrencyException();
+                throw new ConcurrencyException(conflict);
             }
 
-            var state = Guid.NewGuid().ToString("N")[..8];
+            var state = NewState();
             this.Append(streamId, events, correlationId, state);
 
             return Task.FromResult(state);
+        }
+    }
+
+    public Task<IReadOnlyList<string>> CommitStreamsAsync(IReadOnlyList<StreamCommit> commits, Guid correlationId, CancellationToken cancellationToken = default)
+    {
+        StreamConcurrencyException.Validate(commits);
+
+        var staged = commits.Select(static commit => Stage(commit.Events)).ToArray();
+
+        lock (this.sync)
+        {
+            // Every state is checked, and every event serialized, before anything is appended, so a failure leaves the
+            // store untouched.
+            foreach (var commit in commits)
+            {
+                var conflict = this.FindConflict(commit.StreamId, commit.PreCommitState);
+                if (conflict is not null)
+                {
+                    throw new StreamConcurrencyException(commit.StreamId, conflict);
+                }
+            }
+
+            var states = new string[commits.Count];
+            for (var index = 0; index < commits.Count; index++)
+            {
+                states[index] = NewState();
+                this.Append(commits[index].StreamId, staged[index], correlationId, states[index]);
+            }
+
+            return Task.FromResult<IReadOnlyList<string>>(states);
         }
     }
 
@@ -112,23 +136,41 @@ public sealed class MemoryEventStore : IEventStore, IEventFeed
     }
 
     /// <summary>
-    /// Appends events to a stream on behalf of a memento save and sets the stream's state token to the token the
-    /// memento was saved with. The memento's token is authoritative for concurrency, so there is no state check here.
+    /// Gets the lock that guards the store, for a <see cref="MemoryBatch"/> that appends to several streams at once.
     /// </summary>
-    internal void AppendEvents(Guid streamId, IReadOnlyList<object> events, string state)
+    internal Lock Sync => this.sync;
+
+    /// <summary>
+    /// Gets the order in which a <see cref="MemoryBatch"/> takes this store's lock among the locks of other stores.
+    /// </summary>
+    internal long BatchOrder { get; } = Interlocked.Increment(ref instances);
+
+    internal static StagedEvents Stage(IReadOnlyList<object> events) =>
+        new(events.Select(static @event => (@event.GetType(), JsonSerializer.Serialize(@event, @event.GetType(), JsonSerialization.Options))).ToArray());
+
+    /// <summary>
+    /// Appends staged events on behalf of a memento save, as <see cref="AppendEvents"/> does. The caller holds
+    /// <see cref="Sync"/>.
+    /// </summary>
+    internal void AppendStaged(Guid streamId, StagedEvents staged, Guid correlationId, string state) =>
+        this.Append(streamId, staged, correlationId, state);
+
+    private static string NewState() => Guid.NewGuid().ToString("N")[..8];
+
+    // Returns why a commit with the pre-commit state would conflict with the stream, or null when it would not.
+    private string? FindConflict(Guid streamId, string? preCommitState)
     {
-        ArgumentNullException.ThrowIfNull(events);
-        ArgumentException.ThrowIfNullOrEmpty(state);
-
-        if (events.Count == 0)
+        if (!this.streams.TryGetValue(streamId, out var stream))
         {
-            return;
+            return preCommitState is null ? null : "Aggregate root does not exist.";
         }
 
-        lock (this.sync)
+        if (stream[^1].State == preCommitState)
         {
-            this.Append(streamId, events, Guid.NewGuid(), state);
+            return null;
         }
+
+        return preCommitState is null ? "Aggregate root already exists." : "A concurrency exception has occurred.";
     }
 
     // Sequence numbers are contiguous from 1 here (a failed commit consumes none), so the events after N start at
@@ -139,35 +181,35 @@ public sealed class MemoryEventStore : IEventStore, IEventFeed
             .Take(maxCount)
             .ToList();
 
-    private void Append(Guid streamId, IReadOnlyList<object> events, Guid correlationId, string state)
+    private void Append(Guid streamId, IReadOnlyList<object> events, Guid correlationId, string state) =>
+        this.Append(streamId, Stage(events), correlationId, state);
+
+    // The caller holds the lock. Nothing here can fail, so a commit staged in full is applied in full.
+    private void Append(Guid streamId, StagedEvents staged, Guid correlationId, string state)
     {
-        var revision = this.streams.TryGetValue(streamId, out var stream) ? stream.Count : 0;
+        if (staged.Events.Count == 0)
+        {
+            return;
+        }
 
-        // Serialize everything first so that a failure leaves the store untouched.
-        var stored = events
-            .Select((@event, index) => new StoredEvent(
-                0,
-                streamId,
-                revision + index + 1,
-                correlationId,
-                @event.GetType(),
-                JsonSerializer.Serialize(@event, @event.GetType(), JsonSerialization.Options),
-                state))
-            .ToArray();
-
-        if (stream is null)
+        if (!this.streams.TryGetValue(streamId, out var stream))
         {
             stream = [];
             this.streams.Add(streamId, stream);
         }
 
-        foreach (var storedEvent in stored)
+        foreach (var (type, payload) in staged.Events)
         {
-            var sequenced = storedEvent with { SequenceNumber = ++this.sequenceNumber };
+            var sequenced = new StoredEvent(++this.sequenceNumber, streamId, stream.Count + 1, correlationId, type, payload, state);
             stream.Add(sequenced);
             this.log.Add(sequenced);
         }
     }
+
+    /// <summary>
+    /// Events serialized ahead of a commit, so that a failure to serialize one leaves the store untouched.
+    /// </summary>
+    internal sealed record StagedEvents(IReadOnlyList<(Type Type, string Payload)> Events);
 
     private sealed record StoredEvent(long SequenceNumber, Guid StreamId, int StreamRevision, Guid CorrelationId, Type Type, string Payload, string State)
     {

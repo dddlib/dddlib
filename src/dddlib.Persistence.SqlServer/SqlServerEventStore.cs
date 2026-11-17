@@ -12,9 +12,16 @@ namespace dddlib.Persistence.SqlServer;
 /// An event store backed by SQL Server. Events are written in one round trip through a table-valued parameter. It is
 /// also the <see cref="IEventFeed"/> for projections over it, which may run against another database.
 /// </summary>
-public sealed class SqlServerEventStore : IEventStore, IEventFeed
+public sealed class SqlServerEventStore : IMultiStreamEventStore, IEventFeed
 {
     private static readonly SqlMetaData[] TypeNameColumns = [new("Name", SqlDbType.VarChar, 511)];
+
+    private static readonly SqlMetaData[] StreamCommitColumns =
+    [
+        new("StreamId", SqlDbType.UniqueIdentifier),
+        new("Order", SqlDbType.Int),
+        new("PreCommitState", SqlDbType.VarChar, 36),
+    ];
 
     private readonly SqlServerTypeCache typeCache;
     private readonly string connectionString;
@@ -121,6 +128,83 @@ public sealed class SqlServerEventStore : IEventStore, IEventFeed
         }
 
         return (string)postCommitStateParameter.Value;
+    }
+
+    public async Task<IReadOnlyList<string>> CommitStreamsAsync(IReadOnlyList<StreamCommit> commits, Guid correlationId, CancellationToken cancellationToken = default)
+    {
+        StreamConcurrencyException.Validate(commits);
+        if (commits.Count == 0)
+        {
+            return [];
+        }
+
+        var streamRecords = new List<SqlDataRecord>(commits.Count);
+        var eventRecords = new List<SqlDataRecord>();
+        for (var order = 0; order < commits.Count; order++)
+        {
+            var commit = commits[order];
+            var record = new SqlDataRecord(StreamCommitColumns);
+            record.SetGuid(0, commit.StreamId);
+            record.SetInt32(1, order + 1);
+            if (commit.PreCommitState is null)
+            {
+                record.SetDBNull(2);
+            }
+            else
+            {
+                record.SetString(2, commit.PreCommitState);
+            }
+
+            streamRecords.Add(record);
+            await SqlServerEvents.AddStreamRecordsAsync(eventRecords, commit.StreamId, commit.Events, this.typeCache, cancellationToken).ConfigureAwait(false);
+        }
+
+        var postCommitStates = new Dictionary<Guid, string>(commits.Count);
+
+        using var scope = new TransactionScope(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled);
+        await using var connection = new SqlConnection(this.connectionString);
+        await using var command = connection.CreateCommand();
+
+        command.CommandType = CommandType.StoredProcedure;
+        command.CommandText = string.Concat(this.schema, ".[CommitStreams]");
+        var streams = command.Parameters.Add("@Streams", SqlDbType.Structured);
+        streams.TypeName = string.Concat(this.schema, ".[StreamCommitList]");
+        streams.Value = streamRecords;
+        var events = command.Parameters.Add("@Events", SqlDbType.Structured);
+        events.TypeName = string.Concat(this.schema, ".[StreamEventList]");
+        events.Value = eventRecords;
+        command.Parameters.Add("@Metadata", SqlDbType.NVarChar, -1).Value = SqlServerEvents.CreateMetadata();
+        command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = correlationId;
+        var conflictParameter = command.Parameters.Add("@ConflictStreamId", SqlDbType.UniqueIdentifier);
+        conflictParameter.Direction = ParameterDirection.Output;
+
+        await SqlServerSchemaCheck.EnsureCompatibleAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SingleResult, cancellationToken).ConfigureAwait(false);
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                postCommitStates.Add(reader.GetGuid(0), reader.GetString(1));
+            }
+        }
+        catch (SqlException ex) when (ex.Has(SqlServerErrors.LockTimeout) || ex.Has(SqlServerErrors.LockRequestTimeout))
+        {
+            throw new ConcurrencyException(ex.Message, ex);
+        }
+
+        // The procedure reports the first stream whose state did not match, having written nothing, instead of raising
+        // an error, so that the stream can be named without parsing a message.
+        if (conflictParameter.Value is Guid conflictStreamId)
+        {
+            var conflict = commits.First(commit => commit.StreamId == conflictStreamId);
+            throw new StreamConcurrencyException(
+                conflictStreamId,
+                conflict.PreCommitState is null ? "Aggregate root already exists." : "Concurrency error (client side). Commit state mismatch.");
+        }
+
+        return commits.Select(commit => postCommitStates[commit.StreamId]).ToArray();
     }
 
     public async Task<EventPage> ReadEventsAsync(long afterSequenceNumber, int maxCount, IReadOnlyCollection<Type>? eventTypes = null, CancellationToken cancellationToken = default)

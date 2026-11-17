@@ -1,5 +1,7 @@
 using dddlib.Configuration;
 using dddlib.Persistence.Memory;
+using dddlib.Persistence.Sdk;
+using dddlib.TestFramework;
 using dddlib.Tests.Support;
 
 namespace dddlib.Persistence.Tests.Features;
@@ -170,6 +172,690 @@ public abstract class MemoryMementoPersistence : Feature
             {
                 configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
             }
+        }
+    }
+
+    // A batch saves aggregate roots of different types, each through its own repository, in one transaction. Here
+    // each repository has its own identity map and event store.
+    public sealed class BatchSavesRootsOfDifferentTypes : MemoryMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given repositories for two types of aggregate root
+            var subjects = new MemoryRepository<Subject>();
+            var others = new MemoryRepository<Other>();
+
+            // And a new instance of each
+            var subject = new Subject("subject");
+            var other = new Other(7);
+
+            // When both instances are added to a batch and the batch is saved
+            var batch = new MemoryBatch();
+            subjects.Add(batch, subject);
+            others.Add(batch, other);
+            await batch.SaveAsync();
+
+            // Then each instance loads as it was saved
+            await Assert.That(await subjects.LoadAsync("subject")).IsEqualTo(subject);
+            await Assert.That(await others.LoadAsync(7)).IsEqualTo(other);
+
+            // And the saved instances have no uncommitted events
+            await Assert.That(subject.GetUncommittedEvents()).IsEmpty();
+            await Assert.That(other.GetUncommittedEvents()).IsEmpty();
+
+            // And a saved instance can be changed and saved again on its own
+            subject.Rename("renamed");
+            await subjects.SaveAsync(subject);
+            await Assert.That((await subjects.LoadAsync("subject")).Name).IsEqualTo("renamed");
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string naturalKey)
+            {
+                this.Apply(new NewSubject { NaturalKey = naturalKey });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? NaturalKey { get; private set; }
+
+            public string? Name { get; private set; }
+
+            public void Rename(string name) => this.Apply(new SubjectRenamed { Name = name });
+
+            protected override object? GetState() => new Memento { NaturalKey = this.NaturalKey, Name = this.Name };
+
+            protected override void SetState(object memento)
+            {
+                var subject = (Memento)memento;
+                this.NaturalKey = subject.NaturalKey;
+                this.Name = subject.Name;
+            }
+
+            private void Handle(NewSubject @event) => this.NaturalKey = @event.NaturalKey;
+
+            private void Handle(SubjectRenamed @event) => this.Name = @event.Name;
+
+            public sealed class Memento
+            {
+                public string? NaturalKey { get; set; }
+
+                public string? Name { get; set; }
+            }
+        }
+
+        public class NewSubject
+        {
+            public string? NaturalKey { get; set; }
+        }
+
+        public class SubjectRenamed
+        {
+            public string? Name { get; set; }
+        }
+
+        public class Other : AggregateRoot
+        {
+            public Other(int number)
+            {
+                this.Apply(new NewOther { Number = number });
+            }
+
+            internal Other()
+            {
+            }
+
+            [NaturalKey]
+            public int Number { get; private set; }
+
+            protected override object? GetState() => this.Number;
+
+            protected override void SetState(object memento) => this.Number = (int)memento;
+
+            private void Handle(NewOther @event) => this.Number = @event.Number;
+        }
+
+        public class NewOther
+        {
+            public int Number { get; set; }
+        }
+
+        private sealed class SubjectBootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+
+        private sealed class OtherBootStrapper : IBootstrap<Other>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Other>().ToReconstituteUsing(() => new Other());
+            }
+        }
+    }
+
+    public sealed class BatchIsAllOrNothing : MemoryMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given repositories for two types of aggregate root, sharing an event store
+            var eventStore = new MemoryEventStore();
+            var subjects = new MemoryRepository<Subject>(new MemoryIdentityMap(), eventStore);
+            var others = new MemoryRepository<Other>(new MemoryIdentityMap(), eventStore);
+
+            // And an instance of an aggregate root that has been saved
+            var stale = new Subject("stale");
+            await subjects.SaveAsync(stale);
+
+            // And another copy of it was loaded, changed and saved
+            var winner = await subjects.LoadAsync("stale");
+            winner.Rename("winner");
+            await subjects.SaveAsync(winner);
+
+            // And the first instance was changed too
+            stale.Rename("loser");
+
+            // And a new instance of another type
+            var other = new Other(7);
+
+            // When both instances are added to a batch and the batch is saved
+            var batch = new MemoryBatch();
+            others.Add(batch, other);
+            subjects.Add(batch, stale);
+            Func<Task> save = () => batch.SaveAsync();
+
+            // Then a concurrency exception names the stale instance
+            await Assert.That(save)
+                .Throws<ConcurrencyException>()
+                .WithMessageContaining($"'{typeof(Subject)}' with natural key 'stale'");
+
+            // And the new instance was not saved
+            await Assert.That(() => (Task)others.LoadAsync(7)).Throws<AggregateRootNotFoundException>();
+
+            // And the stored instance has only the winning change
+            await Assert.That((await subjects.LoadAsync("stale")).Name).IsEqualTo("winner");
+
+            // And no events of the batch were stored
+            await Assert.That((await eventStore.ReadEventsAsync(0, 10)).Events).Count().IsEqualTo(2);
+
+            // And neither instance's events were committed
+            await Assert.That(other.GetUncommittedEvents()).Count().IsEqualTo(1);
+            await Assert.That(stale.GetUncommittedEvents()).Count().IsEqualTo(1);
+
+            // And the new instance can still be saved on its own
+            await others.SaveAsync(other);
+            await Assert.That(await others.LoadAsync(7)).IsEqualTo(other);
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string naturalKey)
+            {
+                this.Apply(new NewSubject { NaturalKey = naturalKey });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? NaturalKey { get; private set; }
+
+            public string? Name { get; private set; }
+
+            public void Rename(string name) => this.Apply(new SubjectRenamed { Name = name });
+
+            protected override object? GetState() => new Memento { NaturalKey = this.NaturalKey, Name = this.Name };
+
+            protected override void SetState(object memento)
+            {
+                var subject = (Memento)memento;
+                this.NaturalKey = subject.NaturalKey;
+                this.Name = subject.Name;
+            }
+
+            private void Handle(NewSubject @event) => this.NaturalKey = @event.NaturalKey;
+
+            private void Handle(SubjectRenamed @event) => this.Name = @event.Name;
+
+            public sealed class Memento
+            {
+                public string? NaturalKey { get; set; }
+
+                public string? Name { get; set; }
+            }
+        }
+
+        public class NewSubject
+        {
+            public string? NaturalKey { get; set; }
+        }
+
+        public class SubjectRenamed
+        {
+            public string? Name { get; set; }
+        }
+
+        public class Other : AggregateRoot
+        {
+            public Other(int number)
+            {
+                this.Apply(new NewOther { Number = number });
+            }
+
+            internal Other()
+            {
+            }
+
+            [NaturalKey]
+            public int Number { get; private set; }
+
+            protected override object? GetState() => this.Number;
+
+            protected override void SetState(object memento) => this.Number = (int)memento;
+
+            private void Handle(NewOther @event) => this.Number = @event.Number;
+        }
+
+        public class NewOther
+        {
+            public int Number { get; set; }
+        }
+
+        private sealed class SubjectBootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+
+        private sealed class OtherBootStrapper : IBootstrap<Other>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Other>().ToReconstituteUsing(() => new Other());
+            }
+        }
+    }
+
+    public sealed class BatchStoresTheEventsOfEveryRoot : MemoryMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given repositories for two types of aggregate root, sharing an event store
+            var eventStore = new MemoryEventStore();
+            var identityMap = new MemoryIdentityMap();
+            var subjects = new MemoryRepository<Subject>(identityMap, eventStore);
+            var others = new MemoryRepository<Other>(identityMap, eventStore);
+
+            // And a new instance of each
+            var subject = new Subject("subject");
+            var other = new Other(7);
+
+            // When both instances are added to a batch and the batch is saved
+            var batch = new MemoryBatch();
+            subjects.Add(batch, subject);
+            others.Add(batch, other);
+            await batch.SaveAsync();
+
+            // Then their events are stored in the order the instances were added, with contiguous sequence numbers
+            var events = (await eventStore.ReadEventsAsync(0, 10)).Events;
+            await Assert.That(events).Count().IsEqualTo(2);
+            await Assert.That(events[0].Event).IsTypeOf<NewSubject>();
+            await Assert.That(events[1].Event).IsTypeOf<NewOther>();
+            await Assert.That(events[1].SequenceNumber).IsEqualTo(events[0].SequenceNumber + 1);
+
+            // And they share one correlation id
+            await Assert.That(events[1].CorrelationId).IsEqualTo(events[0].CorrelationId);
+
+            // And each stream carries its memento's state token
+            var subjectId = await identityMap.TryGetAsync(typeof(Subject), typeof(string), "subject");
+            await Assert.That((await eventStore.GetStreamAsync(subjectId!.Value, 0)).State).IsEqualTo(subject.State);
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string naturalKey)
+            {
+                this.Apply(new NewSubject { NaturalKey = naturalKey });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? NaturalKey { get; private set; }
+
+            protected override object? GetState() => this.NaturalKey;
+
+            protected override void SetState(object memento) => this.NaturalKey = memento.ToString();
+
+            private void Handle(NewSubject @event) => this.NaturalKey = @event.NaturalKey;
+        }
+
+        public class NewSubject
+        {
+            public string? NaturalKey { get; set; }
+        }
+
+        public class Other : AggregateRoot
+        {
+            public Other(int number)
+            {
+                this.Apply(new NewOther { Number = number });
+            }
+
+            internal Other()
+            {
+            }
+
+            [NaturalKey]
+            public int Number { get; private set; }
+
+            protected override object? GetState() => this.Number;
+
+            protected override void SetState(object memento) => this.Number = (int)memento;
+
+            private void Handle(NewOther @event) => this.Number = @event.Number;
+        }
+
+        public class NewOther
+        {
+            public int Number { get; set; }
+        }
+
+        private sealed class SubjectBootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+
+        private sealed class OtherBootStrapper : IBootstrap<Other>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Other>().ToReconstituteUsing(() => new Other());
+            }
+        }
+    }
+
+    public sealed class BatchIsSingleUse : MemoryMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a repository
+            var repository = new MemoryRepository<Subject>();
+
+            // And a batch that has been saved
+            var batch = new MemoryBatch();
+            repository.Add(batch, new Subject("first"));
+            await batch.SaveAsync();
+
+            // When an instance is added to that batch
+            // Then the batch refuses it
+            await Assert.That(() => repository.Add(batch, new Subject("second"))).Throws<InvalidOperationException>();
+
+            // And the batch cannot be saved again
+            await Assert.That(() => batch.SaveAsync()).Throws<InvalidOperationException>();
+
+            // And a batch that failed cannot be saved again either
+            var failed = new MemoryBatch();
+            repository.Add(failed, new Subject("first"));
+            await Assert.That(() => failed.SaveAsync()).Throws<ConcurrencyException>();
+            await Assert.That(() => failed.SaveAsync()).Throws<InvalidOperationException>();
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string naturalKey)
+            {
+                this.Apply(new NewSubject { NaturalKey = naturalKey });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? NaturalKey { get; private set; }
+
+            protected override object? GetState() => this.NaturalKey;
+
+            protected override void SetState(object memento) => this.NaturalKey = memento.ToString();
+
+            private void Handle(NewSubject @event) => this.NaturalKey = @event.NaturalKey;
+        }
+
+        public class NewSubject
+        {
+            public string? NaturalKey { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class EmptyBatchDoesNothing : MemoryMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a repository and an empty batch
+            var repository = new MemoryRepository<Subject>();
+            var batch = new MemoryBatch();
+
+            // When the batch is saved
+            await batch.SaveAsync();
+
+            // Then nothing was saved
+            await Assert.That(() => (Task)repository.LoadAsync("anything")).Throws<AggregateRootNotFoundException>();
+
+            // And adding nothing, or to nothing, is rejected
+            await Assert.That(() => repository.Add(new MemoryBatch(), null!)).Throws<ArgumentNullException>();
+            await Assert.That(() => repository.Add(null!, new Subject("key"))).Throws<ArgumentNullException>();
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string naturalKey)
+            {
+                this.Apply(new NewSubject { NaturalKey = naturalKey });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? NaturalKey { get; private set; }
+
+            protected override object? GetState() => this.NaturalKey;
+
+            protected override void SetState(object memento) => this.NaturalKey = memento.ToString();
+
+            private void Handle(NewSubject @event) => this.NaturalKey = @event.NaturalKey;
+        }
+
+        public class NewSubject
+        {
+            public string? NaturalKey { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class BatchRejectsTheSameRootTwice : MemoryMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a repository and a batch holding an instance of an aggregate root
+            var repository = new MemoryRepository<Subject>();
+            var subject = new Subject("twice");
+            var batch = new MemoryBatch();
+            repository.Add(batch, subject);
+
+            // When that instance is added to the batch again
+            // Then the batch refuses it
+            await Assert.That(() => repository.Add(batch, subject)).Throws<ArgumentException>();
+
+            // And the batch still saves the instance once
+            await batch.SaveAsync();
+            await Assert.That(await repository.LoadAsync("twice")).IsEqualTo(subject);
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string naturalKey)
+            {
+                this.Apply(new NewSubject { NaturalKey = naturalKey });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? NaturalKey { get; private set; }
+
+            protected override object? GetState() => this.NaturalKey;
+
+            protected override void SetState(object memento) => this.NaturalKey = memento.ToString();
+
+            private void Handle(NewSubject @event) => this.NaturalKey = @event.NaturalKey;
+        }
+
+        public class NewSubject
+        {
+            public string? NaturalKey { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class BatchRejectsTwoRootsWithOneNaturalKey : MemoryMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a repository and two new instances of an aggregate root with the same natural key
+            var repository = new MemoryRepository<Subject>();
+            var first = new Subject("same");
+            var second = new Subject("same");
+
+            // When both instances are added to a batch and the batch is saved
+            var batch = new MemoryBatch();
+            repository.Add(batch, first);
+            repository.Add(batch, second);
+            Func<Task> save = () => batch.SaveAsync();
+
+            // Then a concurrency exception names the natural key
+            await Assert.That(save)
+                .Throws<ConcurrencyException>()
+                .WithMessageContaining($"'{typeof(Subject)}' with natural key 'same'");
+
+            // And nothing was saved
+            await Assert.That(() => (Task)repository.LoadAsync("same")).Throws<AggregateRootNotFoundException>();
+            await Assert.That(first.GetUncommittedEvents()).Count().IsEqualTo(1);
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string naturalKey)
+            {
+                this.Apply(new NewSubject { NaturalKey = naturalKey });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? NaturalKey { get; private set; }
+
+            protected override object? GetState() => this.NaturalKey;
+
+            protected override void SetState(object memento) => this.NaturalKey = memento.ToString();
+
+            private void Handle(NewSubject @event) => this.NaturalKey = @event.NaturalKey;
+        }
+
+        public class NewSubject
+        {
+            public string? NaturalKey { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+    }
+
+    public sealed class BatchRejectsARepositoryOfAnotherKind : MemoryMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a memory repository and a batch of another kind
+            var repository = new MemoryRepository<Subject>();
+            var foreign = new ForeignBatch();
+
+            // When an instance is added to that batch
+            // Then the repository refuses it
+            await Assert.That(() => repository.Add(foreign, new Subject("key"))).Throws<ArgumentException>();
+
+            // Given a repository that cannot take part in batches and a memory batch
+            var custom = new CustomRepository();
+            var batch = new MemoryBatch();
+
+            // When an instance is added to the batch through that repository
+            // Then the repository refuses it, with advice
+            await Assert.That(() => custom.Add(batch, new Subject("key")))
+                .Throws<NotSupportedException>()
+                .WithMessageContaining("To fix this issue");
+        }
+
+        public class Subject : AggregateRoot
+        {
+            public Subject(string naturalKey)
+            {
+                this.Apply(new NewSubject { NaturalKey = naturalKey });
+            }
+
+            internal Subject()
+            {
+            }
+
+            [NaturalKey]
+            public string? NaturalKey { get; private set; }
+
+            protected override object? GetState() => this.NaturalKey;
+
+            protected override void SetState(object memento) => this.NaturalKey = memento.ToString();
+
+            private void Handle(NewSubject @event) => this.NaturalKey = @event.NaturalKey;
+        }
+
+        public class NewSubject
+        {
+            public string? NaturalKey { get; set; }
+        }
+
+        private sealed class BootStrapper : IBootstrap<Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<Subject>().ToReconstituteUsing(() => new Subject());
+            }
+        }
+
+        private sealed class ForeignBatch : IBatch
+        {
+            public Task SaveAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+        }
+
+        private sealed class CustomRepository() : Repository<Subject>(new MemoryIdentityMap())
+        {
+            protected override Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken) =>
+                Task.FromResult("state");
+
+            protected override Task<MementoResult?> LoadAsync(Guid id, CancellationToken cancellationToken) =>
+                Task.FromResult<MementoResult?>(null);
         }
     }
 }

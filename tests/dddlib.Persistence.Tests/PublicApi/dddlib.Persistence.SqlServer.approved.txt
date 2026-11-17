@@ -1,9 +1,15 @@
 namespace dddlib.Persistence.SqlServer
 {
-    public sealed class SqlServerEventStore : dddlib.Persistence.Sdk.IEventFeed, dddlib.Persistence.Sdk.IEventStore
+    public sealed class SqlServerBatch : dddlib.Persistence.IBatch
+    {
+        public SqlServerBatch(string connectionString, string schema = "dbo") { }
+        public System.Threading.Tasks.Task SaveAsync(System.Threading.CancellationToken cancellationToken = default) { }
+    }
+    public sealed class SqlServerEventStore : dddlib.Persistence.Sdk.IEventFeed, dddlib.Persistence.Sdk.IEventStore, dddlib.Persistence.Sdk.IMultiStreamEventStore
     {
         public SqlServerEventStore(string connectionString, string schema = "dbo") { }
         public System.Threading.Tasks.Task<string> CommitStreamAsync(System.Guid streamId, System.Collections.Generic.IReadOnlyList<object> events, System.Guid correlationId, string? preCommitState, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string>> CommitStreamsAsync(System.Collections.Generic.IReadOnlyList<dddlib.Persistence.Sdk.StreamCommit> commits, System.Guid correlationId, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<long> GetLastSequenceNumberAsync(System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.StreamResult> GetStreamAsync(System.Guid streamId, int streamRevision, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task<dddlib.Persistence.Sdk.EventPage> ReadEventsAsync(long afterSequenceNumber, int maxCount, System.Collections.Generic.IReadOnlyCollection<System.Type>? eventTypes = null, System.Threading.CancellationToken cancellationToken = default) { }
@@ -37,8 +43,11 @@ namespace dddlib.Persistence.SqlServer
         protected SqlServerRepository(string connectionString, string schema = "dbo") { }
         protected SqlServerRepository(string connectionString, dddlib.Persistence.Sdk.IIdentityMap identityMap, string schema = "dbo") { }
         protected string ConnectionString { get; }
+        protected virtual System.Collections.Generic.IReadOnlyDictionary<string, string>? EventMetadata { get; }
         protected System.Threading.Tasks.Task AppendEventsAsync(Microsoft.Data.SqlClient.SqlTransaction transaction, System.Guid id, System.Collections.Generic.IReadOnlyList<object> events, string state, System.Threading.CancellationToken cancellationToken) { }
         protected System.Threading.Tasks.Task AppendEventsAsync(Microsoft.Data.SqlClient.SqlTransaction transaction, System.Guid id, System.Collections.Generic.IReadOnlyDictionary<string, string> metadata, System.Collections.Generic.IReadOnlyList<object> events, string state, System.Threading.CancellationToken cancellationToken) { }
+        protected virtual System.Threading.Tasks.Task<string> SaveAsync(Microsoft.Data.SqlClient.SqlTransaction transaction, System.Guid id, object memento, string? preCommitState, System.Threading.CancellationToken cancellationToken) { }
+        protected override System.Threading.Tasks.Task<string> SaveAsync(System.Guid id, object memento, System.Collections.Generic.IReadOnlyList<object> events, string? preCommitState, System.Threading.CancellationToken cancellationToken) { }
     }
     public static class SqlServerSchema
     {

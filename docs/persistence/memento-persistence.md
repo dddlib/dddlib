@@ -61,30 +61,29 @@ An optional second argument selects the schema (default `dbo`); see [SQL Server]
 ## Custom storage
 
 To store the state in a table shaped for the aggregate root, derive from `SqlServerRepository<T>` (which supplies
-the identity map on SQL Server, unless you [pass your own](#custom-identity-map)) and implement the two storage methods. The pre-commit state is null for a new
-aggregate root; the stored state must match it or the save is a `ConcurrencyException`. The events are the
-uncommitted events of the aggregate root, possibly none. To have them dispatched, write the memento in a transaction
-and call `AppendEventsAsync` with that transaction and the new state token before committing, so that a dispatcher
-never sees events for a memento that was not saved. A repository that has no use for the events can ignore them.
+the identity map on SQL Server, unless you [pass your own](#custom-identity-map)) and implement the two storage
+methods. Write the memento in the transaction dddlib gives you:
 
 ```csharp
 public sealed class CarRepository(string connectionString)
     : dddlib.Persistence.SqlServer.SqlServerRepository<Car>(connectionString)
 {
-    protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
+    protected override async Task<string> SaveAsync(SqlTransaction transaction, Guid id, object memento, string? preCommitState, CancellationToken cancellationToken)
     {
-        await using var connection = new SqlConnection(this.ConnectionString);
-        await connection.OpenAsync(cancellationToken);
-        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
+        await using var command = new SqlCommand("SaveCar", transaction.Connection, transaction)
+        {
+            CommandType = CommandType.StoredProcedure,
+        };
 
-        // MERGE into your table where State = @preCommitState (or insert when it is null), in the transaction,
-        // and keep the new state token
-        var state = ...;
+        // Your parameters, and the state: insert when @PreCommitState is null; otherwise update where
+        // State = @PreCommitState and raise error 50409 when no row matches.
+        command.Parameters.Add("@PreCommitState", SqlDbType.VarChar, 36).Value = (object?)preCommitState ?? DBNull.Value;
+        var postCommitState = command.Parameters.Add("@PostCommitState", SqlDbType.VarChar, 36);
+        postCommitState.Direction = ParameterDirection.Output;
 
-        await this.AppendEventsAsync(transaction, id, events, state, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        await command.ExecuteNonQueryAsync(cancellationToken);
 
-        return state;
+        return (string)postCommitState.Value;
     }
 
     protected override async Task<dddlib.Persistence.Sdk.MementoResult?> LoadAsync(Guid id, CancellationToken cancellationToken)
@@ -95,18 +94,42 @@ public sealed class CarRepository(string connectionString)
 }
 ```
 
-`AppendEventsAsync` calls the `AppendEvents` procedure, which takes the same locks as the event
-store's commit so that sequence numbers reflect commit order.
+The pre-commit state is null for a new aggregate root; when the stored state does not match it, raise SQL Server error
+50409 or throw a `ConcurrencyException`, and the save is a `ConcurrencyException`. Write only the memento: dddlib opens
+the connection and the transaction, takes the aggregate root's lock before calling you, appends the uncommitted events
+after you return, and commits. Do not commit, roll back or append events yourself; calling `AppendEventsAsync` here is
+an `InvalidOperationException`. A repository written this way can also [save in a batch](#saving-several-aggregate-roots).
 
 To give the [event dispatcher](event-dispatcher.md#receiving-events) context that the events do not carry, such as the
-tenant of the request that saved them, pass metadata before the events:
+tenant of the request that saved them, override `EventMetadata`:
 
 ```csharp
-await this.AppendEventsAsync(transaction, id, new Dictionary<string, string> { ["tenant"] = tenant }, events, state, cancellationToken);
+protected override IReadOnlyDictionary<string, string>? EventMetadata =>
+    new Dictionary<string, string> { ["tenant"] = tenant };
 ```
 
 It is stored with each event beside dddlib's own `hostname` and `timestamp` entries, and the dispatcher receives all of
 them. A key of `hostname` or `timestamp` is an `ArgumentException`, thrown before anything is written.
+
+### Owning the transaction
+
+The original way to write custom storage is still supported: override
+`SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken)` instead,
+open the connection and transaction yourself, and call `AppendEventsAsync` with that transaction and the new state token
+before committing, so that a dispatcher never sees events for a memento that was not saved. Metadata is then passed to
+`AppendEventsAsync` before the events. A repository written this way cannot take part in a batch, because it owns the
+transaction it saves in: adding to a batch through it is a `NotSupportedException`. A repository that overrides
+neither method fails its first save with a `NotSupportedException`.
+
+### Moving a repository to the transactional hook
+
+1. Change the override's signature to `SaveAsync(SqlTransaction transaction, Guid id, object memento, string? preCommitState, CancellationToken cancellationToken)`
+   and create commands on `transaction.Connection` with `transaction`.
+2. Delete the connection, `BeginTransactionAsync`, the catch that turns error 50409 into a `ConcurrencyException`, the
+   call to `AppendEventsAsync` and the commit. Keep the procedure call and return the new state token.
+3. Move any metadata passed to `AppendEventsAsync` into `EventMetadata`.
+
+The stored procedures do not change, provided they run in the caller's transaction rather than committing their own.
 
 ### Custom identity map
 
@@ -124,6 +147,46 @@ root is saved and returns the identity its memento is then saved under. `RemoveA
 aggregate root is saved or loaded. Rows that existed before dddlib was adopted can then be loaded and saved without
 anything being written to `NaturalKeys`. The events still go to the dddlib schema, named by the optional last
 argument.
+
+## Saving several aggregate roots
+
+`IRepository<T>` saves one aggregate root of one type. To save aggregate roots of different types in one transaction,
+each through its own repository, add them to a batch and save the batch: every memento is stored and every event
+appended, or nothing is and no aggregate root changes, so the caller can reload and retry.
+
+```csharp
+var batch = new dddlib.Persistence.SqlServer.SqlServerBatch(connectionString);
+cars.Add(batch, car);       // a SqlServerRepository<Car> with custom storage
+owners.Add(batch, owner);   // a SqlServerMementoRepository<Owner>
+await batch.SaveAsync();
+```
+
+`Add` is on `dddlib.Persistence.Sdk.Repository<T>`, which every repository here derives from. `dddlib.Persistence.IBatch`
+has only `SaveAsync`, so code that should not know the storage, such as an application service, can take an `IBatch`
+and hand it to repository methods that add to it; the composition root creates the `SqlServerBatch`, or a `MemoryBatch`
+in tests.
+
+- The mementos and events are taken when the batch saves, not when the aggregate roots are added.
+- A batch is used once: adding to it or saving it again after `SaveAsync` has started, whether or not that save
+  succeeded, is an `InvalidOperationException`.
+- The same instance twice is an `ArgumentException`. Every aggregate root is validated before anything is written.
+- A conflict is a `ConcurrencyException` that names the aggregate root's type and natural key. Two new aggregate roots
+  with one natural key are a `ConcurrencyException` too, and nothing is written.
+- One correlation identifier covers every event, and the events take contiguous sequence numbers in the order the
+  aggregate roots were added.
+- As for a single save, a new aggregate root's identity is registered before the write; when the write fails it stays
+  registered and the next save of that natural key reuses it.
+
+| Batch | Repositories that can take part |
+|---|---|
+| `dddlib.Persistence.Memory.MemoryBatch` | `MemoryRepository<T>` |
+| `dddlib.Persistence.SqlServer.SqlServerBatch` | `SqlServerMementoRepository<T>`, and `SqlServerRepository<T>` written with [the transactional hook](#custom-storage) |
+
+A repository refuses a batch of another kind with an `ArgumentException`, and a repository that cannot take part with a
+`NotSupportedException`. A `SqlServerBatch` writes everything on its own connection, so its repositories must use the
+same server, database and dddlib schema; another one is an `ArgumentException` when the aggregate root is added. The
+SQL Server batch takes every aggregate root's lock first, in identity order, then writes the mementos and appends all the
+events last; single saves take their locks in the same order, so batches and single saves cannot deadlock each other.
 
 ## Concurrency
 
