@@ -11,11 +11,16 @@ public interface IEventStoreRepository
 
     Task SaveAsync<T>(T aggregateRoot, Guid correlationId, CancellationToken cancellationToken = default) where T : AggregateRoot;
 
+    Task SaveAsync(IReadOnlyCollection<AggregateRoot> aggregateRoots, CancellationToken cancellationToken = default);
+
+    Task SaveAsync(IReadOnlyCollection<AggregateRoot> aggregateRoots, Guid correlationId, CancellationToken cancellationToken = default);
+
     Task<T> LoadAsync<T>(object naturalKey, CancellationToken cancellationToken = default) where T : AggregateRoot;
 }
 ```
 
-The correlation identifier is stored with every event of the commit; a new one is generated when none is given.
+The correlation identifier is stored with every event of the commit; a new one is generated when none is given. The
+overloads that take a collection save [several aggregate roots in one transaction](#saving-several-aggregate-roots).
 
 The aggregate root must use [event application](../aggregate-root-event-application.md): the first save of an
 aggregate root that has applied no events is a `PersistenceException`. It must also have a
@@ -55,6 +60,35 @@ Each commit presents the state token returned by the previous commit to the same
 `ConcurrencyException`: another commit happened first, the aggregate root was destroyed and saved, or a new aggregate
 root's natural key already exists ("Aggregate root already exists."). The SQL Server implementation also reports a
 failure to acquire the stream's commit lock within one second as a `ConcurrencyException`.
+
+## Saving several aggregate roots
+
+Pass a collection to save aggregate roots, of any types, in one transaction: the events of every aggregate root are
+committed, or none are and no aggregate root changes, so the caller can reload and retry.
+
+```csharp
+var car = new Car("W807ASB");
+var owner = await repository.LoadAsync<Owner>(ownerId);
+owner.Register(car.Registration!);
+
+await repository.SaveAsync([car, owner]);
+```
+
+- Every aggregate root is validated before anything is written, the identity map included, so a model error in one of
+  them writes nothing.
+- An aggregate root without uncommitted events is left out. The same instance twice is an `ArgumentException`.
+- A conflict is a `ConcurrencyException` that names the aggregate root's type and natural key, for example
+  "The aggregate root of type 'Owner' with natural key '42' has changed since it was loaded." Two new aggregate roots
+  with one natural key are a `ConcurrencyException` too, and nothing is written.
+- One correlation identifier covers every event, and the events take contiguous sequence numbers in the order of the
+  collection, so the [event dispatcher](event-dispatcher.md) and [projections](projections.md) see them together.
+- As for a single save, a new aggregate root's natural key is registered before the commit; when the commit fails it
+  stays registered and the next save of that natural key reuses it.
+
+The event store must implement `dddlib.Persistence.Sdk.IMultiStreamEventStore`, as `MemoryEventStore` and
+`SqlServerEventStore` do; with an event store that commits one stream at a time, the collection overloads throw
+`NotSupportedException`. On SQL Server the commit is one round trip; see [SQL Server](sql-server.md#concurrency-and-errors)
+for its locks.
 
 ## Lifecycle
 

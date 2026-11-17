@@ -692,7 +692,8 @@ As built, where it departs from the design above:
 
 ### Phase 10: saving several aggregate roots in one transaction
 
-Planned 2026-11-17. Today every save writes one aggregate root, and the transaction lives inside one stored procedure
+Planned 2026-11-17 and done the same day in the four steps below, each a green commit (plus a fix to the SQL Server
+test fixture, which created databases concurrently). Before it, every save wrote one aggregate root, and the transaction lives inside one stored procedure
 (`CommitStream`, `SaveMemento`) or, for custom storage, inside the subclass's own `SqlTransaction`. This phase lets a
 caller save several aggregate roots, of the same or different types, all or nothing.
 
@@ -823,9 +824,9 @@ lock across several round trips would also stall every writer.
 
 #### Schema: `dddlib06.sql`
 
-Expand only, per section 9. `CommitStream`, `SaveMemento` and `AppendEvents` do not change. Step 1 ships the event
-store objects (`StreamCommitList`, `StreamEventList`, `CommitStreams`); step 3 adds the memento objects to the same
-script, which must not be released in between.
+Expand only, per section 9. `CommitStream`, `SaveMemento` and `AppendEvents` do not change. Step 1 shipped the event
+store objects (`StreamCommitList`, `StreamEventList`, `CommitStreams`) and step 3 added the memento objects to the same
+script before it was released.
 
 - Table types: `StreamIdList` (`StreamId` key), `StreamCommitList` (`StreamId` key, `Order`, `PreCommitState`),
   `StreamAppendList` (`StreamId` key, `Order`, `State`, `Metadata`), `StreamEventList` (`StreamId`, `Index`, `TypeId`,

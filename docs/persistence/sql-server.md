@@ -56,6 +56,17 @@ Version 3 adds:
 It also changes the body of `RemoveNaturalKey`, which keeps its parameters and effect but retries a concurrent
 conflict itself instead of failing back to the caller.
 
+Version 4 adds the event metadata to the result of `GetNextBatch`, for the [event dispatcher](event-dispatcher.md).
+Version 5 changes procedure bodies only, so that concurrent type registrations and natural key writes do not deadlock.
+
+Version 6 adds, for [saving several aggregate roots](memento-persistence.md#saving-several-aggregate-roots) in one
+transaction:
+
+| Objects | Used by |
+|---|---|
+| `CommitStreams` and the `StreamCommitList` and `StreamEventList` table types | the event store repository's [collection overloads](event-sourcing-persistence.md#saving-several-aggregate-roots) |
+| `LockStreams`, `SaveMementos`, `AppendStreams` and the `StreamIdList`, `MementoList` and `StreamAppendList` table types | `SqlServerBatch`, and single saves of custom storage through the transactional hook |
+
 Released scripts never change; every later change to the schema is a new script, so upgrading the packages and
 calling `EnsureAsync` upgrades the schema. The `Versions` table holds one row per applied version with the package
 that applied it and the text it ran.
@@ -149,10 +160,20 @@ events. Reads hold the
 stream row under `HOLDLOCK` inside a short transaction so the state token and the events come from the same committed
 version.
 
+Saving several aggregate roots in one transaction keeps that order: the lock of every aggregate root first, in identity
+order, then the writes, and the store-wide lock once, last, around appending all the events. A commit of one stream
+takes its stream's lock before the store-wide lock too, so single and multi-root saves cannot deadlock each other.
+Custom storage written with the [transactional hook](memento-persistence.md#custom-storage) is saved the same way, so
+its own row locks are always taken after the aggregate root's lock. A conflict found by `CommitStreams` or
+`SaveMementos` is reported through an output parameter rather than error 50409, so that the repository can name the
+aggregate root, and still surfaces as a `ConcurrencyException`.
+
 ## Ambient transactions
 
 All operations run under `TransactionScopeOption.Suppress`, so a caller's ambient `TransactionScope` does not enlist
-the persistence connections.
+the persistence connections. To save several aggregate roots atomically, use the event store repository's
+[collection overloads](event-sourcing-persistence.md#saving-several-aggregate-roots) or a
+[`SqlServerBatch`](memento-persistence.md#saving-several-aggregate-roots) rather than a `TransactionScope`.
 
 ## Connection pooling in tests
 
