@@ -1,4 +1,5 @@
 using System.Data;
+using System.Globalization;
 using System.Text.Json;
 using System.Transactions;
 using dddlib.Persistence.Sdk;
@@ -10,9 +11,9 @@ namespace dddlib.Persistence.SqlServer;
 /// <summary>
 /// A memento repository backed by the <c>Mementos</c> table on SQL Server. The events of each save are appended to
 /// the aggregate root's stream in the same transaction, so that they can be dispatched. The schema must have been
-/// created with the shipped scripts.
+/// created with the shipped scripts. It takes part in a <see cref="SqlServerBatch"/>.
 /// </summary>
-public sealed class SqlServerMementoRepository<T> : Repository<T>
+public sealed class SqlServerMementoRepository<T> : Repository<T>, ISqlServerBatchParticipant
     where T : AggregateRoot
 {
     private readonly SqlServerTypeCache typeCache;
@@ -25,6 +26,29 @@ public sealed class SqlServerMementoRepository<T> : Repository<T>
         this.connectionString = connectionString;
         this.schema = SqlServerIdentifier.Quote(schema);
         this.typeCache = new SqlServerTypeCache(connectionString, schema);
+    }
+
+    string ISqlServerBatchParticipant.ConnectionString => this.connectionString;
+
+    string ISqlServerBatchParticipant.Schema => this.schema;
+
+    bool ISqlServerBatchParticipant.UsesMementoTable => true;
+
+    IReadOnlyDictionary<string, string>? ISqlServerBatchParticipant.EventMetadata => null;
+
+    Task<string> ISqlServerBatchParticipant.SaveMementoAsync(SqlTransaction transaction, Guid id, object memento, string? preCommitState, CancellationToken cancellationToken) =>
+        throw new InvalidOperationException("Mementos of this repository are written to the Mementos table by the batch.");
+
+    internal override void AddToBatch(IBatch batch, BatchSave save)
+    {
+        if (batch is not SqlServerBatch sqlServerBatch)
+        {
+            throw new ArgumentException(
+                string.Format(CultureInfo.InvariantCulture, "A SQL Server repository saves aggregate roots only in a '{0}'.", typeof(SqlServerBatch)),
+                nameof(batch));
+        }
+
+        sqlServerBatch.Add(save, this);
     }
 
     protected override async Task<MementoResult?> LoadAsync(Guid id, CancellationToken cancellationToken)

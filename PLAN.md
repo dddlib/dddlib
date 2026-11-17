@@ -813,6 +813,13 @@ lock across several round trips would also stall every writer.
   succeeds. The memory stores serialize every memento and event before taking any lock, so a serialization failure
   leaves them untouched; that also fixed `MemoryEventStore.CommitStreamsAsync` from step 1, which serialized each
   stream's events while appending.
+- As built (step 3): one internal writer (`SqlServerMementoWriter`) serves a `SqlServerBatch` and a single save through
+  the transactional hook, which is a batch of one. It registers types and serializes before opening the transaction,
+  then runs `LockStreams`, `SaveMementos`, the hooks in identity order and `AppendStreams`. `SaveMementos` reports a
+  conflict through an output parameter, like `CommitStreams`; a hook reports one with error 50409 or a
+  `ConcurrencyException`. A repository joins a batch only when it overrides the transactional hook and not the
+  original one; `Add` checks this once per type by reflection. A batch accepts repositories whose connection strings
+  name the same server and database, and the same schema; it writes everything on its own connection.
 
 #### Schema: `dddlib06.sql`
 
