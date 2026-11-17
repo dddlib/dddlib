@@ -755,8 +755,13 @@ lock across several round trips would also stall every writer.
   implement it. `MemoryEventStore` and `SqlServerEventStore` do.
 - `MemoryEventStore` checks every state under its lock and then appends every stream, so a stale stream leaves the
   store untouched and the batch's sequence numbers are contiguous.
-- `SqlServerEventStore` calls `CommitStreams` (below) in one round trip, mapping 50409 and 50500 as `CommitStream` is
-  mapped. Snapshots are not affected.
+- `SqlServerEventStore` calls `CommitStreams` (below) in one round trip, mapping 50500 as `CommitStream` does.
+  Snapshots are not affected.
+- As built (step 1): a conflict is a `Sdk.StreamConcurrencyException : ConcurrencyException` carrying the `StreamId`,
+  which `EventStoreRepository` maps back to the aggregate root to name its type and natural key. `CommitStreams` reports
+  the conflicting stream in an output parameter and commits its empty transaction instead of raising 50409, so the
+  stream is named without parsing an error message and a caller's transaction is not rolled back. Two aggregate roots
+  that resolve to one stream are reported as appearing more than once.
 
 #### Memento batches
 
@@ -804,7 +809,9 @@ lock across several round trips would also stall every writer.
 
 #### Schema: `dddlib06.sql`
 
-Expand only, per section 9. `CommitStream`, `SaveMemento` and `AppendEvents` do not change.
+Expand only, per section 9. `CommitStream`, `SaveMemento` and `AppendEvents` do not change. Step 1 ships the event
+store objects (`StreamCommitList`, `StreamEventList`, `CommitStreams`); step 3 adds the memento objects to the same
+script, which must not be released in between.
 
 - Table types: `StreamIdList` (`StreamId` key), `StreamCommitList` (`StreamId` key, `Order`, `PreCommitState`),
   `StreamAppendList` (`StreamId` key, `Order`, `State`, `Metadata`), `StreamEventList` (`StreamId`, `Index`, `TypeId`,
@@ -974,8 +981,10 @@ Saving several aggregate roots (phase 10; new):
 - `tests/dddlib.Persistence.Tests`:
   - MemoryEventPersistence and SqlServerEventPersistence, each: SaveManyAndLoad, SaveManyOfDifferentTypes,
     SaveManyMixesNewAndExistingRoots, SaveManyIsAllOrNothing (one stale root: nothing written and no root's state
-    changes), SaveManySharesTheCorrelationId, SaveManyLeavesOutUnchangedRoots, SaveManyRejectsTheSameRootTwice,
-    SaveManyRejectsTwoRootsWithOneNaturalKey, SaveManyWithAnEventStoreThatCannotCommitStreams
+    changes), SaveManySharesTheCorrelationId, SaveManyLeavesOutUnchangedRoots, SaveManyOfNoneDoesNothing,
+    SaveManyValidatesEveryRootFirst, SaveManyRejectsTheSameRootTwice, SaveManyRejectsTwoRootsWithOneNaturalKey,
+    SaveManyWithAnEventStoreThatCannotCommitStreams. Not duplicated under `Features/Generated`: those copies cover the
+    source generator, which the save path does not depend on.
   - MemoryMementoPersistence and SqlServerMementoPersistence, each: BatchSavesRootsOfDifferentTypes,
     BatchIsAllOrNothing, BatchStoresTheEventsOfEveryRoot, BatchIsSingleUse, EmptyBatchDoesNothing,
     BatchRejectsARepositoryOfAnotherKind; SqlServerMementoPersistence also BatchMixesBuiltInAndCustomStorage,
@@ -983,7 +992,8 @@ Saving several aggregate roots (phase 10; new):
     BatchRejectsAnotherDatabase, BatchAndSingleSavesDoNotDeadlock (custom storage that checks its state with row
     locks, single saves of the batch's roots running concurrently)
   - Integration: MemoryEventStoreTests and SqlServerEventStoreTests gain CommitStreamsAssignsContiguousSequenceNumbers,
-    CommitStreamsNamesTheStaleStream; SqlServerEventStoreTests also CommitStreamsAndSingleCommitsDoNotDeadlock;
+    CommitStreamsNamesTheStaleStream, CommitStreamsRejectsTheSameStreamTwice; SqlServerEventStoreTests also
+    CommitStreamsAndSingleCommitsDoNotDeadlock;
     SqlServerSchemaTests gains UpgradesFromVersion5
 - `tests/dddlib.Persistence.EventDispatcher.Tests`: MemoryEventDispatcher and SqlServerEventDispatcher, each:
   CanDispatchFromAnEventStoreBatch, CanDispatchFromAMementoBatch

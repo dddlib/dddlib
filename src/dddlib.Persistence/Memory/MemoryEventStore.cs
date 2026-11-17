@@ -9,7 +9,7 @@ namespace dddlib.Persistence.Memory;
 /// never shares event instances with the one that was saved, and so that serialization problems surface early. It is
 /// also the <see cref="IEventFeed"/> for projections over it.
 /// </summary>
-public sealed class MemoryEventStore : IEventStore, IEventFeed
+public sealed class MemoryEventStore : IMultiStreamEventStore, IEventFeed
 {
     private readonly Lock sync = new();
     private readonly Dictionary<Guid, List<StoredEvent>> streams = [];
@@ -46,24 +46,43 @@ public sealed class MemoryEventStore : IEventStore, IEventFeed
 
         lock (this.sync)
         {
-            if (!this.streams.TryGetValue(streamId, out var stream))
+            var conflict = this.FindConflict(streamId, preCommitState);
+            if (conflict is not null)
             {
-                if (preCommitState is not null)
-                {
-                    throw new ConcurrencyException("Aggregate root does not exist.");
-                }
-            }
-            else if (stream[^1].State != preCommitState)
-            {
-                throw preCommitState is null
-                    ? new ConcurrencyException("Aggregate root already exists.")
-                    : new ConcurrencyException();
+                throw new ConcurrencyException(conflict);
             }
 
-            var state = Guid.NewGuid().ToString("N")[..8];
+            var state = NewState();
             this.Append(streamId, events, correlationId, state);
 
             return Task.FromResult(state);
+        }
+    }
+
+    public Task<IReadOnlyList<string>> CommitStreamsAsync(IReadOnlyList<StreamCommit> commits, Guid correlationId, CancellationToken cancellationToken = default)
+    {
+        StreamConcurrencyException.Validate(commits);
+
+        lock (this.sync)
+        {
+            // Every state is checked before anything is appended, so a conflict leaves the store untouched.
+            foreach (var commit in commits)
+            {
+                var conflict = this.FindConflict(commit.StreamId, commit.PreCommitState);
+                if (conflict is not null)
+                {
+                    throw new StreamConcurrencyException(commit.StreamId, conflict);
+                }
+            }
+
+            var states = new string[commits.Count];
+            for (var index = 0; index < commits.Count; index++)
+            {
+                states[index] = NewState();
+                this.Append(commits[index].StreamId, commits[index].Events, correlationId, states[index]);
+            }
+
+            return Task.FromResult<IReadOnlyList<string>>(states);
         }
     }
 
@@ -129,6 +148,24 @@ public sealed class MemoryEventStore : IEventStore, IEventFeed
         {
             this.Append(streamId, events, Guid.NewGuid(), state);
         }
+    }
+
+    private static string NewState() => Guid.NewGuid().ToString("N")[..8];
+
+    // Returns why a commit with the pre-commit state would conflict with the stream, or null when it would not.
+    private string? FindConflict(Guid streamId, string? preCommitState)
+    {
+        if (!this.streams.TryGetValue(streamId, out var stream))
+        {
+            return preCommitState is null ? null : "Aggregate root does not exist.";
+        }
+
+        if (stream[^1].State == preCommitState)
+        {
+            return null;
+        }
+
+        return preCommitState is null ? "Aggregate root already exists." : "A concurrency exception has occurred.";
     }
 
     // Sequence numbers are contiguous from 1 here (a failed commit consumes none), so the events after N start at

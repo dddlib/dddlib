@@ -1,8 +1,10 @@
 using System.Data;
+using dddlib.Persistence.Sdk;
 using dddlib.Persistence.SqlServer;
 using dddlib.Sdk;
 using dddlib.Tests.Support;
 using Microsoft.Data.SqlClient;
+using TUnit.Assertions.Enums;
 
 namespace dddlib.Persistence.Tests.Integration;
 
@@ -286,6 +288,141 @@ public class SqlServerEventStoreTests : SqlServerIntegration
         command.Parameters.Add("@StreamId", SqlDbType.UniqueIdentifier).Value = Guid.NewGuid();
         command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = Guid.NewGuid();
         await command.ExecuteNonQueryAsync();
+    }
+
+    [Test]
+    public async Task CommitStreamsAssignsContiguousSequenceNumbers()
+    {
+        var eventStore = new SqlServerEventStore(this.ConnectionString);
+        var stream1Id = Guid.NewGuid();
+        var stream2Id = Guid.NewGuid();
+        var correlationId = Guid.NewGuid();
+        await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 0 }], Guid.NewGuid(), null);
+        var first = await eventStore.GetLastSequenceNumberAsync();
+
+        var states = await eventStore.CommitStreamsAsync(
+            [
+                new StreamCommit(stream1Id, [new Event { Id = 1 }, new Event { Id = 2 }], null),
+                new StreamCommit(stream2Id, [new Event { Id = 3 }], null),
+            ],
+            correlationId);
+        var page = await eventStore.ReadEventsAsync(first, 10);
+        var stream1 = await eventStore.GetStreamAsync(stream1Id, 0);
+        var stream2 = await eventStore.GetStreamAsync(stream2Id, 0);
+
+        await Assert.That(states).Count().IsEqualTo(2);
+        await Assert.That(stream1.State).IsEqualTo(states[0]);
+        await Assert.That(stream2.State).IsEqualTo(states[1]);
+        await Assert.That(page.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo([first + 1, first + 2, first + 3], CollectionOrdering.Matching);
+        await Assert.That(page.Events.Select(static e => ((Event)e.Event).Id)).IsEquivalentTo([1, 2, 3], CollectionOrdering.Matching);
+        await Assert.That(page.Events.Select(static e => e.StreamRevision)).IsEquivalentTo([1, 2, 1], CollectionOrdering.Matching);
+        await Assert.That(page.Events.Select(static e => e.CorrelationId).Distinct()).IsEquivalentTo([correlationId]);
+    }
+
+    [Test]
+    public async Task CommitStreamsNamesTheStaleStream()
+    {
+        var eventStore = new SqlServerEventStore(this.ConnectionString);
+        var currentId = Guid.NewGuid();
+        var staleId = Guid.NewGuid();
+        var current = await eventStore.CommitStreamAsync(currentId, [new Event { Id = 1 }], Guid.NewGuid(), null);
+        var stale = await eventStore.CommitStreamAsync(staleId, [new Event { Id = 2 }], Guid.NewGuid(), null);
+        await eventStore.CommitStreamAsync(staleId, [new Event { Id = 3 }], Guid.NewGuid(), stale);
+        var last = await eventStore.GetLastSequenceNumberAsync();
+
+        Func<Task> commit = () => eventStore.CommitStreamsAsync(
+            [
+                new StreamCommit(currentId, [new Event { Id = 4 }], current),
+                new StreamCommit(staleId, [new Event { Id = 5 }], stale),
+            ],
+            Guid.NewGuid());
+        Func<Task> create = () => eventStore.CommitStreamsAsync([new StreamCommit(currentId, [new Event { Id = 6 }], null)], Guid.NewGuid());
+
+        var exception = await Assert.That(commit).Throws<StreamConcurrencyException>();
+        var exists = await Assert.That(create).Throws<StreamConcurrencyException>();
+
+        await Assert.That(exception!.StreamId).IsEqualTo(staleId);
+        await Assert.That(exists!.StreamId).IsEqualTo(currentId);
+        await Assert.That(await eventStore.GetLastSequenceNumberAsync()).IsEqualTo(last);
+        await Assert.That((await eventStore.GetStreamAsync(currentId, 0)).State).IsEqualTo(current);
+    }
+
+    [Test]
+    public async Task CommitStreamsRejectsTheSameStreamTwice()
+    {
+        var eventStore = new SqlServerEventStore(this.ConnectionString);
+        var streamId = Guid.NewGuid();
+        var last = await eventStore.GetLastSequenceNumberAsync();
+
+        Func<Task> commit = () => eventStore.CommitStreamsAsync(
+            [
+                new StreamCommit(streamId, [new Event { Id = 1 }], null),
+                new StreamCommit(streamId, [new Event { Id = 2 }], null),
+            ],
+            Guid.NewGuid());
+
+        await Assert.That(commit).Throws<ArgumentException>();
+        await Assert.That(await eventStore.GetLastSequenceNumberAsync()).IsEqualTo(last);
+    }
+
+    // A commit of several streams takes every stream's lock, in identity order, before the store-wide lock; a single
+    // commit takes its stream's lock and then the store-wide lock. Both run here against the same streams, the batches
+    // in opposite orders: any of them may lose a race (a ConcurrencyException), but none may be a deadlock victim.
+    [Test]
+    public async Task CommitStreamsAndSingleCommitsDoNotDeadlock()
+    {
+        var eventStore = new SqlServerEventStore(this.ConnectionString);
+        var streamIds = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
+        foreach (var streamId in streamIds)
+        {
+            await eventStore.CommitStreamAsync(streamId, [new Event { Id = 0 }], Guid.NewGuid(), null);
+        }
+
+        var batches = 0;
+
+        async Task CommitManyAsync(IEnumerable<Guid> ids)
+        {
+            for (var round = 0; round < 20; round++)
+            {
+                var commits = new List<StreamCommit>();
+                foreach (var id in ids)
+                {
+                    commits.Add(new StreamCommit(id, [new Event { Id = round }], (await eventStore.GetStreamAsync(id, 0)).State));
+                }
+
+                try
+                {
+                    await eventStore.CommitStreamsAsync(commits, Guid.NewGuid());
+                    Interlocked.Increment(ref batches);
+                }
+                catch (ConcurrencyException)
+                {
+                }
+            }
+        }
+
+        async Task CommitOneAsync(Guid id)
+        {
+            for (var round = 0; round < 20; round++)
+            {
+                try
+                {
+                    await eventStore.CommitStreamAsync(id, [new Event { Id = round }], Guid.NewGuid(), (await eventStore.GetStreamAsync(id, 0)).State);
+                }
+                catch (ConcurrencyException)
+                {
+                }
+            }
+        }
+
+        await Task.WhenAll(
+            CommitManyAsync(streamIds),
+            CommitManyAsync(streamIds.Reverse()),
+            CommitOneAsync(streamIds[0]),
+            CommitOneAsync(streamIds[1]),
+            CommitOneAsync(streamIds[2]));
+
+        await Assert.That(batches).IsGreaterThan(0);
     }
 
     private sealed class Event

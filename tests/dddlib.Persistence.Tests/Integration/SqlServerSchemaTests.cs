@@ -1,3 +1,4 @@
+using dddlib.Persistence.Sdk;
 using dddlib.Persistence.SqlServer;
 using dddlib.Tests.Support;
 using Microsoft.Data.SqlClient;
@@ -259,6 +260,28 @@ public class SqlServerSchemaTests : SqlServerIntegration
     }
 
     [Test]
+    public async Task UpgradesFromVersion5()
+    {
+        var schema = NewSchema();
+        await SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, SqlServerSchemaInstaller.Scripts.Take(5).ToArray(), CancellationToken.None);
+        var before = await SqlServerSchema.GetVersionAsync(this.ConnectionString, schema);
+
+        var upgraded = await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
+        var eventStore = new SqlServerEventStore(this.ConnectionString, schema);
+        var states = await eventStore.CommitStreamsAsync(
+            [
+                new StreamCommit(Guid.NewGuid(), [new Event { Id = 1 }], null),
+                new StreamCommit(Guid.NewGuid(), [new Event { Id = 2 }], null),
+            ],
+            Guid.NewGuid());
+
+        await Assert.That(before).IsEqualTo(new SqlServerSchemaVersion(schema, 5, RequiredVersion, 1));
+        await Assert.That(before.IsCompatible).IsFalse();
+        await Assert.That(upgraded).IsEqualTo(new SqlServerSchemaVersion(schema, RequiredVersion, RequiredVersion, 1));
+        await Assert.That(states).Count().IsEqualTo(2);
+    }
+
+    [Test]
     public async Task GetScriptInstallsTheSchema()
     {
         var schema = NewSchema();
@@ -319,4 +342,9 @@ public class SqlServerSchemaTests : SqlServerIntegration
 
     private async Task<int> CountVersionsAsync(string schema) =>
         (int)(await this.Database.ExecuteScalarAsync($"SELECT COUNT(*) FROM [{schema}].[Versions];"))!;
+
+    private sealed class Event
+    {
+        public int Id { get; set; }
+    }
 }
