@@ -806,6 +806,13 @@ lock across several round trips would also stall every writer.
   Repositories bound to a context per call (a tenant in the identity map, the parameters and the metadata) join with
   `new Bound(connectionString, tenant).Add(batch, root)`.
 - `SqlServerMementoRepository<T>`'s single save is unchanged (`SaveMemento` already locks the identity first).
+- As built (step 2): the protocol between a repository and a batch is internal (`Sdk.BatchSave`,
+  `Sdk.BatchSaves<TParticipant>`, `Memory.IMemoryBatchParticipant`), so only the batches dddlib ships can drive a
+  save; the public surface is `IBatch`, `Repository<T>.Add` and `MemoryBatch`. `Repository<T>` and its single save share
+  the prepare, identity and completion code with the batch. A batch is spent once `SaveAsync` starts, whether or not it
+  succeeds. The memory stores serialize every memento and event before taking any lock, so a serialization failure
+  leaves them untouched; that also fixed `MemoryEventStore.CommitStreamsAsync` from step 1, which serialized each
+  stream's events while appending.
 
 #### Schema: `dddlib06.sql`
 
@@ -987,7 +994,8 @@ Saving several aggregate roots (phase 10; new):
     source generator, which the save path does not depend on.
   - MemoryMementoPersistence and SqlServerMementoPersistence, each: BatchSavesRootsOfDifferentTypes,
     BatchIsAllOrNothing, BatchStoresTheEventsOfEveryRoot, BatchIsSingleUse, EmptyBatchDoesNothing,
-    BatchRejectsARepositoryOfAnotherKind; SqlServerMementoPersistence also BatchMixesBuiltInAndCustomStorage,
+    BatchRejectsTheSameRootTwice, BatchRejectsTwoRootsWithOneNaturalKey, BatchRejectsARepositoryOfAnotherKind;
+    SqlServerMementoPersistence also BatchMixesBuiltInAndCustomStorage,
     CustomStorageThroughTheTransactionalHook, CustomStorageEventMetadata, CustomStorageWithTheOldHookCannotJoinABatch,
     BatchRejectsAnotherDatabase, BatchAndSingleSavesDoNotDeadlock (custom storage that checks its state with row
     locks, single saves of the batch's roots running concurrently)

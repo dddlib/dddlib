@@ -161,14 +161,7 @@ Further information: https://github.com/dddlib/dddlib/blob/main/docs/aggregate-r
                 aggregateRoot.GetType()));
 
     private static ConcurrencyException Conflict(PendingSave save, string reason, Exception? innerException = null) =>
-        new(
-            string.Format(
-                CultureInfo.InvariantCulture,
-                "The aggregate root of type '{0}' with natural key '{1}' {2}.",
-                save.RuntimeType.RuntimeType,
-                save.NaturalKey,
-                reason),
-            innerException);
+        BatchSave.Conflict(save.RuntimeType, save.NaturalKey, reason, innerException);
 
     private async Task SaveManyInternalAsync(IReadOnlyCollection<AggregateRoot> aggregateRoots, IMultiStreamEventStore multiStreamEventStore, Guid correlationId, CancellationToken cancellationToken)
     {

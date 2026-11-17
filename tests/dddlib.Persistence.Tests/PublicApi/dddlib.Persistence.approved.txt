@@ -12,6 +12,10 @@ namespace dddlib.Persistence
         public ConcurrencyException(string? message) { }
         public ConcurrencyException(string? message, System.Exception? innerException) { }
     }
+    public interface IBatch
+    {
+        System.Threading.Tasks.Task SaveAsync(System.Threading.CancellationToken cancellationToken = default);
+    }
     public interface IEventStoreRepository
     {
         System.Threading.Tasks.Task<T> LoadAsync<T>(object naturalKey, System.Threading.CancellationToken cancellationToken = default)
@@ -38,6 +42,11 @@ namespace dddlib.Persistence
 }
 namespace dddlib.Persistence.Memory
 {
+    public sealed class MemoryBatch : dddlib.Persistence.IBatch
+    {
+        public MemoryBatch() { }
+        public System.Threading.Tasks.Task SaveAsync(System.Threading.CancellationToken cancellationToken = default) { }
+    }
     public sealed class MemoryEventStore : dddlib.Persistence.Sdk.IEventFeed, dddlib.Persistence.Sdk.IEventStore, dddlib.Persistence.Sdk.IMultiStreamEventStore
     {
         public MemoryEventStore() { }
@@ -193,6 +202,7 @@ namespace dddlib.Persistence.Sdk
         where T : dddlib.AggregateRoot
     {
         protected Repository(dddlib.Persistence.Sdk.IIdentityMap identityMap) { }
+        public void Add(dddlib.Persistence.IBatch batch, T aggregateRoot) { }
         protected abstract System.Threading.Tasks.Task<dddlib.Persistence.Sdk.MementoResult?> LoadAsync(System.Guid id, System.Threading.CancellationToken cancellationToken);
         public System.Threading.Tasks.Task<T> LoadAsync(object naturalKey, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task SaveAsync(T aggregateRoot, System.Threading.CancellationToken cancellationToken = default) { }
