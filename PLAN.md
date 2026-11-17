@@ -690,6 +690,146 @@ As built, where it departs from the design above:
 - The SQL Server event store tests became `[NotInParallel]`: the feed tests read the store-wide position, which every
   commit in the class moves.
 
+### Phase 10: saving several aggregate roots in one transaction
+
+Planned 2026-11-17. Today every save writes one aggregate root, and the transaction lives inside one stored procedure
+(`CommitStream`, `SaveMemento`) or, for custom storage, inside the subclass's own `SqlTransaction`. This phase lets a
+caller save several aggregate roots, of the same or different types, all or nothing.
+
+Decisions (Cameron, 2026-11-17):
+
+- Event store: new overloads on `IEventStoreRepository` that take several aggregate roots. The single-root overloads
+  do not change.
+- Mementos: `IRepository<T>` does not change. Aggregate roots of different types, each saved by its own repository
+  (the built-in `Mementos` table or custom storage), join a batch: a new `dddlib.Persistence.IBatch` with `SaveAsync`.
+  The batch is storage-neutral so that repository interfaces in a consumer's domain layer can take one without
+  referencing a SQL Server package.
+- A batch holds memento-persisted aggregate roots only. Letting event-sourced roots join a batch is a possible later
+  extension; the SQL Server design below shares one lock order and one identity space, so it would fit.
+- Rejected: an ambient `TransactionScope` (it reverses the `Suppress` decision in section 4, risks promotion to a
+  distributed transaction, and deadlocks as below), and a non-generic memento repository over the `Mementos` table
+  (it cannot include custom storage).
+
+#### Shared shape
+
+Every save already has three parts, and a multi-root save keeps them apart:
+
+1. Prepare, per aggregate root and before any write: validate the type, resolve the identity with that root's
+   repository's identity map, and take the uncommitted events (and the memento). Identities are resolved outside the
+   transaction, as for single saves today: `GetOrAddNaturalKey` rolls back on its retry path, which would undo an
+   outer transaction. A rolled-back batch can therefore leave identities registered with no stream or memento, as a
+   failed single save already can; the next save of that natural key reuses them.
+2. Write, in one transaction.
+3. Complete, per aggregate root and only after the commit: `CommitEvents(postCommitState)`, then identity removal for a
+   destroyed root. When the write fails no aggregate root changes, so the caller can reload and retry.
+
+Rules common to both kinds:
+
+- An empty collection or batch does nothing. A null element is an `ArgumentException`, as is the same aggregate root
+  instance twice. Two aggregate roots that resolve to the same identity (two new roots with one natural key) are a
+  `ConcurrencyException`, as saving them one after the other would be, and nothing is written.
+- Validation errors (including the "no events to save" error for a new event-sourced root) are raised for any root
+  before anything is written. An event-sourced root without uncommitted events is left out of the write.
+- A `ConcurrencyException` names the aggregate root type and natural key of the root that failed; nothing is written.
+- One correlation id covers every event of the save.
+
+Lock order on SQL Server. Every write takes the `sp_getapplock` of each aggregate identity, in ascending order and
+before anything else, and the store-wide `dddlib.Events.Commit` lock once, last, around inserting the events. The
+single-root procedures already take the identity's lock before the store-wide one, so single and multi-root writes
+cannot deadlock each other. Calling the existing procedures one after another in an outer transaction is not an
+option: after the first `CommitStream` the transaction holds the store-wide lock and then asks for the next stream's
+lock, while a single commit of that stream holds its lock and waits for the store-wide one. Holding the store-wide
+lock across several round trips would also stall every writer.
+
+#### Event store
+
+- `IEventStoreRepository` gains `SaveAsync(IReadOnlyCollection<AggregateRoot> aggregateRoots, token)` and
+  `SaveAsync(IReadOnlyCollection<AggregateRoot> aggregateRoots, Guid correlationId, token)`. A `List<Order>` binds
+  through covariance, and the generic single-root overloads drop out of overload resolution on their constraint.
+  2.0.0 is unreleased, so the interface gains members rather than a second interface.
+- `Sdk.IMultiStreamEventStore : IEventStore` with
+  `Task<IReadOnlyList<string>> CommitStreamsAsync(IReadOnlyList<StreamCommit> commits, Guid correlationId, token)`,
+  returning the post-commit state of each commit in order, and `Sdk.StreamCommit(Guid StreamId, IReadOnlyList<object>
+  Events, string? PreCommitState)`. A separate interface, as `IEventFeed` is, so custom event stores are not broken;
+  `EventStoreRepository` throws `NotSupportedException` with a "To fix this issue" message when its store does not
+  implement it. `MemoryEventStore` and `SqlServerEventStore` do.
+- `MemoryEventStore` checks every state under its lock and then appends every stream, so a stale stream leaves the
+  store untouched and the batch's sequence numbers are contiguous.
+- `SqlServerEventStore` calls `CommitStreams` (below) in one round trip, mapping 50409 and 50500 as `CommitStream` is
+  mapped. Snapshots are not affected.
+
+#### Memento batches
+
+- `dddlib.Persistence.IBatch`: `Task SaveAsync(CancellationToken cancellationToken = default)`. Single use: adding to a
+  batch whose `SaveAsync` has started, or calling `SaveAsync` twice, is an `InvalidOperationException`.
+- Joining: `Repository<T>.Add(IBatch batch, T aggregateRoot)`, public on the SDK base class, so `IRepository<T>` stays
+  as it is. It records the pair; the memento and events are taken when the batch saves. Whether a repository can join
+  a given batch is the repository's decision through a protected virtual member whose default throws
+  `NotSupportedException`. A batch of another kind (a memory repository and a SQL Server batch) or over another
+  database or schema is an `ArgumentException` at `Add`.
+- A consumer whose repository interfaces live in its domain layer adds members such as
+  `void Add(IBatch batch, Order order)` to them and creates the concrete batch (or a factory for it) in its
+  composition root.
+- `Memory.MemoryBatch : IBatch`, joined by `MemoryRepository<T>`. It takes the lock of each distinct repository in a
+  fixed order (an instance number assigned at construction) and then the lock of each distinct `MemoryEventStore`, the
+  same order as a single save, checks every state, then appends the events and stores the mementos.
+- `SqlServer.SqlServerBatch(connectionString, schema = "dbo") : IBatch`, joined by `SqlServerMementoRepository<T>` and
+  by `SqlServerRepository<T>` subclasses that override the transactional hook below. `SaveAsync`: prepare; one
+  connection and one `SqlTransaction` under `TransactionScopeOption.Suppress`; the schema check; `LockStreams` over
+  every identity; the built-in mementos in one `SaveMementos` call; each custom root through its repository's hook, in
+  identity order; every root's events in one `AppendStreams` call; commit; complete.
+- `SqlServerRepository<T>` gains a transactional hook and per-repository event metadata:
+
+  ```csharp
+  protected virtual Task<string> SaveAsync(SqlTransaction transaction, Guid id, object memento, string? preCommitState, CancellationToken cancellationToken);
+  protected virtual IReadOnlyDictionary<string, string>? EventMetadata => null;
+  ```
+
+  The hook writes the memento only and returns the new state token. dddlib owns the connection and transaction, takes
+  the identity's lock, appends the events with `EventMetadata`, maps 50409 from the hook to `ConcurrencyException`
+  and commits. `SqlServerRepository<T>` overrides the old abstract hook so that a single save of a subclass with the
+  transactional hook goes through the same path as a batch of one. That matters because custom storage typically
+  checks its state token with row locks in its own tables (`UPDATE ... WHERE [State] = @PreCommitState`): if a single
+  save took that row lock first and the identity's lock later, through `AppendEvents`, while a batch takes the
+  identity locks first, the two would deadlock.
+- A subclass that overrides the old hook keeps today's behaviour exactly and cannot join a batch; `Add` detects that
+  (cached per type) and says how to move to the transactional hook. A subclass that overrides neither compiles and
+  fails its first save with a `NotSupportedException`. Calling `AppendEventsAsync` inside the dddlib-owned transaction
+  is an `InvalidOperationException`, since the events would be appended twice.
+- Moving a custom repository over removes code: the connection, the transaction, the 50409 catch, the
+  `AppendEventsAsync` call and the commit go; the procedure call stays as it is; metadata moves to `EventMetadata`.
+  Repositories bound to a context per call (a tenant in the identity map, the parameters and the metadata) join with
+  `new Bound(connectionString, tenant).Add(batch, root)`.
+- `SqlServerMementoRepository<T>`'s single save is unchanged (`SaveMemento` already locks the identity first).
+
+#### Schema: `dddlib06.sql`
+
+Expand only, per section 9. `CommitStream`, `SaveMemento` and `AppendEvents` do not change.
+
+- Table types: `StreamIdList` (`StreamId` key), `StreamCommitList` (`StreamId` key, `Order`, `PreCommitState`),
+  `StreamAppendList` (`StreamId` key, `Order`, `State`, `Metadata`), `StreamEventList` (`StreamId`, `Index`, `TypeId`,
+  `Payload`, key `(StreamId, Index)`) and `MementoList` (`Id` key, `TypeId`, `Payload`, `PreCommitState`).
+- `LockStreams(@StreamIds)`: takes each identity's applock in ascending order with the 1000 ms timeout (50500), owned
+  by the caller's transaction, and throws when there is none.
+- `CommitStreams(@Streams, @Events, @Metadata, @CorrelationId)`: in its own transaction, the identity locks, the
+  store-wide lock, a `MERGE` into `Streams` checking each row's state, 50409 naming the first stale stream when fewer
+  rows changed than were given, the events inserted with `NEXT VALUE FOR ... OVER (ORDER BY [Order], [Index])` so
+  sequence order follows the caller's order, and a result set of `(StreamId, PostCommitState)`.
+- `SaveMementos(@Mementos)`: the set-based `SaveMemento` without events, returning `(Id, PostCommitState)`, with
+  50409 naming the first stale memento. It relies on the caller's identity locks.
+- `AppendStreams(@Streams, @Events, @CorrelationId)`: the set-based `AppendEvents`, taking the store-wide lock once.
+- Records version 6; every SQL Server package then requires it.
+
+#### Steps, each a green commit
+
+1. P10: `dddlib06.sql` and the schema tests; the event store overloads, `Sdk.IMultiStreamEventStore`, `StreamCommit`,
+   `MemoryEventStore` and `SqlServerEventStore`; the event store scenarios; the API snapshots.
+2. P10: `IBatch`, `Repository<T>.Add`, `MemoryBatch` and the memory memento scenarios.
+3. P10: `SqlServerBatch`, the transactional hook and `EventMetadata` on `SqlServerRepository<T>`, single saves through
+   the hook, and the SQL Server memento and dispatcher scenarios.
+4. P10: `docs/persistence/event-sourcing-persistence.md`, `memento-persistence.md` (including moving custom storage to
+   the transactional hook), `sql-server.md`, `RELEASE_NOTES.md`.
+
 ## 6. Test conventions with TUnit
 
 Keep the structure that made the old suite readable: one feature per file, one nested class per
@@ -828,6 +968,25 @@ Projections (phase 9; v1 had no tests, so these are new):
   - SqlServerProjectionsSchemaTests: InstallingProjectionsInstallsTheEventStore, ReportsWhenTheSchemaIsAheadOfThePackage,
     GetVersionReadsWithoutChangingAnything, FailsLoudlyWhenTheSchemaIsBehind, AllPackagesProduceTheSameScript
   - PublicApiTests for both packages
+
+Saving several aggregate roots (phase 10; new):
+
+- `tests/dddlib.Persistence.Tests`:
+  - MemoryEventPersistence and SqlServerEventPersistence, each: SaveManyAndLoad, SaveManyOfDifferentTypes,
+    SaveManyMixesNewAndExistingRoots, SaveManyIsAllOrNothing (one stale root: nothing written and no root's state
+    changes), SaveManySharesTheCorrelationId, SaveManyLeavesOutUnchangedRoots, SaveManyRejectsTheSameRootTwice,
+    SaveManyRejectsTwoRootsWithOneNaturalKey, SaveManyWithAnEventStoreThatCannotCommitStreams
+  - MemoryMementoPersistence and SqlServerMementoPersistence, each: BatchSavesRootsOfDifferentTypes,
+    BatchIsAllOrNothing, BatchStoresTheEventsOfEveryRoot, BatchIsSingleUse, EmptyBatchDoesNothing,
+    BatchRejectsARepositoryOfAnotherKind; SqlServerMementoPersistence also BatchMixesBuiltInAndCustomStorage,
+    CustomStorageThroughTheTransactionalHook, CustomStorageEventMetadata, CustomStorageWithTheOldHookCannotJoinABatch,
+    BatchRejectsAnotherDatabase, BatchAndSingleSavesDoNotDeadlock (custom storage that checks its state with row
+    locks, single saves of the batch's roots running concurrently)
+  - Integration: MemoryEventStoreTests and SqlServerEventStoreTests gain CommitStreamsAssignsContiguousSequenceNumbers,
+    CommitStreamsNamesTheStaleStream; SqlServerEventStoreTests also CommitStreamsAndSingleCommitsDoNotDeadlock;
+    SqlServerSchemaTests gains UpgradesFromVersion5
+- `tests/dddlib.Persistence.EventDispatcher.Tests`: MemoryEventDispatcher and SqlServerEventDispatcher, each:
+  CanDispatchFromAnEventStoreBatch, CanDispatchFromAMementoBatch
 
 Shared model (`tests/dddlib.Tests.Support`): Vehicle, Registration, Wheel, NewVehicle, IRegistrationService, Bootstrapper.
 
