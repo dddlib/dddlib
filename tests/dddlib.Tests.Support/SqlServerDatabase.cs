@@ -10,6 +10,8 @@ namespace dddlib.Tests.Support;
 /// </summary>
 public sealed class SqlServerDatabase : IAsyncInitializer, IAsyncDisposable
 {
+    private static readonly SemaphoreSlim CreateDatabaseGate = new(1, 1);
+
     private string? connectionString;
 
     [ClassDataSource<SqlServerContainer>(Shared = SharedType.PerTestSession)]
@@ -23,7 +25,7 @@ public sealed class SqlServerDatabase : IAsyncInitializer, IAsyncDisposable
     {
         try
         {
-            await ExecuteAsync(this.Container.ConnectionString, $"CREATE DATABASE [{this.DatabaseName}];").ConfigureAwait(false);
+            await CreateDatabaseAsync(this.Container.ConnectionString, this.DatabaseName).ConfigureAwait(false);
 
             this.connectionString = new SqlConnectionStringBuilder(this.Container.ConnectionString) { InitialCatalog = this.DatabaseName }.ConnectionString;
 
@@ -94,10 +96,39 @@ public sealed class SqlServerDatabase : IAsyncInitializer, IAsyncDisposable
             $"ALTER DATABASE [{this.DatabaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{this.DatabaseName}];").ConfigureAwait(false);
     }
 
-    private static async Task ExecuteAsync(string connectionString, string commandText)
+    // CREATE DATABASE copies the model database under an exclusive lock on it. Test classes start together, and dozens of
+    // concurrent creates in one container either fail with 1807 ("Could not obtain exclusive lock on database 'model'")
+    // or queue past the command timeout, so this process creates its databases one at a time (each test project has its
+    // own container). The retry covers a create that still meets another session's lock.
+    private static async Task CreateDatabaseAsync(string connectionString, string databaseName)
+    {
+        await CreateDatabaseGate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            for (var attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    await ExecuteAsync(connectionString, $"CREATE DATABASE [{databaseName}];", commandTimeoutSeconds: 120).ConfigureAwait(false);
+                    return;
+                }
+                catch (SqlException ex) when (attempt < 10 && ex.Errors.Cast<SqlError>().Any(static error => error.Number == 1807))
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(Random.Shared.Next(100, 500))).ConfigureAwait(false);
+                }
+            }
+        }
+        finally
+        {
+            CreateDatabaseGate.Release();
+        }
+    }
+
+    private static async Task ExecuteAsync(string connectionString, string commandText, int commandTimeoutSeconds = 30)
     {
         await using var connection = new SqlConnection(connectionString);
         await using var command = connection.CreateCommand();
+        command.CommandTimeout = commandTimeoutSeconds;
         command.CommandText = commandText;
         await connection.OpenAsync().ConfigureAwait(false);
         await command.ExecuteNonQueryAsync().ConfigureAwait(false);
