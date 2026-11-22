@@ -66,6 +66,7 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
     {
         public EventDispatcher(dddlib.Persistence.EventDispatcher.IEventDispatcher dispatcher, dddlib.Persistence.EventDispatcher.Sdk.IEventBatchStore batchStore, dddlib.Persistence.EventDispatcher.EventDispatcherOptions? options = null) { }
         public event System.EventHandler<dddlib.Persistence.EventDispatcher.Sdk.DispatchFailedEventArgs>? DispatchFailed;
+        public event System.EventHandler<dddlib.Persistence.EventDispatcher.Sdk.StoreFailedEventArgs>? StoreFailed;
         public System.Threading.Tasks.ValueTask DisposeAsync() { }
         public System.Threading.Tasks.Task RunAsync(System.Threading.CancellationToken cancellationToken) { }
         public void Start() { }
@@ -75,5 +76,10 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
     {
         System.Threading.Tasks.Task<dddlib.Persistence.EventDispatcher.Sdk.EventBatch?> GetNextBatchAsync(System.Guid dispatcherId, int batchSize, System.TimeSpan batchTimeout, System.Threading.CancellationToken cancellationToken = default);
         System.Threading.Tasks.Task MarkDispatchedAsync(System.Guid dispatcherId, long sequenceNumber, System.Threading.CancellationToken cancellationToken = default);
+    }
+    public sealed class StoreFailedEventArgs : System.EventArgs
+    {
+        public StoreFailedEventArgs(System.Exception exception) { }
+        public System.Exception Exception { get; }
     }
 }

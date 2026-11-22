@@ -129,6 +129,11 @@ When a handler throws, the host raises `DispatchFailed` with the sequence number
 the events before it, abandons the batch and waits `BatchTimeout` before polling again so the abandoned batch comes back in order. The host
 itself does not log; subscribe to `DispatchFailed` to do so. Cancelling the token stops the host without raising it.
 
+When the store itself fails, say the database is briefly unreachable while polling or marking, the host raises
+`StoreFailed` with the exception, waits `BatchTimeout` and carries on; it does not stop. The wait matters: the store may
+have handed out a batch before failing, or a batch may have been dispatched but not marked, and that batch must time
+out to come back in order. A batch dispatched but not marked is delivered again, as at-least-once delivery allows.
+
 ## SQL Server schema
 
 The dispatcher's `Batches` and `DispatchedEvents` tables and its `GetNextBatch` and `MarkDispatched` procedures are

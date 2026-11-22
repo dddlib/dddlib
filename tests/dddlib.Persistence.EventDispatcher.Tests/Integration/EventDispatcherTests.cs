@@ -1,6 +1,7 @@
 using dddlib.Persistence.EventDispatcher.Memory;
 using dddlib.Persistence.EventDispatcher.Sdk;
 using dddlib.Persistence.Memory;
+using TUnit.Assertions.Enums;
 
 namespace dddlib.Persistence.EventDispatcher.Tests.Integration;
 
@@ -146,6 +147,39 @@ public class EventDispatcherTests
         await Assert.That(batches[0]).IsEquivalentTo([new DispatchedEvent(7, metadata, @event)]);
     }
 
+    // A store that throws must not stop the host: it reports the failure, waits for the batch to time out and carries
+    // on, so the events still arrive in order.
+    [Test]
+    public async Task AStoreFailureWhenPollingIsReportedAndRetried()
+    {
+        var batchStore = await CreateBatchStoreAsync(3);
+        batchStore.FailNextGet = true;
+        var handled = new List<int>();
+        var storeFailures = new List<StoreFailedEventArgs>();
+
+        await RunUntilMarkedAsync(new CustomEventDispatcher((_, @event) => handled.Add(((Event)@event).Id)), batchStore, 3, storeFailures);
+
+        await Assert.That(storeFailures).HasSingleItem();
+        await Assert.That(storeFailures[0].Exception.Message).IsEqualTo("store unavailable");
+        await Assert.That(handled).IsEquivalentTo([1, 2, 3]);
+        await Assert.That(batchStore.Marks).IsEquivalentTo([3L]);
+    }
+
+    [Test]
+    public async Task AStoreFailureWhenMarkingIsReportedAndTheBatchDeliveredAgain()
+    {
+        var batchStore = await CreateBatchStoreAsync(3);
+        batchStore.FailNextMark = true;
+        var handled = new List<int>();
+        var storeFailures = new List<StoreFailedEventArgs>();
+
+        await RunUntilMarkedAsync(new CustomEventDispatcher((_, @event) => handled.Add(((Event)@event).Id)), batchStore, 3, storeFailures);
+
+        await Assert.That(storeFailures).HasSingleItem();
+        await Assert.That(handled).IsEquivalentTo([1, 2, 3, 1, 2, 3], CollectionOrdering.Matching);
+        await Assert.That(batchStore.Marks).IsEquivalentTo([3L]);
+    }
+
     private static async Task<RecordingBatchStore> CreateBatchStoreAsync(int events)
     {
         var eventStore = new MemoryEventStore();
@@ -154,12 +188,13 @@ public class EventDispatcherTests
     }
 
     // Runs the host until the store has been marked up to the sequence number, then stops it.
-    private static async Task<List<DispatchFailedEventArgs>> RunUntilMarkedAsync(IEventDispatcher eventDispatcher, RecordingBatchStore batchStore, long sequenceNumber)
+    private static async Task<List<DispatchFailedEventArgs>> RunUntilMarkedAsync(IEventDispatcher eventDispatcher, RecordingBatchStore batchStore, long sequenceNumber, List<StoreFailedEventArgs>? storeFailures = null)
     {
         var failures = new List<DispatchFailedEventArgs>();
         using var stopping = new CancellationTokenSource();
         var dispatcher = new Sdk.EventDispatcher(eventDispatcher, batchStore, Options);
         dispatcher.DispatchFailed += (_, e) => failures.Add(e);
+        dispatcher.StoreFailed += (_, e) => storeFailures?.Add(e);
         batchStore.Marked += marked =>
         {
             if (marked >= sequenceNumber)
@@ -178,11 +213,32 @@ public class EventDispatcherTests
 
         public List<long> Marks { get; } = [];
 
-        public Task<EventBatch?> GetNextBatchAsync(Guid dispatcherId, int batchSize, TimeSpan batchTimeout, CancellationToken cancellationToken = default) =>
-            inner.GetNextBatchAsync(dispatcherId, batchSize, batchTimeout, cancellationToken);
+        // Fails after the batch is handed out, as when the connection drops before the result is read.
+        public bool FailNextGet { get; set; }
+
+        // Fails before the mark is recorded.
+        public bool FailNextMark { get; set; }
+
+        public async Task<EventBatch?> GetNextBatchAsync(Guid dispatcherId, int batchSize, TimeSpan batchTimeout, CancellationToken cancellationToken = default)
+        {
+            var batch = await inner.GetNextBatchAsync(dispatcherId, batchSize, batchTimeout, cancellationToken);
+            if (this.FailNextGet)
+            {
+                this.FailNextGet = false;
+                throw new InvalidOperationException("store unavailable");
+            }
+
+            return batch;
+        }
 
         public async Task MarkDispatchedAsync(Guid dispatcherId, long sequenceNumber, CancellationToken cancellationToken = default)
         {
+            if (this.FailNextMark)
+            {
+                this.FailNextMark = false;
+                throw new InvalidOperationException("store unavailable");
+            }
+
             await inner.MarkDispatchedAsync(dispatcherId, sequenceNumber, cancellationToken);
             this.Marks.Add(sequenceNumber);
             this.Marked?.Invoke(sequenceNumber);

@@ -96,6 +96,9 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   marks the events already dispatched, so only the rest are delivered again; a crash partway through a batch now
   redelivers that batch's dispatched events too. An `IEventBatchDispatcher` receives each batch whole, for example to
   publish it in one round trip, and is marked whole or not at all. No schema change (issue 59).
+- The event dispatcher no longer stops when its store throws, for example on a transient SQL error while polling for a
+  batch or marking one dispatched: it raises the new `StoreFailed` event, waits `BatchTimeout` so the affected batch
+  comes back in order, and carries on.
 - Dependencies: the SQL Server packages depend on `System.Security.Cryptography.Pkcs` 9.0.21, above the 9.0.18 that
   `Microsoft.Data.SqlClient` 7.1 brings, for the .NET denial of service vulnerabilities CVE-2026-84008 and
   CVE-2026-70162.
