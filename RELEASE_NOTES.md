@@ -104,8 +104,11 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   without waiting its turn, so it collided with other writers on the type's checkpoints; it now waits too, and is only
   sent back to synchronize when a key has been added since its checkpoint, not when one has been removed. A writer that
   waits more than 10 seconds for its turn now fails with a `ConcurrencyException` instead of SqlClient's command
-  timeout. Many writers adding such keys to one type at once can still run out of attempts, as before. Schema version
-  9 (`dddlib09.sql`) changes procedure bodies only: every SQL Server package now requires version 9 (issue 57).
+  timeout. Many writers adding such keys to one type at once can still run out of attempts, as before. A removal no
+  longer moves the key's row, serialized value and all, so each write holds the type's turn for less time. Schema
+  version 9 (`dddlib09.sql`) clusters `NaturalKeys` on `Id` instead of `(TypeId, Checkpoint)`, rebuilding the table
+  during the upgrade, and changes procedure bodies with their contracts unchanged: every SQL Server package now
+  requires version 9 (issue 57).
 - Dependencies: the SQL Server packages depend on `System.Security.Cryptography.Pkcs` 9.0.21, above the 9.0.18 that
   `Microsoft.Data.SqlClient` 7.1 brings, for the .NET denial of service vulnerabilities CVE-2026-84008 and
   CVE-2026-70162.

@@ -365,6 +365,103 @@ public class SqlServerSchemaTests : SqlServerIntegration
         await Assert.That(columns).IsEquivalentTo(["SequenceNumber", "StreamId", "StreamRevision", "CorrelationId", "TypeName", "Payload", "Metadata"], TUnit.Assertions.Enums.CollectionOrdering.Matching);
     }
 
+    // Version 9 clusters the natural keys on their identity rather than on their type's checkpoints, so that a removal,
+    // which moves a key to its type's next checkpoint, updates a narrow index instead of moving the whole row
+    // (https://github.com/dddlib/dddlib/issues/57).
+    [Test]
+    public async Task NaturalKeysAreClusteredOnTheirIdentity()
+    {
+        var schema = NewSchema();
+        await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
+
+        var indexes = await this.ReadIndexesAsync(schema, "NaturalKeys");
+
+        await Assert.That(indexes).IsEquivalentTo(
+            [
+                "CX_NaturalKey_Id CLUSTERED unique Id",
+                "PK_NaturalKey NONCLUSTERED primary key TypeId,Checkpoint",
+                "UX_NaturalKey_Value NONCLUSTERED unique TypeId,ValueHash",
+            ]);
+    }
+
+    [Test]
+    public async Task UpgradesFromVersion8AndKeepsTheNaturalKeys()
+    {
+        var schema = NewSchema();
+        var typeName = typeof(Event).GetSerializedName();
+        await SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, SqlServerSchemaInstaller.Scripts.Take(8).ToArray(), CancellationToken.None);
+        await this.Database.ExecuteScriptAsync($"""
+            EXEC [{schema}].[GetOrAddNaturalKey] @AggregateRootTypeName = '{typeName}', @SerializedValue = N'"one"';
+            EXEC [{schema}].[GetOrAddNaturalKey] @AggregateRootTypeName = '{typeName}', @SerializedValue = N'"two"';
+            EXEC [{schema}].[GetOrAddNaturalKey] @AggregateRootTypeName = '{typeName}', @SerializedValue = N'"three"';
+            DECLARE @Two UNIQUEIDENTIFIER = (SELECT [Id] FROM [{schema}].[NaturalKeys] WHERE [SerializedValue] = N'"two"');
+            EXEC [{schema}].[RemoveNaturalKey] @Id = @Two;
+            """);
+        var before = await this.ReadNaturalKeysAsync(schema);
+
+        await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
+        var repository = new SqlServerNaturalKeyRepository(this.ConnectionString, schema);
+        var records = await repository.GetNaturalKeysAsync(typeof(Event), 0);
+        var three = await repository.GetOrAddNaturalKeyAsync(typeof(Event), "\"three\"");
+        var four = await repository.GetOrAddNaturalKeyAsync(typeof(Event), "\"four\"");
+        await repository.RemoveAsync(three.Identity);
+        var afterRemoval = await repository.GetNaturalKeysAsync(typeof(Event), four.Checkpoint);
+
+        await Assert.That(records.Select(static record => $"{record.Identity.ToString().ToUpperInvariant()} {record.SerializedValue} {record.Checkpoint} {record.IsRemoved}"))
+            .IsEquivalentTo(before, TUnit.Assertions.Enums.CollectionOrdering.Matching);
+        await Assert.That(records.Select(static record => (record.SerializedValue, record.Checkpoint, record.IsRemoved)))
+            .IsEquivalentTo([("\"one\"", 1L, false), ("\"three\"", 3L, false), ("\"two\"", 4L, true)], TUnit.Assertions.Enums.CollectionOrdering.Matching);
+        await Assert.That(three.Identity).IsEqualTo(records[1].Identity);
+        await Assert.That(four.Checkpoint).IsEqualTo(5);
+        await Assert.That(afterRemoval.Select(static record => (record.Identity, record.Checkpoint, record.IsRemoved)))
+            .IsEquivalentTo([(three.Identity, 6L, true)]);
+    }
+
+    private async Task<List<string>> ReadIndexesAsync(string schema, string table)
+    {
+        await using var connection = new SqlConnection(this.ConnectionString);
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT [Index].[name], [Index].[type_desc], [Index].[is_primary_key], [Index].[is_unique],
+                STRING_AGG(CONVERT(NVARCHAR(128), [Column].[name]), ',') WITHIN GROUP (ORDER BY [IndexColumn].[key_ordinal])
+            FROM sys.indexes [Index]
+                INNER JOIN sys.index_columns [IndexColumn] ON [IndexColumn].[object_id] = [Index].[object_id] AND [IndexColumn].[index_id] = [Index].[index_id]
+                INNER JOIN sys.columns [Column] ON [Column].[object_id] = [IndexColumn].[object_id] AND [Column].[column_id] = [IndexColumn].[column_id]
+            WHERE [Index].[object_id] = OBJECT_ID(@Table) AND [IndexColumn].[key_ordinal] > 0
+            GROUP BY [Index].[name], [Index].[type_desc], [Index].[is_primary_key], [Index].[is_unique];
+            """;
+        command.Parameters.AddWithValue("@Table", $"[{schema}].[{table}]");
+
+        await connection.OpenAsync();
+        await using var reader = await command.ExecuteReaderAsync();
+        var indexes = new List<string>();
+        while (await reader.ReadAsync())
+        {
+            var kind = reader.GetBoolean(2) ? "primary key" : reader.GetBoolean(3) ? "unique" : "index";
+            indexes.Add($"{reader.GetString(0)} {reader.GetString(1)} {kind} {reader.GetString(4)}");
+        }
+
+        return indexes;
+    }
+
+    private async Task<List<string>> ReadNaturalKeysAsync(string schema)
+    {
+        await using var connection = new SqlConnection(this.ConnectionString);
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"SELECT CONCAT([Id], ' ', [SerializedValue], ' ', [Checkpoint], ' ', CASE [IsRemoved] WHEN 1 THEN 'True' ELSE 'False' END) FROM [{schema}].[NaturalKeys] ORDER BY [Checkpoint];";
+
+        await connection.OpenAsync();
+        await using var reader = await command.ExecuteReaderAsync();
+        var keys = new List<string>();
+        while (await reader.ReadAsync())
+        {
+            keys.Add(reader.GetString(0));
+        }
+
+        return keys;
+    }
+
     private async Task<List<string>> ReadEventsColumnsAsync(string schema)
     {
         await using var connection = new SqlConnection(this.ConnectionString);

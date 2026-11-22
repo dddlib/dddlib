@@ -74,7 +74,9 @@ parameter out stores what it did before.
 Version 8 adds the event metadata to the result of `ReadEvents`, after the columns earlier versions return, for
 [projections](projections.md).
 
-Version 9 changes procedure bodies only: `TryAddNaturalKey` waits for the type's turn as the other natural key writes
+Version 9 clusters `NaturalKeys` on `Id` (`CX_NaturalKey_Id`, replacing `IX_NaturalKey_Id`), with `PK_NaturalKey` a
+nonclustered primary key on `(TypeId, Checkpoint)` as before, so that a removal no longer moves the row. The upgrade
+rebuilds the table inside its transaction. `TryAddNaturalKey` waits for the type's turn as the other natural key writes
 do, and every natural key write waits for its turn for 10 seconds at most.
 
 Released scripts never change; every later change to the schema is a new script, so upgrading the packages and

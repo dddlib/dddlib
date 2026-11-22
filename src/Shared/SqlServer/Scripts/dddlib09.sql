@@ -1,9 +1,14 @@
--- dddlib SQL Server schema, version 9: every write of a type's natural keys takes the type's turn, and gives up clearly.
+-- dddlib SQL Server schema, version 9: every write of a type's natural keys takes the type's turn, gives up clearly,
+-- and holds the turn for less time.
 --
 -- Applied by SqlServerSchema.EnsureAsync (dddlib.Persistence.SqlServer), SqlServerEventDispatcherSchema.EnsureAsync
 -- (dddlib.Persistence.EventDispatcher.SqlServer) or SqlServerProjectionsSchema.EnsureAsync
--- (dddlib.Persistence.Projections.SqlServer). Procedure bodies only, with the contracts of version 1 and 3. Idempotent
--- like the earlier versions (https://github.com/dddlib/dddlib/issues/57).
+-- (dddlib.Persistence.Projections.SqlServer). The NaturalKeys table is clustered differently, and procedure bodies
+-- change, with the contracts of version 1 and 3. Idempotent like the earlier versions
+-- (https://github.com/dddlib/dddlib/issues/57).
+--
+-- Re-clustering rebuilds the NaturalKeys table inside the upgrade's transaction, so the upgrade holds it for as long as
+-- that takes.
 --
 -- Version 5 made GetOrAddNaturalKey and RemoveNaturalKey hold the type's checkpoint lock while they take its next
 -- checkpoint. TryAddNaturalKey, for keys the identity map compares itself, did not, so it collided with itself and with
@@ -16,6 +21,51 @@
 -- reports as a concurrency error.
 
 -- Identity map.
+
+-- The natural keys were clustered on (TypeId, Checkpoint). A removal moves its key to the type's next checkpoint, so it
+-- moved the whole row, serialized value and all, while it held the type's lock, and that lock is what sets how many
+-- writes a type takes a second. They are now clustered on their identity, which never changes, and PK_NaturalKey
+-- becomes a narrow nonclustered index on the same columns: a removal updates that index and the row in place. The
+-- primary key keeps its name and columns, so a duplicate checkpoint is still error 2627 on PK_NaturalKey. Older
+-- packages use none of the index names. IX_NaturalKey_Id, which version 3 added for removals to find their key, is
+-- the clustered index now.
+IF EXISTS (SELECT * FROM sys.indexes WHERE object_id = OBJECT_ID(N'[dbo].[NaturalKeys]') AND name = N'IX_NaturalKey_Id')
+DROP INDEX [IX_NaturalKey_Id] ON [dbo].[NaturalKeys];
+GO
+
+IF EXISTS (SELECT * FROM sys.indexes WHERE object_id = OBJECT_ID(N'[dbo].[NaturalKeys]') AND name = N'PK_NaturalKey' AND type_desc = N'CLUSTERED')
+ALTER TABLE [dbo].[NaturalKeys] DROP CONSTRAINT [PK_NaturalKey];
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = OBJECT_ID(N'[dbo].[NaturalKeys]') AND name = N'CX_NaturalKey_Id')
+CREATE UNIQUE CLUSTERED INDEX [CX_NaturalKey_Id] ON [dbo].[NaturalKeys] ([Id]);
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = OBJECT_ID(N'[dbo].[NaturalKeys]') AND name = N'PK_NaturalKey')
+ALTER TABLE [dbo].[NaturalKeys] ADD CONSTRAINT [PK_NaturalKey] PRIMARY KEY NONCLUSTERED ([TypeId], [Checkpoint]);
+GO
+
+-- As in version 1, in two statements. Reading the serialized values through the narrow index in one statement would
+-- hold a key of that index while waiting for the row, and a removal locks the row and then that key: a deadlock. The
+-- keys after the checkpoint are read from the index first, and then each row by its identity. A key removed in between
+-- has moved to a later checkpoint; it is left out, and the next read finds it there.
+CREATE OR ALTER PROCEDURE [dbo].[GetNaturalKeys]
+    @AggregateRootTypeName VARCHAR(511),
+    @Checkpoint BIGINT
+AS
+SET NOCOUNT ON;
+
+DECLARE @Keys TABLE ([Checkpoint] BIGINT NOT NULL PRIMARY KEY, [Id] UNIQUEIDENTIFIER NOT NULL);
+
+INSERT INTO @Keys ([Id], [Checkpoint])
+SELECT [NaturalKey].[Id], [NaturalKey].[Checkpoint]
+FROM [dbo].[NaturalKeys] [NaturalKey] INNER JOIN [dbo].[Types] [Type] ON [NaturalKey].[TypeId] = [Type].[Id]
+WHERE [NaturalKey].[Checkpoint] > @Checkpoint AND [Type].[Name] = @AggregateRootTypeName;
+
+SELECT [NaturalKey].[Id], [NaturalKey].[SerializedValue], [NaturalKey].[Checkpoint], [NaturalKey].[IsRemoved]
+FROM @Keys [Key] INNER JOIN [dbo].[NaturalKeys] [NaturalKey] ON [NaturalKey].[Id] = [Key].[Id] AND [NaturalKey].[Checkpoint] = [Key].[Checkpoint]
+ORDER BY [NaturalKey].[Checkpoint];
+GO
 
 -- As in version 1, adding the key under the type's checkpoint lock, and registering the type with TryAddType.
 CREATE OR ALTER PROCEDURE [dbo].[TryAddNaturalKey]
