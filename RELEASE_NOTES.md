@@ -76,6 +76,13 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   a list in step with the events. Saves without it store exactly what they did before, and every event of a save now
   has the same `timestamp`. Schema version 7 (`dddlib07.sql`, expand only) adds an optional `@EventMetadata`
   parameter to `AppendEvents` and `AppendStreams`: every SQL Server package now requires version 7 (issue 61).
+- Projections read event metadata: `FeedEvent` gains `Metadata`, before `Event` (a breaking change for code that
+  constructs one, such as a test of a projection), with what the event dispatcher receives, so a handler that takes the
+  envelope can project who saved an event and in which tenant. The in-memory store now keeps metadata too:
+  `MemoryEventStore` stores `hostname` and `timestamp` with each event, `MemoryRepository<T>` gains `EventMetadata`
+  and `GetEventMetadata` as `SqlServerRepository<T>` has them, and the in-memory dispatcher passes the metadata on
+  instead of an empty dictionary. Schema version 8 (`dddlib08.sql`, expand only) returns the metadata from
+  `ReadEvents` after the columns earlier versions read: every SQL Server package now requires version 8 (issue 60).
 - Dependencies: the SQL Server packages depend on `System.Security.Cryptography.Pkcs` 9.0.21, above the 9.0.18 that
   `Microsoft.Data.SqlClient` 7.1 brings, for the .NET denial of service vulnerabilities CVE-2026-84008 and
   CVE-2026-70162.

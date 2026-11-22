@@ -53,8 +53,10 @@ public sealed class CarNotifications : IEventDispatcher
 
 `metadata` is what the event was stored with. On SQL Server that is the `hostname` and `timestamp` of the save, and
 any entries a [custom repository](memento-persistence.md#custom-storage) appended with the events, such as a tenant
-that the events themselves do not carry, or a message ID of that event's own. The in-memory store keeps none, and an entry stored as anything other than a
-string is left out. `CustomEventDispatcher` takes a delegate with or without the metadata.
+that the events themselves do not carry, or a message ID of that event's own. The in-memory store keeps the same:
+`hostname`, `timestamp` and the entries of a `MemoryRepository<T>` that overrides `EventMetadata` or
+`GetEventMetadata`. An entry stored as anything other than a string is left out. [Projections](projections.md) read
+the same metadata from the feed. `CustomEventDispatcher` takes a delegate with or without the metadata.
 
 ## Hosting
 

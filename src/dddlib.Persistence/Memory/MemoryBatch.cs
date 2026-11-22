@@ -26,7 +26,7 @@ public sealed class MemoryBatch : IBatch
     {
         // Everything that can fail without touching the stores is done first.
         var mementos = entries.Select(static entry => entry.Participant.Stage(entry.Save.Memento)).ToArray();
-        var events = entries.Select(static entry => MemoryEventStore.Stage(entry.Save.Events)).ToArray();
+        var events = entries.Select(static entry => entry.Participant.StageEvents(entry.Save.Id, entry.Save.Events)).ToArray();
 
         // The locks of a single save, in a fixed order so that batches cannot deadlock each other: every repository's,
         // then every event store's.

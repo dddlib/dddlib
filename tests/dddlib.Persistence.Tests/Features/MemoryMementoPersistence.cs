@@ -175,6 +175,127 @@ public abstract class MemoryMementoPersistence : Feature
         }
     }
 
+    // Metadata the events do not carry, such as a tenant, and metadata of each event's own, such as a message ID, come
+    // from the repository, alone or in a batch, as they do on SQL Server, and reach the feed beside dddlib's own
+    // (https://github.com/dddlib/dddlib/issues/60).
+    public sealed class EventMetadataReachesTheFeed : MemoryMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a repository that gives its events a tenant, and each event a message ID made of its aggregate
+            // root's identity and its position
+            var eventStore = new MemoryEventStore();
+            var repository = new MessageIdRepository(eventStore);
+
+            // When an instance with two events is saved alone
+            var alone = new EventsAreStoredForDispatch.Subject("alone");
+            alone.Rename("renamed");
+            await repository.SaveAsync(alone);
+
+            // And two instances are saved in a batch
+            var batch = new MemoryBatch();
+            repository.Add(batch, new EventsAreStoredForDispatch.Subject("first"));
+            repository.Add(batch, new EventsAreStoredForDispatch.Subject("second"));
+            await batch.SaveAsync();
+
+            // Then every event in the feed carries dddlib's metadata, the tenant and its own message ID
+            var events = (await eventStore.ReadEventsAsync(0, 10)).Events;
+            await Assert.That(events).Count().IsEqualTo(4);
+            foreach (var @event in events)
+            {
+                await Assert.That(@event.Metadata.Keys).IsEquivalentTo(["hostname", "timestamp", "tenant", "message_id"]);
+                await Assert.That(@event.Metadata["hostname"]).IsEqualTo(Environment.MachineName);
+                await Assert.That(@event.Metadata["tenant"]).IsEqualTo("acme");
+                await Assert.That(@event.Metadata["message_id"]).IsEqualTo($"{@event.StreamId:N}/{@event.StreamRevision - 1}");
+            }
+
+            // And the events of one save share a timestamp
+            await Assert.That(events[0].Metadata["timestamp"]).IsEqualTo(events[1].Metadata["timestamp"]);
+        }
+
+        public sealed class MessageIdRepository(MemoryEventStore eventStore) : MemoryRepository<EventsAreStoredForDispatch.Subject>(new MemoryIdentityMap(), eventStore)
+        {
+            protected override IReadOnlyDictionary<string, string>? EventMetadata => new Dictionary<string, string> { ["tenant"] = "acme" };
+
+            protected override IReadOnlyDictionary<string, string>? GetEventMetadata(Guid id, object @event, int index) =>
+                new Dictionary<string, string> { ["message_id"] = $"{id:N}/{index}" };
+        }
+    }
+
+    // An event's own metadata replaces the repository's entry with the same key, for that event only.
+    public sealed class EventMetadataOverridesTheSavesMetadata : MemoryMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a repository that gives its events a tenant, and its second event of a save another tenant
+            var eventStore = new MemoryEventStore();
+            var repository = new OverridingRepository(eventStore);
+
+            // When an instance with two events is saved
+            var instance = new EventsAreStoredForDispatch.Subject("key");
+            instance.Rename("renamed");
+            await repository.SaveAsync(instance);
+
+            // Then only the second event carries the other tenant
+            var events = (await eventStore.ReadEventsAsync(0, 10)).Events;
+            await Assert.That(events[0].Metadata["tenant"]).IsEqualTo("acme");
+            await Assert.That(events[1].Metadata["tenant"]).IsEqualTo("other");
+        }
+
+        public sealed class OverridingRepository(MemoryEventStore eventStore) : MemoryRepository<EventsAreStoredForDispatch.Subject>(new MemoryIdentityMap(), eventStore)
+        {
+            protected override IReadOnlyDictionary<string, string>? EventMetadata => new Dictionary<string, string> { ["tenant"] = "acme" };
+
+            protected override IReadOnlyDictionary<string, string>? GetEventMetadata(Guid id, object @event, int index) =>
+                index == 1 ? new Dictionary<string, string> { ["tenant"] = "other" } : null;
+        }
+    }
+
+    // dddlib's hostname and timestamp cannot be replaced, by the repository's metadata or an event's own, and nothing is
+    // stored when either tries.
+    public sealed class EventMetadataCannotReplaceDddlibsOwn : MemoryMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a repository that gives its events a hostname, and one that gives each event a timestamp
+            var eventStore = new MemoryEventStore();
+            var hostname = new ReservedRepository(eventStore, new Dictionary<string, string> { ["hostname"] = "web-01" }, null);
+            var timestamp = new ReservedRepository(eventStore, null, new Dictionary<string, string> { ["timestamp"] = "2026-01-01T00:00:00Z" });
+
+            // When an instance is saved through each, alone and in a batch
+            // Then each save is rejected, naming the key
+            await Assert.That(() => hostname.SaveAsync(new EventsAreStoredForDispatch.Subject("a")))
+                .Throws<ArgumentException>()
+                .WithMessageContaining("The metadata key 'hostname' is reserved for dddlib.");
+            await Assert.That(() => timestamp.SaveAsync(new EventsAreStoredForDispatch.Subject("b")))
+                .Throws<ArgumentException>()
+                .WithMessageContaining("The metadata key 'timestamp' is reserved for dddlib.");
+
+            var batch = new MemoryBatch();
+            hostname.Add(batch, new EventsAreStoredForDispatch.Subject("c"));
+            await Assert.That(() => batch.SaveAsync())
+                .Throws<ArgumentException>()
+                .WithMessageContaining("The metadata key 'hostname' is reserved for dddlib.");
+
+            // And nothing is stored
+            await Assert.That(await eventStore.GetLastSequenceNumberAsync()).IsEqualTo(0);
+            await Assert.That(async () => await hostname.LoadAsync("a")).Throws<AggregateRootNotFoundException>();
+        }
+
+        public sealed class ReservedRepository(
+            MemoryEventStore eventStore,
+            IReadOnlyDictionary<string, string>? metadata,
+            IReadOnlyDictionary<string, string>? eventMetadata) : MemoryRepository<EventsAreStoredForDispatch.Subject>(new MemoryIdentityMap(), eventStore)
+        {
+            protected override IReadOnlyDictionary<string, string>? EventMetadata => metadata;
+
+            protected override IReadOnlyDictionary<string, string>? GetEventMetadata(Guid id, object @event, int index) => eventMetadata;
+        }
+    }
+
     // A batch saves aggregate roots of different types, each through its own repository, in one transaction. Here
     // each repository has its own identity map and event store.
     public sealed class BatchSavesRootsOfDifferentTypes : MemoryMementoPersistence

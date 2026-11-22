@@ -78,6 +78,8 @@ namespace dddlib.Persistence.Memory
         public MemoryRepository() { }
         public MemoryRepository(dddlib.Persistence.Sdk.IIdentityMap identityMap) { }
         public MemoryRepository(dddlib.Persistence.Sdk.IIdentityMap identityMap, dddlib.Persistence.Memory.MemoryEventStore eventStore) { }
+        protected virtual System.Collections.Generic.IReadOnlyDictionary<string, string>? EventMetadata { get; }
+        protected virtual System.Collections.Generic.IReadOnlyDictionary<string, string>? GetEventMetadata(System.Guid id, object @event, int index) { }
         protected override System.Threading.Tasks.Task<dddlib.Persistence.Sdk.MementoResult?> LoadAsync(System.Guid id, System.Threading.CancellationToken cancellationToken) { }
         protected override System.Threading.Tasks.Task<string> SaveAsync(System.Guid id, object memento, System.Collections.Generic.IReadOnlyList<object> events, string? preCommitState, System.Threading.CancellationToken cancellationToken) { }
     }
@@ -132,8 +134,9 @@ namespace dddlib.Persistence.Sdk
     }
     public sealed class FeedEvent : dddlib.Persistence.Sdk.SequencedEvent, System.IEquatable<dddlib.Persistence.Sdk.FeedEvent>
     {
-        public FeedEvent(long SequenceNumber, System.Guid StreamId, int StreamRevision, System.Guid CorrelationId, object Event) { }
+        public FeedEvent(long SequenceNumber, System.Guid StreamId, int StreamRevision, System.Guid CorrelationId, System.Collections.Generic.IReadOnlyDictionary<string, string> Metadata, object Event) { }
         public System.Guid CorrelationId { get; init; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, string> Metadata { get; init; }
         public System.Guid StreamId { get; init; }
         public int StreamRevision { get; init; }
     }

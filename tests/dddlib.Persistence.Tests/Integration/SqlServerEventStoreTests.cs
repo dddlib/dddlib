@@ -272,6 +272,31 @@ public class SqlServerEventStoreTests : SqlServerIntegration
         await Assert.That(handled.EndSequenceNumber).IsEqualTo(first + 2);
     }
 
+    // The feed carries what each event was stored with, read as the event dispatcher reads it: the string entries of
+    // the stored JSON object, and nothing for metadata that is missing or not an object
+    // (https://github.com/dddlib/dddlib/issues/60).
+    [Test]
+    public async Task FeedCarriesTheMetadataOfEachEvent()
+    {
+        var eventStore = new SqlServerEventStore(this.ConnectionString);
+        var first = await eventStore.GetLastSequenceNumberAsync();
+        await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }], Guid.NewGuid(), null);
+        await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 2 }, new Event { Id = 3 }, new Event { Id = 4 }], Guid.NewGuid(), null);
+        await this.Database.ExecuteScriptAsync($$$"""
+            UPDATE [dbo].[Events] SET [Metadata] = NULL WHERE [SequenceNumber] = {{{first + 2}}};
+            UPDATE [dbo].[Events] SET [Metadata] = N'[1,2]' WHERE [SequenceNumber] = {{{first + 3}}};
+            UPDATE [dbo].[Events] SET [Metadata] = N'{"tenant":"acme","count":2,"nested":{"a":"b"}}' WHERE [SequenceNumber] = {{{first + 4}}};
+            """);
+
+        var page = await eventStore.ReadEventsAsync(first, 10);
+
+        await Assert.That(page.Events[0].Metadata.Keys).IsEquivalentTo(["hostname", "timestamp"]);
+        await Assert.That(page.Events[0].Metadata["hostname"]).IsEqualTo(Environment.MachineName);
+        await Assert.That(page.Events[1].Metadata).IsEmpty();
+        await Assert.That(page.Events[2].Metadata).IsEmpty();
+        await Assert.That(page.Events[3].Metadata).IsEquivalentTo(new Dictionary<string, string> { ["tenant"] = "acme" });
+    }
+
     private static async Task CommitByHandAsync(SqlTransaction transaction, string typeName, string payload)
     {
         await using var command = transaction.Connection!.CreateCommand();

@@ -71,6 +71,9 @@ Version 7 adds the `EventMetadataList` table type and an optional `@EventMetadat
 `AppendStreams`, for [metadata of each event's own](memento-persistence.md#custom-storage). A caller that leaves the
 parameter out stores what it did before.
 
+Version 8 adds the event metadata to the result of `ReadEvents`, after the columns earlier versions return, for
+[projections](projections.md).
+
 Released scripts never change; every later change to the schema is a new script, so upgrading the packages and
 calling `EnsureAsync` upgrades the schema. The `Versions` table holds one row per applied version with the package
 that applied it and the text it ran.

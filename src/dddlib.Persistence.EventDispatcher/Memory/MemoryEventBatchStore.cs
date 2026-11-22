@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using dddlib.Persistence.EventDispatcher.Sdk;
 using dddlib.Persistence.Memory;
 
@@ -51,8 +50,7 @@ public sealed class MemoryEventBatchStore : IEventBatchStore
             var id = ++this.nextBatchId;
             state.Incomplete.Add(new PendingBatch(id, events[^1].SequenceNumber, now));
 
-            // The in-memory event store keeps no metadata.
-            var dispatched = events.Select(static e => new DispatchedEvent(e.SequenceNumber, ReadOnlyDictionary<string, string>.Empty, e.Event)).ToArray();
+            var dispatched = events.Select(static e => new DispatchedEvent(e.SequenceNumber, e.Metadata, e.Event)).ToArray();
             return Task.FromResult<EventBatch?>(new EventBatch(id, dispatched));
         }
     }

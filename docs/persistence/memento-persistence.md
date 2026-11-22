@@ -42,6 +42,10 @@ same instance to have them dispatched. The other constructors create a private e
 but not observable. Nothing is shared between instances of `MemoryRepository<T>`; pass a shared `MemoryIdentityMap`
 to share identities between repositories.
 
+`MemoryRepository<T>` has the same `EventMetadata` and `GetEventMetadata` overrides as
+[custom storage](#custom-storage), with the same merge and reserved keys, so the in-memory event dispatcher and
+[projections](projections.md) receive the same metadata as on SQL Server.
+
 ## SQL Server
 
 `SqlServerMementoRepository<T>` stores any memento as JSON in the `Mementos` table of the [dddlib schema](sql-server.md) and
@@ -108,8 +112,8 @@ protected override IReadOnlyDictionary<string, string>? EventMetadata =>
     new Dictionary<string, string> { ["tenant"] = tenant };
 ```
 
-It is stored with each event beside dddlib's own `hostname` and `timestamp` entries, and the dispatcher receives all of
-them. A key of `hostname` or `timestamp` is an `ArgumentException`, thrown before anything is written.
+It is stored with each event beside dddlib's own `hostname` and `timestamp` entries, and the dispatcher and
+[projections](projections.md) receive all of them. A key of `hostname` or `timestamp` is an `ArgumentException`, thrown before anything is written.
 
 For a value that differs from one event to the next, such as a message ID that lets consumers drop the duplicates of a
 redelivered save, override `GetEventMetadata`. It is called once for each event before anything is written, with the

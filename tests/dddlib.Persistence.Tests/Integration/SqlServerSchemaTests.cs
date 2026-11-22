@@ -1,5 +1,6 @@
 using dddlib.Persistence.Sdk;
 using dddlib.Persistence.SqlServer;
+using dddlib.Sdk;
 using dddlib.Tests.Support;
 using Microsoft.Data.SqlClient;
 
@@ -334,6 +335,50 @@ public class SqlServerSchemaTests : SqlServerIntegration
     {
         await Assert.That(() => (Task)SqlServerSchema.EnsureAsync(this.ConnectionString, "bad name")).Throws<ArgumentException>();
         await Assert.That(() => (Task)SqlServerSchema.GetVersionAsync(this.ConnectionString, "bad name")).Throws<ArgumentException>();
+    }
+
+    // Version 8 gives the feed each event's metadata, as version 4 did the dispatcher, after the columns a feed
+    // requiring an earlier version reads by position. Events stored before it have dddlib's entries only, or none
+    // (https://github.com/dddlib/dddlib/issues/60).
+    [Test]
+    public async Task UpgradesFromVersion7AndFeedsTheMetadataOfTheEventsStoredBefore()
+    {
+        var schema = NewSchema();
+        await SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, SqlServerSchemaInstaller.Scripts.Take(7).ToArray(), CancellationToken.None);
+        await this.Database.ExecuteScriptAsync($$"""
+            INSERT INTO [{{schema}}].[Types] ([Name]) VALUES ('{{typeof(Event).GetSerializedName()}}');
+            INSERT INTO [{{schema}}].[Streams] ([Id], [Revision], [State]) VALUES (NEWID(), 2, 'state');
+            INSERT INTO [{{schema}}].[Events] ([StreamLinkId], [StreamRevision], [TypeId], [Metadata], [Payload], [CorrelationId], [SequenceNumber])
+            SELECT [Stream].[LinkId], [Event].[StreamRevision], [Type].[Id], [Event].[Metadata], N'{"Id":0}', NEWID(), [Event].[StreamRevision]
+            FROM [{{schema}}].[Streams] [Stream]
+                CROSS JOIN [{{schema}}].[Types] [Type]
+                CROSS JOIN (VALUES (1, N'{"hostname":"web-01","timestamp":"2026-10-01T00:00:00Z"}'), (2, NULL)) AS [Event] ([StreamRevision], [Metadata]);
+            """);
+
+        await SqlServerSchema.EnsureAsync(this.ConnectionString, schema);
+        var page = await new SqlServerEventStore(this.ConnectionString, schema).ReadEventsAsync(0, 10);
+        var columns = await this.ReadEventsColumnsAsync(schema);
+
+        await Assert.That(page.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo([1L, 2L]);
+        await Assert.That(page.Events[0].Metadata).IsEquivalentTo(new Dictionary<string, string> { ["hostname"] = "web-01", ["timestamp"] = "2026-10-01T00:00:00Z" });
+        await Assert.That(page.Events[1].Metadata).IsEmpty();
+        await Assert.That(columns).IsEquivalentTo(["SequenceNumber", "StreamId", "StreamRevision", "CorrelationId", "TypeName", "Payload", "Metadata"], TUnit.Assertions.Enums.CollectionOrdering.Matching);
+    }
+
+    private async Task<List<string>> ReadEventsColumnsAsync(string schema)
+    {
+        await using var connection = new SqlConnection(this.ConnectionString);
+        await using var command = connection.CreateCommand();
+        command.CommandType = System.Data.CommandType.StoredProcedure;
+        command.CommandText = $"[{schema}].[ReadEvents]";
+        command.Parameters.AddWithValue("@AfterSequenceNumber", 0L);
+        command.Parameters.AddWithValue("@MaxCount", 10);
+
+        await connection.OpenAsync();
+        await using var reader = await command.ExecuteReaderAsync();
+        await reader.NextResultAsync();
+
+        return Enumerable.Range(0, reader.FieldCount).Select(reader.GetName).ToList();
     }
 
     private static int RequiredVersion => SqlServerSchemaInstaller.RequiredVersion;

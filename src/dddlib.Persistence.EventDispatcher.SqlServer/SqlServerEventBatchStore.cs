@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Data;
 using System.Text.Json;
 using System.Transactions;
@@ -79,7 +78,7 @@ public sealed class SqlServerEventBatchStore : IEventBatchStore
             var payloadType = TypeNameResolver.ResolveOrThrow(rows[index].TypeName);
             events[index] = new DispatchedEvent(
                 rows[index].SequenceNumber,
-                ReadMetadata(rows[index].Metadata),
+                EventMetadata.Parse(rows[index].Metadata),
                 JsonSerializer.Deserialize(rows[index].Payload, payloadType, JsonSerialization.Options)!);
         }
 
@@ -100,39 +99,5 @@ public sealed class SqlServerEventBatchStore : IEventBatchStore
         await SqlServerSchemaCheck.EnsureCompatibleAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-    }
-
-    // The string entries of the stored JSON object. Anything else is absent rather than an error, which would fail the
-    // batch each time it is handed out again.
-    private static ReadOnlyDictionary<string, string> ReadMetadata(string? json)
-    {
-        if (json is null)
-        {
-            return ReadOnlyDictionary<string, string>.Empty;
-        }
-
-        try
-        {
-            using var document = JsonDocument.Parse(json);
-            if (document.RootElement.ValueKind != JsonValueKind.Object)
-            {
-                return ReadOnlyDictionary<string, string>.Empty;
-            }
-
-            var metadata = new Dictionary<string, string>();
-            foreach (var property in document.RootElement.EnumerateObject())
-            {
-                if (property.Value.ValueKind == JsonValueKind.String)
-                {
-                    metadata[property.Name] = property.Value.GetString()!;
-                }
-            }
-
-            return metadata.AsReadOnly();
-        }
-        catch (JsonException)
-        {
-            return ReadOnlyDictionary<string, string>.Empty;
-        }
     }
 }

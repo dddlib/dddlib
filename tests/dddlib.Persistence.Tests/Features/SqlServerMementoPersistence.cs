@@ -1641,6 +1641,16 @@ SELECT @PostCommitState;";
 
             // And the events of the batch belong to different aggregate roots
             await Assert.That(events.Select(static @event => @event.StreamId).Distinct().Count()).IsEqualTo(3);
+
+            // And the feed that projections read carries the same metadata (https://github.com/dddlib/dddlib/issues/60)
+            var feed = (await new SqlServerEventStore(this.ConnectionString).ReadEventsAsync(0, 10)).Events;
+            await Assert.That(feed).Count().IsEqualTo(4);
+            foreach (var @event in feed)
+            {
+                await Assert.That(@event.Metadata.Keys).IsEquivalentTo(["hostname", "timestamp", "tenant", "message_id"]);
+                await Assert.That(@event.Metadata["tenant"]).IsEqualTo("acme");
+                await Assert.That(@event.Metadata["message_id"]).IsEqualTo($"{@event.StreamId:N}/{@event.StreamRevision - 1}");
+            }
         }
 
         private async Task<List<(Guid StreamId, int Revision, string Metadata)>> ReadEventsAsync()

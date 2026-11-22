@@ -82,9 +82,10 @@ public class MemoryEventBatchStoreTests
         await Assert.That(afterTimeout!.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo(first!.Events.Select(static e => e.SequenceNumber));
     }
 
-    // The in-memory event store keeps no metadata.
+    // The in-memory event store keeps each event's metadata, as SQL Server does: here dddlib's hostname and timestamp
+    // (https://github.com/dddlib/dddlib/issues/60).
     [Test]
-    public async Task EventsCarryEmptyMetadata()
+    public async Task EventsCarryTheirMetadata()
     {
         var eventStore = new MemoryEventStore();
         var batchStore = new MemoryEventBatchStore(eventStore);
@@ -92,7 +93,8 @@ public class MemoryEventBatchStoreTests
 
         var batch = await batchStore.GetNextBatchAsync(Guid.Empty, 50, TimeSpan.FromSeconds(30));
 
-        await Assert.That(batch!.Events[0].Metadata).IsEmpty();
+        await Assert.That(batch!.Events[0].Metadata.Keys).IsEquivalentTo(["hostname", "timestamp"]);
+        await Assert.That(batch.Events[0].Metadata["hostname"]).IsEqualTo(Environment.MachineName);
     }
 
     [Test]

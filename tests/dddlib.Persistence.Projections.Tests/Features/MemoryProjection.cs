@@ -268,4 +268,32 @@ public abstract class MemoryProjection : Feature
             await Assert.That(projection.CaughtAll).IsEquivalentTo([2L]);
         }
     }
+
+    // A handler that takes the envelope reads the metadata each event was stored with, such as who saved it and in
+    // which tenant (https://github.com/dddlib/dddlib/issues/60).
+    public sealed class HandlerReadsTheEventsMetadata : MemoryProjection
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given two saved aggregate roots
+            await this.SaveAsync("a");
+            await this.SaveAsync("b");
+
+            // When a projection that records each event's metadata runs
+            var projection = new MetadataProjection();
+            var store = new MemoryProjectionStore<string, SubjectView>(projection);
+            await using var runner = new ProjectionRunner(this.EventStore, store, Options);
+            runner.Start();
+            await WaitUntilAsync(() => runner.Checkpoint == 2);
+
+            // Then each handler was given dddlib's metadata for its event
+            await Assert.That(projection.Metadata).Count().IsEqualTo(2);
+            foreach (var metadata in projection.Metadata)
+            {
+                await Assert.That(metadata.Keys).IsEquivalentTo(["hostname", "timestamp"]);
+                await Assert.That(metadata["hostname"]).IsEqualTo(Environment.MachineName);
+            }
+        }
+    }
 }

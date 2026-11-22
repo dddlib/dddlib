@@ -7,7 +7,8 @@ namespace dddlib.Persistence.Memory;
 /// <summary>
 /// An in-process event store. Events are stored as JSON and deserialized on read so that a loaded aggregate root
 /// never shares event instances with the one that was saved, and so that serialization problems surface early. It is
-/// also the <see cref="IEventFeed"/> for projections over it.
+/// also the <see cref="IEventFeed"/> for projections over it. Each event is stored with metadata, as on SQL Server:
+/// dddlib's <c>hostname</c> and <c>timestamp</c>, and the entries a <see cref="MemoryRepository{T}"/> adds.
 /// </summary>
 public sealed class MemoryEventStore : IMultiStreamEventStore, IEventFeed
 {
@@ -102,7 +103,7 @@ public sealed class MemoryEventStore : IMultiStreamEventStore, IEventFeed
             var page = this.ReadPage(afterSequenceNumber, maxCount);
             var events = page
                 .Where(stored => eventTypes is null || eventTypes.Count == 0 || eventTypes.Contains(stored.Type))
-                .Select(static stored => new FeedEvent(stored.SequenceNumber, stored.StreamId, stored.StreamRevision, stored.CorrelationId, stored.Deserialize()))
+                .Select(static stored => stored.ToFeedEvent())
                 .ToArray();
 
             return Task.FromResult(new EventPage(page.Count == 0 ? afterSequenceNumber : page[^1].SequenceNumber, events));
@@ -123,14 +124,14 @@ public sealed class MemoryEventStore : IMultiStreamEventStore, IEventFeed
     /// Reads committed events in sequence order, starting after the specified sequence number. This is the feed
     /// the event dispatcher batches from.
     /// </summary>
-    internal IReadOnlyList<SequencedEvent> ReadEvents(long afterSequenceNumber, int maxCount)
+    internal IReadOnlyList<FeedEvent> ReadEvents(long afterSequenceNumber, int maxCount)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxCount);
 
         lock (this.sync)
         {
             return this.ReadPage(afterSequenceNumber, maxCount)
-                .Select(static stored => new SequencedEvent(stored.SequenceNumber, stored.Deserialize()))
+                .Select(static stored => stored.ToFeedEvent())
                 .ToArray();
         }
     }
@@ -145,8 +146,31 @@ public sealed class MemoryEventStore : IMultiStreamEventStore, IEventFeed
     /// </summary>
     internal long BatchOrder { get; } = Interlocked.Increment(ref instances);
 
-    internal static StagedEvents Stage(IReadOnlyList<object> events) =>
-        new(events.Select(static @event => (@event.GetType(), JsonSerializer.Serialize(@event, @event.GetType(), JsonSerialization.Options))).ToArray());
+    /// <summary>
+    /// Serializes events ahead of a commit, with the metadata each is stored with: dddlib's, at one timestamp for them
+    /// all, then <paramref name="metadata"/>, with each event's own from <paramref name="eventMetadata"/> merged over it.
+    /// An entry that would replace dddlib's is an <see cref="ArgumentException"/>, before anything is stored.
+    /// </summary>
+    internal static StagedEvents Stage(
+        IReadOnlyList<object> events,
+        IReadOnlyDictionary<string, string>? metadata = null,
+        Func<object, int, IReadOnlyDictionary<string, string>?>? eventMetadata = null)
+    {
+        EventMetadata.Validate(metadata, nameof(metadata));
+
+        var timestamp = DateTime.UtcNow;
+        var staged = new StagedEvent[events.Count];
+        for (var index = 0; index < events.Count; index++)
+        {
+            var @event = events[index];
+            staged[index] = new StagedEvent(
+                @event.GetType(),
+                JsonSerializer.Serialize(@event, @event.GetType(), JsonSerialization.Options),
+                EventMetadata.Create(metadata, eventMetadata?.Invoke(@event, index), timestamp));
+        }
+
+        return new StagedEvents(staged);
+    }
 
     /// <summary>
     /// Appends staged events on behalf of a memento save, as <see cref="AppendEvents"/> does. The caller holds
@@ -198,9 +222,9 @@ public sealed class MemoryEventStore : IMultiStreamEventStore, IEventFeed
             this.streams.Add(streamId, stream);
         }
 
-        foreach (var (type, payload) in staged.Events)
+        foreach (var (type, payload, metadata) in staged.Events)
         {
-            var sequenced = new StoredEvent(++this.sequenceNumber, streamId, stream.Count + 1, correlationId, type, payload, state);
+            var sequenced = new StoredEvent(++this.sequenceNumber, streamId, stream.Count + 1, correlationId, type, payload, metadata, state);
             stream.Add(sequenced);
             this.log.Add(sequenced);
         }
@@ -209,10 +233,25 @@ public sealed class MemoryEventStore : IMultiStreamEventStore, IEventFeed
     /// <summary>
     /// Events serialized ahead of a commit, so that a failure to serialize one leaves the store untouched.
     /// </summary>
-    internal sealed record StagedEvents(IReadOnlyList<(Type Type, string Payload)> Events);
+    internal sealed record StagedEvents(IReadOnlyList<StagedEvent> Events);
 
-    private sealed record StoredEvent(long SequenceNumber, Guid StreamId, int StreamRevision, Guid CorrelationId, Type Type, string Payload, string State)
+    /// <summary>
+    /// An event serialized ahead of a commit, with the metadata it is stored with.
+    /// </summary>
+    internal sealed record StagedEvent(Type Type, string Payload, IReadOnlyDictionary<string, string> Metadata);
+
+    private sealed record StoredEvent(
+        long SequenceNumber,
+        Guid StreamId,
+        int StreamRevision,
+        Guid CorrelationId,
+        Type Type,
+        string Payload,
+        IReadOnlyDictionary<string, string> Metadata,
+        string State)
     {
         public object Deserialize() => JsonSerializer.Deserialize(this.Payload, this.Type, JsonSerialization.Options)!;
+
+        public FeedEvent ToFeedEvent() => new(this.SequenceNumber, this.StreamId, this.StreamRevision, this.CorrelationId, this.Metadata, this.Deserialize());
     }
 }

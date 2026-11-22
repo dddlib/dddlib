@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using dddlib.Persistence.Projections.Sdk;
 using dddlib.Persistence.Sdk;
 using Microsoft.Extensions.Time.Testing;
@@ -154,7 +155,7 @@ public class ProjectionRunnerTests
         public int Reads { get; private set; }
 
         public void Append(object @event) =>
-            this.events.Add(new FeedEvent(this.events.Count + 1, Guid.Empty, this.events.Count + 1, Guid.Empty, @event));
+            this.events.Add(new FeedEvent(this.events.Count + 1, Guid.Empty, this.events.Count + 1, Guid.Empty, ReadOnlyDictionary<string, string>.Empty, @event));
 
         public async Task<EventPage> ReadEventsAsync(long afterSequenceNumber, int maxCount, IReadOnlyCollection<Type>? eventTypes = null, CancellationToken cancellationToken = default)
         {
