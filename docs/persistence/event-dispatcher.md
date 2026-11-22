@@ -24,11 +24,13 @@ every event once by using different dispatcher ids. Two hosts sharing a dispatch
 Aggregate roots saved through the [memento repositories](memento-persistence.md) have their events appended to the
 same store when the memento is saved, so they are dispatched the same way.
 
-Events are handed out in numbered **batches** of consecutive events. The host delivers a batch one event at a time,
-marking each event dispatched as it goes. If your code throws, the batch is abandoned: the events already marked stay
-marked, and the rest of the batch is handed out again after the batch timeout, so order is preserved and nothing is
-skipped. That is also why delivery is at least once: an event whose handler completed but whose mark was lost is
-delivered again. Handlers must be idempotent.
+Events are handed out in numbered **batches** of consecutive events. The host delivers a batch one event at a time
+and marks it dispatched once, after the last event it delivered: one round trip to the store per batch rather than
+per event. If your code throws, the batch is abandoned: the events before the failure are marked, and the rest of the
+batch is handed out again after the batch timeout, so order is preserved and nothing is skipped. Stopping the host
+also marks the events it has delivered. That is why delivery is at least once: if the process dies before the mark,
+the events of that batch already delivered (up to `BatchSize - 1` of them) are delivered again. Handlers must be
+idempotent.
 
 ## Receiving events
 
@@ -57,6 +59,26 @@ that the events themselves do not carry, or a message ID of that event's own. Th
 `hostname`, `timestamp` and the entries of a `MemoryRepository<T>` that overrides `EventMetadata` or
 `GetEventMetadata`. An entry stored as anything other than a string is left out. [Projections](projections.md) read
 the same metadata from the feed. `CustomEventDispatcher` takes a delegate with or without the metadata.
+
+### Receiving a batch at a time
+
+To deliver a whole batch in one round trip, such as one publish to a bus, implement `IEventBatchDispatcher` instead.
+It is an `IEventDispatcher`, so it goes wherever one does, and the host hands it each batch whole:
+
+```csharp
+using dddlib.Persistence.EventDispatcher;
+using dddlib.Persistence.EventDispatcher.Sdk;
+
+public sealed class CarEventPublisher(IBus bus) : IEventBatchDispatcher
+{
+    public Task DispatchAsync(IReadOnlyList<DispatchedEvent> events, CancellationToken cancellationToken) =>
+        bus.PublishAsync(events.Select(e => e.Event), cancellationToken);
+}
+```
+
+The batch is all or nothing: when `DispatchAsync` throws, none of it is marked and the whole batch is delivered again
+after the batch timeout, and `DispatchFailed` reports the first event of the batch. `BatchSize` is then also the most
+events one call receives.
 
 ## Hosting
 
@@ -103,8 +125,8 @@ back to back and an idle one is polled a few times a minute.
 
 ## Failures
 
-When a handler throws, the host raises `DispatchFailed` with the sequence number, the event and the exception,
-abandons the batch and waits `BatchTimeout` before polling again so the abandoned batch comes back in order. The host
+When a handler throws, the host raises `DispatchFailed` with the sequence number, the event and the exception, marks
+the events before it, abandons the batch and waits `BatchTimeout` before polling again so the abandoned batch comes back in order. The host
 itself does not log; subscribe to `DispatchFailed` to do so. Cancelling the token stops the host without raising it.
 
 ## SQL Server schema

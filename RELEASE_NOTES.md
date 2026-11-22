@@ -91,6 +91,11 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   protected `Repository<T>.SaveAsync(Guid id, object memento, IReadOnlyList<object> events, ...)` takes the
   `Guid correlationId` before `preCommitState`, and each `SqlServerRepository<T>.AppendEventsAsync` overload takes it
   before `state`, so a repository that owns its transaction passes it on. No schema change (issue 63).
+- The event dispatcher marks each batch dispatched once, after its last dispatched event, rather than after every
+  event, halving the round trips per event on SQL Server. A failure still marks the events before it, and stopping
+  marks the events already dispatched, so only the rest are delivered again; a crash partway through a batch now
+  redelivers that batch's dispatched events too. An `IEventBatchDispatcher` receives each batch whole, for example to
+  publish it in one round trip, and is marked whole or not at all. No schema change (issue 59).
 - Dependencies: the SQL Server packages depend on `System.Security.Cryptography.Pkcs` 9.0.21, above the 9.0.18 that
   `Microsoft.Data.SqlClient` 7.1 brings, for the .NET denial of service vulnerabilities CVE-2026-84008 and
   CVE-2026-70162.

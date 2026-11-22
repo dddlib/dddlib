@@ -16,6 +16,10 @@ namespace dddlib.Persistence.EventDispatcher
         public System.TimeSpan MaxPollingInterval { get; init; }
         public System.TimeSpan PollingInterval { get; init; }
     }
+    public interface IEventBatchDispatcher : dddlib.Persistence.EventDispatcher.IEventDispatcher
+    {
+        System.Threading.Tasks.Task DispatchAsync(System.Collections.Generic.IReadOnlyList<dddlib.Persistence.EventDispatcher.Sdk.DispatchedEvent> events, System.Threading.CancellationToken cancellationToken);
+    }
     public interface IEventDispatcher
     {
         System.Threading.Tasks.Task DispatchAsync(long sequenceNumber, System.Collections.Generic.IReadOnlyDictionary<string, string> metadata, object @event, System.Threading.CancellationToken cancellationToken);
