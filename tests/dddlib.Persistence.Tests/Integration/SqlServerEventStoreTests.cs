@@ -247,6 +247,37 @@ public class SqlServerEventStoreTests : SqlServerIntegration
         await Assert.That(page.EndSequenceNumber).IsEqualTo(first + 2);
     }
 
+    // Commits are serialized per schema: the store-wide lock is named after the schema's event table, so a commit in
+    // flight in one schema holds up the commits of that schema only (https://github.com/dddlib/dddlib/issues/57).
+    [Test]
+    public async Task ACommitInFlightHoldsUpCommitsInItsOwnSchemaOnly()
+    {
+        var otherSchema = string.Concat("s", Guid.NewGuid().ToString("N"));
+        await this.Database.CreateSchemaAsync(otherSchema);
+        var eventStore = new SqlServerEventStore(this.ConnectionString);
+        var otherEventStore = new SqlServerEventStore(this.ConnectionString, otherSchema);
+        await otherEventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 0 }], Guid.NewGuid(), null);
+
+        await using var connection = new SqlConnection(this.ConnectionString);
+        await connection.OpenAsync();
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+        await CommitByHandAsync(transaction, typeof(Event).GetSerializedName(), """{"Id":1}""");
+
+        var sameSchema = eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 2 }], Guid.NewGuid(), null);
+        var single = await otherEventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 3 }], Guid.NewGuid(), null);
+        var multiple = await otherEventStore.CommitStreamsAsync(
+            [
+                new StreamCommit(Guid.NewGuid(), [new Event { Id = 4 }], null),
+                new StreamCommit(Guid.NewGuid(), [new Event { Id = 5 }], null),
+            ],
+            Guid.NewGuid());
+
+        await Assert.That(single).IsNotNull();
+        await Assert.That(multiple).Count().IsEqualTo(2);
+        await Assert.That(() => (Task)sameSchema).Throws<ConcurrencyException>().WithMessageContaining("event sequence lock");
+        await transaction.RollbackAsync();
+    }
+
     [Test]
     public async Task MissingEventTypeFailsLoudly()
     {
@@ -297,16 +328,16 @@ public class SqlServerEventStoreTests : SqlServerIntegration
         await Assert.That(page.Events[3].Metadata).IsEquivalentTo(new Dictionary<string, string> { ["tenant"] = "acme" });
     }
 
-    private static async Task CommitByHandAsync(SqlTransaction transaction, string typeName, string payload)
+    private static async Task CommitByHandAsync(SqlTransaction transaction, string typeName, string payload, string schema = "dbo")
     {
         await using var command = transaction.Connection!.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = """
-            EXEC [dbo].[TryAddType] @Name = @TypeName;
-            DECLARE @Events [dbo].[EventList];
+        command.CommandText = $"""
+            EXEC [{schema}].[TryAddType] @Name = @TypeName;
+            DECLARE @Events [{schema}].[EventList];
             INSERT INTO @Events ([Index], [TypeId], [Payload])
-            SELECT 1, [Id], @Payload FROM [dbo].[Types] WHERE [Name] = @TypeName COLLATE SQL_Latin1_General_CP1_CS_AS;
-            EXEC [dbo].[CommitStream] @StreamId = @StreamId, @Events = @Events, @Metadata = NULL, @CorrelationId = @CorrelationId, @PreCommitState = NULL;
+            SELECT 1, [Id], @Payload FROM [{schema}].[Types] WHERE [Name] = @TypeName COLLATE SQL_Latin1_General_CP1_CS_AS;
+            EXEC [{schema}].[CommitStream] @StreamId = @StreamId, @Events = @Events, @Metadata = NULL, @CorrelationId = @CorrelationId, @PreCommitState = NULL;
             """;
         command.Parameters.Add("@TypeName", SqlDbType.VarChar, 511).Value = typeName;
         command.Parameters.Add("@Payload", SqlDbType.NVarChar, -1).Value = payload;

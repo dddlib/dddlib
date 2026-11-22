@@ -108,7 +108,8 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   longer moves the key's row, serialized value and all, so each write holds the type's turn for less time. Schema
   version 9 (`dddlib09.sql`) clusters `NaturalKeys` on `Id` instead of `(TypeId, Checkpoint)`, rebuilding the table
   during the upgrade, and changes procedure bodies with their contracts unchanged: every SQL Server package now
-  requires version 9 (issue 57).
+  requires version 9 (issue 57). The same version names the store-wide commit lock after the schema, so commits to two
+  dddlib schemas in one database no longer wait for each other.
 - Dependencies: the SQL Server packages depend on `System.Security.Cryptography.Pkcs` 9.0.21, above the 9.0.18 that
   `Microsoft.Data.SqlClient` 7.1 brings, for the .NET denial of service vulnerabilities CVE-2026-84008 and
   CVE-2026-70162.
