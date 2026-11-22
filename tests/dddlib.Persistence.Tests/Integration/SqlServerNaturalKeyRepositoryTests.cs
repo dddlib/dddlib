@@ -1,5 +1,7 @@
 using dddlib.Persistence.SqlServer;
+using dddlib.Sdk;
 using dddlib.Tests.Support;
+using Microsoft.Data.SqlClient;
 
 namespace dddlib.Persistence.Tests.Integration;
 
@@ -52,7 +54,48 @@ public class SqlServerNaturalKeyRepositoryTests : SqlServerIntegration
         await Assert.That(found).IsEqualTo(added);
     }
 
+    // Every write of a type's natural keys, through either protocol, waits its turn on the type's checkpoint lock, and
+    // gives up with a concurrency error rather than at the client's command timeout
+    // (https://github.com/dddlib/dddlib/issues/57).
+    [Test]
+    public async Task EveryWriteOfATypesNaturalKeysGivesUpClearlyWhenTheTypeStaysLocked()
+    {
+        var repository = new SqlServerNaturalKeyRepository(this.ConnectionString);
+        var existing = await repository.GetOrAddNaturalKeyAsync(typeof(LockedSubject), "\"existing\"");
+
+        // another writer holds the type's checkpoint lock, as it does while it takes a checkpoint
+        await using var connection = new SqlConnection(this.ConnectionString);
+        await connection.OpenAsync();
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+        await using (var command = connection.CreateCommand())
+        {
+            command.Transaction = transaction;
+            command.CommandText =
+                """
+                DECLARE @Resource NVARCHAR(255) = (
+                    SELECT CONCAT(N'dddlib.NaturalKeys.', OBJECT_ID(N'[dbo].[NaturalKeys]'), N'.', [Id])
+                    FROM [dbo].[Types]
+                    WHERE [Name] = @Name);
+                EXEC sp_getapplock @Resource = @Resource, @LockMode = 'Exclusive', @LockOwner = 'Transaction';
+                """;
+            command.Parameters.AddWithValue("@Name", typeof(LockedSubject).GetSerializedName());
+            await command.ExecuteNonQueryAsync();
+        }
+
+        var getOrAdd = repository.GetOrAddNaturalKeyAsync(typeof(LockedSubject), "\"new\"");
+        var tryAdd = repository.TryAddNaturalKeyAsync(typeof(LockedSubject), "\"other\"", existing.Checkpoint);
+        var remove = repository.RemoveAsync(existing.Identity);
+
+        await Assert.That(() => (Task)getOrAdd).Throws<ConcurrencyException>().WithMessageContaining("natural key checkpoint lock");
+        await Assert.That(() => (Task)tryAdd).Throws<ConcurrencyException>().WithMessageContaining("natural key checkpoint lock");
+        await Assert.That(() => (Task)remove).Throws<ConcurrencyException>().WithMessageContaining("natural key checkpoint lock");
+    }
+
     private class Subject : AggregateRoot
+    {
+    }
+
+    private class LockedSubject : AggregateRoot
     {
     }
 

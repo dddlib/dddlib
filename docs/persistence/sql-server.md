@@ -74,6 +74,9 @@ parameter out stores what it did before.
 Version 8 adds the event metadata to the result of `ReadEvents`, after the columns earlier versions return, for
 [projections](projections.md).
 
+Version 9 changes procedure bodies only: `TryAddNaturalKey` waits for the type's turn as the other natural key writes
+do, and every natural key write waits for its turn for 10 seconds at most.
+
 Released scripts never change; every later change to the schema is a new script, so upgrading the packages and
 calling `EnsureAsync` upgrades the schema. The `Versions` table holds one row per applied version with the package
 that applied it and the text it ran.
@@ -157,7 +160,7 @@ parameters and `sp_getapplock`, all available there. The client library is `Micr
 | Error | Meaning | Surfaced as |
 |---|---|---|
 | 50409 | commit state mismatch | `ConcurrencyException` |
-| 50500 | commit lock not acquired within one second | `ConcurrencyException` |
+| 50500 | a stream's commit lock not acquired within one second, the store-wide commit lock or a natural key type's checkpoint lock within ten | `ConcurrencyException` |
 | 1222 | read lock request timed out | `ConcurrencyException` |
 
 Commits take an exclusive application lock on the stream identity for the duration of the transaction, and a
