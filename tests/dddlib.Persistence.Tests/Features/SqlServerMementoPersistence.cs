@@ -75,7 +75,7 @@ public abstract class SqlServerMementoPersistence : SqlServerFeature
 
         public sealed class SubjectRepository(string connectionString) : SqlServerRepository<Subject>(connectionString)
         {
-            protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
+            protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken)
             {
                 await using var connection = new SqlConnection(this.ConnectionString);
                 await using var command = connection.CreateCommand();
@@ -297,13 +297,7 @@ OUTPUT inserted.[State];";
         public async Task Scenario()
         {
             // Given a SQL table for the subject
-            await this.Database.ExecuteScriptAsync(@"CREATE TABLE [dbo].[Subjects]
-(
-    [Id] [uniqueidentifier] NOT NULL,
-    [NaturalKey] [nvarchar](MAX) NOT NULL,
-    [State] [varchar](36) NOT NULL,
-    CONSTRAINT [PK_Subject] PRIMARY KEY CLUSTERED ([Id])
-);");
+            await this.Database.ExecuteScriptAsync(SubjectRepository.Table);
 
             // And a repository that appends the events in the same transaction as the memento
             var repository = new SubjectRepository(this.ConnectionString);
@@ -353,7 +347,15 @@ OUTPUT inserted.[State];";
 
         public sealed class SubjectRepository(string connectionString) : SqlServerRepository<Subject>(connectionString)
         {
-            protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
+            public const string Table = @"CREATE TABLE [dbo].[Subjects]
+(
+    [Id] [uniqueidentifier] NOT NULL,
+    [NaturalKey] [nvarchar](MAX) NOT NULL,
+    [State] [varchar](36) NOT NULL,
+    CONSTRAINT [PK_Subject] PRIMARY KEY CLUSTERED ([Id])
+);";
+
+            protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken)
             {
                 await using var connection = new SqlConnection(this.ConnectionString);
                 await connection.OpenAsync(cancellationToken);
@@ -375,7 +377,7 @@ OUTPUT inserted.[State];";
 
                 var state = await command.ExecuteScalarAsync(cancellationToken) as string ?? throw new ConcurrencyException("Commit state mismatch.");
 
-                await this.AppendEventsAsync(transaction, id, events, state, cancellationToken);
+                await this.AppendEventsAsync(transaction, id, events, correlationId, state, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
 
                 return state;
@@ -540,7 +542,7 @@ OUTPUT inserted.[State];";
 
         public sealed class SubjectRepository(string connectionString, IIdentityMap identityMap) : SqlServerRepository<Subject>(connectionString, identityMap)
         {
-            protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
+            protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken)
             {
                 var subject = (Subject.Memento)memento;
 
@@ -565,7 +567,7 @@ OUTPUT inserted.[State];";
 
                 var state = await command.ExecuteScalarAsync(cancellationToken) as string ?? throw new ConcurrencyException("Commit state mismatch.");
 
-                await this.AppendEventsAsync(transaction, id, events, state, cancellationToken);
+                await this.AppendEventsAsync(transaction, id, events, correlationId, state, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
 
                 return state;
@@ -1462,7 +1464,7 @@ SELECT @PostCommitState;";
         {
             protected override async Task<string> SaveAsync(SqlTransaction transaction, Guid id, object memento, string? preCommitState, CancellationToken cancellationToken)
             {
-                await this.AppendEventsAsync(transaction, id, [new NewSubject { NaturalKey = "appended" }], "state", cancellationToken);
+                await this.AppendEventsAsync(transaction, id, [new NewSubject { NaturalKey = "appended" }], Guid.NewGuid(), "state", cancellationToken);
                 return "state";
             }
         }
@@ -1811,6 +1813,166 @@ ORDER BY [Event].[SequenceNumber];";
             {
                 configure.AggregateRoot<CustomStorageThroughTheTransactionalHook.Subject>()
                     .ToReconstituteUsing(() => new CustomStorageThroughTheTransactionalHook.Subject());
+            }
+        }
+    }
+
+    // The caller supplies the correlation id of a save or of a batch, for every event it commits, whichever storage the
+    // repositories use; without one each commit gets a new one (https://github.com/dddlib/dddlib/issues/63).
+    public sealed class CallerSuppliesTheCorrelationId : SqlServerMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a repository with custom storage through the transactional hook, and a repository over the built-in table
+            await this.Database.ExecuteScriptAsync(CustomStorageThroughTheTransactionalHook.SubjectRepository.Table);
+            var subjects = new CustomStorageThroughTheTransactionalHook.SubjectRepository(this.ConnectionString);
+            var others = new SqlServerMementoRepository<BatchMixesBuiltInAndCustomStorage.Other>(this.ConnectionString);
+
+            // When an instance with two events is saved through the one, and an instance through the other, with a correlation id
+            var correlationId = Guid.NewGuid();
+            var alone = new CustomStorageThroughTheTransactionalHook.Subject("alone");
+            alone.Rename("renamed");
+            await subjects.SaveAsync(alone, correlationId);
+            await others.SaveAsync(new BatchMixesBuiltInAndCustomStorage.Other(1), correlationId);
+
+            // And an instance through each is saved in a batch with another correlation id
+            var batchCorrelationId = Guid.NewGuid();
+            var batch = new SqlServerBatch(this.ConnectionString);
+            subjects.Add(batch, new CustomStorageThroughTheTransactionalHook.Subject("batched"));
+            others.Add(batch, new BatchMixesBuiltInAndCustomStorage.Other(2));
+            await batch.SaveAsync(batchCorrelationId);
+
+            // And an instance is saved alone, and another in a batch, without a correlation id
+            await subjects.SaveAsync(new CustomStorageThroughTheTransactionalHook.Subject("unsupplied"));
+            var unsupplied = new SqlServerBatch(this.ConnectionString);
+            others.Add(unsupplied, new BatchMixesBuiltInAndCustomStorage.Other(3));
+            await unsupplied.SaveAsync();
+
+            // Then the events of each supplied commit carry its correlation id in the feed that projections read
+            var events = (await new SqlServerEventStore(this.ConnectionString).ReadEventsAsync(0, 10)).Events;
+            await Assert.That(events).Count().IsEqualTo(7);
+            for (var index = 0; index < 3; index++)
+            {
+                await Assert.That(events[index].CorrelationId).IsEqualTo(correlationId);
+            }
+
+            await Assert.That(events[3].CorrelationId).IsEqualTo(batchCorrelationId);
+            await Assert.That(events[4].CorrelationId).IsEqualTo(batchCorrelationId);
+
+            // And each commit without one has a new correlation id of its own
+            await Assert.That(events.Select(static @event => @event.CorrelationId).Distinct().Count()).IsEqualTo(4);
+            await Assert.That(events[5].CorrelationId).IsNotEqualTo(Guid.Empty);
+            await Assert.That(events[6].CorrelationId).IsNotEqualTo(Guid.Empty);
+        }
+
+        private sealed class SubjectBootStrapper : IBootstrap<CustomStorageThroughTheTransactionalHook.Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<CustomStorageThroughTheTransactionalHook.Subject>()
+                    .ToReconstituteUsing(() => new CustomStorageThroughTheTransactionalHook.Subject());
+            }
+        }
+
+        private sealed class OtherBootStrapper : IBootstrap<BatchMixesBuiltInAndCustomStorage.Other>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<BatchMixesBuiltInAndCustomStorage.Other>().ToReconstituteUsing(() => new BatchMixesBuiltInAndCustomStorage.Other());
+            }
+        }
+    }
+
+    // A repository that owns its transaction is given the save's correlation id and passes it to AppendEventsAsync.
+    public sealed class CustomStorageThatOwnsItsTransactionAppendsTheCorrelationId : SqlServerMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a repository that owns its transaction and appends the events itself
+            await this.Database.ExecuteScriptAsync(CustomStorageStoresEvents.SubjectRepository.Table);
+            var repository = new CustomStorageStoresEvents.SubjectRepository(this.ConnectionString);
+
+            // When an instance is saved with a correlation id
+            var correlationId = Guid.NewGuid();
+            await repository.SaveAsync(new CustomStorageStoresEvents.Subject("key"), correlationId);
+
+            // Then its event carries that correlation id
+            var eventStore = new SqlServerEventStore(this.ConnectionString);
+            await Assert.That((await eventStore.ReadEventsAsync(0, 10)).Events.Single().CorrelationId).IsEqualTo(correlationId);
+
+            // And appending with an empty correlation id is refused, and nothing is written
+            var empty = new EmptyCorrelationIdRepository(this.ConnectionString);
+            await Assert.That(() => empty.SaveAsync(new CustomStorageStoresEvents.Subject("empty"))).Throws<ArgumentException>();
+            await Assert.That((await eventStore.ReadEventsAsync(0, 10)).Events).Count().IsEqualTo(1);
+        }
+
+        public sealed class EmptyCorrelationIdRepository(string connectionString) : SqlServerRepository<CustomStorageStoresEvents.Subject>(connectionString)
+        {
+            protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken)
+            {
+                await using var connection = new SqlConnection(this.ConnectionString);
+                await connection.OpenAsync(cancellationToken);
+                await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
+                await this.AppendEventsAsync(transaction, id, events, Guid.Empty, "state", cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return "state";
+            }
+
+            protected override Task<MementoResult?> LoadAsync(Guid id, CancellationToken cancellationToken) =>
+                Task.FromResult<MementoResult?>(null);
+        }
+
+        private sealed class BootStrapper : IBootstrap<CustomStorageStoresEvents.Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<CustomStorageStoresEvents.Subject>()
+                    .ToUseNaturalKey(subject => subject.NaturalKey)
+                    .ToReconstituteUsing(() => new CustomStorageStoresEvents.Subject());
+            }
+        }
+    }
+
+    // An empty correlation id is refused before anything is written, and the batch it was refused for can still be saved.
+    public sealed class EmptyCorrelationIdIsRefused : SqlServerMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a repository and an instance of an aggregate root
+            var repository = new SqlServerMementoRepository<BatchStoresTheEventsOfEveryRoot.Subject>(this.ConnectionString);
+            var instance = new BatchStoresTheEventsOfEveryRoot.Subject("key");
+            var eventStore = new SqlServerEventStore(this.ConnectionString);
+
+            // When the instance is saved with an empty correlation id
+            // Then the save is refused
+            await Assert.That(() => repository.SaveAsync(instance, Guid.Empty)).Throws<ArgumentException>();
+
+            // And nothing was written
+            await Assert.That(() => (Task)repository.LoadAsync("key")).Throws<AggregateRootNotFoundException>();
+            await Assert.That(instance.GetUncommittedEvents()).Count().IsEqualTo(1);
+
+            // When the instance is added to a batch that is saved with an empty correlation id
+            var batch = new SqlServerBatch(this.ConnectionString);
+            repository.Add(batch, instance);
+
+            // Then the save is refused
+            await Assert.That(() => batch.SaveAsync(Guid.Empty)).Throws<ArgumentException>();
+            await Assert.That((await eventStore.ReadEventsAsync(0, 10)).Events).IsEmpty();
+
+            // And the batch can still be saved with a correlation id
+            var correlationId = Guid.NewGuid();
+            await batch.SaveAsync(correlationId);
+            await Assert.That((await eventStore.ReadEventsAsync(0, 10)).Events.Single().CorrelationId).IsEqualTo(correlationId);
+        }
+
+        private sealed class BootStrapper : IBootstrap<BatchStoresTheEventsOfEveryRoot.Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<BatchStoresTheEventsOfEveryRoot.Subject>().ToReconstituteUsing(() => new BatchStoresTheEventsOfEveryRoot.Subject());
             }
         }
     }

@@ -26,8 +26,12 @@ public sealed class SqlServerBatch : IBatch
         this.typeCache = new SqlServerTypeCache(connectionString, schema);
     }
 
-    public async Task SaveAsync(CancellationToken cancellationToken = default)
+    public Task SaveAsync(CancellationToken cancellationToken = default) => this.SaveAsync(Guid.NewGuid(), cancellationToken);
+
+    public async Task SaveAsync(Guid correlationId, CancellationToken cancellationToken = default)
     {
+        CorrelationIds.Validate(correlationId, nameof(correlationId));
+
         var entries = this.saves.Start();
 
         await BatchSaves<ISqlServerBatchParticipant>.SaveAsync(entries, WriteAsync, cancellationToken).ConfigureAwait(false);
@@ -37,7 +41,7 @@ public sealed class SqlServerBatch : IBatch
             var writes = batch.Select(static entry => new MementoWrite(entry.Save.Id, entry.Save.Memento, entry.Save.Events, entry.Save.PreCommitState, entry.Participant)).ToArray();
             try
             {
-                return await SqlServerMementoWriter.WriteAsync(this.connectionString, this.schema, this.typeCache, writes, cancellationToken).ConfigureAwait(false);
+                return await SqlServerMementoWriter.WriteAsync(this.connectionString, this.schema, this.typeCache, writes, correlationId, cancellationToken).ConfigureAwait(false);
             }
             catch (StreamConcurrencyException ex)
             {

@@ -968,15 +968,96 @@ public abstract class MemoryMementoPersistence : Feature
         private sealed class ForeignBatch : IBatch
         {
             public Task SaveAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+            public Task SaveAsync(Guid correlationId, CancellationToken cancellationToken = default) => Task.CompletedTask;
         }
 
         private sealed class CustomRepository() : Repository<Subject>(new MemoryIdentityMap())
         {
-            protected override Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken) =>
+            protected override Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken) =>
                 Task.FromResult("state");
 
             protected override Task<MementoResult?> LoadAsync(Guid id, CancellationToken cancellationToken) =>
                 Task.FromResult<MementoResult?>(null);
+        }
+    }
+
+    // The caller supplies the correlation id of a save or of a batch, for every event it commits, as it does to the event
+    // store repository; without one each commit gets a new one (https://github.com/dddlib/dddlib/issues/63).
+    public sealed class CallerSuppliesTheCorrelationId : MemoryMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a repository
+            var eventStore = new MemoryEventStore();
+            var repository = new MemoryRepository<EventsAreStoredForDispatch.Subject>(new MemoryIdentityMap(), eventStore);
+
+            // When an instance with two events is saved with a correlation id
+            var correlationId = Guid.NewGuid();
+            var alone = new EventsAreStoredForDispatch.Subject("alone");
+            alone.Rename("renamed");
+            await repository.SaveAsync(alone, correlationId);
+
+            // And two instances are saved in a batch with another correlation id
+            var batchCorrelationId = Guid.NewGuid();
+            var batch = new MemoryBatch();
+            repository.Add(batch, new EventsAreStoredForDispatch.Subject("first"));
+            repository.Add(batch, new EventsAreStoredForDispatch.Subject("second"));
+            await batch.SaveAsync(batchCorrelationId);
+
+            // And an instance is saved alone, and another in a batch, without a correlation id
+            await repository.SaveAsync(new EventsAreStoredForDispatch.Subject("unsupplied"));
+            var unsupplied = new MemoryBatch();
+            repository.Add(unsupplied, new EventsAreStoredForDispatch.Subject("unsupplied batch"));
+            await unsupplied.SaveAsync();
+
+            // Then the events of each supplied commit carry its correlation id
+            var events = (await eventStore.ReadEventsAsync(0, 10)).Events;
+            await Assert.That(events).Count().IsEqualTo(6);
+            await Assert.That(events[0].CorrelationId).IsEqualTo(correlationId);
+            await Assert.That(events[1].CorrelationId).IsEqualTo(correlationId);
+            await Assert.That(events[2].CorrelationId).IsEqualTo(batchCorrelationId);
+            await Assert.That(events[3].CorrelationId).IsEqualTo(batchCorrelationId);
+
+            // And each commit without one has a new correlation id of its own
+            await Assert.That(events.Select(static @event => @event.CorrelationId).Distinct().Count()).IsEqualTo(4);
+            await Assert.That(events[4].CorrelationId).IsNotEqualTo(Guid.Empty);
+            await Assert.That(events[5].CorrelationId).IsNotEqualTo(Guid.Empty);
+        }
+    }
+
+    // An empty correlation id is refused before anything is stored, and the batch it was refused for can still be saved.
+    public sealed class EmptyCorrelationIdIsRefused : MemoryMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a repository and an instance of an aggregate root
+            var eventStore = new MemoryEventStore();
+            var repository = new MemoryRepository<EventsAreStoredForDispatch.Subject>(new MemoryIdentityMap(), eventStore);
+            var instance = new EventsAreStoredForDispatch.Subject("key");
+
+            // When the instance is saved with an empty correlation id
+            // Then the save is refused
+            await Assert.That(() => repository.SaveAsync(instance, Guid.Empty)).Throws<ArgumentException>();
+
+            // And nothing was stored
+            await Assert.That(() => (Task)repository.LoadAsync("key")).Throws<AggregateRootNotFoundException>();
+            await Assert.That(instance.GetUncommittedEvents()).Count().IsEqualTo(1);
+
+            // When the instance is added to a batch that is saved with an empty correlation id
+            var batch = new MemoryBatch();
+            repository.Add(batch, instance);
+
+            // Then the save is refused
+            await Assert.That(() => batch.SaveAsync(Guid.Empty)).Throws<ArgumentException>();
+            await Assert.That((await eventStore.ReadEventsAsync(0, 10)).Events).IsEmpty();
+
+            // And the batch can still be saved with a correlation id
+            var correlationId = Guid.NewGuid();
+            await batch.SaveAsync(correlationId);
+            await Assert.That((await eventStore.ReadEventsAsync(0, 10)).Events.Single().CorrelationId).IsEqualTo(correlationId);
         }
     }
 }

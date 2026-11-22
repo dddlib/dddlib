@@ -21,13 +21,17 @@ public abstract class Repository<T> : IRepository<T>
         this.identityMap = identityMap;
     }
 
-    public async Task SaveAsync(T aggregateRoot, CancellationToken cancellationToken = default)
+    public Task SaveAsync(T aggregateRoot, CancellationToken cancellationToken = default) =>
+        this.SaveAsync(aggregateRoot, Guid.NewGuid(), cancellationToken);
+
+    public async Task SaveAsync(T aggregateRoot, Guid correlationId, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(aggregateRoot);
+        CorrelationIds.Validate(correlationId, nameof(correlationId));
 
         try
         {
-            await this.SaveInternalAsync(aggregateRoot, cancellationToken).ConfigureAwait(false);
+            await this.SaveInternalAsync(aggregateRoot, correlationId, cancellationToken).ConfigureAwait(false);
         }
         catch (RuntimeException ex)
         {
@@ -82,9 +86,10 @@ To fix this issue, either:
     /// is null for a new aggregate root; a mismatch with the stored state is a <see cref="ConcurrencyException"/>.
     /// <paramref name="events"/> are the uncommitted events of the aggregate root, possibly none. Storing them in the
     /// same transaction as the memento lets the event dispatcher deliver them; they are never used for
-    /// reconstitution, and an implementation that has no use for them may ignore them.
+    /// reconstitution, and an implementation that has no use for them may ignore them. <paramref name="correlationId"/> is
+    /// the commit's correlation id, to store with every event: the caller's, or a new one when the caller gave none.
     /// </summary>
-    protected abstract Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken);
+    protected abstract Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken);
 
     /// <summary>
     /// Loads the memento stored under the identity, or null if there is none.
@@ -131,7 +136,7 @@ To fix this issue:
         }
     }
 
-    private async Task SaveInternalAsync(T aggregateRoot, CancellationToken cancellationToken)
+    private async Task SaveInternalAsync(T aggregateRoot, Guid correlationId, CancellationToken cancellationToken)
     {
         var (runtimeType, naturalKey, memento, events) = Prepare(aggregateRoot);
         var preCommitState = aggregateRoot.State;
@@ -139,7 +144,7 @@ To fix this issue:
         var id = await this.ResolveIdentityAsync(runtimeType, naturalKey, preCommitState, cancellationToken).ConfigureAwait(false)
             ?? throw new ConcurrencyException("Aggregate root does not exist.");
 
-        var postCommitState = await this.SaveAsync(id, memento, events, preCommitState, cancellationToken).ConfigureAwait(false);
+        var postCommitState = await this.SaveAsync(id, memento, events, correlationId, preCommitState, cancellationToken).ConfigureAwait(false);
         aggregateRoot.CommitEvents(postCommitState);
 
         await this.CompleteAsync(aggregateRoot, id, cancellationToken).ConfigureAwait(false);

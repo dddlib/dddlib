@@ -605,14 +605,14 @@ public abstract class SqlServerEventDispatcher : Feature
         IReadOnlyList<IReadOnlyDictionary<string, string>?> eventMetadata) : SqlServerRepository<T>(connectionString)
         where T : AggregateRoot
     {
-        protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
+        protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken)
         {
             var state = Guid.NewGuid().ToString("N");
 
             await using var connection = new SqlConnection(this.ConnectionString);
             await connection.OpenAsync(cancellationToken);
             await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
-            await this.AppendEventsAsync(transaction, id, metadata, events, eventMetadata, state, cancellationToken);
+            await this.AppendEventsAsync(transaction, id, metadata, events, eventMetadata, correlationId, state, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
             return state;
@@ -625,14 +625,14 @@ public abstract class SqlServerEventDispatcher : Feature
     private sealed class MetadataRepository<T>(string connectionString, IReadOnlyDictionary<string, string> metadata) : SqlServerRepository<T>(connectionString)
         where T : AggregateRoot
     {
-        protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
+        protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken)
         {
             var state = Guid.NewGuid().ToString("N");
 
             await using var connection = new SqlConnection(this.ConnectionString);
             await connection.OpenAsync(cancellationToken);
             await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
-            await this.AppendEventsAsync(transaction, id, metadata, events, state, cancellationToken);
+            await this.AppendEventsAsync(transaction, id, metadata, events, correlationId, state, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
             return state;

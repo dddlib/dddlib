@@ -12,4 +12,11 @@ public interface IBatch
     /// Saves the aggregate roots added to the batch. Their mementos and events are taken now, not when they were added.
     /// </summary>
     Task SaveAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Saves the aggregate roots as <see cref="SaveAsync(CancellationToken)"/> does, with <paramref name="correlationId"/>
+    /// for every event of every aggregate root, since the batch is one commit. An empty correlation id is an
+    /// <see cref="ArgumentException"/>; nothing is saved and the batch can still be saved.
+    /// </summary>
+    Task SaveAsync(Guid correlationId, CancellationToken cancellationToken = default);
 }

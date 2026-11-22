@@ -83,6 +83,14 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   and `GetEventMetadata` as `SqlServerRepository<T>` has them, and the in-memory dispatcher passes the metadata on
   instead of an empty dictionary. Schema version 8 (`dddlib08.sql`, expand only) returns the metadata from
   `ReadEvents` after the columns earlier versions read: every SQL Server package now requires version 8 (issue 60).
+- The caller supplies the correlation id of a memento save, as it already could for the event store repository, so the
+  events of one operation, such as a request or a message being handled, carry its id in the feed (`FeedEvent.CorrelationId`).
+  `IRepository<T>` and `Repository<T>` gain `SaveAsync(T aggregateRoot, Guid correlationId, ...)`, and `IBatch`,
+  `MemoryBatch` and `SqlServerBatch` gain `SaveAsync(Guid correlationId, ...)` for every event of the batch. Without
+  one each commit gets a new id, as before; `Guid.Empty` is an `ArgumentException`. Breaking for custom storage: the
+  protected `Repository<T>.SaveAsync(Guid id, object memento, IReadOnlyList<object> events, ...)` takes the
+  `Guid correlationId` before `preCommitState`, and each `SqlServerRepository<T>.AppendEventsAsync` overload takes it
+  before `state`, so a repository that owns its transaction passes it on. No schema change (issue 63).
 - Dependencies: the SQL Server packages depend on `System.Security.Cryptography.Pkcs` 9.0.21, above the 9.0.18 that
   `Microsoft.Data.SqlClient` 7.1 brings, for the .NET denial of service vulnerabilities CVE-2026-84008 and
   CVE-2026-70162.

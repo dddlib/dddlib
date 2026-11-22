@@ -15,8 +15,8 @@ namespace dddlib.Persistence.SqlServer;
 /// Override the transactional <see cref="SaveAsync(SqlTransaction, Guid, object, string?, CancellationToken)"/> to write
 /// the memento in a transaction dddlib owns: dddlib takes the identity's lock, appends the events with
 /// <see cref="EventMetadata"/> and commits, and the repository can take part in a <see cref="SqlServerBatch"/>.
-/// Alternatively override <see cref="SaveAsync(Guid, object, IReadOnlyList{object}, string?, CancellationToken)"/> and
-/// own the transaction, calling <see cref="AppendEventsAsync(SqlTransaction, Guid, IReadOnlyList{object}, string, CancellationToken)"/>
+/// Alternatively override <see cref="SaveAsync(Guid, object, IReadOnlyList{object}, Guid, string?, CancellationToken)"/> and
+/// own the transaction, calling <see cref="AppendEventsAsync(SqlTransaction, Guid, IReadOnlyList{object}, Guid, string, CancellationToken)"/>
 /// so that the events can be dispatched; such a repository cannot take part in a batch.
 /// </para>
 /// </summary>
@@ -90,7 +90,7 @@ public abstract class SqlServerRepository<T> : Repository<T>, ISqlServerBatchPar
                     @"The repository of type '{0}' cannot save aggregate roots in a batch as it {1}.
 To fix this issue:
 - override 'SaveAsync(SqlTransaction transaction, Guid id, object memento, string? preCommitState, CancellationToken cancellationToken)' to write only the memento in the given transaction and return its new state token, and
-- remove the override of 'SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)': dddlib then appends the events, with any 'EventMetadata', and commits.",
+- remove the override of 'SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken)': dddlib then appends the events, with any 'EventMetadata', and commits.",
                     this.GetType(),
                     ownsTransaction ? "owns the transaction it saves in" : "does not override the transactional 'SaveAsync'"));
         }
@@ -103,7 +103,7 @@ To fix this issue:
     /// <paramref name="preCommitState"/> is null for a new aggregate root; when the stored state does not match, raise
     /// SQL Server error 50409 or throw a <see cref="ConcurrencyException"/>. dddlib holds the identity's lock, appends the
     /// events with <see cref="EventMetadata"/> after this returns, and commits; do not commit, roll back or append
-    /// events here. Override this, rather than <see cref="SaveAsync(Guid, object, IReadOnlyList{object}, string?, CancellationToken)"/>,
+    /// events here. Override this, rather than <see cref="SaveAsync(Guid, object, IReadOnlyList{object}, Guid, string?, CancellationToken)"/>,
     /// for the repository to take part in a <see cref="SqlServerBatch"/>.
     /// </summary>
     protected virtual Task<string> SaveAsync(SqlTransaction transaction, Guid id, object memento, string? preCommitState, CancellationToken cancellationToken) =>
@@ -125,7 +125,7 @@ To fix this issue:
     /// Saves through the transactional <see cref="SaveAsync(SqlTransaction, Guid, object, string?, CancellationToken)"/>
     /// in a transaction dddlib owns. A derived class that overrides this owns the transaction instead.
     /// </summary>
-    protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
+    protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(memento);
         ArgumentNullException.ThrowIfNull(events);
@@ -140,6 +140,7 @@ To fix this issue:
             this.schema,
             this.typeCache,
             [new MementoWrite(id, memento, events, preCommitState, this)],
+            correlationId,
             cancellationToken).ConfigureAwait(false);
 
         return states[0];
@@ -149,28 +150,29 @@ To fix this issue:
     /// Appends the events to the stream of the aggregate root identified by <paramref name="id"/>, in the caller's
     /// transaction, and sets the stream's state token to <paramref name="state"/>, the token the memento is being
     /// saved with. Call it after writing the memento and before committing, so that a dispatcher never sees events
-    /// for a memento that was not saved. Does nothing when there are no events. Only for a repository that owns its
+    /// for a memento that was not saved. Stores <paramref name="correlationId"/>, the one the save was given, with every
+    /// event; an empty one is an <see cref="ArgumentException"/>. Does nothing when there are no events. Only for a repository that owns its
     /// transaction: in the transactional <see cref="SaveAsync(SqlTransaction, Guid, object, string?, CancellationToken)"/>
     /// dddlib appends the events, and calling this is an <see cref="InvalidOperationException"/>.
     /// </summary>
-    protected Task AppendEventsAsync(SqlTransaction transaction, Guid id, IReadOnlyList<object> events, string state, CancellationToken cancellationToken) =>
-        this.AppendAsync(transaction, id, null, events, null, state, cancellationToken);
+    protected Task AppendEventsAsync(SqlTransaction transaction, Guid id, IReadOnlyList<object> events, Guid correlationId, string state, CancellationToken cancellationToken) =>
+        this.AppendAsync(transaction, id, null, events, null, correlationId, state, cancellationToken);
 
     /// <summary>
-    /// Appends the events as <see cref="AppendEventsAsync(SqlTransaction, Guid, IReadOnlyList{object}, string, CancellationToken)"/>
+    /// Appends the events as <see cref="AppendEventsAsync(SqlTransaction, Guid, IReadOnlyList{object}, Guid, string, CancellationToken)"/>
     /// does, with <paramref name="metadata"/> that the events do not carry, such as a tenant, stored beside dddlib's
     /// own <c>hostname</c> and <c>timestamp</c> entries and given to the event dispatcher with each event. A key equal
     /// to either of dddlib's is an <see cref="ArgumentException"/>, and nothing is written.
     /// </summary>
-    protected Task AppendEventsAsync(SqlTransaction transaction, Guid id, IReadOnlyDictionary<string, string> metadata, IReadOnlyList<object> events, string state, CancellationToken cancellationToken)
+    protected Task AppendEventsAsync(SqlTransaction transaction, Guid id, IReadOnlyDictionary<string, string> metadata, IReadOnlyList<object> events, Guid correlationId, string state, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(metadata);
 
-        return this.AppendAsync(transaction, id, metadata, events, null, state, cancellationToken);
+        return this.AppendAsync(transaction, id, metadata, events, null, correlationId, state, cancellationToken);
     }
 
     /// <summary>
-    /// Appends the events as <see cref="AppendEventsAsync(SqlTransaction, Guid, IReadOnlyDictionary{string, string}, IReadOnlyList{object}, string, CancellationToken)"/>
+    /// Appends the events as <see cref="AppendEventsAsync(SqlTransaction, Guid, IReadOnlyDictionary{string, string}, IReadOnlyList{object}, Guid, string, CancellationToken)"/>
     /// does, with metadata of each event's own, such as a message ID, merged over <paramref name="metadata"/>: an entry
     /// with the same key replaces that one for its event only. <paramref name="eventMetadata"/> is in step with
     /// <paramref name="events"/>, and a null or empty entry gives its event only <paramref name="metadata"/>. A different
@@ -183,13 +185,14 @@ To fix this issue:
         IReadOnlyDictionary<string, string> metadata,
         IReadOnlyList<object> events,
         IReadOnlyList<IReadOnlyDictionary<string, string>?> eventMetadata,
+        Guid correlationId,
         string state,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(metadata);
         ArgumentNullException.ThrowIfNull(eventMetadata);
 
-        return this.AppendAsync(transaction, id, metadata, events, eventMetadata, state, cancellationToken);
+        return this.AppendAsync(transaction, id, metadata, events, eventMetadata, correlationId, state, cancellationToken);
     }
 
     private static (bool Transactional, bool OwnsTransaction) FindHooks(Type type)
@@ -197,7 +200,7 @@ To fix this issue:
         const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
 
         var transactional = type.GetMethod(nameof(SaveAsync), Flags, [typeof(SqlTransaction), typeof(Guid), typeof(object), typeof(string), typeof(CancellationToken)]);
-        var owning = type.GetMethod(nameof(SaveAsync), Flags, [typeof(Guid), typeof(object), typeof(IReadOnlyList<object>), typeof(string), typeof(CancellationToken)]);
+        var owning = type.GetMethod(nameof(SaveAsync), Flags, [typeof(Guid), typeof(object), typeof(IReadOnlyList<object>), typeof(Guid), typeof(string), typeof(CancellationToken)]);
 
         return (transactional?.DeclaringType != typeof(SqlServerRepository<T>), owning?.DeclaringType != typeof(SqlServerRepository<T>));
     }
@@ -217,11 +220,13 @@ To fix this issue:
         IReadOnlyDictionary<string, string>? metadata,
         IReadOnlyList<object> events,
         IReadOnlyList<IReadOnlyDictionary<string, string>?>? eventMetadata,
+        Guid correlationId,
         string state,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(transaction);
         ArgumentNullException.ThrowIfNull(events);
+        CorrelationIds.Validate(correlationId, nameof(correlationId));
         ArgumentException.ThrowIfNullOrEmpty(state);
 
         if (SqlServerMementoWriter.Owns(transaction))
@@ -263,7 +268,7 @@ To fix this issue:
         SqlServerEvents.AddEventsParameter(command, this.schema, records);
         command.Parameters.Add("@State", SqlDbType.VarChar, 36).Value = state;
         command.Parameters.Add("@Metadata", SqlDbType.NVarChar, -1).Value = metadataJson;
-        command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = Guid.NewGuid();
+        command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = correlationId;
         SqlServerEvents.AddEventMetadataParameter(command, this.schema, eventMetadataRecords);
 
         try

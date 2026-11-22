@@ -73,7 +73,7 @@ public abstract partial class SqlServerMementoPersistence : SqlServerFeature
 
         public sealed partial class SubjectRepository(string connectionString) : SqlServerRepository<Subject>(connectionString)
         {
-            protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
+            protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken)
             {
                 await using var connection = new SqlConnection(this.ConnectionString);
                 await using var command = connection.CreateCommand();
@@ -351,7 +351,7 @@ OUTPUT inserted.[State];";
 
         public sealed partial class SubjectRepository(string connectionString) : SqlServerRepository<Subject>(connectionString)
         {
-            protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
+            protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken)
             {
                 await using var connection = new SqlConnection(this.ConnectionString);
                 await connection.OpenAsync(cancellationToken);
@@ -373,7 +373,7 @@ OUTPUT inserted.[State];";
 
                 var state = await command.ExecuteScalarAsync(cancellationToken) as string ?? throw new ConcurrencyException("Commit state mismatch.");
 
-                await this.AppendEventsAsync(transaction, id, events, state, cancellationToken);
+                await this.AppendEventsAsync(transaction, id, events, correlationId, state, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
 
                 return state;
@@ -538,7 +538,7 @@ OUTPUT inserted.[State];";
 
         public sealed partial class SubjectRepository(string connectionString, IIdentityMap identityMap) : SqlServerRepository<Subject>(connectionString, identityMap)
         {
-            protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
+            protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken)
             {
                 var subject = (Subject.Memento)memento;
 
@@ -563,7 +563,7 @@ OUTPUT inserted.[State];";
 
                 var state = await command.ExecuteScalarAsync(cancellationToken) as string ?? throw new ConcurrencyException("Commit state mismatch.");
 
-                await this.AppendEventsAsync(transaction, id, events, state, cancellationToken);
+                await this.AppendEventsAsync(transaction, id, events, correlationId, state, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
 
                 return state;

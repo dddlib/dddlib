@@ -76,7 +76,7 @@ public class MemoryRepository<T> : Repository<T>, IMemoryBatchParticipant
         memoryBatch.Add(save, this);
     }
 
-    protected override Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
+    protected override Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(memento);
         ArgumentNullException.ThrowIfNull(events);
@@ -98,7 +98,7 @@ public class MemoryRepository<T> : Repository<T>, IMemoryBatchParticipant
             var state = MemoryBatch.NewState();
             lock (this.eventStore.Sync)
             {
-                this.eventStore.AppendStaged(id, stagedEvents, Guid.NewGuid(), state);
+                this.eventStore.AppendStaged(id, stagedEvents, correlationId, state);
             }
 
             this.store[id] = staged with { State = state };
