@@ -1,6 +1,6 @@
-using System.Collections.ObjectModel;
 using dddlib.Persistence.EventDispatcher.Sdk;
 using dddlib.Persistence.Memory;
+using dddlib.Persistence.Sdk;
 
 namespace dddlib.Persistence.EventDispatcher.Memory;
 
@@ -39,21 +39,38 @@ public sealed class MemoryEventBatchStore : IEventBatchStore
         {
             var state = this.GetState(dispatcherId);
             var now = this.timeProvider.GetUtcNow();
-            state.Incomplete.RemoveAll(batch => now - batch.Timestamp >= batchTimeout);
 
-            var after = Math.Max(state.Dispatched, state.Incomplete.Count == 0 ? 0 : state.Incomplete.Max(batch => batch.Last));
-            var events = this.eventStore.ReadEvents(after, batchSize);
+            // One batch in flight per dispatcher id, so events are dispatched in order: while a batch is open and has not
+            // timed out or been released, there is nothing to hand out.
+            var open = state.Batches.FindIndex(static batch => !batch.Complete);
+            if (open >= 0)
+            {
+                if (state.Batches.Exists(batch => !batch.Complete && now - batch.Timestamp < batchTimeout))
+                {
+                    return Task.FromResult<EventBatch?>(null);
+                }
+
+                // The batch comes back with the events not yet dispatched, under a new id: the host that held it no
+                // longer does, and cannot release it from the host that takes it now.
+                var expired = state.Batches[open];
+                var after = Math.Max(state.Position, expired.Dispatched);
+                var rest = this.eventStore.ReadEvents(after, expired.Count).Where(e => e.SequenceNumber <= expired.Last).ToArray();
+                var again = new PendingBatch(++this.nextBatchId, rest[0].SequenceNumber, expired.Last, rest.Length) { Timestamp = now };
+                state.Batches[open] = again;
+                return Task.FromResult<EventBatch?>(ToBatch(again.Id, rest));
+            }
+
+            // Otherwise the next batch starts after every batch handed out, so batches never overlap.
+            var last = state.Batches.Count == 0 ? state.Position : Math.Max(state.Position, state.Batches[^1].Last);
+            var events = this.eventStore.ReadEvents(last, batchSize);
             if (events.Count == 0)
             {
                 return Task.FromResult<EventBatch?>(null);
             }
 
             var id = ++this.nextBatchId;
-            state.Incomplete.Add(new PendingBatch(id, events[^1].SequenceNumber, now));
-
-            // The in-memory event store keeps no metadata.
-            var dispatched = events.Select(static e => new DispatchedEvent(e.SequenceNumber, ReadOnlyDictionary<string, string>.Empty, e.Event)).ToArray();
-            return Task.FromResult<EventBatch?>(new EventBatch(id, dispatched));
+            state.Batches.Add(new PendingBatch(id, events[0].SequenceNumber, events[^1].SequenceNumber, events.Count) { Timestamp = now });
+            return Task.FromResult<EventBatch?>(ToBatch(id, events));
         }
     }
 
@@ -64,12 +81,51 @@ public sealed class MemoryEventBatchStore : IEventBatchStore
         lock (this.sync)
         {
             var state = this.GetState(dispatcherId);
-            state.Dispatched = Math.Max(state.Dispatched, sequenceNumber);
-            state.Incomplete.RemoveAll(batch => batch.Last <= sequenceNumber);
+
+            // Batches never overlap, so the open batch that holds the sequence number is the caller's.
+            var batch = state.Batches.Find(batch => !batch.Complete && batch.First <= sequenceNumber && sequenceNumber <= batch.Last);
+            if (batch is not null)
+            {
+                batch.Dispatched = Math.Max(batch.Dispatched, sequenceNumber);
+                batch.Complete = batch.Dispatched >= batch.Last;
+            }
+
+            // The position moves over the completed batches that follow it and into a partly dispatched one, but never
+            // past a batch that is still open.
+            while (state.Batches.Count > 0 && state.Batches[0].Complete)
+            {
+                state.Position = Math.Max(state.Position, state.Batches[0].Last);
+                state.Batches.RemoveAt(0);
+            }
+
+            if (state.Batches.Count > 0)
+            {
+                state.Position = Math.Max(state.Position, state.Batches[0].Dispatched);
+            }
         }
 
         return Task.CompletedTask;
     }
+
+    public Task ReleaseAsync(Guid dispatcherId, long batchId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        lock (this.sync)
+        {
+            // A released batch counts as timed out, whatever the timeout.
+            var batch = this.GetState(dispatcherId).Batches.Find(batch => batch.Id == batchId && !batch.Complete);
+            if (batch is not null)
+            {
+                batch.Timestamp = DateTimeOffset.MinValue;
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static EventBatch ToBatch(long id, IReadOnlyList<FeedEvent> events) =>
+        new(id, events.Select(static e => new DispatchedEvent(e.SequenceNumber, e.Metadata, e.Event)).ToArray());
 
     private DispatcherState GetState(Guid dispatcherId)
     {
@@ -82,12 +138,31 @@ public sealed class MemoryEventBatchStore : IEventBatchStore
         return state;
     }
 
-    private sealed record PendingBatch(long Id, long Last, DateTimeOffset Timestamp);
+    // A batch from its first to its last event, of Count events when it was handed out, and the last of them
+    // dispatched so far.
+    private sealed class PendingBatch(long id, long first, long last, int count)
+    {
+        public long Id { get; } = id;
+
+        public long First { get; } = first;
+
+        public long Last { get; } = last;
+
+        public int Count { get; } = count;
+
+        public long Dispatched { get; set; } = first - 1;
+
+        public bool Complete { get; set; }
+
+        public DateTimeOffset Timestamp { get; set; }
+    }
 
     private sealed class DispatcherState
     {
-        public long Dispatched { get; set; }
+        // Every event up to here has been dispatched.
+        public long Position { get; set; }
 
-        public List<PendingBatch> Incomplete { get; } = [];
+        // The batches past the position, in order.
+        public List<PendingBatch> Batches { get; } = [];
     }
 }

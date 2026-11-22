@@ -76,6 +76,53 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   a list in step with the events. Saves without it store exactly what they did before, and every event of a save now
   has the same `timestamp`. Schema version 7 (`dddlib07.sql`, expand only) adds an optional `@EventMetadata`
   parameter to `AppendEvents` and `AppendStreams`: every SQL Server package now requires version 7 (issue 61).
+- Projections read event metadata: `FeedEvent` gains `Metadata`, before `Event` (a breaking change for code that
+  constructs one, such as a test of a projection), with what the event dispatcher receives, so a handler that takes the
+  envelope can project who saved an event and in which tenant. The in-memory store now keeps metadata too:
+  `MemoryEventStore` stores `hostname` and `timestamp` with each event, `MemoryRepository<T>` gains `EventMetadata`
+  and `GetEventMetadata` as `SqlServerRepository<T>` has them, and the in-memory dispatcher passes the metadata on
+  instead of an empty dictionary. Schema version 8 (`dddlib08.sql`, expand only) returns the metadata from
+  `ReadEvents` after the columns earlier versions read: every SQL Server package now requires version 8 (issue 60).
+- The caller supplies the correlation id of a memento save, as it already could for the event store repository, so the
+  events of one operation, such as a request or a message being handled, carry its id in the feed (`FeedEvent.CorrelationId`).
+  `IRepository<T>` and `Repository<T>` gain `SaveAsync(T aggregateRoot, Guid correlationId, ...)`, and `IBatch`,
+  `MemoryBatch` and `SqlServerBatch` gain `SaveAsync(Guid correlationId, ...)` for every event of the batch. Without
+  one each commit gets a new id, as before; `Guid.Empty` is an `ArgumentException`. Breaking for custom storage: the
+  protected `Repository<T>.SaveAsync(Guid id, object memento, IReadOnlyList<object> events, ...)` takes the
+  `Guid correlationId` before `preCommitState`, and each `SqlServerRepository<T>.AppendEventsAsync` overload takes it
+  before `state`, so a repository that owns its transaction passes it on. No schema change (issue 63).
+- The event dispatcher marks each batch dispatched once, after its last dispatched event, rather than after every
+  event, halving the round trips per event on SQL Server. A failure still marks the events before it, and stopping
+  marks the events already dispatched, so only the rest are delivered again; a crash partway through a batch now
+  redelivers that batch's dispatched events too. An `IEventBatchDispatcher` receives each batch whole, for example to
+  publish it in one round trip, and is marked whole or not at all. No schema change (issue 59).
+- The event dispatcher no longer stops when its store throws, for example on a transient SQL error while polling for a
+  batch or marking one dispatched: it raises the new `StoreFailed` event, waits `BatchTimeout` so the affected batch
+  comes back in order, and carries on.
+- Identity map: every write of a type's natural keys on SQL Server takes the type's turn, and gives up clearly. A key
+  the identity map compares itself (one that does not serialize canonically, such as a case-insensitive key) was added
+  without waiting its turn, so it collided with other writers on the type's checkpoints; it now waits too, and is only
+  sent back to synchronize when a key has been added since its checkpoint, not when one has been removed. A writer that
+  waits more than 10 seconds for its turn now fails with a `ConcurrencyException` instead of SqlClient's command
+  timeout. Many writers adding such keys to one type at once can still run out of attempts, as before. A removal no
+  longer moves the key's row, serialized value and all, so each write holds the type's turn for less time. Schema
+  version 9 (`dddlib09.sql`) clusters `NaturalKeys` on `Id` instead of `(TypeId, Checkpoint)`, rebuilding the table
+  during the upgrade, and changes procedure bodies with their contracts unchanged: every SQL Server package now
+  requires version 9 (issue 57). The same version names the store-wide commit lock after the schema, so commits to two
+  dddlib schemas in one database no longer wait for each other.
+- The event dispatcher no longer loses events, and dispatches them in order, when hosts share a dispatcher id or a host
+  stops partway through a batch. Marking a batch dispatched completed every earlier open batch of the dispatcher id
+  too, so a batch taken by another host with the same id, or one a host stopped partway through before restarting, was
+  completed by the next mark, and its remaining events were never dispatched. Hosts sharing an id also ran batches in
+  parallel, out of order. Now a mark completes only the batch that holds the marked event, the dispatcher's position
+  never passes an open batch, and a dispatcher id has one batch in flight at a time: hosts sharing an id stand by for
+  each other instead of sharing the work. A batch that is not finished comes back, before any later event, once it
+  times out, or at once when the host that held it stops: the host marks what it dispatched and releases the rest
+  through the new `IEventBatchStore.ReleaseAsync`, which a custom store may implement (by default the batch times
+  out). The same applies to `MemoryEventBatchStore`. Schema version 10 (`dddlib10.sql`) adds a nullable column and an
+  index to `Batches` and the `ReleaseBatch` procedure, and changes the bodies of `GetNextBatch` and `MarkDispatched`
+  with their contracts unchanged, so processes on older packages get the fix once the schema is upgraded. Every SQL
+  Server package now requires version 10 (issue 53).
 - Dependencies: the SQL Server packages depend on `System.Security.Cryptography.Pkcs` 9.0.21, above the 9.0.18 that
   `Microsoft.Data.SqlClient` 7.1 brings, for the .NET denial of service vulnerabilities CVE-2026-84008 and
   CVE-2026-70162.

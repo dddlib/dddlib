@@ -118,6 +118,43 @@ public class SqlServerEventDispatcherSchemaTests : SqlServerIntegration
         await Assert.That(batch.Events[1].Metadata).IsEmpty();
     }
 
+    // Before version 10 a batch that timed out was marked complete, and the dispatcher read again from its position. The
+    // upgrade keeps that: such a batch is handed out again, as is the rest of an open batch partly marked before the
+    // upgrade, and a batch completed by its mark stays done (https://github.com/dddlib/dddlib/issues/53).
+    [Test]
+    public async Task UpgradesFromVersion9AndKeepsTheBatchesHandedOutBefore()
+    {
+        var schema = string.Concat("s", Guid.NewGuid().ToString("N"));
+        var timedOut = Guid.NewGuid();
+        var partlyMarked = Guid.NewGuid();
+        var completed = Guid.NewGuid();
+        await SqlServerSchemaInstaller.EnsureAsync(this.ConnectionString, schema, SqlServerSchemaInstaller.Scripts.Take(9).ToArray(), CancellationToken.None);
+        await this.Database.ExecuteScriptAsync($$"""
+            INSERT INTO [{{schema}}].[Types] ([Name]) VALUES ('{{typeof(Event).GetSerializedName()}}');
+            INSERT INTO [{{schema}}].[Streams] ([Id], [Revision], [State]) VALUES (NEWID(), 4, 'state');
+            INSERT INTO [{{schema}}].[Events] ([StreamLinkId], [StreamRevision], [TypeId], [Payload], [CorrelationId], [SequenceNumber])
+            SELECT [Stream].[LinkId], [Event].[StreamRevision], [Type].[Id], N'{}', NEWID(), [Event].[StreamRevision]
+            FROM [{{schema}}].[Streams] [Stream]
+                CROSS JOIN [{{schema}}].[Types] [Type]
+                CROSS JOIN (VALUES (1), (2), (3), (4)) AS [Event] ([StreamRevision]);
+            INSERT INTO [{{schema}}].[DispatchedEvents] ([DispatcherId], [SequenceNumber])
+            VALUES ('{{timedOut}}', 1), ('{{partlyMarked}}', 2), ('{{completed}}', 3);
+            INSERT INTO [{{schema}}].[Batches] ([DispatcherId], [SequenceNumber], [LastSequenceNumber], [Timestamp], [Complete])
+            VALUES
+                ('{{timedOut}}', 1, 1, DATEADD(MINUTE, -10, SYSUTCDATETIME()), 1),
+                ('{{timedOut}}', 2, 3, DATEADD(MINUTE, -5, SYSUTCDATETIME()), 1),
+                ('{{partlyMarked}}', 1, 3, DATEADD(MINUTE, -5, SYSUTCDATETIME()), 0),
+                ('{{completed}}', 1, 3, DATEADD(MINUTE, -5, SYSUTCDATETIME()), 1);
+            """);
+
+        await SqlServerEventDispatcherSchema.EnsureAsync(this.ConnectionString, schema);
+        var batchStore = new SqlServerEventBatchStore(this.ConnectionString, schema);
+
+        await Assert.That((await batchStore.GetNextBatchAsync(timedOut, 10, TimeSpan.FromSeconds(30)))!.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo([2L, 3L, 4L]);
+        await Assert.That((await batchStore.GetNextBatchAsync(partlyMarked, 10, TimeSpan.FromSeconds(30)))!.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo([3L]);
+        await Assert.That((await batchStore.GetNextBatchAsync(completed, 10, TimeSpan.FromSeconds(30)))!.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo([4L]);
+    }
+
     [Test]
     public async Task BothPackagesProduceTheSameScript()
     {

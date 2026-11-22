@@ -68,6 +68,22 @@ this.When<CarRegistered>((envelope, e, views, cancellationToken) =>
     views.AddOrUpdateAsync(envelope.StreamId.ToString(), new CarView(e.Registration, null, 1), cancellationToken));
 ```
 
+The envelope also carries `Metadata`, what the event was stored with: dddlib's `hostname` and `timestamp`, and any
+entries the repository that saved it added through [`EventMetadata` or `GetEventMetadata`](memento-persistence.md#custom-storage),
+such as who saved it and in which tenant. It is the metadata the [event dispatcher](event-dispatcher.md#receiving-events)
+receives, in memory and on SQL Server, so a read model that is queried by actor or tenant, such as an audit, can be
+built from it:
+
+```csharp
+this.When<object>((envelope, e, views, cancellationToken) =>
+    views.AddOrUpdateAsync(
+        envelope.SequenceNumber.ToString(CultureInfo.InvariantCulture),
+        new AuditEntry(envelope.Metadata.GetValueOrDefault("tenant"), envelope.Metadata.GetValueOrDefault("actor"), e.GetType().Name),
+        cancellationToken));
+```
+
+An event stored without metadata, or with entries that are not strings, has an empty dictionary or leaves them out.
+
 Within a page, the views a handler reads include what earlier handlers in the page wrote, and nothing reaches the
 store until the page commits. The last write per key wins, a remove hides the stored view, and `PurgeAsync` from a
 handler clears the whole read model.

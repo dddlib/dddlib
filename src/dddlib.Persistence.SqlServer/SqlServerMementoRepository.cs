@@ -86,7 +86,7 @@ public sealed class SqlServerMementoRepository<T> : Repository<T>, ISqlServerBat
         return new MementoResult(memento, state);
     }
 
-    protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
+    protected override async Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(memento);
         ArgumentNullException.ThrowIfNull(events);
@@ -113,7 +113,7 @@ public sealed class SqlServerMementoRepository<T> : Repository<T>, ISqlServerBat
         {
             SqlServerEvents.AddEventsParameter(command, this.schema, records);
             command.Parameters.Add("@Metadata", SqlDbType.NVarChar, -1).Value = SqlServerEvents.CreateMetadata();
-            command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = Guid.NewGuid();
+            command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = correlationId;
         }
 
         await SqlServerSchemaCheck.EnsureCompatibleAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);

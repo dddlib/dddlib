@@ -42,6 +42,14 @@ public class MemoryRepository<T> : Repository<T>, IMemoryBatchParticipant
         this.eventStore = eventStore;
     }
 
+    /// <summary>
+    /// Gets metadata that the events do not carry, such as a tenant, stored beside dddlib's own <c>hostname</c> and
+    /// <c>timestamp</c> entries and given to the event dispatcher and the event feed with each event, as
+    /// <c>SqlServerRepository&lt;T&gt;.EventMetadata</c> is. A key equal to either of dddlib's is an
+    /// <see cref="ArgumentException"/>, and nothing is stored.
+    /// </summary>
+    protected virtual IReadOnlyDictionary<string, string>? EventMetadata => null;
+
     Lock IMemoryBatchParticipant.Sync => this.sync;
 
     long IMemoryBatchParticipant.BatchOrder => this.batchOrder;
@@ -49,6 +57,8 @@ public class MemoryRepository<T> : Repository<T>, IMemoryBatchParticipant
     MemoryEventStore IMemoryBatchParticipant.EventStore => this.eventStore;
 
     object IMemoryBatchParticipant.Stage(object memento) => Stage(memento);
+
+    MemoryEventStore.StagedEvents IMemoryBatchParticipant.StageEvents(Guid id, IReadOnlyList<object> events) => this.StageEvents(id, events);
 
     string? IMemoryBatchParticipant.FindConflict(Guid id, string? preCommitState) => this.FindConflict(id, preCommitState);
 
@@ -66,14 +76,14 @@ public class MemoryRepository<T> : Repository<T>, IMemoryBatchParticipant
         memoryBatch.Add(save, this);
     }
 
-    protected override Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken cancellationToken)
+    protected override Task<string> SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(memento);
         ArgumentNullException.ThrowIfNull(events);
 
         // Everything that can fail is done before anything is stored.
         var staged = Stage(memento);
-        var stagedEvents = MemoryEventStore.Stage(events);
+        var stagedEvents = this.StageEvents(id, events);
 
         lock (this.sync)
         {
@@ -88,7 +98,7 @@ public class MemoryRepository<T> : Repository<T>, IMemoryBatchParticipant
             var state = MemoryBatch.NewState();
             lock (this.eventStore.Sync)
             {
-                this.eventStore.AppendStaged(id, stagedEvents, Guid.NewGuid(), state);
+                this.eventStore.AppendStaged(id, stagedEvents, correlationId, state);
             }
 
             this.store[id] = staged with { State = state };
@@ -111,10 +121,23 @@ public class MemoryRepository<T> : Repository<T>, IMemoryBatchParticipant
         }
     }
 
+    /// <summary>
+    /// Gets metadata of one event's own, such as a message ID, as <c>SqlServerRepository&lt;T&gt;.GetEventMetadata</c>
+    /// does. It is called once for each event of a save, alone or in a <see cref="MemoryBatch"/>, before anything is
+    /// stored, with the aggregate root's identity and the event's zero-based position among the events of the save. Its
+    /// entries are merged over <see cref="EventMetadata"/>: an entry with the same key replaces that one for this event
+    /// only. A key equal to either of dddlib's is an <see cref="ArgumentException"/>, and nothing is stored. Returns null
+    /// by default, for no metadata of the event's own.
+    /// </summary>
+    protected virtual IReadOnlyDictionary<string, string>? GetEventMetadata(Guid id, object @event, int index) => null;
+
     private const string DoesNotExist = "does not exist";
 
     private static StoredMemento Stage(object memento) =>
         new(memento.GetType(), JsonSerializer.Serialize(memento, memento.GetType(), JsonSerialization.Options), string.Empty);
+
+    private MemoryEventStore.StagedEvents StageEvents(Guid id, IReadOnlyList<object> events) =>
+        MemoryEventStore.Stage(events, this.EventMetadata, (@event, index) => this.GetEventMetadata(id, @event, index));
 
     // The caller holds the lock.
     private string? FindConflict(Guid id, string? preCommitState)

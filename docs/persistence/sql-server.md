@@ -71,6 +71,24 @@ Version 7 adds the `EventMetadataList` table type and an optional `@EventMetadat
 `AppendStreams`, for [metadata of each event's own](memento-persistence.md#custom-storage). A caller that leaves the
 parameter out stores what it did before.
 
+Version 8 adds the event metadata to the result of `ReadEvents`, after the columns earlier versions return, for
+[projections](projections.md).
+
+Version 9 clusters `NaturalKeys` on `Id` (`CX_NaturalKey_Id`, replacing `IX_NaturalKey_Id`), with `PK_NaturalKey` a
+nonclustered primary key on `(TypeId, Checkpoint)` as before, so that a removal no longer moves the row. The upgrade
+rebuilds the table inside its transaction. `TryAddNaturalKey` waits for the type's turn as the other natural key writes
+do, and every natural key write waits for its turn for 10 seconds at most. The store-wide commit lock is named after
+the schema, so that commits to two dddlib schemas in one database no longer wait for each other.
+
+Version 10 adds a nullable `DispatchedSequenceNumber` column and the `IX_Batch_Dispatcher_Last` index to `Batches`,
+and the `ReleaseBatch` procedure, for the [event dispatcher](event-dispatcher.md). `GetNextBatch` keeps one batch in
+flight per dispatcher id, handing an open batch out again, under a new id, once it has timed out or been released.
+`MarkDispatched` completes only the batch that holds the sequence number, and the dispatcher's position never passes a
+batch that is still open. Both keep their contracts, so processes on older packages get the new behaviour once the
+schema is upgraded; they do not release their batches, which time out as before. The upgrade removes batches that
+timed out under the earlier versions, so that their events are read again from the dispatcher's position, as before.
+Polls and marks take a lock named after the schema, so dispatchers with the same id in two dddlib schemas no longer
+wait for each other.
 Released scripts never change; every later change to the schema is a new script, so upgrading the packages and
 calling `EnsureAsync` upgrades the schema. The `Versions` table holds one row per applied version with the package
 that applied it and the text it ran.
@@ -154,11 +172,11 @@ parameters and `sp_getapplock`, all available there. The client library is `Micr
 | Error | Meaning | Surfaced as |
 |---|---|---|
 | 50409 | commit state mismatch | `ConcurrencyException` |
-| 50500 | commit lock not acquired within one second | `ConcurrencyException` |
+| 50500 | a stream's commit lock not acquired within one second, the store-wide commit lock or a natural key type's checkpoint lock within ten | `ConcurrencyException` |
 | 1222 | read lock request timed out | `ConcurrencyException` |
 
 Commits take an exclusive application lock on the stream identity for the duration of the transaction, and a
-store-wide one (`dddlib.Events.Commit`) while sequence numbers are assigned, so the sequence reflects commit order
+store-wide one (`dddlib.Events.Commit.` and the object id of the schema's `Events` table) while sequence numbers are assigned, so the sequence reflects commit order
 for the [event dispatcher](event-dispatcher.md). The memento repository takes the same locks when a save appends
 events. Reads hold the
 stream row under `HOLDLOCK` inside a short transaction so the state token and the events come from the same committed

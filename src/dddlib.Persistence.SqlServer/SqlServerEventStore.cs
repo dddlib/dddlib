@@ -213,7 +213,7 @@ public sealed class SqlServerEventStore : IMultiStreamEventStore, IEventFeed
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxCount);
 
         long? endSequenceNumber = null;
-        var rows = new List<(long SequenceNumber, Guid StreamId, int StreamRevision, Guid CorrelationId, string TypeName, string Payload)>();
+        var rows = new List<(long SequenceNumber, Guid StreamId, int StreamRevision, Guid CorrelationId, string TypeName, string Payload, string? Metadata)>();
 
         using (new TransactionScope(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled))
         await using (var connection = new SqlConnection(this.connectionString))
@@ -237,7 +237,14 @@ public sealed class SqlServerEventStore : IMultiStreamEventStore, IEventFeed
             await reader.NextResultAsync(cancellationToken).ConfigureAwait(false);
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                rows.Add((reader.GetInt64(0), reader.GetGuid(1), reader.GetInt32(2), reader.GetGuid(3), reader.GetString(4), reader.GetString(5)));
+                rows.Add((
+                    reader.GetInt64(0),
+                    reader.GetGuid(1),
+                    reader.GetInt32(2),
+                    reader.GetGuid(3),
+                    reader.GetString(4),
+                    reader.GetString(5),
+                    reader.IsDBNull(6) ? null : reader.GetString(6)));
             }
         }
 
@@ -247,7 +254,7 @@ public sealed class SqlServerEventStore : IMultiStreamEventStore, IEventFeed
             var row = rows[index];
             var payloadType = TypeNameResolver.ResolveOrThrow(row.TypeName);
             var @event = JsonSerializer.Deserialize(row.Payload, payloadType, JsonSerialization.Options)!;
-            events[index] = new FeedEvent(row.SequenceNumber, row.StreamId, row.StreamRevision, row.CorrelationId, @event);
+            events[index] = new FeedEvent(row.SequenceNumber, row.StreamId, row.StreamRevision, row.CorrelationId, EventMetadata.Parse(row.Metadata), @event);
         }
 
         return new EventPage(endSequenceNumber ?? afterSequenceNumber, events);

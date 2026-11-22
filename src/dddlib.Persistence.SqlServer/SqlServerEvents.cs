@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Data;
 using System.Text;
 using System.Text.Json;
+using dddlib.Persistence.Sdk;
 using dddlib.Sdk;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.SqlClient.Server;
@@ -14,10 +15,6 @@ namespace dddlib.Persistence.SqlServer;
 /// </summary>
 internal static class SqlServerEvents
 {
-    private const string HostnameKey = "hostname";
-    private const string TimestampKey = "timestamp";
-
-    private static readonly string Hostname = Environment.MachineName;
     private static readonly SqlMetaData[] EventColumns =
     [
         new("Index", SqlDbType.Int),
@@ -98,27 +95,15 @@ internal static class SqlServerEvents
     /// </summary>
     public static string CreateMetadata(IReadOnlyDictionary<string, string>? metadata, IReadOnlyDictionary<string, string>? eventMetadata, DateTime timestamp)
     {
-        Validate(metadata, nameof(metadata));
-        Validate(eventMetadata, nameof(eventMetadata));
+        var entries = EventMetadata.Create(metadata, eventMetadata, timestamp);
 
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Encoder = JsonSerialization.Options.Encoder }))
         {
             writer.WriteStartObject();
-            writer.WriteString(HostnameKey, Hostname);
-            writer.WritePropertyName(TimestampKey);
-            JsonSerializer.Serialize(writer, timestamp, JsonSerialization.Options);
-            foreach (var (key, value) in metadata ?? new Dictionary<string, string>())
+            foreach (var (key, value) in entries)
             {
-                writer.WriteString(key, eventMetadata is not null && eventMetadata.TryGetValue(key, out var own) ? own : value);
-            }
-
-            foreach (var (key, value) in eventMetadata ?? new Dictionary<string, string>())
-            {
-                if (metadata is null || !metadata.ContainsKey(key))
-                {
-                    writer.WriteString(key, value);
-                }
+                writer.WriteString(key, value);
             }
 
             writer.WriteEndObject();
@@ -169,26 +154,5 @@ internal static class SqlServerEvents
         var parameter = command.Parameters.Add("@EventMetadata", SqlDbType.Structured);
         parameter.TypeName = string.Concat(quotedSchema, ".[EventMetadataList]");
         parameter.Value = records;
-    }
-
-    private static void Validate(IReadOnlyDictionary<string, string>? metadata, string parameterName)
-    {
-        if (metadata is null)
-        {
-            return;
-        }
-
-        foreach (var (key, value) in metadata)
-        {
-            if (key is HostnameKey or TimestampKey)
-            {
-                throw new ArgumentException($"The metadata key '{key}' is reserved for dddlib.", parameterName);
-            }
-
-            if (value is null)
-            {
-                throw new ArgumentException($"The metadata entry '{key}' has no value.", parameterName);
-            }
-        }
     }
 }

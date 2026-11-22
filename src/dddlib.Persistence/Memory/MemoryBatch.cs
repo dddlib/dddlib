@@ -11,22 +11,26 @@ public sealed class MemoryBatch : IBatch
 {
     private readonly BatchSaves<IMemoryBatchParticipant> saves = new();
 
-    public async Task SaveAsync(CancellationToken cancellationToken = default)
+    public Task SaveAsync(CancellationToken cancellationToken = default) => this.SaveAsync(Guid.NewGuid(), cancellationToken);
+
+    public async Task SaveAsync(Guid correlationId, CancellationToken cancellationToken = default)
     {
+        CorrelationIds.Validate(correlationId, nameof(correlationId));
+
         var entries = this.saves.Start();
 
-        await BatchSaves<IMemoryBatchParticipant>.SaveAsync(entries, static entries => Task.FromResult<IReadOnlyList<string>>(Write(entries)), cancellationToken).ConfigureAwait(false);
+        await BatchSaves<IMemoryBatchParticipant>.SaveAsync(entries, entries => Task.FromResult<IReadOnlyList<string>>(Write(entries, correlationId)), cancellationToken).ConfigureAwait(false);
     }
 
     internal static string NewState() => Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
 
     internal void Add(BatchSave save, IMemoryBatchParticipant participant) => this.saves.Add(save, participant);
 
-    private static string[] Write(IReadOnlyList<(BatchSave Save, IMemoryBatchParticipant Participant)> entries)
+    private static string[] Write(IReadOnlyList<(BatchSave Save, IMemoryBatchParticipant Participant)> entries, Guid correlationId)
     {
         // Everything that can fail without touching the stores is done first.
         var mementos = entries.Select(static entry => entry.Participant.Stage(entry.Save.Memento)).ToArray();
-        var events = entries.Select(static entry => MemoryEventStore.Stage(entry.Save.Events)).ToArray();
+        var events = entries.Select(static entry => entry.Participant.StageEvents(entry.Save.Id, entry.Save.Events)).ToArray();
 
         // The locks of a single save, in a fixed order so that batches cannot deadlock each other: every repository's,
         // then every event store's.
@@ -53,7 +57,6 @@ public sealed class MemoryBatch : IBatch
                 }
             }
 
-            var correlationId = Guid.NewGuid();
             var states = new string[entries.Count];
             for (var index = 0; index < entries.Count; index++)
             {

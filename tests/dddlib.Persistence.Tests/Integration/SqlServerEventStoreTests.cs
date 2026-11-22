@@ -136,7 +136,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
         var stream2Id = Guid.NewGuid();
         var correlation1 = Guid.NewGuid();
         var correlation2 = Guid.NewGuid();
-        var first = await eventStore.GetLastSequenceNumberAsync();
+        var first = await this.LastAssignedAsync();
         await eventStore.CommitStreamAsync(stream1Id, [new Event { Id = 1, Value = "One" }, new Event { Id = 2, Value = "Two" }], correlation1, null);
         await eventStore.CommitStreamAsync(stream2Id, [new Event { Id = 3, Value = "Three" }], correlation2, null);
 
@@ -154,7 +154,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
     public async Task ReadsOnlyAfterTheSequenceNumber()
     {
         var eventStore = new SqlServerEventStore(this.ConnectionString);
-        var first = await eventStore.GetLastSequenceNumberAsync();
+        var first = await this.LastAssignedAsync();
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }, new Event { Id = 2 }, new Event { Id = 3 }], Guid.NewGuid(), null);
 
         var second = await eventStore.ReadEventsAsync(first + 1, 1);
@@ -174,7 +174,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
     public async Task ReadsOnlyTheRequestedEventTypes()
     {
         var eventStore = new SqlServerEventStore(this.ConnectionString);
-        var first = await eventStore.GetLastSequenceNumberAsync();
+        var first = await this.LastAssignedAsync();
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }, new OtherEvent(), new Event { Id = 3 }], Guid.NewGuid(), null);
 
         var others = await eventStore.ReadEventsAsync(first, 10, [typeof(OtherEvent)]);
@@ -194,7 +194,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
     {
         var eventStore = new SqlServerEventStore(this.ConnectionString);
 
-        var before = await eventStore.GetLastSequenceNumberAsync();
+        var before = await this.LastAssignedAsync();
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }, new Event { Id = 2 }], Guid.NewGuid(), null);
         var after = await eventStore.GetLastSequenceNumberAsync();
 
@@ -207,7 +207,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
     public async Task SkipsGapsLeftByRolledBackCommits()
     {
         var eventStore = new SqlServerEventStore(this.ConnectionString);
-        var first = await eventStore.GetLastSequenceNumberAsync();
+        var first = await this.LastAssignedAsync();
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }], Guid.NewGuid(), null);
         await this.Database.ExecuteScalarAsync("SELECT NEXT VALUE FOR [dbo].[SequenceNumber];");
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 3 }], Guid.NewGuid(), null);
@@ -227,7 +227,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
     public async Task WaitsForACommitInFlight()
     {
         var eventStore = new SqlServerEventStore(this.ConnectionString);
-        var first = await eventStore.GetLastSequenceNumberAsync();
+        var first = await this.LastAssignedAsync();
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }], Guid.NewGuid(), null);
 
         await using var connection = new SqlConnection(this.ConnectionString);
@@ -247,11 +247,42 @@ public class SqlServerEventStoreTests : SqlServerIntegration
         await Assert.That(page.EndSequenceNumber).IsEqualTo(first + 2);
     }
 
+    // Commits are serialized per schema: the store-wide lock is named after the schema's event table, so a commit in
+    // flight in one schema holds up the commits of that schema only (https://github.com/dddlib/dddlib/issues/57).
+    [Test]
+    public async Task ACommitInFlightHoldsUpCommitsInItsOwnSchemaOnly()
+    {
+        var otherSchema = string.Concat("s", Guid.NewGuid().ToString("N"));
+        await this.Database.CreateSchemaAsync(otherSchema);
+        var eventStore = new SqlServerEventStore(this.ConnectionString);
+        var otherEventStore = new SqlServerEventStore(this.ConnectionString, otherSchema);
+        await otherEventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 0 }], Guid.NewGuid(), null);
+
+        await using var connection = new SqlConnection(this.ConnectionString);
+        await connection.OpenAsync();
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+        await CommitByHandAsync(transaction, typeof(Event).GetSerializedName(), """{"Id":1}""");
+
+        var sameSchema = eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 2 }], Guid.NewGuid(), null);
+        var single = await otherEventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 3 }], Guid.NewGuid(), null);
+        var multiple = await otherEventStore.CommitStreamsAsync(
+            [
+                new StreamCommit(Guid.NewGuid(), [new Event { Id = 4 }], null),
+                new StreamCommit(Guid.NewGuid(), [new Event { Id = 5 }], null),
+            ],
+            Guid.NewGuid());
+
+        await Assert.That(single).IsNotNull();
+        await Assert.That(multiple).Count().IsEqualTo(2);
+        await Assert.That(() => (Task)sameSchema).Throws<ConcurrencyException>().WithMessageContaining("event sequence lock");
+        await transaction.RollbackAsync();
+    }
+
     [Test]
     public async Task MissingEventTypeFailsLoudly()
     {
         var eventStore = new SqlServerEventStore(this.ConnectionString);
-        var first = await eventStore.GetLastSequenceNumberAsync();
+        var first = await this.LastAssignedAsync();
         await using (var connection = new SqlConnection(this.ConnectionString))
         {
             await connection.OpenAsync();
@@ -272,16 +303,48 @@ public class SqlServerEventStoreTests : SqlServerIntegration
         await Assert.That(handled.EndSequenceNumber).IsEqualTo(first + 2);
     }
 
-    private static async Task CommitByHandAsync(SqlTransaction transaction, string typeName, string payload)
+    // The feed carries what each event was stored with, read as the event dispatcher reads it: the string entries of
+    // the stored JSON object, and nothing for metadata that is missing or not an object
+    // (https://github.com/dddlib/dddlib/issues/60).
+    [Test]
+    public async Task FeedCarriesTheMetadataOfEachEvent()
+    {
+        var eventStore = new SqlServerEventStore(this.ConnectionString);
+        var first = await this.LastAssignedAsync();
+        await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }], Guid.NewGuid(), null);
+        await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 2 }, new Event { Id = 3 }, new Event { Id = 4 }], Guid.NewGuid(), null);
+        await this.Database.ExecuteScriptAsync($$$"""
+            UPDATE [dbo].[Events] SET [Metadata] = NULL WHERE [SequenceNumber] = {{{first + 2}}};
+            UPDATE [dbo].[Events] SET [Metadata] = N'[1,2]' WHERE [SequenceNumber] = {{{first + 3}}};
+            UPDATE [dbo].[Events] SET [Metadata] = N'{"tenant":"acme","count":2,"nested":{"a":"b"}}' WHERE [SequenceNumber] = {{{first + 4}}};
+            """);
+
+        var page = await eventStore.ReadEventsAsync(first, 10);
+
+        await Assert.That(page.Events[0].Metadata.Keys).IsEquivalentTo(["hostname", "timestamp"]);
+        await Assert.That(page.Events[0].Metadata["hostname"]).IsEqualTo(Environment.MachineName);
+        await Assert.That(page.Events[1].Metadata).IsEmpty();
+        await Assert.That(page.Events[2].Metadata).IsEmpty();
+        await Assert.That(page.Events[3].Metadata).IsEquivalentTo(new Dictionary<string, string> { ["tenant"] = "acme" });
+    }
+
+    // The last sequence number the store has handed out, used or not. The tests expect the next commit to take the next
+    // number. The last event's number would not do: a commit that failed in an earlier test, depending on the order the
+    // tests run in, leaves numbers taken after it.
+    private async Task<long> LastAssignedAsync() =>
+        (long)(await this.Database.ExecuteScalarAsync(
+            "SELECT COALESCE(CONVERT(BIGINT, [last_used_value]), 0) FROM sys.sequences WHERE [object_id] = OBJECT_ID(N'[dbo].[SequenceNumber]');"))!;
+
+    private static async Task CommitByHandAsync(SqlTransaction transaction, string typeName, string payload, string schema = "dbo")
     {
         await using var command = transaction.Connection!.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = """
-            EXEC [dbo].[TryAddType] @Name = @TypeName;
-            DECLARE @Events [dbo].[EventList];
+        command.CommandText = $"""
+            EXEC [{schema}].[TryAddType] @Name = @TypeName;
+            DECLARE @Events [{schema}].[EventList];
             INSERT INTO @Events ([Index], [TypeId], [Payload])
-            SELECT 1, [Id], @Payload FROM [dbo].[Types] WHERE [Name] = @TypeName COLLATE SQL_Latin1_General_CP1_CS_AS;
-            EXEC [dbo].[CommitStream] @StreamId = @StreamId, @Events = @Events, @Metadata = NULL, @CorrelationId = @CorrelationId, @PreCommitState = NULL;
+            SELECT 1, [Id], @Payload FROM [{schema}].[Types] WHERE [Name] = @TypeName COLLATE SQL_Latin1_General_CP1_CS_AS;
+            EXEC [{schema}].[CommitStream] @StreamId = @StreamId, @Events = @Events, @Metadata = NULL, @CorrelationId = @CorrelationId, @PreCommitState = NULL;
             """;
         command.Parameters.Add("@TypeName", SqlDbType.VarChar, 511).Value = typeName;
         command.Parameters.Add("@Payload", SqlDbType.NVarChar, -1).Value = payload;
@@ -298,7 +361,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
         var stream2Id = Guid.NewGuid();
         var correlationId = Guid.NewGuid();
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 0 }], Guid.NewGuid(), null);
-        var first = await eventStore.GetLastSequenceNumberAsync();
+        var first = await this.LastAssignedAsync();
 
         var states = await eventStore.CommitStreamsAsync(
             [

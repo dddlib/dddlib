@@ -19,16 +19,20 @@ dotnet add package dddlib.Persistence.EventDispatcher.SqlServer
 
 Every committed event has a store-wide **sequence number**. A dispatcher is identified by a `Guid` and keeps its own
 position in that sequence, so several independent consumers (say, a read model and an audit log) can each dispatch
-every event once by using different dispatcher ids. Two hosts sharing a dispatcher id share the work instead.
+every event once by using different dispatcher ids. Hosts sharing a dispatcher id stand by for each other: one batch is
+in flight per dispatcher id, so one host dispatches at a time and events arrive in sequence order.
 
 Aggregate roots saved through the [memento repositories](memento-persistence.md) have their events appended to the
 same store when the memento is saved, so they are dispatched the same way.
 
-Events are handed out in numbered **batches** of consecutive events. The host delivers a batch one event at a time,
-marking each event dispatched as it goes. If your code throws, the batch is abandoned: the events already marked stay
-marked, and the rest of the batch is handed out again after the batch timeout, so order is preserved and nothing is
-skipped. That is also why delivery is at least once: an event whose handler completed but whose mark was lost is
-delivered again. Handlers must be idempotent.
+Events are handed out in numbered **batches** of consecutive events. The host delivers a batch one event at a time
+and marks it dispatched once, after the last event it delivered: one round trip to the store per batch rather than
+per event. If your code throws, the batch is abandoned: the events before the failure are marked, and the rest of the
+batch is handed out again after the batch timeout, so order is preserved and nothing is skipped. Stopping the host
+marks the events it has delivered and releases the rest of the batch, so that the next host, or the same one restarted,
+carries on at once and in order. That is why delivery is at least once: if the process dies before the mark,
+the events of that batch already delivered (up to `BatchSize - 1` of them) are delivered again. Handlers must be
+idempotent.
 
 ## Receiving events
 
@@ -53,8 +57,30 @@ public sealed class CarNotifications : IEventDispatcher
 
 `metadata` is what the event was stored with. On SQL Server that is the `hostname` and `timestamp` of the save, and
 any entries a [custom repository](memento-persistence.md#custom-storage) appended with the events, such as a tenant
-that the events themselves do not carry, or a message ID of that event's own. The in-memory store keeps none, and an entry stored as anything other than a
-string is left out. `CustomEventDispatcher` takes a delegate with or without the metadata.
+that the events themselves do not carry, or a message ID of that event's own. The in-memory store keeps the same:
+`hostname`, `timestamp` and the entries of a `MemoryRepository<T>` that overrides `EventMetadata` or
+`GetEventMetadata`. An entry stored as anything other than a string is left out. [Projections](projections.md) read
+the same metadata from the feed. `CustomEventDispatcher` takes a delegate with or without the metadata.
+
+### Receiving a batch at a time
+
+To deliver a whole batch in one round trip, such as one publish to a bus, implement `IEventBatchDispatcher` instead.
+It is an `IEventDispatcher`, so it goes wherever one does, and the host hands it each batch whole:
+
+```csharp
+using dddlib.Persistence.EventDispatcher;
+using dddlib.Persistence.EventDispatcher.Sdk;
+
+public sealed class CarEventPublisher(IBus bus) : IEventBatchDispatcher
+{
+    public Task DispatchAsync(IReadOnlyList<DispatchedEvent> events, CancellationToken cancellationToken) =>
+        bus.PublishAsync(events.Select(e => e.Event), cancellationToken);
+}
+```
+
+The batch is all or nothing: when `DispatchAsync` throws, none of it is marked and the whole batch is delivered again
+after the batch timeout, and `DispatchFailed` reports the first event of the batch. `BatchSize` is then also the most
+events one call receives.
 
 ## Hosting
 
@@ -101,9 +127,14 @@ back to back and an idle one is polled a few times a minute.
 
 ## Failures
 
-When a handler throws, the host raises `DispatchFailed` with the sequence number, the event and the exception,
-abandons the batch and waits `BatchTimeout` before polling again so the abandoned batch comes back in order. The host
+When a handler throws, the host raises `DispatchFailed` with the sequence number, the event and the exception, marks
+the events before it, abandons the batch and waits `BatchTimeout` before polling again so the abandoned batch comes back in order. The host
 itself does not log; subscribe to `DispatchFailed` to do so. Cancelling the token stops the host without raising it.
+
+When the store itself fails, say the database is briefly unreachable while polling or marking, the host raises
+`StoreFailed` with the exception, waits `BatchTimeout` and carries on; it does not stop. The wait matters: the store may
+have handed out a batch before failing, or a batch may have been dispatched but not marked, and that batch must time
+out to come back in order. A batch dispatched but not marked is delivered again, as at-least-once delivery allows.
 
 ## SQL Server schema
 
@@ -115,6 +146,8 @@ them yourself, the schema version check and rolling upgrades.
 
 Polling takes an application lock on the dispatcher id, so two hosts with the same dispatcher id never get the same
 batch. A host that cannot get the lock treats the poll as empty.
+
+A dispatcher id has one batch in flight at a time. While a batch is open, a poll by any host with that id finds nothing,\nuntil the batch is complete, released or timed out. A host that stops releases its batch, and a host that dies leaves it\nto time out: then the batch is handed out again, under a new id, with the events not yet marked, before any later\nevent. A mark completes only the batch that holds the marked event, and the dispatcher's position never passes an open\nbatch. To dispatch faster, give independent consumers their own dispatcher ids rather than sharing one.
 
 The event store in this version serializes commits on a store-wide application lock, so sequence numbers are assigned in
 commit order and a dispatcher that has passed sequence number N never sees an event below N appear later.

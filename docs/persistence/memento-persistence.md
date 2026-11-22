@@ -9,9 +9,17 @@ public interface IRepository<T> where T : AggregateRoot
 {
     Task SaveAsync(T aggregateRoot, CancellationToken cancellationToken = default);
 
+    Task SaveAsync(T aggregateRoot, Guid correlationId, CancellationToken cancellationToken = default);
+
     Task<T> LoadAsync(object naturalKey, CancellationToken cancellationToken = default);
 }
 ```
+
+The correlation identifier is stored with every event the save appends, and reaches the
+[projections](projections.md) feed as `FeedEvent.CorrelationId`. Pass the identifier of the operation the save belongs
+to, such as the request or message being handled, to correlate its events; a new one is generated when none is given,
+and `Guid.Empty` is an `ArgumentException` that saves nothing. This is the same as for the
+[event store repository](event-sourcing-persistence.md).
 
 ## Events
 
@@ -41,6 +49,10 @@ The events go to the `MemoryEventStore` the repository was composed with; compos
 same instance to have them dispatched. The other constructors create a private event store, so the events are kept
 but not observable. Nothing is shared between instances of `MemoryRepository<T>`; pass a shared `MemoryIdentityMap`
 to share identities between repositories.
+
+`MemoryRepository<T>` has the same `EventMetadata` and `GetEventMetadata` overrides as
+[custom storage](#custom-storage), with the same merge and reserved keys, so the in-memory event dispatcher and
+[projections](projections.md) receive the same metadata as on SQL Server.
 
 ## SQL Server
 
@@ -108,8 +120,8 @@ protected override IReadOnlyDictionary<string, string>? EventMetadata =>
     new Dictionary<string, string> { ["tenant"] = tenant };
 ```
 
-It is stored with each event beside dddlib's own `hostname` and `timestamp` entries, and the dispatcher receives all of
-them. A key of `hostname` or `timestamp` is an `ArgumentException`, thrown before anything is written.
+It is stored with each event beside dddlib's own `hostname` and `timestamp` entries, and the dispatcher and
+[projections](projections.md) receive all of them. A key of `hostname` or `timestamp` is an `ArgumentException`, thrown before anything is written.
 
 For a value that differs from one event to the next, such as a message ID that lets consumers drop the duplicates of a
 redelivered save, override `GetEventMetadata`. It is called once for each event before anything is written, with the
@@ -127,9 +139,9 @@ null for an event with no metadata of its own. The same reserved keys apply. Eve
 ### Owning the transaction
 
 The original way to write custom storage is still supported: override
-`SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken)` instead,
-open the connection and transaction yourself, and call `AppendEventsAsync` with that transaction and the new state token
-before committing, so that a dispatcher never sees events for a memento that was not saved. Metadata is then passed to
+`SaveAsync(Guid id, object memento, IReadOnlyList<object> events, Guid correlationId, string? preCommitState, CancellationToken)`
+instead, open the connection and transaction yourself, and call `AppendEventsAsync` with that transaction, the
+`correlationId` you were given and the new state token before committing, so that a dispatcher never sees events for a memento that was not saved. Metadata is then passed to
 `AppendEventsAsync` before the events, and metadata of each event's own after them, as a list in step with the events
 (a null entry for an event with none); a list of another length is an `ArgumentException`. A repository written this way cannot take part in a batch, because it owns the
 transaction it saves in: adding to a batch through it is a `NotSupportedException`. A repository that overrides
@@ -177,7 +189,7 @@ await batch.SaveAsync();
 ```
 
 `Add` is on `dddlib.Persistence.Sdk.Repository<T>`, which every repository here derives from. `dddlib.Persistence.IBatch`
-has only `SaveAsync`, so code that should not know the storage, such as an application service, can take an `IBatch`
+has only `SaveAsync`, with or without a correlation identifier, so code that should not know the storage, such as an application service, can take an `IBatch`
 and hand it to repository methods that add to it; the composition root creates the `SqlServerBatch`, or a `MemoryBatch`
 in tests.
 
@@ -187,8 +199,9 @@ in tests.
 - The same instance twice is an `ArgumentException`. Every aggregate root is validated before anything is written.
 - A conflict is a `ConcurrencyException` that names the aggregate root's type and natural key. Two new aggregate roots
   with one natural key are a `ConcurrencyException` too, and nothing is written.
-- One correlation identifier covers every event, and the events take contiguous sequence numbers in the order the
-  aggregate roots were added.
+- One correlation identifier covers every event, since the batch is one commit: the one given to
+  `SaveAsync(Guid correlationId)`, or a new one. `Guid.Empty` is an `ArgumentException` that saves nothing and leaves
+  the batch usable. The events take contiguous sequence numbers in the order the aggregate roots were added.
 - As for a single save, a new aggregate root's identity is registered before the write; when the write fails it stays
   registered and the next save of that natural key reuses it.
 

@@ -277,6 +277,29 @@ public class MemoryEventStoreTests
         await Assert.That(await eventStore.GetLastSequenceNumberAsync()).IsEqualTo(last);
     }
 
+    // The feed carries what each event was stored with: here, as on SQL Server, dddlib's hostname and the commit's
+    // timestamp (https://github.com/dddlib/dddlib/issues/60).
+    [Test]
+    public async Task FeedCarriesTheMetadataOfEachEvent()
+    {
+        var eventStore = new MemoryEventStore();
+        var before = DateTime.UtcNow;
+        await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }, new Event { Id = 2 }], Guid.NewGuid(), null);
+        await eventStore.CommitStreamsAsync([new StreamCommit(Guid.NewGuid(), [new Event { Id = 3 }], null)], Guid.NewGuid());
+
+        var page = await eventStore.ReadEventsAsync(0, 10);
+
+        await Assert.That(page.Events).Count().IsEqualTo(3);
+        foreach (var @event in page.Events)
+        {
+            await Assert.That(@event.Metadata.Keys).IsEquivalentTo(["hostname", "timestamp"]);
+            await Assert.That(@event.Metadata["hostname"]).IsEqualTo(Environment.MachineName);
+            await Assert.That(DateTime.Parse(@event.Metadata["timestamp"], null, System.Globalization.DateTimeStyles.RoundtripKind)).IsGreaterThanOrEqualTo(before);
+        }
+
+        await Assert.That(page.Events[0].Metadata["timestamp"]).IsEqualTo(page.Events[1].Metadata["timestamp"]);
+    }
+
     private sealed class Event
     {
         public int Id { get; set; }

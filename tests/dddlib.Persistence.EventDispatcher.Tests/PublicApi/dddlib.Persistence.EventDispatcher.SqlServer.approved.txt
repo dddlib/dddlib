@@ -5,6 +5,7 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer
         public SqlServerEventBatchStore(string connectionString, string schema = "dbo") { }
         public System.Threading.Tasks.Task<dddlib.Persistence.EventDispatcher.Sdk.EventBatch?> GetNextBatchAsync(System.Guid dispatcherId, int batchSize, System.TimeSpan batchTimeout, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task MarkDispatchedAsync(System.Guid dispatcherId, long sequenceNumber, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task ReleaseAsync(System.Guid dispatcherId, long batchId, System.Threading.CancellationToken cancellationToken = default) { }
     }
     public sealed class SqlServerEventDispatcher : dddlib.Persistence.EventDispatcher.Sdk.EventDispatcher
     {

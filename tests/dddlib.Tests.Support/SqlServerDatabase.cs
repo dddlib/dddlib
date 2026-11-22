@@ -91,9 +91,31 @@ public sealed class SqlServerDatabase : IAsyncInitializer, IAsyncDisposable
             SqlConnection.ClearPool(pooled);
         }
 
-        await ExecuteAsync(
-            this.Container.ConnectionString,
-            $"ALTER DATABASE [{this.DatabaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{this.DatabaseName}];").ConfigureAwait(false);
+        // Dropping takes locks in master that a concurrent create or drop also takes, and the two can deadlock. Drops go
+        // through the same gate as creates, one at a time, and retry if they are still chosen as a deadlock victim.
+        await CreateDatabaseGate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            for (var attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    await ExecuteAsync(
+                        this.Container.ConnectionString,
+                        $"IF DB_ID(N'{this.DatabaseName}') IS NOT NULL BEGIN ALTER DATABASE [{this.DatabaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{this.DatabaseName}]; END",
+                        commandTimeoutSeconds: 120).ConfigureAwait(false);
+                    return;
+                }
+                catch (SqlException ex) when (attempt < 10 && ex.Errors.Cast<SqlError>().Any(static error => error.Number == 1205))
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(Random.Shared.Next(100, 500))).ConfigureAwait(false);
+                }
+            }
+        }
+        finally
+        {
+            CreateDatabaseGate.Release();
+        }
     }
 
     // CREATE DATABASE copies the model database under an exclusive lock on it. Test classes start together, and dozens of

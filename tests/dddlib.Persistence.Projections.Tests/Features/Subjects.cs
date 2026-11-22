@@ -141,6 +141,22 @@ public sealed class CatchAllProjection : Projection<string, SubjectView>
     public List<long> CaughtAll { get; } = [];
 }
 
+// Records the metadata each event was stored with, as an audit by actor or tenant would read it.
+public sealed class MetadataProjection : Projection<string, SubjectView>
+{
+    public MetadataProjection()
+        : base("metadata")
+    {
+        this.When<NewSubject>((envelope, _, _, _) =>
+        {
+            this.Metadata.Add(envelope.Metadata);
+            return Task.CompletedTask;
+        });
+    }
+
+    public List<IReadOnlyDictionary<string, string>> Metadata { get; } = [];
+}
+
 internal sealed class SubjectsBootstrapper : IBootstrapper
 {
     public void Bootstrap(IConfiguration configure)

@@ -23,6 +23,12 @@ internal interface IMemoryBatchParticipant
     object Stage(object memento);
 
     /// <summary>
+    /// Serializes the events of a save ahead of the commit, with the repository's metadata, so that a failure to
+    /// serialize one or a reserved metadata key leaves the stores untouched.
+    /// </summary>
+    MemoryEventStore.StagedEvents StageEvents(Guid id, IReadOnlyList<object> events);
+
+    /// <summary>
     /// Returns why storing a memento with the pre-commit state would conflict with the stored one (for example "already
     /// exists"), or null when it would not. The caller holds <see cref="Sync"/>.
     /// </summary>

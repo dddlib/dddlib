@@ -50,7 +50,8 @@ internal static class SqlServerMementoWriter
     public static bool Owns(SqlTransaction transaction) => OwnedTransactions.TryGetValue(transaction, out _);
 
     /// <summary>
-    /// Writes the mementos and returns their new state tokens in order. A memento whose stored state does not match is
+    /// Writes the mementos, with <paramref name="correlationId"/> for every event, and returns their new state tokens in
+    /// order. A memento whose stored state does not match is
     /// a <see cref="StreamConcurrencyException"/> naming its identity, and nothing is written.
     /// </summary>
     public static async Task<string[]> WriteAsync(
@@ -58,10 +59,10 @@ internal static class SqlServerMementoWriter
         string quotedSchema,
         SqlServerTypeCache typeCache,
         IReadOnlyList<MementoWrite> writes,
+        Guid correlationId,
         CancellationToken cancellationToken)
     {
         // Everything that needs the type registry or can fail to serialize happens before the transaction.
-        var correlationId = Guid.NewGuid();
         var lockRecords = new List<SqlDataRecord>(writes.Count);
         var mementoRecords = new List<SqlDataRecord>();
         var appendRecords = new List<SqlDataRecord>();

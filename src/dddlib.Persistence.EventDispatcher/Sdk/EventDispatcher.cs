@@ -2,7 +2,9 @@ namespace dddlib.Persistence.EventDispatcher.Sdk;
 
 /// <summary>
 /// Polls an <see cref="IEventBatchStore"/> and delivers each batch to an <see cref="IEventDispatcher"/> in sequence
-/// order, marking events dispatched as it goes. Run it with <see cref="RunAsync"/> from a hosted service, or
+/// order, marking each batch dispatched once, after its last dispatched event. Stopped partway through a batch, it
+/// marks what it dispatched and releases the rest, so that another host can carry on at once. An
+/// <see cref="IEventBatchDispatcher"/> receives each batch whole. Run it with <see cref="RunAsync"/> from a hosted service, or
 /// <see cref="Start"/> it to run on a background task until it is stopped or disposed.
 /// </summary>
 public class EventDispatcher : IAsyncDisposable
@@ -35,6 +37,13 @@ public class EventDispatcher : IAsyncDisposable
     public event EventHandler<DispatchFailedEventArgs>? DispatchFailed;
 
     /// <summary>
+    /// Raised when the batch store throws while polling for a batch or marking one dispatched. The host waits
+    /// <see cref="EventDispatcherOptions.BatchTimeout"/>, so that a batch handed out or dispatched but not marked comes
+    /// back in order, and carries on.
+    /// </summary>
+    public event EventHandler<StoreFailedEventArgs>? StoreFailed;
+
+    /// <summary>
     /// Dispatches until the token is cancelled.
     /// </summary>
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -45,9 +54,20 @@ public class EventDispatcher : IAsyncDisposable
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var batch = await this.batchStore
-                    .GetNextBatchAsync(this.options.DispatcherId, this.options.BatchSize, this.options.BatchTimeout, cancellationToken)
-                    .ConfigureAwait(false);
+                EventBatch? batch;
+                try
+                {
+                    batch = await this.batchStore
+                        .GetNextBatchAsync(this.options.DispatcherId, this.options.BatchSize, this.options.BatchTimeout, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception ex) when (IsStoreFailure(ex, cancellationToken))
+                {
+                    // The store may have handed out the batch before failing: let it time out so it comes back in order.
+                    this.StoreFailed?.Invoke(this, new StoreFailedEventArgs(ex));
+                    await Task.Delay(this.options.BatchTimeout, cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
 
                 if (batch is null)
                 {
@@ -60,7 +80,7 @@ public class EventDispatcher : IAsyncDisposable
 
                 if (!await this.DispatchAsync(batch, cancellationToken).ConfigureAwait(false))
                 {
-                    // Let the abandoned batch time out so its remaining events come back in order.
+                    // Let the abandoned or unmarked batch time out so its remaining events come back in order.
                     await Task.Delay(this.options.BatchTimeout, cancellationToken).ConfigureAwait(false);
                 }
             }
@@ -111,27 +131,114 @@ public class EventDispatcher : IAsyncDisposable
 
     private static TimeSpan Min(TimeSpan left, TimeSpan right) => left < right ? left : right;
 
+    // Anything but the host being stopped.
+    private static bool IsStoreFailure(Exception exception, CancellationToken cancellationToken) =>
+        exception is not OperationCanceledException || !cancellationToken.IsCancellationRequested;
+
+    // A batch dispatcher takes the batch whole, so it is marked whole or not at all.
     private async Task<bool> DispatchAsync(EventBatch batch, CancellationToken cancellationToken)
     {
+        if (this.dispatcher is not IEventBatchDispatcher batchDispatcher)
+        {
+            return await this.DispatchEachAsync(batch, cancellationToken).ConfigureAwait(false);
+        }
+
+        try
+        {
+            await batchDispatcher.DispatchAsync(batch.Events, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            await this.ReleaseAsync(batch).ConfigureAwait(false);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            var first = batch.Events[0];
+            this.DispatchFailed?.Invoke(this, new DispatchFailedEventArgs(first.SequenceNumber, first.Event, ex));
+            return false;
+        }
+
+        return await this.MarkDispatchedAsync(batch.Events[^1].SequenceNumber, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Marks once, after the last event dispatched: at the end of the batch, before giving up on a failure, or on the
+    // way out when stopping, so only the events not yet dispatched are delivered again.
+    private async Task<bool> DispatchEachAsync(EventBatch batch, CancellationToken cancellationToken)
+    {
+        DispatchedEvent? last = null;
+        var dispatched = true;
+
         foreach (var @event in batch.Events)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+
             try
             {
                 await this.dispatcher.DispatchAsync(@event.SequenceNumber, @event.Metadata, @event.Event, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                throw;
+                break;
             }
             catch (Exception ex)
             {
                 this.DispatchFailed?.Invoke(this, new DispatchFailedEventArgs(@event.SequenceNumber, @event.Event, ex));
-                return false;
+                dispatched = false;
+                break;
             }
 
-            await this.batchStore.MarkDispatchedAsync(this.options.DispatcherId, @event.SequenceNumber, cancellationToken).ConfigureAwait(false);
+            last = @event;
         }
 
-        return true;
+        if (last is not null && !await this.MarkDispatchedAsync(last.SequenceNumber, cancellationToken).ConfigureAwait(false))
+        {
+            dispatched = false;
+        }
+
+        // Stopping partway through gives the rest of the batch up at once, so that the next host carries on in order
+        // without waiting for the batch to time out.
+        if (cancellationToken.IsCancellationRequested && !ReferenceEquals(last, batch.Events[^1]))
+        {
+            await this.ReleaseAsync(batch).ConfigureAwait(false);
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        return dispatched;
+    }
+
+    // Raises StoreFailed when the store fails: the batch then times out instead. The host is stopping, so the release
+    // is not cancelled.
+    private async Task ReleaseAsync(EventBatch batch)
+    {
+        try
+        {
+            await this.batchStore.ReleaseAsync(this.options.DispatcherId, batch.Id, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            this.StoreFailed?.Invoke(this, new StoreFailedEventArgs(ex));
+        }
+    }
+
+    // Returns false when the store fails, after raising StoreFailed. Stopping must not lose the record of what was
+    // already dispatched, so a cancelled token does not cancel the mark.
+    private async Task<bool> MarkDispatchedAsync(long sequenceNumber, CancellationToken cancellationToken)
+    {
+        var token = cancellationToken.IsCancellationRequested ? CancellationToken.None : cancellationToken;
+
+        try
+        {
+            await this.batchStore.MarkDispatchedAsync(this.options.DispatcherId, sequenceNumber, token).ConfigureAwait(false);
+            return true;
+        }
+        catch (Exception ex) when (IsStoreFailure(ex, token))
+        {
+            this.StoreFailed?.Invoke(this, new StoreFailedEventArgs(ex));
+            return false;
+        }
     }
 }
