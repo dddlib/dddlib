@@ -136,7 +136,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
         var stream2Id = Guid.NewGuid();
         var correlation1 = Guid.NewGuid();
         var correlation2 = Guid.NewGuid();
-        var first = await eventStore.GetLastSequenceNumberAsync();
+        var first = await this.LastAssignedAsync();
         await eventStore.CommitStreamAsync(stream1Id, [new Event { Id = 1, Value = "One" }, new Event { Id = 2, Value = "Two" }], correlation1, null);
         await eventStore.CommitStreamAsync(stream2Id, [new Event { Id = 3, Value = "Three" }], correlation2, null);
 
@@ -154,7 +154,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
     public async Task ReadsOnlyAfterTheSequenceNumber()
     {
         var eventStore = new SqlServerEventStore(this.ConnectionString);
-        var first = await eventStore.GetLastSequenceNumberAsync();
+        var first = await this.LastAssignedAsync();
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }, new Event { Id = 2 }, new Event { Id = 3 }], Guid.NewGuid(), null);
 
         var second = await eventStore.ReadEventsAsync(first + 1, 1);
@@ -174,7 +174,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
     public async Task ReadsOnlyTheRequestedEventTypes()
     {
         var eventStore = new SqlServerEventStore(this.ConnectionString);
-        var first = await eventStore.GetLastSequenceNumberAsync();
+        var first = await this.LastAssignedAsync();
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }, new OtherEvent(), new Event { Id = 3 }], Guid.NewGuid(), null);
 
         var others = await eventStore.ReadEventsAsync(first, 10, [typeof(OtherEvent)]);
@@ -194,7 +194,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
     {
         var eventStore = new SqlServerEventStore(this.ConnectionString);
 
-        var before = await eventStore.GetLastSequenceNumberAsync();
+        var before = await this.LastAssignedAsync();
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }, new Event { Id = 2 }], Guid.NewGuid(), null);
         var after = await eventStore.GetLastSequenceNumberAsync();
 
@@ -207,7 +207,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
     public async Task SkipsGapsLeftByRolledBackCommits()
     {
         var eventStore = new SqlServerEventStore(this.ConnectionString);
-        var first = await eventStore.GetLastSequenceNumberAsync();
+        var first = await this.LastAssignedAsync();
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }], Guid.NewGuid(), null);
         await this.Database.ExecuteScalarAsync("SELECT NEXT VALUE FOR [dbo].[SequenceNumber];");
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 3 }], Guid.NewGuid(), null);
@@ -227,7 +227,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
     public async Task WaitsForACommitInFlight()
     {
         var eventStore = new SqlServerEventStore(this.ConnectionString);
-        var first = await eventStore.GetLastSequenceNumberAsync();
+        var first = await this.LastAssignedAsync();
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }], Guid.NewGuid(), null);
 
         await using var connection = new SqlConnection(this.ConnectionString);
@@ -282,7 +282,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
     public async Task MissingEventTypeFailsLoudly()
     {
         var eventStore = new SqlServerEventStore(this.ConnectionString);
-        var first = await eventStore.GetLastSequenceNumberAsync();
+        var first = await this.LastAssignedAsync();
         await using (var connection = new SqlConnection(this.ConnectionString))
         {
             await connection.OpenAsync();
@@ -310,7 +310,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
     public async Task FeedCarriesTheMetadataOfEachEvent()
     {
         var eventStore = new SqlServerEventStore(this.ConnectionString);
-        var first = await eventStore.GetLastSequenceNumberAsync();
+        var first = await this.LastAssignedAsync();
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }], Guid.NewGuid(), null);
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 2 }, new Event { Id = 3 }, new Event { Id = 4 }], Guid.NewGuid(), null);
         await this.Database.ExecuteScriptAsync($$$"""
@@ -327,6 +327,13 @@ public class SqlServerEventStoreTests : SqlServerIntegration
         await Assert.That(page.Events[2].Metadata).IsEmpty();
         await Assert.That(page.Events[3].Metadata).IsEquivalentTo(new Dictionary<string, string> { ["tenant"] = "acme" });
     }
+
+    // The last sequence number the store has handed out, used or not. The tests expect the next commit to take the next
+    // number. The last event's number would not do: a commit that failed in an earlier test, depending on the order the
+    // tests run in, leaves numbers taken after it.
+    private async Task<long> LastAssignedAsync() =>
+        (long)(await this.Database.ExecuteScalarAsync(
+            "SELECT COALESCE(CONVERT(BIGINT, [last_used_value]), 0) FROM sys.sequences WHERE [object_id] = OBJECT_ID(N'[dbo].[SequenceNumber]');"))!;
 
     private static async Task CommitByHandAsync(SqlTransaction transaction, string typeName, string payload, string schema = "dbo")
     {
@@ -354,7 +361,7 @@ public class SqlServerEventStoreTests : SqlServerIntegration
         var stream2Id = Guid.NewGuid();
         var correlationId = Guid.NewGuid();
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 0 }], Guid.NewGuid(), null);
-        var first = await eventStore.GetLastSequenceNumberAsync();
+        var first = await this.LastAssignedAsync();
 
         var states = await eventStore.CommitStreamsAsync(
             [
