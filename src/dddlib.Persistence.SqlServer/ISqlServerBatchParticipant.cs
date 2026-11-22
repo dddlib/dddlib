@@ -30,6 +30,12 @@ internal interface ISqlServerBatchParticipant
     IReadOnlyDictionary<string, string>? EventMetadata { get; }
 
     /// <summary>
+    /// Gets the metadata of one event's own, merged over <see cref="EventMetadata"/>; <paramref name="index"/> is the
+    /// event's position, from 0, among the aggregate root's events.
+    /// </summary>
+    IReadOnlyDictionary<string, string>? GetEventMetadata(Guid id, object @event, int index);
+
+    /// <summary>
     /// Writes one memento in the given transaction and returns its new state token.
     /// </summary>
     Task<string> SaveMementoAsync(SqlTransaction transaction, Guid id, object memento, string? preCommitState, CancellationToken cancellationToken);

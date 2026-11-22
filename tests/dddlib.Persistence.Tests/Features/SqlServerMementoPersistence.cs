@@ -1604,6 +1604,83 @@ SELECT @PostCommitState;";
         }
     }
 
+    // Metadata of each event's own, such as a message ID, comes from the repository too, alone or in a batch, merged
+    // over the repository's metadata for all its events (https://github.com/dddlib/dddlib/issues/61).
+    public sealed class CustomStoragePerEventMetadata : SqlServerMementoPersistence
+    {
+        [Test]
+        public async Task Scenario()
+        {
+            // Given a repository with custom storage that gives its events a tenant, and each event a message ID made of
+            // its aggregate root's identity and its position
+            await this.Database.ExecuteScriptAsync(CustomStorageThroughTheTransactionalHook.SubjectRepository.Table);
+            var repository = new MessageIdRepository(this.ConnectionString);
+
+            // When an instance with two events is saved alone
+            var alone = new CustomStorageThroughTheTransactionalHook.Subject("alone");
+            alone.Rename("renamed");
+            await repository.SaveAsync(alone);
+
+            // And two instances are saved in a batch
+            var batch = new SqlServerBatch(this.ConnectionString);
+            repository.Add(batch, new CustomStorageThroughTheTransactionalHook.Subject("first"));
+            repository.Add(batch, new CustomStorageThroughTheTransactionalHook.Subject("second"));
+            await batch.SaveAsync();
+
+            // Then every event carries the tenant and its own message ID
+            var events = await this.ReadEventsAsync();
+            await Assert.That(events.Count).IsEqualTo(4);
+            foreach (var (streamId, revision, metadata) in events)
+            {
+                using var json = System.Text.Json.JsonDocument.Parse(metadata);
+                await Assert.That(json.RootElement.EnumerateObject().Select(static property => property.Name))
+                    .IsEquivalentTo(["hostname", "timestamp", "tenant", "message_id"]);
+                await Assert.That(json.RootElement.GetProperty("tenant").GetString()).IsEqualTo("acme");
+                await Assert.That(json.RootElement.GetProperty("message_id").GetString()).IsEqualTo($"{streamId:N}/{revision - 1}");
+            }
+
+            // And the events of the batch belong to different aggregate roots
+            await Assert.That(events.Select(static @event => @event.StreamId).Distinct().Count()).IsEqualTo(3);
+        }
+
+        private async Task<List<(Guid StreamId, int Revision, string Metadata)>> ReadEventsAsync()
+        {
+            await using var connection = new SqlConnection(this.ConnectionString);
+            await using var command = connection.CreateCommand();
+            command.CommandText = @"SELECT [Stream].[Id], [Event].[StreamRevision], [Event].[Metadata]
+FROM [dbo].[Events] [Event] INNER JOIN [dbo].[Streams] [Stream] ON [Stream].[LinkId] = [Event].[StreamLinkId]
+ORDER BY [Event].[SequenceNumber];";
+
+            await connection.OpenAsync();
+            await using var reader = await command.ExecuteReaderAsync();
+
+            var events = new List<(Guid StreamId, int Revision, string Metadata)>();
+            while (await reader.ReadAsync())
+            {
+                events.Add((reader.GetGuid(0), reader.GetInt32(1), reader.GetString(2)));
+            }
+
+            return events;
+        }
+
+        public sealed class MessageIdRepository(string connectionString) : CustomStorageThroughTheTransactionalHook.SubjectRepository(connectionString)
+        {
+            protected override IReadOnlyDictionary<string, string>? EventMetadata => new Dictionary<string, string> { ["tenant"] = "acme" };
+
+            protected override IReadOnlyDictionary<string, string>? GetEventMetadata(Guid id, object @event, int index) =>
+                new Dictionary<string, string> { ["message_id"] = $"{id:N}/{index}" };
+        }
+
+        private sealed class BootStrapper : IBootstrap<CustomStorageThroughTheTransactionalHook.Subject>
+        {
+            public void Bootstrap(IConfiguration configure)
+            {
+                configure.AggregateRoot<CustomStorageThroughTheTransactionalHook.Subject>()
+                    .ToReconstituteUsing(() => new CustomStorageThroughTheTransactionalHook.Subject());
+            }
+        }
+    }
+
     // A repository that overrides the original hook owns its transaction, so it cannot share the batch's.
     public sealed class CustomStorageWithTheOldHookCannotJoinABatch : SqlServerMementoPersistence
     {

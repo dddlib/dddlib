@@ -67,6 +67,8 @@ internal static class SqlServerMementoWriter
         var appendRecords = new List<SqlDataRecord>();
         var appendIndexes = new List<int>();
         var eventRecords = new List<SqlDataRecord>();
+        var eventMetadataRecords = new List<SqlDataRecord>();
+        var timestamp = DateTime.UtcNow;
         for (var order = 0; order < writes.Count; order++)
         {
             var write = writes[order];
@@ -89,13 +91,22 @@ internal static class SqlServerMementoWriter
             if (write.Events.Count > 0)
             {
                 // The state is set once the memento is written.
+                var metadata = write.Participant.EventMetadata;
                 var record = new SqlDataRecord(StreamAppendColumns);
                 record.SetGuid(0, write.Id);
                 record.SetInt32(1, order + 1);
-                record.SetString(3, SqlServerEvents.CreateMetadata(write.Participant.EventMetadata));
+                record.SetString(3, SqlServerEvents.CreateMetadata(metadata, null, timestamp));
                 appendRecords.Add(record);
                 appendIndexes.Add(order);
                 await SqlServerEvents.AddStreamRecordsAsync(eventRecords, write.Id, write.Events, typeCache, cancellationToken).ConfigureAwait(false);
+
+                var eventMetadata = new IReadOnlyDictionary<string, string>?[write.Events.Count];
+                for (var index = 0; index < write.Events.Count; index++)
+                {
+                    eventMetadata[index] = write.Participant.GetEventMetadata(write.Id, write.Events[index], index);
+                }
+
+                SqlServerEvents.AddEventMetadataRecords(eventMetadataRecords, write.Id, metadata, eventMetadata, timestamp);
             }
         }
 
@@ -131,7 +142,7 @@ internal static class SqlServerMementoWriter
                     appendRecords[index].SetString(2, states[appendIndexes[index]]);
                 }
 
-                await AppendAsync(transaction, quotedSchema, appendRecords, eventRecords, correlationId, cancellationToken).ConfigureAwait(false);
+                await AppendAsync(transaction, quotedSchema, appendRecords, eventRecords, eventMetadataRecords, correlationId, cancellationToken).ConfigureAwait(false);
             }
 
             await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
@@ -241,12 +252,20 @@ internal static class SqlServerMementoWriter
         return state;
     }
 
-    private static async Task AppendAsync(SqlTransaction transaction, string quotedSchema, List<SqlDataRecord> appendRecords, List<SqlDataRecord> eventRecords, Guid correlationId, CancellationToken cancellationToken)
+    private static async Task AppendAsync(
+        SqlTransaction transaction,
+        string quotedSchema,
+        List<SqlDataRecord> appendRecords,
+        List<SqlDataRecord> eventRecords,
+        List<SqlDataRecord> eventMetadataRecords,
+        Guid correlationId,
+        CancellationToken cancellationToken)
     {
         await using var command = CreateCommand(transaction, quotedSchema, "AppendStreams");
         AddTable(command, "@Streams", quotedSchema, "StreamAppendList", appendRecords);
         AddTable(command, "@Events", quotedSchema, "StreamEventList", eventRecords);
         command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = correlationId;
+        SqlServerEvents.AddEventMetadataParameter(command, quotedSchema, eventMetadataRecords);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 }

@@ -67,6 +67,10 @@ transaction:
 | `CommitStreams` and the `StreamCommitList` and `StreamEventList` table types | the event store repository's [collection overloads](event-sourcing-persistence.md#saving-several-aggregate-roots) |
 | `LockStreams`, `SaveMementos`, `AppendStreams` and the `StreamIdList`, `MementoList` and `StreamAppendList` table types | `SqlServerBatch`, and single saves of custom storage through the transactional hook |
 
+Version 7 adds the `EventMetadataList` table type and an optional `@EventMetadata` parameter to `AppendEvents` and
+`AppendStreams`, for [metadata of each event's own](memento-persistence.md#custom-storage). A caller that leaves the
+parameter out stores what it did before.
+
 Released scripts never change; every later change to the schema is a new script, so upgrading the packages and
 calling `EnsureAsync` upgrades the schema. The `Versions` table holds one row per applied version with the package
 that applied it and the text it ran.
