@@ -6,7 +6,7 @@ namespace dddlib.Persistence.EventDispatcher;
 /// Receives each batch of persisted events whole, in sequence order, so it can deliver them in one round trip, for
 /// example as one publish to a bus. The host treats the batch as all or nothing: when this throws, no event of the
 /// batch is marked dispatched and the whole batch is delivered again once it times out, so implementations must
-/// tolerate at-least-once delivery. A batch delivered again can arrive after later batches.
+/// tolerate at-least-once delivery.
 /// </summary>
 public interface IEventBatchDispatcher : IEventDispatcher
 {

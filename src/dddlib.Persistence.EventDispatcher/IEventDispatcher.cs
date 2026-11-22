@@ -1,11 +1,10 @@
 namespace dddlib.Persistence.EventDispatcher;
 
 /// <summary>
-/// Receives the persisted events, in sequence order within each batch. A throwing dispatcher stops the current batch;
-/// the undispatched events are delivered again once the batch times out, so implementations must tolerate
-/// at-least-once delivery. A batch that a host took and did not finish, because it stopped or because another host
-/// sharing the dispatcher id did, is delivered again after later batches. Do not skip an event because its sequence
-/// number is below one already handled.
+/// Receives the persisted events in sequence order. A throwing dispatcher stops the current batch; the undispatched
+/// events are delivered again once the batch times out, before any later event, so implementations must tolerate
+/// at-least-once delivery. After a crash, events dispatched but not yet marked are delivered again, in order, so an
+/// event can arrive again after later ones of its batch.
 /// </summary>
 public interface IEventDispatcher
 {

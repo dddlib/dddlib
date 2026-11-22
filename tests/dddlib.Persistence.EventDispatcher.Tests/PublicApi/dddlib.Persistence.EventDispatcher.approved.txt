@@ -33,6 +33,7 @@ namespace dddlib.Persistence.EventDispatcher.Memory
         public MemoryEventBatchStore(dddlib.Persistence.Memory.MemoryEventStore eventStore, System.TimeProvider timeProvider) { }
         public System.Threading.Tasks.Task<dddlib.Persistence.EventDispatcher.Sdk.EventBatch?> GetNextBatchAsync(System.Guid dispatcherId, int batchSize, System.TimeSpan batchTimeout, System.Threading.CancellationToken cancellationToken = default) { }
         public System.Threading.Tasks.Task MarkDispatchedAsync(System.Guid dispatcherId, long sequenceNumber, System.Threading.CancellationToken cancellationToken = default) { }
+        public System.Threading.Tasks.Task ReleaseAsync(System.Guid dispatcherId, long batchId, System.Threading.CancellationToken cancellationToken = default) { }
     }
     public sealed class MemoryEventDispatcher : dddlib.Persistence.EventDispatcher.Sdk.EventDispatcher
     {
@@ -76,6 +77,7 @@ namespace dddlib.Persistence.EventDispatcher.Sdk
     {
         System.Threading.Tasks.Task<dddlib.Persistence.EventDispatcher.Sdk.EventBatch?> GetNextBatchAsync(System.Guid dispatcherId, int batchSize, System.TimeSpan batchTimeout, System.Threading.CancellationToken cancellationToken = default);
         System.Threading.Tasks.Task MarkDispatchedAsync(System.Guid dispatcherId, long sequenceNumber, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task ReleaseAsync(System.Guid dispatcherId, long batchId, System.Threading.CancellationToken cancellationToken = default);
     }
     public sealed class StoreFailedEventArgs : System.EventArgs
     {

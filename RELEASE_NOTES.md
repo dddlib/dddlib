@@ -110,16 +110,19 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   during the upgrade, and changes procedure bodies with their contracts unchanged: every SQL Server package now
   requires version 9 (issue 57). The same version names the store-wide commit lock after the schema, so commits to two
   dddlib schemas in one database no longer wait for each other.
-- The event dispatcher no longer loses the rest of a batch that a host took and did not finish. Marking a batch
-  dispatched completed every earlier open batch of the dispatcher id too, so a batch taken by another host with the
-  same id, or one a host stopped partway through before restarting, was completed by the next mark, and its remaining
-  events were never dispatched. A mark now completes only the batch that holds the marked event, and the dispatcher's
-  position never passes a batch that is still open. Once the batch timeout has passed, the open batch is handed out
-  again with its remaining events, even while a later batch is in progress. Those events arrive after the later
-  batches. The same applies to `MemoryEventBatchStore`. Schema version 10 (`dddlib10.sql`) adds a nullable column and
-  an index to `Batches` and changes the bodies of `GetNextBatch` and `MarkDispatched`, with their contracts unchanged,
-  so processes on older packages get the fix once the schema is upgraded. Every SQL Server package now requires
-  version 10 (issue 53).
+- The event dispatcher no longer loses events, and dispatches them in order, when hosts share a dispatcher id or a host
+  stops partway through a batch. Marking a batch dispatched completed every earlier open batch of the dispatcher id
+  too, so a batch taken by another host with the same id, or one a host stopped partway through before restarting, was
+  completed by the next mark, and its remaining events were never dispatched. Hosts sharing an id also ran batches in
+  parallel, out of order. Now a mark completes only the batch that holds the marked event, the dispatcher's position
+  never passes an open batch, and a dispatcher id has one batch in flight at a time: hosts sharing an id stand by for
+  each other instead of sharing the work. A batch that is not finished comes back, before any later event, once it
+  times out, or at once when the host that held it stops: the host marks what it dispatched and releases the rest
+  through the new `IEventBatchStore.ReleaseAsync`, which a custom store may implement (by default the batch times
+  out). The same applies to `MemoryEventBatchStore`. Schema version 10 (`dddlib10.sql`) adds a nullable column and an
+  index to `Batches` and the `ReleaseBatch` procedure, and changes the bodies of `GetNextBatch` and `MarkDispatched`
+  with their contracts unchanged, so processes on older packages get the fix once the schema is upgraded. Every SQL
+  Server package now requires version 10 (issue 53).
 - Dependencies: the SQL Server packages depend on `System.Security.Cryptography.Pkcs` 9.0.21, above the 9.0.18 that
   `Microsoft.Data.SqlClient` 7.1 brings, for the .NET denial of service vulnerabilities CVE-2026-84008 and
   CVE-2026-70162.

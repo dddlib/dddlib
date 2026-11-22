@@ -11,9 +11,9 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer;
 
 /// <summary>
 /// Batches the events in the SQL Server event store. Several dispatcher instances with the same dispatcher id may
-/// run at once, and each takes different batches; each poll takes an application lock on the dispatcher id, and a poll
-/// that cannot get it in time simply finds no batch. A batch an instance takes and does not finish is handed out again
-/// after the batch timeout.
+/// run at once: one batch is in flight per dispatcher id, so one instance dispatches and the others stand by. Each poll
+/// takes an application lock on the dispatcher id, and a poll that cannot get it in time simply finds no batch. A batch
+/// an instance takes and does not finish is handed out again when the instance releases it or after the batch timeout.
 /// </summary>
 public sealed class SqlServerEventBatchStore : IEventBatchStore
 {
@@ -96,6 +96,22 @@ public sealed class SqlServerEventBatchStore : IEventBatchStore
         command.CommandText = string.Concat(this.schema, ".[MarkDispatched]");
         command.Parameters.Add("@DispatcherId", SqlDbType.UniqueIdentifier).Value = dispatcherId;
         command.Parameters.Add("@SequenceNumber", SqlDbType.BigInt).Value = sequenceNumber;
+
+        await SqlServerSchemaCheck.EnsureCompatibleAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task ReleaseAsync(Guid dispatcherId, long batchId, CancellationToken cancellationToken = default)
+    {
+        using var scope = new TransactionScope(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled);
+        await using var connection = new SqlConnection(this.connectionString);
+        await using var command = connection.CreateCommand();
+
+        command.CommandType = CommandType.StoredProcedure;
+        command.CommandText = string.Concat(this.schema, ".[ReleaseBatch]");
+        command.Parameters.Add("@DispatcherId", SqlDbType.UniqueIdentifier).Value = dispatcherId;
+        command.Parameters.Add("@BatchId", SqlDbType.BigInt).Value = batchId;
 
         await SqlServerSchemaCheck.EnsureCompatibleAsync(this.connectionString, this.schema, cancellationToken).ConfigureAwait(false);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);

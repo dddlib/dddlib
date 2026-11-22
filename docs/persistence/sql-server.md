@@ -81,12 +81,14 @@ do, and every natural key write waits for its turn for 10 seconds at most. The s
 the schema, so that commits to two dddlib schemas in one database no longer wait for each other.
 
 Version 10 adds a nullable `DispatchedSequenceNumber` column and the `IX_Batch_Dispatcher_Last` index to `Batches`,
-for the [event dispatcher](event-dispatcher.md). `MarkDispatched` completes only the batch that holds the sequence
-number, and the dispatcher's position never passes a batch that is still open. `GetNextBatch` hands out a timed-out
-batch again itself. The procedures keep their contracts. The upgrade removes batches that timed out under the earlier
-versions, so that their events are read again from the dispatcher's position, as before. Polls and marks take a lock
-named after the schema, so dispatchers with the same id in two dddlib schemas no longer wait for each other.
-
+and the `ReleaseBatch` procedure, for the [event dispatcher](event-dispatcher.md). `GetNextBatch` keeps one batch in
+flight per dispatcher id, handing an open batch out again, under a new id, once it has timed out or been released.
+`MarkDispatched` completes only the batch that holds the sequence number, and the dispatcher's position never passes a
+batch that is still open. Both keep their contracts, so processes on older packages get the new behaviour once the
+schema is upgraded; they do not release their batches, which time out as before. The upgrade removes batches that
+timed out under the earlier versions, so that their events are read again from the dispatcher's position, as before.
+Polls and marks take a lock named after the schema, so dispatchers with the same id in two dddlib schemas no longer
+wait for each other.
 Released scripts never change; every later change to the schema is a new script, so upgrading the packages and
 calling `EnsureAsync` upgrades the schema. The `Versions` table holds one row per applied version with the package
 that applied it and the text it ran.

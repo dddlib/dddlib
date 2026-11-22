@@ -2,8 +2,9 @@ namespace dddlib.Persistence.EventDispatcher.Sdk;
 
 /// <summary>
 /// Polls an <see cref="IEventBatchStore"/> and delivers each batch to an <see cref="IEventDispatcher"/> in sequence
-/// order, marking each batch dispatched once, after its last dispatched event. An <see cref="IEventBatchDispatcher"/>
-/// receives each batch whole. Run it with <see cref="RunAsync"/> from a hosted service, or
+/// order, marking each batch dispatched once, after its last dispatched event. Stopped partway through a batch, it
+/// marks what it dispatched and releases the rest, so that another host can carry on at once. An
+/// <see cref="IEventBatchDispatcher"/> receives each batch whole. Run it with <see cref="RunAsync"/> from a hosted service, or
 /// <see cref="Start"/> it to run on a background task until it is stopped or disposed.
 /// </summary>
 public class EventDispatcher : IAsyncDisposable
@@ -148,6 +149,7 @@ public class EventDispatcher : IAsyncDisposable
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            await this.ReleaseAsync(batch).ConfigureAwait(false);
             throw;
         }
         catch (Exception ex)
@@ -197,8 +199,29 @@ public class EventDispatcher : IAsyncDisposable
             dispatched = false;
         }
 
+        // Stopping partway through gives the rest of the batch up at once, so that the next host carries on in order
+        // without waiting for the batch to time out.
+        if (cancellationToken.IsCancellationRequested && !ReferenceEquals(last, batch.Events[^1]))
+        {
+            await this.ReleaseAsync(batch).ConfigureAwait(false);
+        }
+
         cancellationToken.ThrowIfCancellationRequested();
         return dispatched;
+    }
+
+    // Raises StoreFailed when the store fails: the batch then times out instead. The host is stopping, so the release
+    // is not cancelled.
+    private async Task ReleaseAsync(EventBatch batch)
+    {
+        try
+        {
+            await this.batchStore.ReleaseAsync(this.options.DispatcherId, batch.Id, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            this.StoreFailed?.Invoke(this, new StoreFailedEventArgs(ex));
+        }
     }
 
     // Returns false when the store fails, after raising StoreFailed. Stopping must not lose the record of what was

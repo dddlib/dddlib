@@ -40,14 +40,24 @@ public sealed class MemoryEventBatchStore : IEventBatchStore
             var state = this.GetState(dispatcherId);
             var now = this.timeProvider.GetUtcNow();
 
-            // An open batch that has timed out is handed out again, the earliest first, with the events it has left.
-            var expired = state.Batches.Find(batch => !batch.Complete && now - batch.Timestamp >= batchTimeout);
-            if (expired is not null)
+            // One batch in flight per dispatcher id, so events are dispatched in order: while a batch is open and has not
+            // timed out or been released, there is nothing to hand out.
+            var open = state.Batches.FindIndex(static batch => !batch.Complete);
+            if (open >= 0)
             {
-                expired.Timestamp = now;
+                if (state.Batches.Exists(batch => !batch.Complete && now - batch.Timestamp < batchTimeout))
+                {
+                    return Task.FromResult<EventBatch?>(null);
+                }
+
+                // The batch comes back with the events not yet dispatched, under a new id: the host that held it no
+                // longer does, and cannot release it from the host that takes it now.
+                var expired = state.Batches[open];
                 var after = Math.Max(state.Position, expired.Dispatched);
                 var rest = this.eventStore.ReadEvents(after, expired.Count).Where(e => e.SequenceNumber <= expired.Last).ToArray();
-                return Task.FromResult<EventBatch?>(ToBatch(expired.Id, rest));
+                var again = new PendingBatch(++this.nextBatchId, rest[0].SequenceNumber, expired.Last, rest.Length) { Timestamp = now };
+                state.Batches[open] = again;
+                return Task.FromResult<EventBatch?>(ToBatch(again.Id, rest));
             }
 
             // Otherwise the next batch starts after every batch handed out, so batches never overlap.
@@ -91,6 +101,23 @@ public sealed class MemoryEventBatchStore : IEventBatchStore
             if (state.Batches.Count > 0)
             {
                 state.Position = Math.Max(state.Position, state.Batches[0].Dispatched);
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task ReleaseAsync(Guid dispatcherId, long batchId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        lock (this.sync)
+        {
+            // A released batch counts as timed out, whatever the timeout.
+            var batch = this.GetState(dispatcherId).Batches.Find(batch => batch.Id == batchId && !batch.Complete);
+            if (batch is not null)
+            {
+                batch.Timestamp = DateTimeOffset.MinValue;
             }
         }
 

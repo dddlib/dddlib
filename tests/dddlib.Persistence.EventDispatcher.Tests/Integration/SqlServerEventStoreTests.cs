@@ -3,6 +3,7 @@ using dddlib.Persistence.EventDispatcher.Sdk;
 using dddlib.Persistence.EventDispatcher.SqlServer;
 using dddlib.Persistence.SqlServer;
 using Microsoft.Data.SqlClient;
+using TUnit.Assertions.Enums;
 
 namespace dddlib.Persistence.EventDispatcher.Tests.Integration;
 
@@ -88,6 +89,7 @@ public class SqlServerEventStoreTests
         {
             batches.Add(batch);
             await Assert.That(batch.Events.Count).IsLessThanOrEqualTo(2);
+            await batchStore.MarkDispatchedAsync(dispatcherId, batch.Events[^1].SequenceNumber);
         }
 
         var ids = batches.SelectMany(static b => b.Events).Select(static e => e.Event).OfType<Event>().Select(static e => e.Id).Where(static id => id is 4 or 5 or 6).ToList();
@@ -132,32 +134,31 @@ public class SqlServerEventStoreTests
         await Assert.That(afterTimeout!.Events.Select(static e => e.SequenceNumber)).IsEquivalentTo(firstBatch!.Events.Select(static e => e.SequenceNumber));
     }
 
-    // Two hosts share a dispatcher id: one takes a batch and stops, the other takes and completes the next. Marking the
-    // later batch does not complete the earlier one, which comes back after the timeout
+    // Two hosts share a dispatcher id. While one has a batch in flight the other gets nothing, so events are dispatched
+    // in order. A batch that is not finished comes back after the timeout, before any later batch
     // (https://github.com/dddlib/dddlib/issues/53).
     [Test]
-    public async Task MarkingABatchDoesNotCompleteAnEarlierOneThatIsNotFinished()
+    public async Task AHostWaitsWhileAnotherHasABatchInFlight()
     {
         var (eventStore, batchStore) = await this.CreateStoresAsync();
         var dispatcherId = Guid.NewGuid();
         await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }, new Event { Id = 2 }, new Event { Id = 3 }, new Event { Id = 4 }], Guid.NewGuid(), null);
 
-        var abandoned = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
-        var later = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
-        await batchStore.MarkDispatchedAsync(dispatcherId, later!.Events[^1].SequenceNumber);
-        var beforeTimeout = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
+        var inFlight = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
+        var whileInFlight = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
         await Task.Delay(TimeSpan.FromSeconds(1.5));
-        var afterTimeout = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
-        var afterThat = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
+        var again = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
+        await batchStore.MarkDispatchedAsync(dispatcherId, again!.Events[^1].SequenceNumber);
+        var next = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
 
-        await Assert.That(Ids(abandoned)).IsEquivalentTo([1, 2]);
-        await Assert.That(beforeTimeout).IsNull();
-        await Assert.That(Ids(afterTimeout)).IsEquivalentTo([1, 2]);
-        await Assert.That(afterThat).IsNull();
+        await Assert.That(Ids(inFlight)).IsEquivalentTo([1, 2]);
+        await Assert.That(whileInFlight).IsNull();
+        await Assert.That(Ids(again)).IsEquivalentTo([1, 2]);
+        await Assert.That(Ids(next)).IsEquivalentTo([3, 4]);
     }
 
-    // A host that stops partway through a batch marks what it dispatched. Restarted, it takes the next batch first, and
-    // marking that does not complete the one it stopped in, whose rest comes back after the timeout.
+    // A host that stops partway through a batch marks what it dispatched. Restarted, it gets nothing until the batch
+    // times out, and then the rest of it, before the next batch.
     [Test]
     public async Task ARestartedHostGetsTheRestOfTheBatchItStoppedIn()
     {
@@ -168,45 +169,55 @@ public class SqlServerEventStoreTests
         var stoppedIn = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
         await batchStore.MarkDispatchedAsync(dispatcherId, stoppedIn!.Events[0].SequenceNumber);
         var afterRestart = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
-        await batchStore.MarkDispatchedAsync(dispatcherId, afterRestart!.Events[^1].SequenceNumber);
         await Task.Delay(TimeSpan.FromSeconds(1.5));
         var rest = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
+        await batchStore.MarkDispatchedAsync(dispatcherId, rest!.Events[^1].SequenceNumber);
+        var next = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
 
-        await Assert.That(Ids(afterRestart)).IsEquivalentTo([3, 4]);
+        await Assert.That(afterRestart).IsNull();
         await Assert.That(Ids(rest)).IsEquivalentTo([2]);
+        await Assert.That(Ids(next)).IsEquivalentTo([3, 4]);
     }
 
-    // A batch that times out while a later one is still in progress comes back, though the later one ends further on.
-    // The timeout is the caller's, so the later batch is in progress for a poll with a shorter one than the first's age.
-    // Once both are marked the dispatcher carries on after them.
+    // A host that stops releases its batch, so the rest of it comes back at once rather than after the timeout.
     [Test]
-    public async Task ABatchThatTimesOutBehindOneInProgressComesBack()
+    public async Task AReleasedBatchComesBackAtOnce()
     {
         var (eventStore, batchStore) = await this.CreateStoresAsync();
         var dispatcherId = Guid.NewGuid();
-        var streamId = Guid.NewGuid();
-        var state = await eventStore.CommitStreamAsync(streamId, [new Event { Id = 1 }, new Event { Id = 2 }, new Event { Id = 3 }, new Event { Id = 4 }], Guid.NewGuid(), null);
+        await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }, new Event { Id = 2 }, new Event { Id = 3 }], Guid.NewGuid(), null);
 
-        var timedOut = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(30));
-        await Task.Delay(TimeSpan.FromSeconds(1.5));
-        var inProgress = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(30));
-        var again = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
-        var nothingMore = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(30));
-        await batchStore.MarkDispatchedAsync(dispatcherId, inProgress!.Events[^1].SequenceNumber);
-        await batchStore.MarkDispatchedAsync(dispatcherId, again!.Events[^1].SequenceNumber);
-        await eventStore.CommitStreamAsync(streamId, [new Event { Id = 5 }], Guid.NewGuid(), state);
-        var next = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(30));
+        var released = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(30));
+        await batchStore.MarkDispatchedAsync(dispatcherId, released!.Events[0].SequenceNumber);
+        await batchStore.ReleaseAsync(dispatcherId, released.Id);
+        var rest = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(30));
 
-        await Assert.That(Ids(timedOut)).IsEquivalentTo([1, 2]);
-        await Assert.That(Ids(inProgress)).IsEquivalentTo([3, 4]);
-        await Assert.That(Ids(again)).IsEquivalentTo([1, 2]);
-        await Assert.That(nothingMore).IsNull();
-        await Assert.That(Ids(next)).IsEquivalentTo([5]);
+        await Assert.That(Ids(rest)).IsEquivalentTo([2]);
     }
 
-    // The scenario of issue 53 end to end: another host with the same dispatcher id took a batch and stopped.
+    // A host that held a batch past the timeout no longer holds it: releasing it then does not release the batch that
+    // another host has taken since.
     [Test]
-    public async Task EveryEventIsDispatchedWhenAnotherHostAbandonsABatch()
+    public async Task ReleasingABatchHandedOutAgainSinceDoesNothing()
+    {
+        var (eventStore, batchStore) = await this.CreateStoresAsync();
+        var dispatcherId = Guid.NewGuid();
+        await eventStore.CommitStreamAsync(Guid.NewGuid(), [new Event { Id = 1 }, new Event { Id = 2 }], Guid.NewGuid(), null);
+
+        var timedOut = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
+        await Task.Delay(TimeSpan.FromSeconds(1.5));
+        var again = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(1));
+        await batchStore.ReleaseAsync(dispatcherId, timedOut!.Id);
+        var whileInFlight = await batchStore.GetNextBatchAsync(dispatcherId, 2, TimeSpan.FromSeconds(30));
+
+        await Assert.That(again!.Id).IsNotEqualTo(timedOut.Id);
+        await Assert.That(whileInFlight).IsNull();
+    }
+
+    // The scenario of issue 53 end to end: another host with the same dispatcher id took a batch and stopped without
+    // releasing it. Every event is dispatched, in order, once the batch has timed out.
+    [Test]
+    public async Task EveryEventIsDispatchedInOrderWhenAnotherHostAbandonsABatch()
     {
         var (eventStore, batchStore) = await this.CreateStoresAsync();
         var options = new EventDispatcherOptions
@@ -220,18 +231,15 @@ public class SqlServerEventStoreTests
         await eventStore.CommitStreamAsync(Guid.NewGuid(), Enumerable.Range(1, 6).Select(static id => (object)new Event { Id = id }).ToArray(), Guid.NewGuid(), null);
         await batchStore.GetNextBatchAsync(options.DispatcherId, options.BatchSize, options.BatchTimeout);
 
-        var handled = new HashSet<int>();
+        var handled = new List<int>();
         var done = new TaskCompletionSource();
         await using var dispatcher = new Sdk.EventDispatcher(
             new CustomEventDispatcher((_, @event) =>
             {
-                lock (handled)
+                handled.Add(((Event)@event).Id);
+                if (handled.Count == 6)
                 {
-                    handled.Add(((Event)@event).Id);
-                    if (handled.Count == 6)
-                    {
-                        done.TrySetResult();
-                    }
+                    done.TrySetResult();
                 }
             }),
             batchStore,
@@ -240,7 +248,64 @@ public class SqlServerEventStoreTests
         dispatcher.Start();
         await done.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
-        await Assert.That(handled).IsEquivalentTo([1, 2, 3, 4, 5, 6]);
+        await Assert.That(handled).IsEquivalentTo([1, 2, 3, 4, 5, 6], CollectionOrdering.Matching);
+    }
+
+    // A host that is stopped partway through a batch marks what it dispatched and releases the rest, so the next host
+    // carries on at once, in order, long before the batch would time out.
+    [Test]
+    public async Task StoppingAHostReleasesItsBatch()
+    {
+        var (eventStore, batchStore) = await this.CreateStoresAsync();
+        var options = new EventDispatcherOptions
+        {
+            DispatcherId = Guid.NewGuid(),
+            BatchSize = 10,
+            PollingInterval = TimeSpan.FromMilliseconds(20),
+            MaxPollingInterval = TimeSpan.FromMilliseconds(20),
+            BatchTimeout = TimeSpan.FromMinutes(5),
+        };
+        await eventStore.CommitStreamAsync(Guid.NewGuid(), Enumerable.Range(1, 4).Select(static id => (object)new Event { Id = id }).ToArray(), Guid.NewGuid(), null);
+
+        var first = new List<int>();
+        var stuck = new TaskCompletionSource();
+        await using (var stopping = new Sdk.EventDispatcher(
+            new CustomEventDispatcher(async (_, @event, cancellationToken) =>
+            {
+                if (((Event)@event).Id == 2)
+                {
+                    stuck.TrySetResult();
+                    await Task.Delay(Timeout.Infinite, cancellationToken);
+                }
+
+                first.Add(((Event)@event).Id);
+            }),
+            batchStore,
+            options))
+        {
+            stopping.Start();
+            await stuck.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            await stopping.StopAsync();
+        }
+
+        var second = new List<int>();
+        var done = new TaskCompletionSource();
+        await using var next = new Sdk.EventDispatcher(
+            new CustomEventDispatcher((_, @event) =>
+            {
+                second.Add(((Event)@event).Id);
+                if (((Event)@event).Id == 4)
+                {
+                    done.TrySetResult();
+                }
+            }),
+            batchStore,
+            options);
+        next.Start();
+        await done.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        await Assert.That(first).IsEquivalentTo([1]);
+        await Assert.That(second).IsEquivalentTo([2, 3, 4], CollectionOrdering.Matching);
     }
 
     [Test]
@@ -301,6 +366,7 @@ public class SqlServerEventStoreTests
         while (await batchStore.GetNextBatchAsync(dispatcherId, 50, TimeSpan.FromSeconds(30)) is { } batch)
         {
             events.AddRange(batch.Events);
+            await batchStore.MarkDispatchedAsync(dispatcherId, batch.Events[^1].SequenceNumber);
         }
 
         return events;

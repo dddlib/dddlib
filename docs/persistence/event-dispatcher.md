@@ -19,7 +19,8 @@ dotnet add package dddlib.Persistence.EventDispatcher.SqlServer
 
 Every committed event has a store-wide **sequence number**. A dispatcher is identified by a `Guid` and keeps its own
 position in that sequence, so several independent consumers (say, a read model and an audit log) can each dispatch
-every event once by using different dispatcher ids. Two hosts sharing a dispatcher id share the work instead.
+every event once by using different dispatcher ids. Hosts sharing a dispatcher id stand by for each other: one batch is
+in flight per dispatcher id, so one host dispatches at a time and events arrive in sequence order.
 
 Aggregate roots saved through the [memento repositories](memento-persistence.md) have their events appended to the
 same store when the memento is saved, so they are dispatched the same way.
@@ -28,7 +29,8 @@ Events are handed out in numbered **batches** of consecutive events. The host de
 and marks it dispatched once, after the last event it delivered: one round trip to the store per batch rather than
 per event. If your code throws, the batch is abandoned: the events before the failure are marked, and the rest of the
 batch is handed out again after the batch timeout, so order is preserved and nothing is skipped. Stopping the host
-also marks the events it has delivered. That is why delivery is at least once: if the process dies before the mark,
+marks the events it has delivered and releases the rest of the batch, so that the next host, or the same one restarted,
+carries on at once and in order. That is why delivery is at least once: if the process dies before the mark,
 the events of that batch already delivered (up to `BatchSize - 1` of them) are delivered again. Handlers must be
 idempotent.
 
@@ -145,12 +147,7 @@ them yourself, the schema version check and rolling upgrades.
 Polling takes an application lock on the dispatcher id, so two hosts with the same dispatcher id never get the same
 batch. A host that cannot get the lock treats the poll as empty.
 
-A mark completes only the batch that holds the marked event, and the dispatcher's position moves only over batches
-that are complete. If a host takes a batch and stops without finishing it, whether it was one of two hosts sharing the
-id or a single host that restarts, the batch stays open. Later batches are still dispatched and marked, and once the
-batch timeout has passed the open batch is handed out again with the events not yet marked. Those events then arrive
-after the later batches, so with more than one host, or after a restart partway through a batch, events are delivered
-in sequence order within each batch, not across batches.
+A dispatcher id has one batch in flight at a time. While a batch is open, a poll by any host with that id finds nothing,\nuntil the batch is complete, released or timed out. A host that stops releases its batch, and a host that dies leaves it\nto time out: then the batch is handed out again, under a new id, with the events not yet marked, before any later\nevent. A mark completes only the batch that holds the marked event, and the dispatcher's position never passes an open\nbatch. To dispatch faster, give independent consumers their own dispatcher ids rather than sharing one.
 
 The event store in this version serializes commits on a store-wide application lock, so sequence numbers are assigned in
 commit order and a dispatcher that has passed sequence number N never sees an event below N appear later.
