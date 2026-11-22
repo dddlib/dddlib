@@ -145,6 +145,13 @@ them yourself, the schema version check and rolling upgrades.
 Polling takes an application lock on the dispatcher id, so two hosts with the same dispatcher id never get the same
 batch. A host that cannot get the lock treats the poll as empty.
 
+A mark completes only the batch that holds the marked event, and the dispatcher's position moves only over batches
+that are complete. If a host takes a batch and stops without finishing it, whether it was one of two hosts sharing the
+id or a single host that restarts, the batch stays open. Later batches are still dispatched and marked, and once the
+batch timeout has passed the open batch is handed out again with the events not yet marked. Those events then arrive
+after the later batches, so with more than one host, or after a restart partway through a batch, events are delivered
+in sequence order within each batch, not across batches.
+
 The event store in this version serializes commits on a store-wide application lock, so sequence numbers are assigned in
 commit order and a dispatcher that has passed sequence number N never sees an event below N appear later.
 

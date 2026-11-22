@@ -11,8 +11,9 @@ namespace dddlib.Persistence.EventDispatcher.SqlServer;
 
 /// <summary>
 /// Batches the events in the SQL Server event store. Several dispatcher instances with the same dispatcher id may
-/// run at once; each poll takes an application lock on the dispatcher id, and a poll that cannot get it in time
-/// simply finds no batch.
+/// run at once, and each takes different batches; each poll takes an application lock on the dispatcher id, and a poll
+/// that cannot get it in time simply finds no batch. A batch an instance takes and does not finish is handed out again
+/// after the batch timeout.
 /// </summary>
 public sealed class SqlServerEventBatchStore : IEventBatchStore
 {
