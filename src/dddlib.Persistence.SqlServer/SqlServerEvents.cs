@@ -33,6 +33,13 @@ internal static class SqlServerEvents
         new("Payload", SqlDbType.NVarChar, -1),
     ];
 
+    private static readonly SqlMetaData[] EventMetadataColumns =
+    [
+        new("StreamId", SqlDbType.UniqueIdentifier),
+        new("Index", SqlDbType.Int),
+        new("Metadata", SqlDbType.NVarChar, -1),
+    ];
+
     /// <summary>
     /// Adds the events of one stream to the records of a <c>StreamEventList</c> table-valued parameter, indexed from 1
     /// within the stream.
@@ -81,23 +88,18 @@ internal static class SqlServerEvents
     /// Creates the metadata stored with the events: one JSON object with the hostname and timestamp, and the caller's
     /// entries beside them. A caller's entry cannot replace the hostname or timestamp.
     /// </summary>
-    public static string CreateMetadata(IReadOnlyDictionary<string, string>? metadata = null)
-    {
-        if (metadata is not null)
-        {
-            foreach (var (key, value) in metadata)
-            {
-                if (key is HostnameKey or TimestampKey)
-                {
-                    throw new ArgumentException($"The metadata key '{key}' is reserved for dddlib.", nameof(metadata));
-                }
+    public static string CreateMetadata(IReadOnlyDictionary<string, string>? metadata = null) =>
+        CreateMetadata(metadata, null, DateTime.UtcNow);
 
-                if (value is null)
-                {
-                    throw new ArgumentException($"The metadata entry '{key}' has no value.", nameof(metadata));
-                }
-            }
-        }
+    /// <summary>
+    /// Creates the metadata stored with one event: as <see cref="CreateMetadata(IReadOnlyDictionary{string, string}?)"/>,
+    /// at <paramref name="timestamp"/>, with the event's own entries merged over the caller's. Neither can replace the
+    /// hostname or timestamp.
+    /// </summary>
+    public static string CreateMetadata(IReadOnlyDictionary<string, string>? metadata, IReadOnlyDictionary<string, string>? eventMetadata, DateTime timestamp)
+    {
+        Validate(metadata, nameof(metadata));
+        Validate(eventMetadata, nameof(eventMetadata));
 
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Encoder = JsonSerialization.Options.Encoder }))
@@ -105,15 +107,88 @@ internal static class SqlServerEvents
             writer.WriteStartObject();
             writer.WriteString(HostnameKey, Hostname);
             writer.WritePropertyName(TimestampKey);
-            JsonSerializer.Serialize(writer, DateTime.UtcNow, JsonSerialization.Options);
+            JsonSerializer.Serialize(writer, timestamp, JsonSerialization.Options);
             foreach (var (key, value) in metadata ?? new Dictionary<string, string>())
             {
-                writer.WriteString(key, value);
+                writer.WriteString(key, eventMetadata is not null && eventMetadata.TryGetValue(key, out var own) ? own : value);
+            }
+
+            foreach (var (key, value) in eventMetadata ?? new Dictionary<string, string>())
+            {
+                if (metadata is null || !metadata.ContainsKey(key))
+                {
+                    writer.WriteString(key, value);
+                }
             }
 
             writer.WriteEndObject();
         }
 
         return Encoding.UTF8.GetString(buffer.WrittenSpan);
+    }
+
+    /// <summary>
+    /// Adds a record of an <c>EventMetadataList</c> table-valued parameter for each of one stream's events that has
+    /// entries of its own, indexed from 1 within the stream as its events are; the other events take the metadata of
+    /// the append. Validates every entry, so call it before writing.
+    /// </summary>
+    public static void AddEventMetadataRecords(
+        List<SqlDataRecord> records,
+        Guid streamId,
+        IReadOnlyDictionary<string, string>? metadata,
+        IReadOnlyList<IReadOnlyDictionary<string, string>?> eventMetadata,
+        DateTime timestamp)
+    {
+        for (var index = 0; index < eventMetadata.Count; index++)
+        {
+            var own = eventMetadata[index];
+            if (own is null || own.Count == 0)
+            {
+                continue;
+            }
+
+            var record = new SqlDataRecord(EventMetadataColumns);
+            record.SetGuid(0, streamId);
+            record.SetInt32(1, index + 1);
+            record.SetString(2, CreateMetadata(metadata, own, timestamp));
+            records.Add(record);
+        }
+    }
+
+    /// <summary>
+    /// Adds the <c>@EventMetadata</c> parameter when there are records: SqlClient rejects an empty enumeration, and an
+    /// omitted table-valued parameter is an empty table.
+    /// </summary>
+    public static void AddEventMetadataParameter(SqlCommand command, string quotedSchema, List<SqlDataRecord> records)
+    {
+        if (records.Count == 0)
+        {
+            return;
+        }
+
+        var parameter = command.Parameters.Add("@EventMetadata", SqlDbType.Structured);
+        parameter.TypeName = string.Concat(quotedSchema, ".[EventMetadataList]");
+        parameter.Value = records;
+    }
+
+    private static void Validate(IReadOnlyDictionary<string, string>? metadata, string parameterName)
+    {
+        if (metadata is null)
+        {
+            return;
+        }
+
+        foreach (var (key, value) in metadata)
+        {
+            if (key is HostnameKey or TimestampKey)
+            {
+                throw new ArgumentException($"The metadata key '{key}' is reserved for dddlib.", parameterName);
+            }
+
+            if (value is null)
+            {
+                throw new ArgumentException($"The metadata entry '{key}' has no value.", parameterName);
+            }
+        }
     }
 }

@@ -111,13 +111,27 @@ protected override IReadOnlyDictionary<string, string>? EventMetadata =>
 It is stored with each event beside dddlib's own `hostname` and `timestamp` entries, and the dispatcher receives all of
 them. A key of `hostname` or `timestamp` is an `ArgumentException`, thrown before anything is written.
 
+For a value that differs from one event to the next, such as a message ID that lets consumers drop the duplicates of a
+redelivered save, override `GetEventMetadata`. It is called once for each event before anything is written, with the
+aggregate root's identity (a batch saves several) and the event's position, from 0, among its uncommitted events:
+
+```csharp
+protected override IReadOnlyDictionary<string, string>? GetEventMetadata(Guid id, object @event, int index) =>
+    new Dictionary<string, string> { ["message_id"] = MessageIds.For(operationId, id, @event.GetType(), index) };
+```
+
+Its entries are merged over `EventMetadata`: an entry with the same key replaces that one for this event only. Return
+null for an event with no metadata of its own. The same reserved keys apply. Every event of a save has the same
+`timestamp`.
+
 ### Owning the transaction
 
 The original way to write custom storage is still supported: override
 `SaveAsync(Guid id, object memento, IReadOnlyList<object> events, string? preCommitState, CancellationToken)` instead,
 open the connection and transaction yourself, and call `AppendEventsAsync` with that transaction and the new state token
 before committing, so that a dispatcher never sees events for a memento that was not saved. Metadata is then passed to
-`AppendEventsAsync` before the events. A repository written this way cannot take part in a batch, because it owns the
+`AppendEventsAsync` before the events, and metadata of each event's own after them, as a list in step with the events
+(a null entry for an event with none); a list of another length is an `ArgumentException`. A repository written this way cannot take part in a batch, because it owns the
 transaction it saves in: adding to a batch through it is a `NotSupportedException`. A repository that overrides
 neither method fails its first save with a `NotSupportedException`.
 
@@ -127,7 +141,8 @@ neither method fails its first save with a `NotSupportedException`.
    and create commands on `transaction.Connection` with `transaction`.
 2. Delete the connection, `BeginTransactionAsync`, the catch that turns error 50409 into a `ConcurrencyException`, the
    call to `AppendEventsAsync` and the commit. Keep the procedure call and return the new state token.
-3. Move any metadata passed to `AppendEventsAsync` into `EventMetadata`.
+3. Move any metadata passed to `AppendEventsAsync` into `EventMetadata`, and any metadata of each event's own into
+   `GetEventMetadata`.
 
 The stored procedures do not change, provided they run in the caller's transaction rather than committing their own.
 

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Reflection;
 using dddlib.Persistence.Sdk;
 using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient.Server;
 
 namespace dddlib.Persistence.SqlServer;
 
@@ -68,6 +69,9 @@ public abstract class SqlServerRepository<T> : Repository<T>, ISqlServerBatchPar
     Task<string> ISqlServerBatchParticipant.SaveMementoAsync(SqlTransaction transaction, Guid id, object memento, string? preCommitState, CancellationToken cancellationToken) =>
         this.SaveAsync(transaction, id, memento, preCommitState, cancellationToken);
 
+    IReadOnlyDictionary<string, string>? ISqlServerBatchParticipant.GetEventMetadata(Guid id, object @event, int index) =>
+        this.GetEventMetadata(id, @event, index);
+
     internal override void AddToBatch(IBatch batch, BatchSave save)
     {
         if (batch is not SqlServerBatch sqlServerBatch)
@@ -106,6 +110,18 @@ To fix this issue:
         throw this.NoHook();
 
     /// <summary>
+    /// Gets metadata of one event's own, such as a message ID, for saves through the transactional
+    /// <see cref="SaveAsync(SqlTransaction, Guid, object, string?, CancellationToken)"/>, alone or in a
+    /// <see cref="SqlServerBatch"/>. It is called once for each event before anything is written, and its entries are
+    /// merged over <see cref="EventMetadata"/>: an entry with the same key replaces that one for this event only.
+    /// <paramref name="id"/> identifies the aggregate root, since a batch saves several, and <paramref name="index"/> is
+    /// the event's position, from 0, among the aggregate root's uncommitted events. A key equal to dddlib's own
+    /// <c>hostname</c> or <c>timestamp</c> is an <see cref="ArgumentException"/>, and nothing is written. Returns null by
+    /// default, for no metadata of the event's own.
+    /// </summary>
+    protected virtual IReadOnlyDictionary<string, string>? GetEventMetadata(Guid id, object @event, int index) => null;
+
+    /// <summary>
     /// Saves through the transactional <see cref="SaveAsync(SqlTransaction, Guid, object, string?, CancellationToken)"/>
     /// in a transaction dddlib owns. A derived class that overrides this owns the transaction instead.
     /// </summary>
@@ -138,7 +154,7 @@ To fix this issue:
     /// dddlib appends the events, and calling this is an <see cref="InvalidOperationException"/>.
     /// </summary>
     protected Task AppendEventsAsync(SqlTransaction transaction, Guid id, IReadOnlyList<object> events, string state, CancellationToken cancellationToken) =>
-        this.AppendAsync(transaction, id, null, events, state, cancellationToken);
+        this.AppendAsync(transaction, id, null, events, null, state, cancellationToken);
 
     /// <summary>
     /// Appends the events as <see cref="AppendEventsAsync(SqlTransaction, Guid, IReadOnlyList{object}, string, CancellationToken)"/>
@@ -150,7 +166,30 @@ To fix this issue:
     {
         ArgumentNullException.ThrowIfNull(metadata);
 
-        return this.AppendAsync(transaction, id, metadata, events, state, cancellationToken);
+        return this.AppendAsync(transaction, id, metadata, events, null, state, cancellationToken);
+    }
+
+    /// <summary>
+    /// Appends the events as <see cref="AppendEventsAsync(SqlTransaction, Guid, IReadOnlyDictionary{string, string}, IReadOnlyList{object}, string, CancellationToken)"/>
+    /// does, with metadata of each event's own, such as a message ID, merged over <paramref name="metadata"/>: an entry
+    /// with the same key replaces that one for its event only. <paramref name="eventMetadata"/> is in step with
+    /// <paramref name="events"/>, and a null or empty entry gives its event only <paramref name="metadata"/>. A different
+    /// number of entries than events, or a key equal to dddlib's own <c>hostname</c> or <c>timestamp</c> at either level,
+    /// is an <see cref="ArgumentException"/>, and nothing is written.
+    /// </summary>
+    protected Task AppendEventsAsync(
+        SqlTransaction transaction,
+        Guid id,
+        IReadOnlyDictionary<string, string> metadata,
+        IReadOnlyList<object> events,
+        IReadOnlyList<IReadOnlyDictionary<string, string>?> eventMetadata,
+        string state,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(metadata);
+        ArgumentNullException.ThrowIfNull(eventMetadata);
+
+        return this.AppendAsync(transaction, id, metadata, events, eventMetadata, state, cancellationToken);
     }
 
     private static (bool Transactional, bool OwnsTransaction) FindHooks(Type type)
@@ -172,7 +211,14 @@ To fix this issue:
 - override 'SaveAsync(SqlTransaction transaction, Guid id, object memento, string? preCommitState, CancellationToken cancellationToken)' to write the memento in the given transaction and return its new state token.",
                 this.GetType()));
 
-    private async Task AppendAsync(SqlTransaction transaction, Guid id, IReadOnlyDictionary<string, string>? metadata, IReadOnlyList<object> events, string state, CancellationToken cancellationToken)
+    private async Task AppendAsync(
+        SqlTransaction transaction,
+        Guid id,
+        IReadOnlyDictionary<string, string>? metadata,
+        IReadOnlyList<object> events,
+        IReadOnlyList<IReadOnlyDictionary<string, string>?>? eventMetadata,
+        string state,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(transaction);
         ArgumentNullException.ThrowIfNull(events);
@@ -184,7 +230,22 @@ To fix this issue:
                 "The events of a save through the transactional 'SaveAsync' are appended by dddlib, with any 'EventMetadata'. Do not append them in that method.");
         }
 
-        var metadataJson = SqlServerEvents.CreateMetadata(metadata);
+        if (eventMetadata is not null && eventMetadata.Count != events.Count)
+        {
+            throw new ArgumentException(
+                string.Format(CultureInfo.InvariantCulture, "The event metadata has {0} entries for {1} events.", eventMetadata.Count, events.Count),
+                nameof(eventMetadata));
+        }
+
+        // One timestamp for every event of the append.
+        var timestamp = DateTime.UtcNow;
+        var metadataJson = SqlServerEvents.CreateMetadata(metadata, null, timestamp);
+        var eventMetadataRecords = new List<SqlDataRecord>();
+        if (eventMetadata is not null)
+        {
+            SqlServerEvents.AddEventMetadataRecords(eventMetadataRecords, id, metadata, eventMetadata, timestamp);
+        }
+
         if (events.Count == 0)
         {
             return;
@@ -203,6 +264,7 @@ To fix this issue:
         command.Parameters.Add("@State", SqlDbType.VarChar, 36).Value = state;
         command.Parameters.Add("@Metadata", SqlDbType.NVarChar, -1).Value = metadataJson;
         command.Parameters.Add("@CorrelationId", SqlDbType.UniqueIdentifier).Value = Guid.NewGuid();
+        SqlServerEvents.AddEventMetadataParameter(command, this.schema, eventMetadataRecords);
 
         try
         {

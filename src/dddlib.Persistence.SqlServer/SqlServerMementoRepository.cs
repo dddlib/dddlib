@@ -36,6 +36,8 @@ public sealed class SqlServerMementoRepository<T> : Repository<T>, ISqlServerBat
 
     IReadOnlyDictionary<string, string>? ISqlServerBatchParticipant.EventMetadata => null;
 
+    IReadOnlyDictionary<string, string>? ISqlServerBatchParticipant.GetEventMetadata(Guid id, object @event, int index) => null;
+
     Task<string> ISqlServerBatchParticipant.SaveMementoAsync(SqlTransaction transaction, Guid id, object memento, string? preCommitState, CancellationToken cancellationToken) =>
         throw new InvalidOperationException("Mementos of this repository are written to the Mementos table by the batch.");
 

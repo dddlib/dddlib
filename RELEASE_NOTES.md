@@ -70,6 +70,12 @@ Ground-up port of dddlib to .NET 10. See `docs/migrating-from-v1.md` for the bre
   `SaveAsync` keep working unchanged. Schema version 6 (`dddlib06.sql`, expand only) adds `CommitStreams`,
   `LockStreams`, `SaveMementos`, `AppendStreams` and their table types: every SQL Server package now requires
   version 6.
+- Per-event metadata: each event can carry metadata of its own, such as a message ID, merged over the metadata of its
+  save. `SqlServerRepository<T>` gains `GetEventMetadata(Guid id, object @event, int index)`, called once per event for
+  saves through the transactional hook, alone or in a `SqlServerBatch`, and an `AppendEventsAsync` overload that takes
+  a list in step with the events. Saves without it store exactly what they did before, and every event of a save now
+  has the same `timestamp`. Schema version 7 (`dddlib07.sql`, expand only) adds an optional `@EventMetadata`
+  parameter to `AppendEvents` and `AppendStreams`: every SQL Server package now requires version 7 (issue 61).
 - Dependencies: the SQL Server packages depend on `System.Security.Cryptography.Pkcs` 9.0.21, above the 9.0.18 that
   `Microsoft.Data.SqlClient` 7.1 brings, for the .NET denial of service vulnerabilities CVE-2026-84008 and
   CVE-2026-70162.
